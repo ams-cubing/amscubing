@@ -179,12 +179,12 @@ export function CalendarView({
 
   return (
     <>
-      <div className="bg-background">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-primary">
+      <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-primary">
             {monthNames[month]} {year}
           </h2>
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             {!isCurrentMonth && (
               <Button onClick={goToToday}>
                 <Calendar />
@@ -214,18 +214,18 @@ export function CalendarView({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 sm:gap-2 gap-1">
+        <div className="grid grid-cols-7 md:gap-2 sm:gap-1 gap-0.5">
           {dayNames.map((day) => (
             <div
               key={day}
-              className="text-center font-semibold text-sm text-muted-foreground pb-2"
+              className="text-center font-semibold text-xs md:text-sm text-muted-foreground pb-2 md:pb-3"
             >
               {day}
             </div>
           ))}
 
           {Array.from({ length: startingDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="min-h-24" />
+            <div key={`empty-${i}`} className="min-h-20 md:min-h-24" />
           ))}
 
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -244,12 +244,12 @@ export function CalendarView({
               <div
                 key={day}
                 className={cn(
-                  "min-h-24 border rounded-lg p-2 transition-colors",
+                  "min-h-20 md:min-h-24 border rounded-lg p-1.5 md:p-2 transition-colors",
                   definitelyUnavailable
                     ? "cursor-not-allowed opacity-50 bg-gray-200 dark:bg-slate-900"
                     : conditionallyUnavailable
-                      ? "cursor-not-allowed bg-gray-200 dark:bg-slate-900"
-                      : "cursor-pointer bg-pink-300 dark:bg-pink-900 hover:bg-pink-400 dark:hover:bg-pink-800",
+                      ? "bg-gray-200 dark:bg-slate-900"
+                      : "bg-pink-300 dark:bg-pink-900 hover:bg-pink-400 dark:hover:bg-pink-800",
                   isToday
                     ? "bg-background border-2 border-primary/50"
                     : "border-gray-300 dark:border-slate-700",
@@ -258,11 +258,11 @@ export function CalendarView({
               >
                 <div
                   className={cn(
-                    "text-sm font-semibold mb-1",
+                    "text-xs md:text-sm font-semibold mb-1",
                     definitelyUnavailable && "text-muted-foreground",
                     conditionallyUnavailable && "text-muted-foreground",
                     isToday
-                      ? "text-primary" // Darker blue text for today
+                      ? "text-primary"
                       : !definitelyUnavailable &&
                           !conditionallyUnavailable &&
                           "text-gray-800 dark:text-slate-300", // Neutral text for available dates
@@ -272,7 +272,7 @@ export function CalendarView({
                 </div>
                 {holiday && (
                   <div
-                    className="text-xs text-blue-700 dark:text-blue-400 font-medium mb-1 truncate"
+                    className="text-[10px] md:text-xs text-blue-700 dark:text-blue-300 font-medium mb-1 truncate"
                     title={holiday.name}
                   >
                     {holiday.name}
@@ -287,14 +287,14 @@ export function CalendarView({
                         handleCompetitionClick(comp);
                       }}
                       className={cn(
-                        "text-xs p-1 rounded truncate cursor-pointer transition-colors",
+                        "text-[10px] md:text-xs p-1 rounded truncate cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm font-medium",
                         getPublicStatusColor(comp.statusPublic),
                       )}
                       title={`Competencia en ${comp.state.region.displayName}`}
                     >
                       {comp.statusPublic === "announced"
                         ? comp.name
-                        : `Competencia en ${comp.state.region.displayName}`}
+                        : comp.state.region.displayName}
                     </div>
                   ))}
                 </div>

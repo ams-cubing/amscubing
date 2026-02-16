@@ -38,11 +38,14 @@ export function SemaphoreLegend() {
   ];
 
   return (
-    <section className="w-full overflow-hidden">
-      <Table className="w-full table-fixed">
+    <section className="w-full overflow-hidden bg-card border rounded-lg shadow-sm">
+      <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead colSpan={2} className="text-center">
+            <TableHead
+              colSpan={2}
+              className="text-center text-base md:text-lg font-semibold py-4"
+            >
               Explicación de colores en el semáforo
             </TableHead>
           </TableRow>
@@ -50,10 +53,15 @@ export function SemaphoreLegend() {
         <TableBody>
           {rows.map((r) => (
             <TableRow key={r.label}>
-              <TableCell className={cn(r.color, "text-center")}>
-                <span className="font-semibold">{r.label}</span>
+              <TableCell
+                className={cn(
+                  r.color,
+                  "text-center font-semibold p-3 md:p-4 w-[30%] md:w-[25%]",
+                )}
+              >
+                {r.label}
               </TableCell>
-              <TableCell className="p-6 text-sm leading-relaxed whitespace-normal wrap-break-word">
+              <TableCell className="p-3 md:p-5 text-xs md:text-sm leading-relaxed">
                 {r.desc}
               </TableCell>
             </TableRow>

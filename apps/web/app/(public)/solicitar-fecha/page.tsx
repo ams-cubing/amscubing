@@ -23,8 +23,14 @@ export default async function Page(props: PageProps) {
 
   if (!session) {
     return (
-      <main className="p-6">
-        <div>Inicia sesión para solicitar una fecha de competencia.</div>
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 md:p-5 shadow-sm">
+            <p className="text-sm md:text-base text-blue-800 dark:text-blue-200 font-medium">
+              Inicia sesión para solicitar una fecha de competencia.
+            </p>
+          </div>
+        </div>
       </main>
     );
   }
@@ -45,20 +51,20 @@ export default async function Page(props: PageProps) {
 
   if (!canSubmit) {
     return (
-      <main className="p-6">
-        <div className="max-w-2xl mx-auto space-y-8">
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl md:text-3xl font-bold">
               Solicitar Fecha de Competencia
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm md:text-base">
               Complete el formulario para solicitar una fecha para su
               competencia. El delegado será asignado automáticamente según la
               ubicación.
             </p>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 dark:border-yellow-700 dark:bg-yellow-900 rounded-lg p-4">
-            <p className="text-yellow-800 dark:text-yellow-300">
+          <div className="bg-yellow-50 border border-yellow-200 dark:border-yellow-700 dark:bg-yellow-900/20 rounded-lg p-4 md:p-5 shadow-sm">
+            <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 font-medium">
               Has alcanzado el límite de solicitudes por semana (
               {MAX_REQUESTS_PER_WEEK}). Por favor, intenta nuevamente en{" "}
               {formatDistance(
@@ -132,19 +138,21 @@ export default async function Page(props: PageProps) {
   const regionName = regionsData.length > 0 ? regionsData[0]?.regionName : null;
 
   return (
-    <main className="p-6">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <main className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Solicitar Fecha de Competencia</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Solicitar Fecha de Competencia
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
             Complete el formulario para solicitar una fecha para su competencia.
             El delegado será asignado automáticamente según la ubicación.
           </p>
         </div>
         <DateRequestForm availability={availabilityData} />
         {stateFilter && (
-          <section className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-2">
+          <section className="bg-card border rounded-lg p-5 md:p-6 shadow-sm">
+            <h2 className="text-base md:text-lg font-semibold mb-3">
               Región:{" "}
               <span className="font-normal text-muted-foreground">
                 {regionName ?? "—"}
@@ -154,7 +162,7 @@ export default async function Page(props: PageProps) {
             {delegates.length > 0 ? (
               <div>
                 {availabilityData.length === 0 && stateFilter ? (
-                  <div className="text-sm text-destructive mb-4">
+                  <div className="text-sm text-destructive mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md">
                     No hay fechas disponibles para la región seleccionada. Por
                     favor, contacta a un delegado directamente.
                   </div>
@@ -165,30 +173,30 @@ export default async function Page(props: PageProps) {
                   </p>
                 )}
 
-                <ul className="grid gap-2">
+                <ul className="grid gap-3">
                   {delegates.map((delegate) => (
                     <li
                       key={delegate.email}
-                      className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-md px-3 py-2"
+                      className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-3 transition-all hover:shadow-sm hover:border-gray-300 dark:hover:border-slate-600"
                     >
-                      <div className="text-sm">
-                        <div className="font-medium">{delegate.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          <a
-                            href={`mailto:${delegate.email}`}
-                            className="hover:underline"
-                          >
-                            <Mail className="inline-block mr-1 h-3 w-3" />
-                            Haz clic aquí para contactar
-                          </a>
+                      <div className="space-y-1.5">
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {delegate.name}
                         </div>
+                        <a
+                          href={`mailto:${delegate.email}`}
+                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          <span>Haz clic aquí para contactar</span>
+                        </a>
                       </div>
                     </li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-md">
                 No hay delegados disponibles para esta región, se mostrarán las
                 fechas disponibles de todos los delegados.
               </div>

@@ -32,12 +32,18 @@ export function RegionFilter({
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Label id="region-filter-label" className="sr-only">
+    <div className="bg-card border rounded-lg p-4 md:p-5 shadow-sm">
+      <Label
+        id="region-filter-label"
+        className="text-sm font-semibold mb-2 block"
+      >
         Filtrar por región
       </Label>
       <Select value={selected ?? ""} onValueChange={handleChange}>
-        <SelectTrigger className="w-full" aria-labelledby="region-filter-label">
+        <SelectTrigger
+          className="w-full max-w-md"
+          aria-labelledby="region-filter-label"
+        >
           <SelectValue placeholder="Seleccione una región" />
         </SelectTrigger>
         <SelectContent>

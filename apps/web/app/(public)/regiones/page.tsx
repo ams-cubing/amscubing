@@ -31,99 +31,117 @@ export default async function Page() {
   });
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-3xl font-bold">Regiones en México</h1>
-      <section className="mt-8">
-        <div className="flex justify-center">
-          <Image
-            src="/mapa.png"
-            alt="Mapa de regiones en México"
-            width={736}
-            height={491}
-            className="object-cover"
-          />
+    <main className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Regiones en México</h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
+            Información sobre las regiones y delegados en México
+          </p>
         </div>
-      </section>
-      <section className="mt-8">
-        <h2 className="mb-4 text-2xl font-semibold">
-          Delegados sugeridos para cada región de México
-        </h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead />
-              <TableHead>Nombre</TableHead>
-              <TableHead>Región</TableHead>
-              <TableHead>Correo Electrónico</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {delegates.map((delegate) => (
-              <TableRow key={delegate.id}>
-                <TableCell className="w-16">
-                  <Avatar>
-                    <AvatarImage
-                      src={delegate.image || undefined}
-                      alt={delegate.name}
-                    />
-                    <AvatarFallback>
-                      {delegate.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </TableCell>
-                <TableCell>
-                  <a
-                    href={`https://www.worldcubeassociation.org/persons/${delegate.wcaId}`}
-                    className="hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {delegate.name}
-                  </a>
-                </TableCell>
-                <TableCell>{delegate.region?.displayName || "N/A"}</TableCell>
-                <TableCell>
-                  <a
-                    href={`mailto:${delegate.email}`}
-                    className="text-blue-600 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {delegate.email}
-                  </a>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </section>
-      <section className="mt-8">
-        <h2 className="mb-4 text-2xl font-semibold">
-          Estados que comprenden cada región
-        </h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Región</TableHead>
-              <TableHead>Estados</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {regions.map((region) => (
-              <TableRow key={region.id}>
-                <TableCell>{region.displayName}</TableCell>
-                <TableCell>
-                  {region.states.map((state) => state.name).join(", ")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </section>
-    </div>
+
+        <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+          <div className="flex justify-center">
+            <Image
+              src="/mapa.png"
+              alt="Mapa de regiones en México"
+              width={736}
+              height={491}
+              className="rounded-lg shadow-md max-w-full h-auto"
+            />
+          </div>
+        </section>
+
+        <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">
+            Delegados sugeridos para cada región de México
+          </h2>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16" />
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Región</TableHead>
+                  <TableHead>Correo Electrónico</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {delegates.map((delegate) => (
+                  <TableRow key={delegate.id}>
+                    <TableCell>
+                      <Avatar>
+                        <AvatarImage
+                          src={delegate.image || undefined}
+                          alt={delegate.name}
+                        />
+                        <AvatarFallback>
+                          {delegate.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        href={`https://www.worldcubeassociation.org/persons/${delegate.wcaId}`}
+                        className="font-medium hover:text-primary transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {delegate.name}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {delegate.region?.displayName || "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        href={`mailto:${delegate.email}`}
+                        className="text-primary hover:underline transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {delegate.email}
+                      </a>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+
+        <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">
+            Estados que comprenden cada región
+          </h2>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/3">Región</TableHead>
+                  <TableHead>Estados</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {regions.map((region) => (
+                  <TableRow key={region.id}>
+                    <TableCell className="font-medium">
+                      {region.displayName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {region.states.map((state) => state.name).join(", ")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
