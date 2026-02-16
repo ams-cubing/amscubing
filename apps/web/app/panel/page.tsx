@@ -19,12 +19,19 @@ export default async function Page() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Vista Privada de Delegado</h1>
-      </div>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Vista Privada de Delegado
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
+            Gestiona todas las competencias y solicitudes del calendario.
+          </p>
+        </div>
 
-      <DataTable data={allComps} />
+        <DataTable data={allComps} />
+      </div>
     </div>
   );
 }

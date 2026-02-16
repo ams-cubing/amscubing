@@ -48,11 +48,13 @@ export default async function Page() {
   const delegateBusyDays = Array.from(delegateBusyDaysSet).sort();
 
   return (
-    <main className="p-6">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <main className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Registrar Disponibilidad</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Registrar Disponibilidad
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
             Complete el formulario para registrar su disponibilidad.
           </p>
         </div>

@@ -58,11 +58,11 @@ export default async function Page({
   });
 
   return (
-    <main className="p-6">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <main className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Editar Competencia</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl font-bold">Editar Competencia</h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
             Modifica los detalles de la competencia según sea necesario.
           </p>
         </div>
@@ -72,20 +72,29 @@ export default async function Page({
         />
         <DeleteCompetitionDialog competitionId={competition.id} />
 
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Registro de Actividades</h2>
-          <ul className="space-y-2">
+        <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+          <h2 className="text-lg md:text-xl font-bold mb-4">
+            Registro de Actividades
+          </h2>
+          <ul className="space-y-3">
             {competitionLogs.map((log) => (
-              <li key={log.id} className="p-4 border rounded-md">
-                <p className="text-xs text-muted-foreground">
+              <li
+                key={log.id}
+                className="bg-muted/50 border rounded-lg p-3 md:p-4"
+              >
+                <p className="text-xs text-muted-foreground mb-1">
                   {new Date(log.createdAt).toLocaleString()}
                 </p>
-                <p>
-                  {log.actor
-                    ? `${log.actor.name} (${log.actor.wcaId})`
-                    : "Usuario eliminado"}{" "}
+                <p className="text-sm">
+                  <span className="font-medium">
+                    {log.actor
+                      ? `${log.actor.name} (${log.actor.wcaId})`
+                      : "Usuario eliminado"}
+                  </span>{" "}
                   realizó la siguiente acción:{" "}
-                  <strong>{formatAction(log.action)}</strong>
+                  <strong className="text-primary">
+                    {formatAction(log.action)}
+                  </strong>
                 </p>
                 <DetailsDialog details={log.details} />
               </li>

@@ -85,9 +85,16 @@ export default async function Page() {
   }));
 
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Actividad</h1>
-      <ActivityTable data={logsForClient} />
+    <main className="p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Actividad</h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base">
+            Historial de acciones y cambios en el sistema.
+          </p>
+        </div>
+        <ActivityTable data={logsForClient} />
+      </div>
     </main>
   );
 }
