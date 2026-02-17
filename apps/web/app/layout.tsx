@@ -29,6 +29,18 @@ export const metadata = {
   title: "Calendario Público - Asociación Mexicana de Speedcubing",
   description:
     "Consulta y gestiona las competencias de speedcubing en México con el calendario público de la Asociación Mexicana de Speedcubing.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AMS Calendario",
+  },
 };
 
 export default async function RootLayout({
