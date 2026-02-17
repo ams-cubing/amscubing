@@ -13,7 +13,7 @@ export function SemaphoreLegend() {
     {
       label: "Fecha Abierta",
       color: "bg-pink-300 dark:bg-pink-600",
-      desc: "La fecha no tiene ninguna organización activa. Te invitamos a ponerte en contacto con tu delegado disponible más cercano.",
+      desc: "La fecha se encuentra disponible para reservar.  Te invitamos a ponerte en contacto con el delegado en cuestión.",
     },
     {
       label: "Fecha Reservada",

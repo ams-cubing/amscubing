@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function NotFoundPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-b from-background to-muted/20">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-linear-to-b from-background to-muted/20">
       <div className="text-center space-y-6 md:space-y-8 max-w-lg bg-card border rounded-lg shadow-lg p-6 md:p-10">
         <div className="flex justify-center">
           <div className="rounded-full bg-muted p-4 md:p-5">

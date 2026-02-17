@@ -4,6 +4,8 @@ import { CalendarView } from "./_components/calendar-view";
 import { RegionFilter } from "./_components/region-filter";
 import { availability, competitions, regions, states, user } from "@/db/schema";
 import { SemaphoreLegend } from "./_components/semaphore-legend";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -57,6 +59,12 @@ export default async function Page(props: PageProps) {
     orderBy: (t, { asc }) => [asc(t.displayName)],
   });
 
+  const headersList = await headers();
+
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
+
   return (
     <main className="p-4 md:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
@@ -65,6 +73,7 @@ export default async function Page(props: PageProps) {
           competitions={comps}
           holidays={holidays}
           availability={avail}
+          role={session?.user.role}
         />
         <SemaphoreLegend />
       </div>

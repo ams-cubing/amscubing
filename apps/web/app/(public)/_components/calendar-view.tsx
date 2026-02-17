@@ -19,7 +19,12 @@ import {
 } from "@workspace/ui/components/dialog";
 import { cn } from "@workspace/ui/lib/utils";
 import { addMonths, subDays } from "date-fns";
-import { getPublicStatusColor, formatPublicStatus } from "@/lib/utils";
+import {
+  getPublicStatusColor,
+  formatPublicStatus,
+  getInternalStatusColor,
+  formatInternalStatus,
+} from "@/lib/utils";
 import type { Competition, Holiday, Region, State } from "@/db/schema";
 import { Badge } from "@workspace/ui/components/badge";
 import Link from "next/link";
@@ -34,12 +39,14 @@ interface CalendarViewProps {
   availability: {
     date: string;
   }[];
+  role: "delegate" | "user" | undefined;
 }
 
 export function CalendarView({
   competitions,
   holidays,
   availability,
+  role,
 }: CalendarViewProps) {
   const availableDates = availability.map((a) => new Date(a.date));
 
@@ -177,6 +184,8 @@ export function CalendarView({
     setCurrentDate(new Date(now.getFullYear(), now.getMonth() + 3, 1));
   };
 
+  const isDelegate = role === "delegate";
+
   return (
     <>
       <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
@@ -265,7 +274,7 @@ export function CalendarView({
                       ? "text-primary"
                       : !definitelyUnavailable &&
                           !conditionallyUnavailable &&
-                          "text-gray-800 dark:text-slate-300", // Neutral text for available dates
+                          "text-gray-800 dark:text-slate-300",
                   )}
                 >
                   {day}
@@ -292,8 +301,8 @@ export function CalendarView({
                       )}
                       title={`Competencia en ${comp.state.region.displayName}`}
                     >
-                      {comp.statusPublic === "announced"
-                        ? comp.name
+                      {comp.statusPublic === "announced" || isDelegate
+                        ? comp.name || comp.state.name
                         : comp.state.region.displayName}
                     </div>
                   ))}
@@ -308,8 +317,9 @@ export function CalendarView({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {selectedCompetition?.statusPublic === "announced" ? (
-                selectedCompetition.wcaCompetitionUrl ? (
+              {selectedCompetition?.statusPublic === "announced" ||
+              isDelegate ? (
+                selectedCompetition?.wcaCompetitionUrl ? (
                   <Link
                     href={selectedCompetition.wcaCompetitionUrl}
                     target="_blank"
@@ -320,7 +330,8 @@ export function CalendarView({
                     <ExternalLink />
                   </Link>
                 ) : (
-                  selectedCompetition.name
+                  selectedCompetition?.name ||
+                  `Competencia en ${selectedCompetition?.state.name}`
                 )
               ) : (
                 `Competencia en ${selectedCompetition?.state.region.displayName}`
@@ -354,7 +365,9 @@ export function CalendarView({
                 <div>
                   <p className="font-semibold">Ubicación</p>
                   <p className="text-sm text-muted-foreground">
-                    {selectedCompetition.state.region.displayName}
+                    {isDelegate
+                      ? selectedCompetition.state.name
+                      : selectedCompetition.state.region.displayName}
                   </p>
                 </div>
               </div>
@@ -382,6 +395,22 @@ export function CalendarView({
                   {formatPublicStatus(selectedCompetition.statusPublic)}
                 </span>
               </div>
+
+              {isDelegate && (
+                <div>
+                  <p className="font-semibold mb-1">Estado interno</p>
+                  <span
+                    className={cn(
+                      "text-xs px-2 py-1 rounded",
+                      getInternalStatusColor(
+                        selectedCompetition.statusInternal,
+                      ),
+                    )}
+                  >
+                    {formatInternalStatus(selectedCompetition.statusInternal)}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
