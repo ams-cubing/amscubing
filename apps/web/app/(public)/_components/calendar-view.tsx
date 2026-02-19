@@ -48,7 +48,10 @@ export function CalendarView({
   availability,
   role,
 }: CalendarViewProps) {
-  const availableDates = availability.map((a) => new Date(a.date));
+  const availableDates = availability.map((a) => {
+    const [y, m, d] = a.date.split("-").map(Number);
+    return new Date(y!, m! - 1, d);
+  });
 
   const now = new Date();
   const [currentDate, setCurrentDate] = useState(() => {
@@ -138,11 +141,10 @@ export function CalendarView({
     : null;
 
   const isDateAvailable = (day: number) => {
-    const localDate = new Date(year, month, day);
-    const dateISO = localDate.toISOString().split("T")[0];
+    const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const availableDateStrings = availability.map((a) => a.date);
 
-    return availableDateStrings.includes(dateISO!);
+    return availableDateStrings.includes(dateString);
   };
 
   const isDateDefinitelyUnavailable = (day: number) => {

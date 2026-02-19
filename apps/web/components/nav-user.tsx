@@ -39,9 +39,13 @@ export function NavUser({ user }: { user: User | undefined }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton size="lg">
-                <LogIn className="size-4" />
-                <span>Iniciar sesión</span>
-                <ChevronsUpDown className="ml-auto size-4" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+                  <LogIn className="size-4" />
+                </div>
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Iniciar sesión
+                </span>
+                <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -81,11 +85,11 @@ export function NavUser({ user }: { user: User | undefined }) {
                 />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

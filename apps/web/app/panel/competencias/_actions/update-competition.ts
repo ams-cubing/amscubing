@@ -239,7 +239,11 @@ export async function updateCompetition(
               from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
               to: a.email,
               subject: `Asignación como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-              html: `<p>Hola ${a.name},</p><p>Has sido asignado como delegado para la competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p><p>Revisa el panel de competencias para más detalles.</p>`,
+              html: `
+              <p>Hola ${a.name},</p>
+              <p>Has sido asignado como delegado para la competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
+              <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
+              `,
             });
           } catch (err) {
             console.error(
@@ -264,7 +268,11 @@ export async function updateCompetition(
               from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
               to: r.email,
               subject: `Remoción como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-              html: `<p>Hola ${r.name},</p><p>Has sido removido como delegado de una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p><p>Si crees que esto es un error, revisa el panel de competencias para más detalles.</p>`,
+              html: `
+              <p>Hola ${r.name},</p>
+              <p>Has sido removido como delegado de una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
+              <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
+              `,
             });
           } catch (err) {
             console.error(

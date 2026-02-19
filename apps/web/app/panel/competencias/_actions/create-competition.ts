@@ -199,7 +199,11 @@ export async function createCompetition(
             from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
             to: d.email,
             subject: `Asignación como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-            html: `<p>Hola ${d.name},</p><p>Has sido asignado como delegado para una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p><p>Revisa el panel de competencias para más detalles.</p>`,
+            html: `
+            <p>Hola ${d.name},</p>
+            <p>Has sido asignado como delegado para una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
+            <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
+            `,
           });
         } catch (err) {
           console.error("Error sending delegate email via Resend:", err);

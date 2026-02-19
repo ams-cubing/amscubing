@@ -47,6 +47,13 @@ export async function submitDateRequest(
       headers: headersList,
     });
 
+    if (!session || !session.user) {
+      return {
+        success: false,
+        message: "No autenticado",
+      };
+    }
+
     // Validate input
     const validatedData = dateRequestSchema.parse(data);
 
@@ -132,8 +139,7 @@ export async function submitDateRequest(
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-            requestedBy: session?.user?.wcaId!,
+            requestedBy: session?.user?.wcaId,
             startDate: startDateStr!,
             endDate: endDateStr!,
             statusPublic: "reserved",
@@ -173,8 +179,7 @@ export async function submitDateRequest(
           action: "create_competition",
           targetType: "competition",
           targetId: String(comp?.id),
-          // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-          actorId: session?.user.id!,
+          actorId: session?.user.id,
           details: validatedData,
         });
 
@@ -196,7 +201,7 @@ export async function submitDateRequest(
           html: `
           <p>Hola ${delegateInRegion?.name},</p>
           <p>Se te ha asignado como delegado para la competencia en ${newCompetition?.city} (${startDateStr} - ${endDateStr}).</p>
-          <p>Mira los detalles en el panel de competencias.</p>
+          <p><a href="${process.env.BETTER_AUTH_URL}/panel">Mira los detalles en el panel de competencias</a></p>
         `,
         });
       }
@@ -207,15 +212,14 @@ export async function submitDateRequest(
     try {
       await resend.emails.send({
         from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
-        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-        to: session?.user?.email!,
+        to: session?.user?.email,
         subject: `Fecha solicitada en ${newCompetition?.city} (${startDateStr} - ${endDateStr})`,
         html: `
           <p>Hola ${session?.user?.name},</p>
           <p>Tu solicitud de fecha para una competencia en ${newCompetition?.city} (${startDateStr} - ${endDateStr}) ha sido creada exitosamente.</p>
           <p>El delegado asignado es: ${delegateInRegion ? delegateInRegion?.name : "Aún no se ha asignado un delegado"}</p>
           <p>Puedes contactarlo en: ${delegateInRegion ? delegateInRegion?.email : "Pendiente"}</p>
-          <p>Revisa los detalles en el panel de competencias.</p>
+          <p><a href="${process.env.BETTER_AUTH_URL}/mis-competencias">Revisa los detalles aquí</a></p>
         `,
       });
     } catch (err) {
