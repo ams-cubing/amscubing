@@ -65,7 +65,7 @@ export function RegionMap({ regions }: RegionMapProps) {
     if (!feature?.properties?.id) return { fillColor: "#ccc", weight: 1 };
 
     // Extract state ID (remove "MX-" prefix)
-    const stateId = feature.properties.id.replace("MX-", "");
+    const stateId = feature.properties.id;
     const region = stateToRegion.get(stateId);
 
     return {
@@ -80,8 +80,8 @@ export function RegionMap({ regions }: RegionMapProps) {
   const onEachFeature = (feature: Feature, layer: Layer) => {
     if (!feature.properties) return;
 
-    const stateName = feature.properties.name;
-    const stateId = feature.properties.id.replace("MX-", "");
+    const stateName = feature.properties.state_name;
+    const stateId = feature.properties.id;
     const region = stateToRegion.get(stateId);
 
     // Tooltip on hover
@@ -164,7 +164,7 @@ export function RegionMap({ regions }: RegionMapProps) {
         center={[23.6345, -102.5528]}
         zoom={5}
         style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
