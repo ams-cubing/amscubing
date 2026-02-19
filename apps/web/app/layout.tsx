@@ -1,6 +1,7 @@
 import { Rubik, Geist_Mono } from "next/font/google";
 
 import "@workspace/ui/globals.css";
+import "leaflet/dist/leaflet.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
 import { Toaster } from "sonner";

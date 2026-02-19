@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
-import Image from "next/image";
+import { ClientMap } from "./_components/client-map";
 
 export default async function Page() {
   const delegates = await db.query.user.findMany({
@@ -30,6 +30,12 @@ export default async function Page() {
     },
   });
 
+  // Map delegates to their regions for the interactive map
+  const regionsWithDelegates = regions.map((region) => ({
+    ...region,
+    delegates: delegates.filter((d) => d.region?.id === region.id),
+  }));
+
   return (
     <main className="p-4 md:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
@@ -40,17 +46,7 @@ export default async function Page() {
           </p>
         </div>
 
-        <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
-          <div className="flex justify-center">
-            <Image
-              src="/mapa.png"
-              alt="Mapa de regiones en México"
-              width={736}
-              height={491}
-              className="rounded-lg shadow-md max-w-full h-auto"
-            />
-          </div>
-        </section>
+        <ClientMap regionsWithDelegates={regionsWithDelegates} />
 
         <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
           <h2 className="text-lg md:text-xl font-semibold mb-4">
