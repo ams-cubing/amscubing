@@ -80,6 +80,7 @@ export async function submitAvailability(data: { dates: Date[] }) {
       }
     });
 
+    revalidatePath("/panel/disponibilidad");
     revalidatePath("/solicitar-fecha");
 
     return {

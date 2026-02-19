@@ -242,6 +242,8 @@ export const availability = pgTable(
   ],
 );
 
+export type Availability = InferSelectModel<typeof availability>;
+
 export const holidays = pgTable("holiday", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -330,5 +332,12 @@ export const logsRelations = relations(logs, ({ one }) => ({
   actor: one(user, {
     fields: [logs.actorId],
     references: [user.id],
+  }),
+}));
+
+export const availabilityRelations = relations(availability, ({ one }) => ({
+  user: one(user, {
+    fields: [availability.userWcaId],
+    references: [user.wcaId],
   }),
 }));

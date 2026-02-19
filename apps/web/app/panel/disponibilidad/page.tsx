@@ -1,67 +1,58 @@
+import { AvailabilityCalendarTable } from "./_components/availability-calendar-table";
+import Link from "next/link";
+import { buttonVariants } from "@workspace/ui/components/button";
+import { Edit } from "lucide-react";
 import { db } from "@/db";
-import { AvailabilityForm } from "./_components/availability-form";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { user } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const availabilityDates = await db.query.availability.findMany({
-    where: (availability, { eq }) =>
-      eq(availability.userWcaId, session?.user.wcaId ?? ""),
+  const delegates = await db.query.user.findMany({
+    where: eq(user.role, "delegate"),
     columns: {
-      date: true,
+      wcaId: true,
+      name: true,
+      regionId: true,
     },
+    with: {
+      region: {
+        columns: {
+          displayName: true,
+        },
+      },
+      availability: {
+        columns: {
+          date: true,
+        },
+        orderBy: (availability, { asc }) => [asc(availability.date)],
+      },
+    },
+    orderBy: [asc(user.name)],
   });
-
-  // Query competitions where the current user is a delegate
-  const delegateCompetitionRows = await db.query.competitionDelegates.findMany({
-    where: (cd, { eq }) => eq(cd.delegateWcaId, session?.user.wcaId ?? ""),
-    columns: { competitionId: true },
-  });
-
-  const competitionIds = delegateCompetitionRows.map((r) => r.competitionId);
-
-  const delegateBusyCompetitions =
-    competitionIds.length > 0
-      ? await db.query.competitions.findMany({
-          where: (c, { inArray }) => inArray(c.id, competitionIds),
-          columns: {
-            startDate: true,
-            endDate: true,
-          },
-        })
-      : [];
-
-  const delegateBusyDaysSet = new Set<string>();
-  for (const comp of delegateBusyCompetitions) {
-    if (!comp?.startDate || !comp?.endDate) continue;
-    const start = new Date(comp.startDate);
-    const end = new Date(comp.endDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      delegateBusyDaysSet.add(d.toISOString().slice(0, 10));
-    }
-  }
-
-  const delegateBusyDays = Array.from(delegateBusyDaysSet).sort();
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Registrar Disponibilidad
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm md:text-base">
-            Complete el formulario para registrar su disponibilidad.
-          </p>
+      <div className="mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              Disponibilidad de Delegados
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm md:text-base">
+              Visualización de la disponibilidad de todos los delegados.
+            </p>
+          </div>
+          <Link
+            href="/panel/disponibilidad/actualizar"
+            className={buttonVariants({ variant: "default" })}
+          >
+            <Edit />
+            <span className="hidden md:inline">
+              Actualizar mi disponibilidad
+            </span>
+          </Link>
         </div>
-        <AvailabilityForm
-          availabilityDates={availabilityDates}
-          busyDays={delegateBusyDays}
-        />
+        <AvailabilityCalendarTable delegates={delegates} />
       </div>
     </main>
   );
