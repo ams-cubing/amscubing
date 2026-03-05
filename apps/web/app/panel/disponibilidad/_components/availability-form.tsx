@@ -20,7 +20,7 @@ import { submitAvailability } from "../_actions/submit-availability";
 import { addWeeks } from "date-fns";
 
 const availabilitySchema = z.object({
-  dates: z.array(z.date()).min(1, "Selecciona al menos una fecha"),
+  dates: z.array(z.date()),
 });
 
 type AvailabilityFormValues = z.infer<typeof availabilitySchema>;
@@ -119,10 +119,14 @@ export function AvailabilityForm({
           <div className="text-sm text-muted-foreground text-center">
             {form.watch("dates")?.length > 0
               ? `${form.watch("dates").length} fecha(s) seleccionada(s)`
-              : "Selecciona los días que estarás disponible"}
+              : "Sin fechas seleccionadas (se borrará tu disponibilidad)"}
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Guardando..." : "Registrar Disponibilidad"}
+            {isPending
+              ? "Guardando..."
+              : form.watch("dates")?.length === 0
+                ? "Borrar Disponibilidad"
+                : "Registrar Disponibilidad"}
           </Button>
         </div>
       </form>
