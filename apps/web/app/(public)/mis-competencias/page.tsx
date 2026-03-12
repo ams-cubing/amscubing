@@ -1,12 +1,4 @@
-import { db } from "@/db";
-import {
-  competitions,
-  states,
-  regions,
-  competitionDelegates,
-  competitionOrganizers,
-  user,
-} from "@/db/schema";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import {
   getPublicStatusColor,
@@ -15,11 +7,17 @@ import {
   formatInternalStatus,
 } from "@/lib/utils";
 import { cn } from "@workspace/ui/lib/utils";
-import { eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
+import {
+  getUserOrganizerCompetitionIds,
+  getUserCompetitions,
+  getDelegatesForCompetitions,
+  getOrganizersForCompetitions,
+} from "./_lib/queries";
+import Loading from "./loading";
 
-export default async function Page() {
+async function PageContent() {
   const headersList = await headers();
 
   const session = await auth.api.getSession({
@@ -30,13 +28,9 @@ export default async function Page() {
     unauthorized();
   }
 
-  // Get competition IDs where user is an organizer
-  const userOrganizerCompetitions = await db
-    .select({ competitionId: competitionOrganizers.competitionId })
-    .from(competitionOrganizers)
-    .where(eq(competitionOrganizers.organizerWcaId, session.user.wcaId));
-
-  const competitionIds = userOrganizerCompetitions.map((c) => c.competitionId);
+  const competitionIds = await getUserOrganizerCompetitionIds(
+    session.user.wcaId,
+  );
 
   if (competitionIds.length === 0) {
     return (
@@ -58,47 +52,11 @@ export default async function Page() {
     );
   }
 
-  const userCompetitions = await db
-    .select({
-      id: competitions.id,
-      name: competitions.name,
-      city: competitions.city,
-      startDate: competitions.startDate,
-      endDate: competitions.endDate,
-      trelloUrl: competitions.trelloUrl,
-      statusPublic: competitions.statusPublic,
-      statusInternal: competitions.statusInternal,
-      stateName: states.name,
-      regionName: regions.displayName,
-    })
-    .from(competitions)
-    .leftJoin(states, eq(competitions.stateId, states.id))
-    .leftJoin(regions, eq(states.regionId, regions.id))
-    .where(inArray(competitions.id, competitionIds));
-
-  // Fetch delegates for each competition
-  const delegates = await db
-    .select({
-      competitionId: competitionDelegates.competitionId,
-      delegateName: user.name,
-      delegateWcaId: user.wcaId,
-      isPrimary: competitionDelegates.isPrimary,
-    })
-    .from(competitionDelegates)
-    .leftJoin(user, eq(competitionDelegates.delegateWcaId, user.wcaId))
-    .where(inArray(competitionDelegates.competitionId, competitionIds));
-
-  // Fetch organizers for each competition
-  const organizers = await db
-    .select({
-      competitionId: competitionOrganizers.competitionId,
-      organizerName: user.name,
-      organizerWcaId: user.wcaId,
-      isPrimary: competitionOrganizers.isPrimary,
-    })
-    .from(competitionOrganizers)
-    .leftJoin(user, eq(competitionOrganizers.organizerWcaId, user.wcaId))
-    .where(inArray(competitionOrganizers.competitionId, competitionIds));
+  const [userCompetitions, delegates, organizers] = await Promise.all([
+    getUserCompetitions(competitionIds),
+    getDelegatesForCompetitions(competitionIds),
+    getOrganizersForCompetitions(competitionIds),
+  ]);
 
   // Group delegates by competition
   const delegatesByCompetition = delegates.reduce(
@@ -237,5 +195,13 @@ export default async function Page() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <PageContent />
+    </Suspense>
   );
 }

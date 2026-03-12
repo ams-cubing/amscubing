@@ -1,12 +1,17 @@
-import { availability, regions, states, user } from "@/db/schema";
+import { Suspense } from "react";
 import { DateRequestForm } from "./_components/date-request-form";
-import { db } from "@/db";
-import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { formatDistance } from "date-fns";
 import { es } from "date-fns/locale";
 import { headers } from "next/headers";
 import { Mail } from "lucide-react";
+import {
+  getRecentRequestsCount,
+  getDelegatesForState,
+  getAvailabilityForState,
+  getRegionForState,
+} from "./_lib/queries";
+import Loading from "./loading";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -14,7 +19,11 @@ interface PageProps {
   }>;
 }
 
-export default async function Page(props: PageProps) {
+async function PageContent({
+  searchParams,
+}: {
+  searchParams: PageProps["searchParams"];
+}) {
   const headersList = await headers();
 
   const session = await auth.api.getSession({
@@ -35,16 +44,9 @@ export default async function Page(props: PageProps) {
     );
   }
 
-  const recentRequestsCount = await db.query.competitions.findMany({
-    where: (competitions, { and, gte, eq }) =>
-      and(
-        eq(competitions.requestedBy, session.user.wcaId),
-        gte(
-          competitions.createdAt,
-          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        ),
-      ),
-  });
+  const recentRequestsCount = await getRecentRequestsCount(
+    session.user.wcaId,
+  );
 
   const MAX_REQUESTS_PER_WEEK = 3;
   const canSubmit = recentRequestsCount.length < MAX_REQUESTS_PER_WEEK;
@@ -86,56 +88,20 @@ export default async function Page(props: PageProps) {
     );
   }
 
-  const searchParams = await props.searchParams;
-
-  const stateFilter = searchParams?.estado;
+  const resolvedSearchParams = await searchParams;
+  const stateFilter = resolvedSearchParams?.estado;
 
   const delegates = stateFilter
-    ? await db
-        .select({
-          name: user.name,
-          email: user.email,
-        })
-        .from(user)
-        .innerJoin(regions, eq(user.regionId, regions.id))
-        .innerJoin(states, eq(regions.id, states.regionId))
-        .where(eq(states.id, stateFilter))
+    ? await getDelegatesForState(stateFilter)
     : [];
 
   const availabilityData = stateFilter
-    ? delegates.length > 0
-      ? await db
-          .select({
-            date: availability.date,
-          })
-          .from(availability)
-          .innerJoin(user, eq(availability.userWcaId, user.wcaId))
-          .innerJoin(regions, eq(user.regionId, regions.id))
-          .innerJoin(states, eq(regions.id, states.regionId))
-          .where(eq(states.id, stateFilter))
-          .orderBy(availability.date)
-          .groupBy(availability.date)
-      : await db
-          .select({
-            date: availability.date,
-          })
-          .from(availability)
-          .orderBy(availability.date)
-          .groupBy(availability.date)
+    ? await getAvailabilityForState(stateFilter, delegates.length > 0)
     : [];
 
-  const regionsData = stateFilter
-    ? await db
-        .select({
-          regionName: regions.displayName,
-        })
-        .from(regions)
-        .innerJoin(states, eq(regions.id, states.regionId))
-        .where(eq(states.id, stateFilter))
-        .limit(1)
-    : [];
-
-  const regionName = regionsData.length > 0 ? regionsData[0]?.regionName : null;
+  const regionName = stateFilter
+    ? await getRegionForState(stateFilter)
+    : null;
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -205,5 +171,13 @@ export default async function Page(props: PageProps) {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Page(props: PageProps) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <PageContent searchParams={props.searchParams} />
+    </Suspense>
   );
 }

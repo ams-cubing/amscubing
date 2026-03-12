@@ -102,7 +102,8 @@ export function DateRequestForm({
   if (maxDate) maxDate.setHours(0, 0, 0, 0);
 
   const form = useForm<DateRequestFormValues>({
-    resolver: zodResolver(dateRequestSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(dateRequestSchema as any),
     defaultValues: {
       city: "",
       stateId: state || "",

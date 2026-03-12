@@ -37,7 +37,8 @@ export function AvailabilityForm({
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<AvailabilityFormValues>({
-    resolver: zodResolver(availabilitySchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(availabilitySchema as any),
     defaultValues: {
       dates: availabilityDates.map((d) => {
         const [year, month, day] = d.date.split("-").map(Number);

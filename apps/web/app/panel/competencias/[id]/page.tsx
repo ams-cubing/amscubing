@@ -1,43 +1,28 @@
-import { db } from "@/db";
+import { Suspense } from "react";
 import { CompetitionForm } from "../_components/competition-form";
 import { notFound } from "next/navigation";
 import { DeleteCompetitionDialog } from "../_components/delete-competition";
 import { formatAction } from "@/lib/utils";
 import { DetailsDialog } from "./_components/details-dialog";
+import {
+  getCompetitionWithRelations,
+  getAllDelegates,
+  getCompetitionLogs,
+} from "./_lib/queries";
 
 type Params = Promise<{ id: string }>;
 
-export default async function Page({
-  params,
-}: {
-  params: Params;
-}): Promise<React.JSX.Element> {
+async function PageContent({ params }: { params: Params }): Promise<React.JSX.Element> {
   const { id } = await params;
 
-  const competition = await db.query.competitions.findFirst({
-    where: (competition, { eq }) => eq(competition.id, Number(id)),
-    with: {
-      delegates: {
-        with: {
-          delegate: true,
-        },
-      },
-      organizers: {
-        with: {
-          organizer: true,
-        },
-      },
-    },
-  });
+  const [competition, delegates] = await Promise.all([
+    getCompetitionWithRelations(Number(id)),
+    getAllDelegates(),
+  ]);
 
   if (!competition) {
     notFound();
   }
-
-  const delegates = await db.query.user.findMany({
-    where: (user, { eq }) => eq(user.role, "delegate"),
-    orderBy: (user, { asc }) => asc(user.name),
-  });
 
   const formattedCompetition = {
     ...competition,
@@ -51,11 +36,7 @@ export default async function Page({
     })),
   };
 
-  const competitionLogs = await db.query.logs.findMany({
-    where: (log, { eq }) => eq(log.targetId, String(competition.id)),
-    with: { actor: true },
-    orderBy: (log, { desc }) => desc(log.createdAt),
-  });
+  const competitionLogs = await getCompetitionLogs(competition.id);
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -103,5 +84,13 @@ export default async function Page({
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Page({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={null}>
+      <PageContent params={params} />
+    </Suspense>
   );
 }

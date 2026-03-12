@@ -1,12 +1,10 @@
 import { db } from "@/db";
 import { CompetitionForm } from "../_components/competition-form";
 import { Suspense } from "react";
+import { getDelegates } from "./_lib/queries";
 
-export default async function Page() {
-  const delegates = await db.query.user.findMany({
-    where: (user, { eq }) => eq(user.role, "delegate"),
-    orderBy: (user, { asc }) => asc(user.name),
-  });
+async function PageContent() {
+  const delegates = await getDelegates();
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -24,5 +22,13 @@ export default async function Page() {
         </Suspense>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <PageContent />
+    </Suspense>
   );
 }

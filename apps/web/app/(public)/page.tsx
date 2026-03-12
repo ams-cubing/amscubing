@@ -1,11 +1,15 @@
-import { db } from "@/db";
-import { eq, asc } from "drizzle-orm";
+import { Suspense } from "react";
 import { CalendarView } from "./_components/calendar-view";
 import { RegionFilter } from "./_components/region-filter";
-import { availability, competitions, regions, states, user } from "@/db/schema";
 import { SemaphoreLegend } from "./_components/semaphore-legend";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import {
+  getCompetitionsForRegion,
+  getAvailabilityDates,
+  getHolidays,
+  getRegions,
+} from "./_lib/queries";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -13,57 +17,23 @@ interface PageProps {
   }>;
 }
 
-export default async function Page(props: PageProps) {
-  const searchParams = await props.searchParams;
+async function PageContent({
+  searchParams,
+}: {
+  searchParams: PageProps["searchParams"];
+}) {
+  const resolvedSearchParams = await searchParams;
+  const regionFilter = resolvedSearchParams?.region;
 
-  const regionFilter = searchParams?.region;
-
-  const compsRaw = await db
-    .select()
-    .from(competitions)
-    .innerJoin(states, eq(competitions.stateId, states.id))
-    .innerJoin(regions, eq(states.regionId, regions.id))
-    .where(regionFilter ? eq(regions.id, regionFilter) : undefined)
-    .orderBy(asc(competitions.startDate));
-
-  const comps = compsRaw.map((row) => {
-    const c = row.competition;
-    const s = row.state;
-    const r = row.region;
-
-    return {
-      ...c,
-      state: {
-        ...s,
-        region: {
-          ...r,
-        },
-      },
-    };
-  });
-
-  const avail = await db
-    .selectDistinct({
-      date: availability.date,
-    })
-    .from(availability)
-    .innerJoin(user, eq(availability.userWcaId, user.wcaId))
-    .innerJoin(regions, eq(user.regionId, regions.id))
-    .innerJoin(states, eq(regions.id, states.regionId))
-    .where(regionFilter ? eq(regions.id, regionFilter) : undefined)
-    .orderBy(asc(availability.date));
-
-  const holidays = await db.query.holidays.findMany();
-
-  const reg = await db.query.regions.findMany({
-    orderBy: (t, { asc }) => [asc(t.displayName)],
-  });
+  const [comps, avail, holidays, reg] = await Promise.all([
+    getCompetitionsForRegion(regionFilter),
+    getAvailabilityDates(regionFilter),
+    getHolidays(),
+    getRegions(),
+  ]);
 
   const headersList = await headers();
-
-  const session = await auth.api.getSession({
-    headers: headersList,
-  });
+  const session = await auth.api.getSession({ headers: headersList });
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -78,5 +48,13 @@ export default async function Page(props: PageProps) {
         <SemaphoreLegend />
       </div>
     </main>
+  );
+}
+
+export default function Page(props: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <PageContent searchParams={props.searchParams} />
+    </Suspense>
   );
 }

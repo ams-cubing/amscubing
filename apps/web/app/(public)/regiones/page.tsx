@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { Suspense } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -13,22 +13,13 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { ClientMap } from "./_components/client-map";
+import { getDelegatesWithRegions, getRegionsWithStates } from "./_lib/queries";
 
-export default async function Page() {
-  const delegates = await db.query.user.findMany({
-    orderBy: (t, { asc }) => [asc(t.name)],
-    where: (t, { eq }) => eq(t.role, "delegate"),
-    with: {
-      region: true,
-    },
-  });
-
-  const regions = await db.query.regions.findMany({
-    orderBy: (t, { asc }) => [asc(t.displayName)],
-    with: {
-      states: true,
-    },
-  });
+async function PageContent() {
+  const [delegates, regions] = await Promise.all([
+    getDelegatesWithRegions(),
+    getRegionsWithStates(),
+  ]);
 
   // Map delegates to their regions for the interactive map
   const regionsWithDelegates = regions.map((region) => ({
@@ -139,5 +130,13 @@ export default async function Page() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <PageContent />
+    </Suspense>
   );
 }

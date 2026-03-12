@@ -1,23 +1,20 @@
-import { db } from "@/db";
-import { DataTable } from "./_components/data-table";
+import { searchParamsCache } from "./_lib/validations";
+import type { SearchParams } from "@/types";
+import {
+  getCompetitions,
+  getCompetitionStatusInternalCounts,
+  getCompetitionStatusPublicCounts,
+} from "./_lib/queries";
+import { getValidFilters } from "@workspace/ui/lib/data-table";
+import { CompetitionsTable } from "./_components/competitions-data-table";
+import { Suspense } from "react";
+import { DataTableSkeleton } from "@workspace/ui/components/data-table/data-table-skeleton";
 
-export default async function Page() {
-  const allComps = await db.query.competitions.findMany({
-    orderBy: (t, { asc }) => [asc(t.startDate)],
-    with: {
-      state: {
-        with: {
-          region: true,
-        },
-      },
-      delegates: {
-        with: {
-          delegate: true,
-        },
-      },
-    },
-  });
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
 
+export default function Page(props: PageProps) {
   return (
     <div className="p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
@@ -30,8 +27,45 @@ export default async function Page() {
           </p>
         </div>
 
-        <DataTable data={allComps} />
+        <Suspense
+          fallback={
+            <DataTableSkeleton
+              columnCount={7}
+              filterCount={2}
+              cellWidths={[
+                "10rem",
+                "30rem",
+                "10rem",
+                "10rem",
+                "6rem",
+                "6rem",
+                "6rem",
+              ]}
+              shrinkZero
+            />
+          }
+        >
+          <CompetitionsTableWrapper {...props} />
+        </Suspense>
       </div>
     </div>
   );
+}
+
+async function CompetitionsTableWrapper(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const search = searchParamsCache.parse(searchParams);
+
+  const validFilters = getValidFilters(search.filters);
+
+  const promises = Promise.all([
+    getCompetitions({
+      ...search,
+      filters: validFilters,
+    }),
+    getCompetitionStatusPublicCounts(),
+    getCompetitionStatusInternalCounts(),
+  ]);
+
+  return <CompetitionsTable promises={promises} />;
 }

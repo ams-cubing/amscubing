@@ -187,7 +187,8 @@ export function CompetitionForm({
 
   const form = useForm<CompetitionFormValues>({
     resolver: zodResolver(
-      competitionSchema,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      competitionSchema as any,
     ) as unknown as Resolver<CompetitionFormValues>,
     defaultValues: competition
       ? {
