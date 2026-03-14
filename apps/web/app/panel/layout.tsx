@@ -1,12 +1,9 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+async function PanelGuard({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
 
   const session = await auth.api.getSession({
@@ -17,5 +14,19 @@ export default async function Layout({
     unauthorized();
   }
 
-  return <main className="p-6">{children}</main>;
+  return <>{children}</>;
+}
+
+export default function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="p-6">
+      <Suspense>
+        <PanelGuard>{children}</PanelGuard>
+      </Suspense>
+    </main>
+  );
 }

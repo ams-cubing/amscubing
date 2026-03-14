@@ -1,4 +1,5 @@
 import { Rubik, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 
 import "@workspace/ui/globals.css";
 import "leaflet/dist/leaflet.css";
@@ -44,11 +45,7 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+async function AppSidebarWrapper() {
   const headersList = await headers();
 
   const session = await auth.api.getSession({
@@ -66,6 +63,14 @@ export default async function RootLayout({
       }
     : undefined;
 
+  return <AppSidebar user={normalizedUser} />;
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="es" suppressHydrationWarning>
       <body
@@ -73,7 +78,9 @@ export default async function RootLayout({
       >
         <Providers>
           <SidebarProvider>
-            <AppSidebar user={normalizedUser} />
+            <Suspense fallback={<AppSidebar user={undefined} />}>
+              <AppSidebarWrapper />
+            </Suspense>
             <SidebarInset>
               <Header />
               <div className="flex flex-1 flex-col">
@@ -81,7 +88,9 @@ export default async function RootLayout({
                   {children}
                 </div>
               </div>
-              <Footer />
+              <Suspense>
+                <Footer />
+              </Suspense>
             </SidebarInset>
           </SidebarProvider>
           <Analytics />
