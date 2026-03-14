@@ -17,11 +17,13 @@ import {
 } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
-import { competitions, states } from "@/db/schema";
+import { competitionDelegates, competitions, states, user } from "@/db/schema";
 
 import { filterColumns } from "@/lib/filter-columns";
 
 import type { GetCompetitionsSchema } from "./validations";
+
+const DELEGATES_UNASSIGNED_VALUE = "__unassigned__";
 
 export async function getCompetitions(input: GetCompetitionsSchema) {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
@@ -39,10 +41,48 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
       joinOperator: input.joinOperator,
     });
 
+    const selectedDelegateWcaIds = input.delegates.filter(
+      (value) => value !== DELEGATES_UNASSIGNED_VALUE,
+    );
+    const delegateValueLiterals = selectedDelegateWcaIds.map(
+      (wcaId) => sql`${wcaId}`,
+    );
+    const includeUnassignedDelegates = input.delegates.includes(
+      DELEGATES_UNASSIGNED_VALUE,
+    );
+
+    const delegatesWhere =
+      input.delegates.length === 0
+        ? undefined
+        : sql`
+            (
+              ${selectedDelegateWcaIds.length > 0
+                ? sql`
+                    EXISTS (
+                      SELECT 1
+                      FROM competition_delegate cd
+                      WHERE cd.competition_id = ${competitions.id}
+                        AND cd.delegate_wca_id IN (${sql.join(delegateValueLiterals, sql`, `)})
+                    )
+                  `
+                : sql`FALSE`}
+              ${includeUnassignedDelegates
+                ? sql`
+                    OR NOT EXISTS (
+                      SELECT 1
+                      FROM competition_delegate cd_unassigned
+                      WHERE cd_unassigned.competition_id = ${competitions.id}
+                    )
+                  `
+                : sql``}
+            )
+          `;
+
     const where = advancedTable
       ? advancedWhere
       : and(
           input.name ? ilike(competitions.name, `%${input.name}%`) : undefined,
+          delegatesWhere,
           input.state.length > 0
             ? inArray(states.name, input.state)
             : undefined,
@@ -258,5 +298,53 @@ export async function getCompetitionStateCounts() {
       );
   } catch {
     return {};
+  }
+}
+
+export interface CompetitionDelegateFilterCount {
+  wcaId: string;
+  name: string;
+  count: number;
+}
+
+export async function getCompetitionDelegatesCounts() {
+  cacheLife("hours");
+  cacheTag("competition-delegates-counts");
+
+  try {
+    const delegateCounts = await db
+      .select({
+        wcaId: competitionDelegates.delegateWcaId,
+        name: user.name,
+        count: count(),
+      })
+      .from(competitionDelegates)
+      .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
+      .groupBy(competitionDelegates.delegateWcaId, user.name)
+      .having(gt(count(), 0));
+
+    const unassigned = await db
+      .select({
+        count: count(),
+      })
+      .from(competitions)
+      .where(sql`
+        NOT EXISTS (
+          SELECT 1
+          FROM competition_delegate cd
+          WHERE cd.competition_id = ${competitions.id}
+        )
+      `)
+      .then((res) => res[0]?.count ?? 0);
+
+    return {
+      delegates: delegateCounts,
+      unassigned,
+    };
+  } catch {
+    return {
+      delegates: [] as CompetitionDelegateFilterCount[],
+      unassigned: 0,
+    };
   }
 }

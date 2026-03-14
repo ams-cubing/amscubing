@@ -35,12 +35,23 @@ import { useState } from "react";
 import { UltimatumDialog } from "./ultimatum-dialog";
 
 interface GetCompetitionsTableColumnsProps {
+  delegatesCounts: {
+    delegates: {
+      wcaId: string;
+      name: string;
+      count: number;
+    }[];
+    unassigned: number;
+  };
   stateCounts: Record<string, number>;
   statusPublicCounts: Record<CompetitionRow["statusPublic"], number>;
   statusInternalCounts: Record<CompetitionRow["statusInternal"], number>;
 }
 
+const UNASSIGNED_DELEGATE_VALUE = "__unassigned__";
+
 export function getCompetitionsTableColumns({
+  delegatesCounts,
   stateCounts,
   statusPublicCounts,
   statusInternalCounts,
@@ -256,6 +267,26 @@ export function getCompetitionsTableColumns({
           </AvatarGroup>
         );
       },
+      meta: {
+        label: "Delegados",
+        variant: "multiSelect",
+        options: [
+          ...delegatesCounts.delegates
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name, "es"))
+            .map((delegate) => ({
+              label: delegate.name,
+              value: delegate.wcaId,
+              count: delegate.count,
+            })),
+          {
+            label: "Sin asignar",
+            value: UNASSIGNED_DELEGATE_VALUE,
+            count: delegatesCounts.unassigned,
+          },
+        ],
+      },
+      enableColumnFilter: true,
     },
     {
       accessorKey: "trelloAssignedAt",

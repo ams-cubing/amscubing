@@ -11,6 +11,7 @@ import { useDataTable } from "@workspace/ui/hooks/use-data-table";
 import type { QueryKeys } from "@workspace/ui/types/data-table";
 import type {
   getCompetitions,
+  getCompetitionDelegatesCounts,
   getCompetitionStateCounts,
   getCompetitionStatusPublicCounts,
   getCompetitionStatusInternalCounts,
@@ -27,6 +28,7 @@ interface CompetitionsTableProps {
   promises: Promise<
     [
       Awaited<ReturnType<typeof getCompetitions>>,
+      Awaited<ReturnType<typeof getCompetitionDelegatesCounts>>,
       Awaited<ReturnType<typeof getCompetitionStateCounts>>,
       Awaited<ReturnType<typeof getCompetitionStatusPublicCounts>>,
       Awaited<ReturnType<typeof getCompetitionStatusInternalCounts>>,
@@ -41,17 +43,24 @@ export function CompetitionsTable({
 }: CompetitionsTableProps) {
   // const { enableAdvancedFilter, filterFlag } = useFeatureFlags();
 
-  const [{ data, pageCount }, stateCounts, statusPublicCounts, statusInternalCounts] =
+  const [
+    { data, pageCount },
+    delegatesCounts,
+    stateCounts,
+    statusPublicCounts,
+    statusInternalCounts,
+  ] =
     React.use(promises);
 
   const columns = React.useMemo(
     () =>
       getCompetitionsTableColumns({
+        delegatesCounts,
         stateCounts,
         statusPublicCounts,
         statusInternalCounts,
       }),
-    [stateCounts, statusPublicCounts, statusInternalCounts],
+    [delegatesCounts, stateCounts, statusPublicCounts, statusInternalCounts],
   );
 
   const isMobile = useIsMobile();

@@ -2,6 +2,7 @@ import { searchParamsCache } from "./_lib/validations";
 import type { SearchParams } from "@/types";
 import {
   getCompetitions,
+  getCompetitionDelegatesCounts,
   getCompetitionStateCounts,
   getCompetitionStatusInternalCounts,
   getCompetitionStatusPublicCounts,
@@ -64,6 +65,7 @@ async function CompetitionsTableWrapper(props: PageProps) {
       ...search,
       filters: validFilters,
     }),
+    getCompetitionDelegatesCounts(),
     getCompetitionStateCounts(),
     getCompetitionStatusPublicCounts(),
     getCompetitionStatusInternalCounts(),
