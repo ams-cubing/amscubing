@@ -1,7 +1,13 @@
 import "server-only";
 
 import { db } from "@/db";
-import { logs, user, competitions, type User, type Competition } from "@/db/schema";
+import {
+  logs,
+  user,
+  competitions,
+  type User,
+  type Competition,
+} from "@/db/schema";
 import { desc, eq, inArray } from "drizzle-orm";
 
 export async function getActivityLogs() {

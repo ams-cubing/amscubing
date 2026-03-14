@@ -187,11 +187,7 @@ export function UltimatumDialog({
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={pending}
-                className="min-w-30"
-              >
+              <Button type="submit" disabled={pending} className="min-w-30">
                 {pending ? "Enviando..." : "Enviar ultimátum"}
               </Button>
             </div>

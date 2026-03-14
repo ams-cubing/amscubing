@@ -25,11 +25,23 @@ import type { GetCompetitionsSchema } from "./validations";
 
 const DELEGATES_UNASSIGNED_VALUE = "__unassigned__";
 
+function getTodayDateString() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date.toISOString().split("T")[0] ?? "";
+}
+
+function getUpcomingCompetitionsWhere(includePast: boolean) {
+  if (includePast) return undefined;
+  return gte(competitions.endDate, getTodayDateString());
+}
+
 export async function getCompetitions(input: GetCompetitionsSchema) {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
   cacheTag("competitions");
 
   try {
+    const upcomingWhere = getUpcomingCompetitionsWhere(input.includePast);
     const offset = (input.page - 1) * input.perPage;
     const advancedTable =
       input.filterFlag === "advancedFilters" ||
@@ -56,8 +68,9 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
         ? undefined
         : sql`
             (
-              ${selectedDelegateWcaIds.length > 0
-                ? sql`
+              ${
+                selectedDelegateWcaIds.length > 0
+                  ? sql`
                     EXISTS (
                       SELECT 1
                       FROM competition_delegate cd
@@ -65,22 +78,26 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                         AND cd.delegate_wca_id IN (${sql.join(delegateValueLiterals, sql`, `)})
                     )
                   `
-                : sql`FALSE`}
-              ${includeUnassignedDelegates
-                ? sql`
+                  : sql`FALSE`
+              }
+              ${
+                includeUnassignedDelegates
+                  ? sql`
                     OR NOT EXISTS (
                       SELECT 1
                       FROM competition_delegate cd_unassigned
                       WHERE cd_unassigned.competition_id = ${competitions.id}
                     )
                   `
-                : sql``}
+                  : sql``
+              }
             )
           `;
 
     const where = advancedTable
-      ? advancedWhere
+      ? and(upcomingWhere, advancedWhere)
       : and(
+          upcomingWhere,
           input.name ? ilike(competitions.name, `%${input.name}%`) : undefined,
           delegatesWhere,
           input.state.length > 0
@@ -130,11 +147,18 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
     const { data, total } = await db.transaction(async (tx) => {
       const data = await tx
         .select({
-            id: competitions.id,
-            name: competitions.name,
-            city: competitions.city,
-            state: states.name,
-            delegates: sql<{ wcaId: string; name: string; image: string | null; isPrimary: boolean }[]>`
+          id: competitions.id,
+          name: competitions.name,
+          city: competitions.city,
+          state: states.name,
+          delegates: sql<
+            {
+              wcaId: string;
+              name: string;
+              image: string | null;
+              isPrimary: boolean;
+            }[]
+          >`
               COALESCE(
                 (SELECT json_agg(json_build_object(
                   'wcaId', u.wca_id,
@@ -148,19 +172,19 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                 '[]'::json
               )
             `,
-            requestedBy: competitions.requestedBy,
-            trelloUrl: competitions.trelloUrl,
-            wcaCompetitionUrl: competitions.wcaCompetitionUrl,
-            startDate: competitions.startDate,
-            endDate: competitions.endDate,
-            capacity: competitions.capacity,
-            statusPublic: competitions.statusPublic,
-            statusInternal: competitions.statusInternal,
-            notes: competitions.notes,
-            trelloAssignedAt: competitions.trelloAssignedAt,
-            ultimatumSetTo: competitions.ultimatumSetTo,
-            createdAt: competitions.createdAt,
-            updatedAt: competitions.updatedAt,
+          requestedBy: competitions.requestedBy,
+          trelloUrl: competitions.trelloUrl,
+          wcaCompetitionUrl: competitions.wcaCompetitionUrl,
+          startDate: competitions.startDate,
+          endDate: competitions.endDate,
+          capacity: competitions.capacity,
+          statusPublic: competitions.statusPublic,
+          statusInternal: competitions.statusInternal,
+          notes: competitions.notes,
+          trelloAssignedAt: competitions.trelloAssignedAt,
+          ultimatumSetTo: competitions.ultimatumSetTo,
+          createdAt: competitions.createdAt,
+          updatedAt: competitions.updatedAt,
         })
         .from(competitions)
         .innerJoin(states, eq(states.id, competitions.stateId))
@@ -192,17 +216,20 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
   }
 }
 
-export async function getCompetitionStatusPublicCounts() {
+export async function getCompetitionStatusPublicCounts(includePast = false) {
   cacheLife("hours");
   cacheTag("competition-public-status-counts");
 
   try {
+    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
+
     return await db
       .select({
         statusPublic: competitions.statusPublic,
         count: count(),
       })
       .from(competitions)
+      .where(upcomingWhere)
       .groupBy(competitions.statusPublic)
       .having(gt(count(competitions.statusPublic), 0))
       .then((res) =>
@@ -233,17 +260,20 @@ export async function getCompetitionStatusPublicCounts() {
   }
 }
 
-export async function getCompetitionStatusInternalCounts() {
+export async function getCompetitionStatusInternalCounts(includePast = false) {
   cacheLife("hours");
   cacheTag("competition-status-internal-counts");
 
   try {
+    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
+
     return await db
       .select({
         statusInternal: competitions.statusInternal,
         count: count(),
       })
       .from(competitions)
+      .where(upcomingWhere)
       .groupBy(competitions.statusInternal)
       .having(gt(count(), 0))
       .then((res) =>
@@ -276,11 +306,13 @@ export async function getCompetitionStatusInternalCounts() {
   }
 }
 
-export async function getCompetitionStateCounts() {
+export async function getCompetitionStateCounts(includePast = false) {
   cacheLife("hours");
   cacheTag("competition-state-counts");
 
   try {
+    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
+
     return await db
       .select({
         state: states.name,
@@ -288,6 +320,7 @@ export async function getCompetitionStateCounts() {
       })
       .from(competitions)
       .innerJoin(states, eq(states.id, competitions.stateId))
+      .where(upcomingWhere)
       .groupBy(states.name)
       .having(gt(count(), 0))
       .then((res) =>
@@ -307,11 +340,13 @@ export interface CompetitionDelegateFilterCount {
   count: number;
 }
 
-export async function getCompetitionDelegatesCounts() {
+export async function getCompetitionDelegatesCounts(includePast = false) {
   cacheLife("hours");
   cacheTag("competition-delegates-counts");
 
   try {
+    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
+
     const delegateCounts = await db
       .select({
         wcaId: competitionDelegates.delegateWcaId,
@@ -319,7 +354,12 @@ export async function getCompetitionDelegatesCounts() {
         count: count(),
       })
       .from(competitionDelegates)
+      .innerJoin(
+        competitions,
+        eq(competitions.id, competitionDelegates.competitionId),
+      )
       .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
+      .where(upcomingWhere)
       .groupBy(competitionDelegates.delegateWcaId, user.name)
       .having(gt(count(), 0));
 
@@ -328,13 +368,18 @@ export async function getCompetitionDelegatesCounts() {
         count: count(),
       })
       .from(competitions)
-      .where(sql`
-        NOT EXISTS (
-          SELECT 1
-          FROM competition_delegate cd
-          WHERE cd.competition_id = ${competitions.id}
-        )
-      `)
+      .where(
+        and(
+          upcomingWhere,
+          sql`
+            NOT EXISTS (
+              SELECT 1
+              FROM competition_delegate cd
+              WHERE cd.competition_id = ${competitions.id}
+            )
+          `,
+        ),
+      )
       .then((res) => res[0]?.count ?? 0);
 
     return {

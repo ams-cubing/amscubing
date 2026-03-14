@@ -44,9 +44,7 @@ async function PageContent({
     );
   }
 
-  const recentRequestsCount = await getRecentRequestsCount(
-    session.user.wcaId,
-  );
+  const recentRequestsCount = await getRecentRequestsCount(session.user.wcaId);
 
   const MAX_REQUESTS_PER_WEEK = 3;
   const canSubmit = recentRequestsCount.length < MAX_REQUESTS_PER_WEEK;
@@ -91,17 +89,13 @@ async function PageContent({
   const resolvedSearchParams = await searchParams;
   const stateFilter = resolvedSearchParams?.estado;
 
-  const delegates = stateFilter
-    ? await getDelegatesForState(stateFilter)
-    : [];
+  const delegates = stateFilter ? await getDelegatesForState(stateFilter) : [];
 
   const availabilityData = stateFilter
     ? await getAvailabilityForState(stateFilter, delegates.length > 0)
     : [];
 
-  const regionName = stateFilter
-    ? await getRegionForState(stateFilter)
-    : null;
+  const regionName = stateFilter ? await getRegionForState(stateFilter) : null;
 
   return (
     <main className="p-4 md:p-6 lg:p-8">

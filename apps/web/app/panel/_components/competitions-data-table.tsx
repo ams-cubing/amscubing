@@ -23,6 +23,9 @@ import Link from "next/link";
 import { buttonVariants } from "@workspace/ui/components/button";
 import { PlusCircle } from "lucide-react";
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
+import { Switch } from "@workspace/ui/components/switch";
+import { Label } from "@workspace/ui/components/label";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 interface CompetitionsTableProps {
   promises: Promise<
@@ -35,11 +38,13 @@ interface CompetitionsTableProps {
     ]
   >;
   queryKeys?: Partial<QueryKeys>;
+  includePast: boolean;
 }
 
 export function CompetitionsTable({
   promises,
   queryKeys,
+  includePast,
 }: CompetitionsTableProps) {
   // const { enableAdvancedFilter, filterFlag } = useFeatureFlags();
 
@@ -49,8 +54,7 @@ export function CompetitionsTable({
     stateCounts,
     statusPublicCounts,
     statusInternalCounts,
-  ] =
-    React.use(promises);
+  ] = React.use(promises);
 
   const columns = React.useMemo(
     () =>
@@ -64,6 +68,27 @@ export function CompetitionsTable({
   );
 
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const handleIncludePastChange = React.useCallback(
+    (checked: boolean) => {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+
+      if (checked) {
+        params.set("includePast", "true");
+      } else {
+        params.delete("includePast");
+      }
+
+      params.delete("page");
+
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`);
+    },
+    [pathname, router, searchParams],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { table, shallow, debounceMs, throttleMs } = useDataTable({
@@ -84,7 +109,7 @@ export function CompetitionsTable({
   return (
     <DataTable
       table={table}
-    // actionBar={<TasksTableActionBar table={table} />}
+      // actionBar={<TasksTableActionBar table={table} />}
     >
       {/* {enableAdvancedFilter ? (
         <DataTableAdvancedToolbar table={table}>
@@ -109,6 +134,16 @@ export function CompetitionsTable({
       ) : ( */}
       <DataTableToolbar table={table}>
         {/* <DataTableSortList table={table} align="end" /> */}
+        <div className="flex items-center gap-2">
+          <Switch
+            id="include-past-competitions"
+            checked={includePast}
+            onCheckedChange={handleIncludePastChange}
+          />
+          <Label htmlFor="include-past-competitions" className="text-sm">
+            Mostrar pasadas
+          </Label>
+        </div>
         <Link
           href="/panel/competencias/nueva"
           className={buttonVariants({

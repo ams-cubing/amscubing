@@ -3,7 +3,13 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, CircleDashed, Ellipsis, MapPin, Text } from "lucide-react";
+import {
+  ArrowUpDown,
+  CircleDashed,
+  Ellipsis,
+  MapPin,
+  Text,
+} from "lucide-react";
 import * as React from "react";
 import { DataTableColumnHeader } from "@workspace/ui/components/data-table/data-table-column-header";
 import { Badge } from "@workspace/ui/components/badge";
@@ -19,7 +25,9 @@ import {
 import { competitions } from "@/db/schema";
 import type { getCompetitions } from "../_lib/queries";
 
-type CompetitionRow = Awaited<ReturnType<typeof getCompetitions>>["data"][number];
+type CompetitionRow = Awaited<
+  ReturnType<typeof getCompetitions>
+>["data"][number];
 
 import { getStatusInternalIcon, getStatusPublicIcon } from "../_lib/utils";
 import { AvatarGroup } from "@workspace/ui/components/avatar-group";
@@ -29,7 +37,12 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { cn } from "@workspace/ui/lib/utils";
-import { formatInternalStatus, formatPublicStatus, getInternalStatusColor, getPublicStatusColor } from "@/lib/utils";
+import {
+  formatInternalStatus,
+  formatPublicStatus,
+  getInternalStatusColor,
+  getPublicStatusColor,
+} from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { UltimatumDialog } from "./ultimatum-dialog";
@@ -105,7 +118,8 @@ export function getCompetitionsTableColumns({
             {row.getValue("name") ? (
               <span className="max-w-125 truncate font-medium">
                 {row.getValue("name")}
-              </span>) : (
+              </span>
+            ) : (
               <span className="text-muted-foreground text-sm">Sin nombre</span>
             )}
           </div>
@@ -156,7 +170,8 @@ export function getCompetitionsTableColumns({
       ),
       cell: ({ cell }) => {
         const statusPublic = competitions.statusPublic.enumValues.find(
-          (status) => status === cell.getValue<CompetitionRow["statusPublic"]>(),
+          (status) =>
+            status === cell.getValue<CompetitionRow["statusPublic"]>(),
         );
 
         if (!statusPublic) return null;
@@ -164,9 +179,17 @@ export function getCompetitionsTableColumns({
         const Icon = getStatusPublicIcon(statusPublic);
 
         return (
-          <Badge variant="outline" className={cn("py-1 [&>svg]:size-3.5", getPublicStatusColor(statusPublic))}>
+          <Badge
+            variant="outline"
+            className={cn(
+              "py-1 [&>svg]:size-3.5",
+              getPublicStatusColor(statusPublic),
+            )}
+          >
             <Icon />
-            <span className="capitalize">{formatPublicStatus(statusPublic)}</span>
+            <span className="capitalize">
+              {formatPublicStatus(statusPublic)}
+            </span>
           </Badge>
         );
       },
@@ -192,7 +215,8 @@ export function getCompetitionsTableColumns({
       cell: ({ cell }) => {
         const statusInternal = competitions.statusInternal.enumValues.find(
           (statusInternal) =>
-            statusInternal === cell.getValue<CompetitionRow["statusInternal"]>(),
+            statusInternal ===
+            cell.getValue<CompetitionRow["statusInternal"]>(),
         );
 
         if (!statusInternal) return null;
@@ -200,9 +224,17 @@ export function getCompetitionsTableColumns({
         const Icon = getStatusInternalIcon(statusInternal);
 
         return (
-          <Badge variant="outline" className={cn("py-1 [&>svg]:size-3.5", getInternalStatusColor(statusInternal))}>
+          <Badge
+            variant="outline"
+            className={cn(
+              "py-1 [&>svg]:size-3.5",
+              getInternalStatusColor(statusInternal),
+            )}
+          >
             <Icon />
-            <span className="capitalize">{formatInternalStatus(statusInternal)}</span>
+            <span className="capitalize">
+              {formatInternalStatus(statusInternal)}
+            </span>
           </Badge>
         );
       },
@@ -229,12 +261,12 @@ export function getCompetitionsTableColumns({
       accessorKey: "delegates",
       cell: ({ row }) => {
         const delegates = row.getValue("delegates") as
-          {
-            wcaId: string;
-            name: string;
-            image: string | null;
-            isPrimary: boolean;
-          }[]
+          | {
+              wcaId: string;
+              name: string;
+              image: string | null;
+              isPrimary: boolean;
+            }[]
           | undefined;
         if (!delegates || delegates.length === 0) {
           return (
@@ -251,10 +283,7 @@ export function getCompetitionsTableColumns({
                   key={d.wcaId ?? d.name}
                   title={`${d.name}${d.isPrimary ? " (Principal)" : ""}`}
                 >
-                  <AvatarImage
-                    src={d.image || undefined}
-                    alt={d.name}
-                  />
+                  <AvatarImage src={d.image || undefined} alt={d.name} />
                   <AvatarFallback>
                     {d.name
                       .split(" ")
@@ -366,7 +395,9 @@ export function getCompetitionsTableColumns({
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => router.push(`/panel/competencias/${comp.id}`)}
+                    onClick={() =>
+                      router.push(`/panel/competencias/${comp.id}`)
+                    }
                   >
                     Editar
                   </DropdownMenuItem>

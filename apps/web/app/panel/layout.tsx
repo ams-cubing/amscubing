@@ -5,23 +5,20 @@ import { unauthorized } from "next/navigation";
 
 async function PanelGuard({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   const session = await auth.api.getSession({
     headers: headersList,
   });
 
-  if (session?.user.role !== "delegate") {
+  if (!isDevelopment && session?.user.role !== "delegate") {
     unauthorized();
   }
 
   return <>{children}</>;
 }
 
-export default function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <main className="p-6">
       <Suspense>

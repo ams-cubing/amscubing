@@ -1,4 +1,5 @@
 import {
+  parseAsBoolean,
   createSearchParamsCache,
   parseAsArrayOf,
   parseAsInteger,
@@ -35,6 +36,7 @@ export const searchParamsCache = createSearchParamsCache({
   // advanced filter
   filters: getFiltersStateParser().withDefault([]),
   joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
+  includePast: parseAsBoolean.withDefault(false),
 });
 
 export const createCompetitionSchema = z

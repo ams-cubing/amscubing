@@ -1,5 +1,6 @@
 import { searchParamsCache } from "./_lib/validations";
 import type { SearchParams } from "@/types";
+import { auth } from "@/lib/auth";
 import {
   getCompetitions,
   getCompetitionDelegatesCounts,
@@ -11,6 +12,7 @@ import { getValidFilters } from "@workspace/ui/lib/data-table";
 import { CompetitionsTable } from "./_components/competitions-data-table";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@workspace/ui/components/data-table/data-table-skeleton";
+import { headers } from "next/headers";
 
 interface PageProps {
   searchParams: Promise<SearchParams>;
@@ -55,21 +57,36 @@ export default function Page(props: PageProps) {
 }
 
 async function CompetitionsTableWrapper(props: PageProps) {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
+  const headersList = await headers();
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
+
+  const delegates =
+    search.delegates.length > 0
+      ? search.delegates
+      : session?.user?.wcaId && !isDevelopment
+        ? [session.user.wcaId]
+        : [];
 
   const validFilters = getValidFilters(search.filters);
 
   const promises = Promise.all([
     getCompetitions({
       ...search,
+      delegates,
       filters: validFilters,
     }),
-    getCompetitionDelegatesCounts(),
-    getCompetitionStateCounts(),
-    getCompetitionStatusPublicCounts(),
-    getCompetitionStatusInternalCounts(),
+    getCompetitionDelegatesCounts(search.includePast),
+    getCompetitionStateCounts(search.includePast),
+    getCompetitionStatusPublicCounts(search.includePast),
+    getCompetitionStatusInternalCounts(search.includePast),
   ]);
 
-  return <CompetitionsTable promises={promises} />;
+  return (
+    <CompetitionsTable promises={promises} includePast={search.includePast} />
+  );
 }

@@ -12,7 +12,11 @@ import {
 
 type Params = Promise<{ id: string }>;
 
-async function PageContent({ params }: { params: Params }): Promise<React.JSX.Element> {
+async function PageContent({
+  params,
+}: {
+  params: Params;
+}): Promise<React.JSX.Element> {
   const { id } = await params;
 
   const [competition, delegates] = await Promise.all([
