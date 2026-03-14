@@ -23,6 +23,7 @@ export const searchParamsCache = createSearchParamsCache({
     { id: "startDate", desc: false },
   ]),
   name: parseAsString.withDefault(""),
+  state: parseAsArrayOf(parseAsString).withDefault([]),
   statusPublic: parseAsArrayOf(
     parseAsStringEnum(competitions.statusPublic.enumValues),
   ).withDefault([]),

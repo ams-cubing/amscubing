@@ -43,6 +43,9 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
       ? advancedWhere
       : and(
           input.name ? ilike(competitions.name, `%${input.name}%`) : undefined,
+          input.state.length > 0
+            ? inArray(states.name, input.state)
+            : undefined,
           input.statusPublic.length > 0
             ? inArray(competitions.statusPublic, input.statusPublic)
             : undefined,
@@ -131,6 +134,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
           count: count(),
         })
         .from(competitions)
+        .innerJoin(states, eq(states.id, competitions.stateId))
         .where(where)
         .execute()
         .then((res) => res[0]?.count ?? 0);
@@ -229,5 +233,30 @@ export async function getCompetitionStatusInternalCounts() {
       celebrated: 0,
       cancelled: 0,
     };
+  }
+}
+
+export async function getCompetitionStateCounts() {
+  cacheLife("hours");
+  cacheTag("competition-state-counts");
+
+  try {
+    return await db
+      .select({
+        state: states.name,
+        count: count(),
+      })
+      .from(competitions)
+      .innerJoin(states, eq(states.id, competitions.stateId))
+      .groupBy(states.name)
+      .having(gt(count(), 0))
+      .then((res) =>
+        res.reduce<Record<string, number>>((acc, { state, count }) => {
+          acc[state] = count;
+          return acc;
+        }, {}),
+      );
+  } catch {
+    return {};
   }
 }

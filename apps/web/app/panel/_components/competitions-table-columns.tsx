@@ -3,7 +3,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, CircleDashed, Ellipsis, Text } from "lucide-react";
+import { ArrowUpDown, CircleDashed, Ellipsis, MapPin, Text } from "lucide-react";
 import * as React from "react";
 import { DataTableColumnHeader } from "@workspace/ui/components/data-table/data-table-column-header";
 import { Badge } from "@workspace/ui/components/badge";
@@ -35,11 +35,13 @@ import { useState } from "react";
 import { UltimatumDialog } from "./ultimatum-dialog";
 
 interface GetCompetitionsTableColumnsProps {
+  stateCounts: Record<string, number>;
   statusPublicCounts: Record<CompetitionRow["statusPublic"], number>;
   statusInternalCounts: Record<CompetitionRow["statusInternal"], number>;
 }
 
 export function getCompetitionsTableColumns({
+  stateCounts,
   statusPublicCounts,
   statusInternalCounts,
 }: GetCompetitionsTableColumnsProps): ColumnDef<CompetitionRow>[] {
@@ -113,6 +115,19 @@ export function getCompetitionsTableColumns({
         <DataTableColumnHeader column={column} label="Estado" />
       ),
       cell: ({ row }) => <div>{row.getValue("state") || ""}</div>,
+      meta: {
+        label: "Estado",
+        variant: "multiSelect",
+        options: Object.entries(stateCounts)
+          .sort(([a], [b]) => a.localeCompare(b, "es"))
+          .map(([state, count]) => ({
+            label: state,
+            value: state,
+            count,
+          })),
+        icon: MapPin,
+      },
+      enableColumnFilter: true,
     },
     {
       id: "city",
