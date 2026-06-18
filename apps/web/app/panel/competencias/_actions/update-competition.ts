@@ -219,11 +219,13 @@ export async function updateCompetition(
       console.error("Error notifying delegates:", err);
     }
 
+    revalidateTag(`competition-${competitionId}`, "days");
     revalidateTag("competitions", "days");
     revalidateTag("competition-public-status-counts", "days");
     revalidateTag("competition-status-internal-counts", "days");
     revalidateTag("competition-state-counts", "days");
     revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel/competencias", "layout");
     revalidatePath("/panel");
     revalidatePath("/");
 

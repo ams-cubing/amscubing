@@ -351,7 +351,7 @@ export function CompetitionForm({
                 <FormLabel>Estado</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -504,7 +504,7 @@ export function CompetitionForm({
                 <FormLabel>Estado público</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -540,7 +540,7 @@ export function CompetitionForm({
                 <FormLabel>Estado interno</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">

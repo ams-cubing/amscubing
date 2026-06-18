@@ -1,8 +1,13 @@
 import "server-only";
 
 import { db } from "@/db";
+import { cacheLife, cacheTag } from "next/cache";
 
 export async function getCompetitionWithRelations(id: number) {
+  "use cache";
+  cacheLife("seconds");
+  cacheTag(`competition-${id}`);
+  cacheTag("competitions");
   return db.query.competitions.findFirst({
     where: (competition, { eq }) => eq(competition.id, id),
     with: {
