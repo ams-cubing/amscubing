@@ -5,6 +5,7 @@ import { competitions, logs } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function deleteCompetition(competitionId: number): Promise<{
   success: boolean;
@@ -37,6 +38,14 @@ export async function deleteCompetition(competitionId: number): Promise<{
         });
       }
     });
+
+    revalidateTag("competitions", "days");
+    revalidateTag("competition-public-status-counts", "days");
+    revalidateTag("competition-status-internal-counts", "days");
+    revalidateTag("competition-state-counts", "days");
+    revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel");
+    revalidatePath("/");
 
     return {
       success: true,

@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { competitionOrganizers, competitions, logs, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Resend } from "resend";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -82,6 +82,7 @@ export async function sendUltimatum(
       });
     }
 
+    revalidateTag("competitions", "days");
     revalidatePath("/panel");
   } catch {
     return { success: false, message: "Database error" };

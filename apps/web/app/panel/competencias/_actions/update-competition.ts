@@ -13,6 +13,7 @@ import { z } from "zod";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { updateCompetitionSchema } from "../../_lib/validations";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
@@ -217,6 +218,14 @@ export async function updateCompetition(
     } catch (err) {
       console.error("Error notifying delegates:", err);
     }
+
+    revalidateTag("competitions", "days");
+    revalidateTag("competition-public-status-counts", "days");
+    revalidateTag("competition-status-internal-counts", "days");
+    revalidateTag("competition-state-counts", "days");
+    revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel");
+    revalidatePath("/");
 
     return {
       success: true,

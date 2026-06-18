@@ -11,6 +11,7 @@ import {
 import { auth } from "@/lib/auth";
 import { and, gte, inArray, lte } from "drizzle-orm";
 import { headers } from "next/headers";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createCompetitionSchema } from "../../_lib/validations";
@@ -143,6 +144,14 @@ export async function createCompetition(
     } catch (err) {
       console.error("Error fetching delegate emails:", err);
     }
+
+    revalidateTag("competitions", "days");
+    revalidateTag("competition-public-status-counts", "days");
+    revalidateTag("competition-status-internal-counts", "days");
+    revalidateTag("competition-state-counts", "days");
+    revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel");
+    revalidatePath("/");
 
     return {
       success: true,
