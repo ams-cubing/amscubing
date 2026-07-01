@@ -58,10 +58,7 @@ async function CompetitionsTableWrapper(props: PageProps) {
   const searchParams = await props.searchParams;
   const search = searchParamsCache.parse(searchParams);
 
-  const delegates =
-    search.delegates.length > 0
-      ? search.delegates
-      : [];
+  const delegates = search.delegates.length > 0 ? search.delegates : [];
 
   const validFilters = getValidFilters(search.filters);
 
@@ -71,13 +68,11 @@ async function CompetitionsTableWrapper(props: PageProps) {
       delegates,
       filters: validFilters,
     }),
-    getCompetitionDelegatesCounts(search.includePast),
-    getCompetitionStateCounts(search.includePast),
-    getCompetitionStatusPublicCounts(search.includePast),
-    getCompetitionStatusInternalCounts(search.includePast),
+    getCompetitionDelegatesCounts(),
+    getCompetitionStateCounts(),
+    getCompetitionStatusPublicCounts(),
+    getCompetitionStatusInternalCounts(),
   ]);
 
-  return (
-    <CompetitionsTable promises={promises} includePast={search.includePast} />
-  );
+  return <CompetitionsTable promises={promises} />;
 }

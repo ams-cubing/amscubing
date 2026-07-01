@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   CircleDashed,
   Ellipsis,
+  ExternalLink,
   MapPin,
   Text,
 } from "lucide-react";
@@ -44,8 +45,11 @@ import {
   getPublicStatusColor,
 } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { markAsCelebrated } from "../_actions/mark-celebrated";
 import { UltimatumDialog } from "./ultimatum-dialog";
+import { CancelDialog } from "./cancel-dialog";
 
 interface GetCompetitionsTableColumnsProps {
   delegatesCounts: {
@@ -318,6 +322,58 @@ export function getCompetitionsTableColumns({
       enableColumnFilter: true,
     },
     {
+      id: "wcaCompetitionUrl",
+      accessorKey: "wcaCompetitionUrl",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="WCA" />
+      ),
+      cell: ({ row }) => {
+        const url = row.getValue("wcaCompetitionUrl") as string | null;
+        if (!url) {
+          return <span className="text-muted-foreground text-sm">—</span>;
+        }
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-sm font-medium text-blue-500 hover:text-blue-400 hover:underline transition-colors"
+          >
+            <ExternalLink className="size-3.5" />
+            WCA
+          </a>
+        );
+      },
+      size: 80,
+    },
+    {
+      id: "trelloUrl",
+      accessorKey: "trelloUrl",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Trello" />
+      ),
+      cell: ({ row }) => {
+        const url = row.getValue("trelloUrl") as string | null;
+        if (!url) {
+          return <span className="text-muted-foreground text-sm">—</span>;
+        }
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-sm font-medium text-emerald-500 hover:text-emerald-400 hover:underline transition-colors"
+          >
+            <ExternalLink className="size-3.5" />
+            Trello
+          </a>
+        );
+      },
+      size: 80,
+    },
+    {
       accessorKey: "trelloAssignedAt",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} label="Trello asignado" />
@@ -370,8 +426,11 @@ export function getCompetitionsTableColumns({
       cell: ({ row }) => {
         const router = useRouter();
         const [open, setOpen] = useState(false);
+        const [cancelOpen, setCancelOpen] = useState(false);
+        const [isPending, startTransition] = useTransition();
 
         const comp = row.original;
+        const isPast = new Date(comp.endDate) < new Date();
 
         return (
           <>
@@ -380,6 +439,11 @@ export function getCompetitionsTableColumns({
               competitionLastDate={new Date(comp.endDate)}
               open={open}
               setOpen={setOpen}
+            />
+            <CancelDialog
+              competitionId={comp.id}
+              open={cancelOpen}
+              setOpen={setCancelOpen}
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -413,6 +477,30 @@ export function getCompetitionsTableColumns({
                     }
                   >
                     Enviar ultimátum
+                  </DropdownMenuItem>
+                  {isPast && comp.statusInternal !== "celebrated" && (
+                    <DropdownMenuItem
+                      disabled={isPending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          const res = await markAsCelebrated(comp.id);
+                          if (res.success) {
+                            toast.success("Competencia marcada como celebrada");
+                          } else {
+                            toast.error(res.message);
+                          }
+                        });
+                      }}
+                    >
+                      Marcar como celebrada
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setCancelOpen(true)}
+                    disabled={comp.statusInternal === "cancelled"}
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    Cancelar competencia
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>

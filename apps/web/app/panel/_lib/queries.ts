@@ -11,8 +11,10 @@ import {
   gte,
   ilike,
   inArray,
+  notInArray,
   lte,
   eq,
+  ne,
   sql,
 } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
@@ -31,17 +33,11 @@ function getTodayDateString() {
   return date.toISOString().split("T")[0] ?? "";
 }
 
-function getUpcomingCompetitionsWhere(includePast: boolean) {
-  if (includePast) return undefined;
-  return gte(competitions.endDate, getTodayDateString());
-}
-
 export async function getCompetitions(input: GetCompetitionsSchema) {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
   cacheTag("competitions");
 
   try {
-    const upcomingWhere = getUpcomingCompetitionsWhere(input.includePast);
     const offset = (input.page - 1) * input.perPage;
     const advancedTable =
       input.filterFlag === "advancedFilters" ||
@@ -95,9 +91,8 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
           `;
 
     const where = advancedTable
-      ? and(upcomingWhere, advancedWhere)
+      ? advancedWhere
       : and(
-          upcomingWhere,
           input.name ? ilike(competitions.name, `%${input.name}%`) : undefined,
           delegatesWhere,
           input.state.length > 0
@@ -105,10 +100,17 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
             : undefined,
           input.statusPublic.length > 0
             ? inArray(competitions.statusPublic, input.statusPublic)
-            : undefined,
+            : input.statusInternal.length === 0
+              ? ne(competitions.statusPublic, "suspended")
+              : undefined,
           input.statusInternal.length > 0
             ? inArray(competitions.statusInternal, input.statusInternal)
-            : undefined,
+            : input.statusPublic.length === 0
+              ? notInArray(competitions.statusInternal, [
+                  "cancelled",
+                  "celebrated",
+                ])
+              : undefined,
           input.createdAt.length > 0
             ? and(
                 input.createdAt[0]
@@ -216,20 +218,17 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
   }
 }
 
-export async function getCompetitionStatusPublicCounts(includePast = false) {
+export async function getCompetitionStatusPublicCounts() {
   cacheLife("hours");
   cacheTag("competition-public-status-counts");
 
   try {
-    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
-
     return await db
       .select({
         statusPublic: competitions.statusPublic,
         count: count(),
       })
       .from(competitions)
-      .where(upcomingWhere)
       .groupBy(competitions.statusPublic)
       .having(gt(count(competitions.statusPublic), 0))
       .then((res) =>
@@ -260,20 +259,17 @@ export async function getCompetitionStatusPublicCounts(includePast = false) {
   }
 }
 
-export async function getCompetitionStatusInternalCounts(includePast = false) {
+export async function getCompetitionStatusInternalCounts() {
   cacheLife("hours");
   cacheTag("competition-status-internal-counts");
 
   try {
-    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
-
     return await db
       .select({
         statusInternal: competitions.statusInternal,
         count: count(),
       })
       .from(competitions)
-      .where(upcomingWhere)
       .groupBy(competitions.statusInternal)
       .having(gt(count(), 0))
       .then((res) =>
@@ -306,13 +302,11 @@ export async function getCompetitionStatusInternalCounts(includePast = false) {
   }
 }
 
-export async function getCompetitionStateCounts(includePast = false) {
+export async function getCompetitionStateCounts() {
   cacheLife("hours");
   cacheTag("competition-state-counts");
 
   try {
-    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
-
     return await db
       .select({
         state: states.name,
@@ -320,7 +314,6 @@ export async function getCompetitionStateCounts(includePast = false) {
       })
       .from(competitions)
       .innerJoin(states, eq(states.id, competitions.stateId))
-      .where(upcomingWhere)
       .groupBy(states.name)
       .having(gt(count(), 0))
       .then((res) =>
@@ -340,13 +333,11 @@ export interface CompetitionDelegateFilterCount {
   count: number;
 }
 
-export async function getCompetitionDelegatesCounts(includePast = false) {
+export async function getCompetitionDelegatesCounts() {
   cacheLife("hours");
   cacheTag("competition-delegates-counts");
 
   try {
-    const upcomingWhere = getUpcomingCompetitionsWhere(includePast);
-
     const delegateCounts = await db
       .select({
         wcaId: competitionDelegates.delegateWcaId,
@@ -359,7 +350,6 @@ export async function getCompetitionDelegatesCounts(includePast = false) {
         eq(competitions.id, competitionDelegates.competitionId),
       )
       .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
-      .where(upcomingWhere)
       .groupBy(competitionDelegates.delegateWcaId, user.name)
       .having(gt(count(), 0));
 
@@ -369,16 +359,13 @@ export async function getCompetitionDelegatesCounts(includePast = false) {
       })
       .from(competitions)
       .where(
-        and(
-          upcomingWhere,
-          sql`
-            NOT EXISTS (
-              SELECT 1
-              FROM competition_delegate cd
-              WHERE cd.competition_id = ${competitions.id}
-            )
-          `,
-        ),
+        sql`
+          NOT EXISTS (
+            SELECT 1
+            FROM competition_delegate cd
+            WHERE cd.competition_id = ${competitions.id}
+          )
+        `,
       )
       .then((res) => res[0]?.count ?? 0);
 

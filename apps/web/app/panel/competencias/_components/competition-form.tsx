@@ -349,10 +349,7 @@ export function CompetitionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Estado</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecciona un estado" />
@@ -502,10 +499,7 @@ export function CompetitionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Estado público</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -538,10 +532,7 @@ export function CompetitionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Estado interno</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue />
