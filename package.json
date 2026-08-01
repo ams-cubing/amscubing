@@ -1,12 +1,19 @@
 {
-  "name": "public-calendar",
+  "name": "amscubing",
   "version": "0.0.1",
   "private": true,
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:migrate": "pnpm --filter @workspace/db db:migrate",
+    "db:seed": "pnpm --filter @workspace/db db:seed",
+    "db:generate": "pnpm --filter @workspace/db db:generate",
+    "db:studio": "pnpm --filter @workspace/db db:studio"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

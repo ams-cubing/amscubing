@@ -1,58 +1,71 @@
-# Calendario Público - Asociación Mexicana de Speedcubing
+# AMS Cubing Monorepo
 
-![Logo AMS](apps/web/public/icon.png)
+![Logo AMS](apps/calendar/public/icon.png)
 
-## Descripción
+Monorepo for [Asociación Mexicana de Speedcubing](https://amscubing.org) apps. Shared PostgreSQL schema and local Docker setup for development.
 
-Calendario público para consultar y gestionar competencias de speedcubing en México. Permite a delegados y organizadores crear y administrar competencias, registrar disponibilidad y solicitar fechas.
+## Apps
 
-## Características
+| App                | Path            | Description                                         |
+| ------------------ | --------------- | --------------------------------------------------- |
+| Calendario Público | `apps/calendar` | Public competition calendar for Mexican speedcubing |
 
-- Visualización pública de competencias y disponibilidad.
-- Panel privado para delegados: crear/editar competencias, ver actividad.
-- Solicitud de fechas con asignación automática de delegado.
-- Notificaciones por correo (Resend) para delegados y organizadores.
-- Integración con WCA para buscar usuarios.
+## Packages
 
-## Requisitos
+| Package         | Path          | Description                                              |
+| --------------- | ------------- | -------------------------------------------------------- |
+| `@workspace/db` | `packages/db` | Shared PostgreSQL schema, migrations, and Drizzle client |
+| `@workspace/ui` | `packages/ui` | Shared UI components                                     |
 
-- Node.js 24+
+## Requirements
+
+- Node.js 20+
 - pnpm
-- PostgreSQL
-- Variables de entorno en apps/web/.env.local (p. ej. DATABASE_URL, RESEND_API_KEY)
+- Docker (for local PostgreSQL)
 
-## Instalación
+## Setup
 
 ```sh
 pnpm install
-cp apps/web/.env.local.example apps/web/.env.local
-# Ajusta variables en apps/web/.env.local
+cp .env.example .env.local
+cp apps/calendar/.env.local.example apps/calendar/.env.local
+# Fill in WCA, auth, and Resend keys in apps/calendar/.env.local
 ```
 
-## Desarrollo
+## Local development
 
-Arrancar la aplicación web:
+Start PostgreSQL and apply migrations:
 
 ```sh
-pnpm --filter @workspace/web dev
+pnpm db:up
+pnpm db:migrate
+pnpm db:seed
 ```
 
-## Scripts útiles (desde la raíz)
+Start all apps:
 
-- pnpm dev — inicia todos los workspaces en modo desarrollo
-- pnpm --filter @workspace/web build — construir app web
-- pnpm --filter @workspace/web start — iniciar app web en producción
+```sh
+pnpm dev
+```
 
-## Estructura relevante
+Start only the calendar app:
 
-- apps/web — app calendario público
-- packages/ui — componentes compartidos
+```sh
+pnpm --filter calendar dev
+```
 
-## Contribuir
+## Database commands
 
-1. Crea un issue describiendo tu propuesta.
-2. Abre un fork y un PR con cambios claros y tests si aplica.
+| Command            | Description                            |
+| ------------------ | -------------------------------------- |
+| `pnpm db:up`       | Start local Postgres via Docker        |
+| `pnpm db:down`     | Stop Postgres container                |
+| `pnpm db:reset`    | Reset Postgres volume and restart      |
+| `pnpm db:migrate`  | Apply pending migrations               |
+| `pnpm db:seed`     | Seed regions and Mexican states        |
+| `pnpm db:generate` | Generate migration from schema changes |
+| `pnpm db:studio`   | Open Drizzle Studio                    |
 
-## Licencia
+## License
 
-Proyecto bajo la licencia del repositorio (ver archivo LICENSE).
+See [LICENSE](LICENSE).
