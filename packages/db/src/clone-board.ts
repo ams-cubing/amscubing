@@ -140,9 +140,7 @@ export async function cloneBoardFromTemplate(input: {
               labelId: newLabelId,
             };
           })
-          .filter(
-            (v): v is { cardId: number; labelId: number } => v !== null,
-          );
+          .filter((v): v is { cardId: number; labelId: number } => v !== null);
 
         if (nextLabels.length > 0) {
           await tx.insert(cardLabels).values(nextLabels);

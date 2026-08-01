@@ -19,10 +19,7 @@ export async function assignBoardToCompetition(competitionId: number) {
     return { error: "No autenticado" };
   }
 
-  if (
-    session.user.role !== "delegate" &&
-    process.env.NODE_ENV !== "development"
-  ) {
+  if (session.user.role !== "delegate") {
     return { error: "Solo delegados pueden asignar tableros" };
   }
 
@@ -67,9 +64,7 @@ export async function assignBoardToCompetition(competitionId: number) {
     console.error(error);
     return {
       error:
-        error instanceof Error
-          ? error.message
-          : "No se pudo crear el tablero",
+        error instanceof Error ? error.message : "No se pudo crear el tablero",
     };
   }
 }

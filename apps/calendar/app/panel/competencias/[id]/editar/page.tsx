@@ -3,10 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CompetitionForm } from "../../_components/competition-form";
 import { DeleteCompetitionDialog } from "../../_components/delete-competition";
-import {
-  getAllDelegates,
-  getCompetitionWithRelations,
-} from "../_lib/queries";
+import { getAllDelegates, getCompetitionWithRelations } from "../_lib/queries";
 
 type Params = Promise<{ id: string }>;
 

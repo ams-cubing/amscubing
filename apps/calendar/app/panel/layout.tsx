@@ -4,14 +4,11 @@ import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 
 async function PanelGuard({ children }: { children: React.ReactNode }) {
-  const headersList = await headers();
-  const isDevelopment = process.env.NODE_ENV === "development";
-
   const session = await auth.api.getSession({
-    headers: headersList,
+    headers: await headers(),
   });
 
-  if (!isDevelopment && session?.user.role !== "delegate") {
+  if (!session?.user || session.user.role !== "delegate") {
     unauthorized();
   }
 

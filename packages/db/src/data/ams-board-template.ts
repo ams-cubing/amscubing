@@ -43,7 +43,8 @@ type TemplateCard = {
   coverUrl?: string;
 };
 
-export const TEMPLATE_BOARD_NAME = "Plantilla AMS — Organización de competencia";
+export const TEMPLATE_BOARD_NAME =
+  "Plantilla AMS — Organización de competencia";
 
 export const TEMPLATE_CARDS: TemplateCard[] = [
   {
@@ -64,7 +65,8 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     title: "Permiso de sede",
     list: "Por Hacer",
     phase: "pre_announce",
-    description: "Obtener permiso escrito o confirmación formal de uso de la sede.",
+    description:
+      "Obtener permiso escrito o confirmación formal de uso de la sede.",
     checklist: {
       title: "Checklist permiso de sede",
       items: [
@@ -149,8 +151,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     title: "Tutorial Trello AMS",
     list: "Recursos",
     phase: "resources",
-    description:
-      "Guía de uso del tablero AMS para organizadores y delegados.",
+    description: "Guía de uso del tablero AMS para organizadores y delegados.",
     attachments: [
       {
         name: "Tutorial tablero AMS",

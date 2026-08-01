@@ -1043,8 +1043,10 @@ const dropAnimation: DropAnimation = {
   }),
 };
 
-interface KanbanOverlayProps
-  extends Omit<React.ComponentProps<typeof DragOverlay>, "children"> {
+interface KanbanOverlayProps extends Omit<
+  React.ComponentProps<typeof DragOverlay>,
+  "children"
+> {
   container?: Element | DocumentFragment | null;
   children?:
     | React.ReactNode

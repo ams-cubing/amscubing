@@ -160,8 +160,5 @@ export async function getCompetitionName(competitionId: number) {
 
   if (!competition) return `Competencia #${competitionId}`;
 
-  return (
-    competition.name ||
-    `${competition.city} — ${competition.startDate}`
-  );
+  return competition.name || `${competition.city} — ${competition.startDate}`;
 }

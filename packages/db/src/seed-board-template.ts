@@ -21,7 +21,10 @@ import {
 
 export async function seedAmsBoardTemplate() {
   const existing = await db.query.boards.findFirst({
-    where: and(eq(boards.isTemplate, true), eq(boards.name, TEMPLATE_BOARD_NAME)),
+    where: and(
+      eq(boards.isTemplate, true),
+      eq(boards.name, TEMPLATE_BOARD_NAME),
+    ),
   });
 
   if (existing) {

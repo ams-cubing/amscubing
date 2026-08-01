@@ -40,9 +40,7 @@ export function CardSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
-  const [description, setDescription] = React.useState(
-    card?.description ?? "",
-  );
+  const [description, setDescription] = React.useState(card?.description ?? "");
   const [pending, startTransition] = React.useTransition();
   const [newItem, setNewItem] = React.useState<Record<number, string>>({});
   const [attachmentName, setAttachmentName] = React.useState("");
@@ -105,7 +103,9 @@ export function CardSheet({
                     type="button"
                     className={cn(
                       "rounded-md px-2.5 py-1 text-xs font-medium text-white transition",
-                      checked ? "ring-2 ring-offset-2 ring-offset-background" : "opacity-60",
+                      checked
+                        ? "ring-2 ring-offset-2 ring-offset-background"
+                        : "opacity-60",
                     )}
                     style={{ backgroundColor: label.color }}
                     onClick={() => {
@@ -179,7 +179,10 @@ export function CardSheet({
             </div>
 
             {card.checklists.map((checklist) => (
-              <div key={checklist.id} className="space-y-2 rounded-md border p-3">
+              <div
+                key={checklist.id}
+                className="space-y-2 rounded-md border p-3"
+              >
                 <div className="text-sm font-medium">{checklist.title}</div>
                 <ul className="space-y-2">
                   {checklist.items.map((item) => (

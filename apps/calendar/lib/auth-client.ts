@@ -1,6 +1,3 @@
-import { createAuthClient } from "better-auth/react";
-import { genericOAuthClient } from "better-auth/client/plugins";
+import { createAmsAuthClient } from "@workspace/auth/client";
 
-export const authClient = createAuthClient({
-  plugins: [genericOAuthClient()],
-});
+export const authClient = createAmsAuthClient();

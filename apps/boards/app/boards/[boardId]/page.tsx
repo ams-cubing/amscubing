@@ -48,9 +48,7 @@ export default async function BoardPage({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {board.competition && (
-              <Badge variant="outline">
-                {board.competition.statusPublic}
-              </Badge>
+              <Badge variant="outline">{board.competition.statusPublic}</Badge>
             )}
             {competitionHref && (
               <Link
