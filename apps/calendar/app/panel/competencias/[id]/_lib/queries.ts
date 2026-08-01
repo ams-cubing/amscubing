@@ -11,6 +11,11 @@ export async function getCompetitionWithRelations(id: number) {
   return db.query.competitions.findFirst({
     where: (competition, { eq }) => eq(competition.id, id),
     with: {
+      state: {
+        with: {
+          region: true,
+        },
+      },
       delegates: {
         with: {
           delegate: true,

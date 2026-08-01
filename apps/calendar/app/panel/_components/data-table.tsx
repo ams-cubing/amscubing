@@ -342,6 +342,13 @@ export const columns: ColumnDef<Competition>[] = [
                 <DropdownMenuItem
                   onClick={() => router.push(`/panel/competencias/${comp.id}`)}
                 >
+                  Ver
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(`/panel/competencias/${comp.id}/editar`)
+                  }
+                >
                   Editar
                 </DropdownMenuItem>
               </DropdownMenuGroup>

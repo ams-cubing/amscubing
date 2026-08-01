@@ -59,6 +59,7 @@ export async function assignBoardToCompetition(competitionId: number) {
     updateTag(`competition-${competitionId}`);
     revalidatePath("/panel");
     revalidatePath(`/panel/competencias/${competitionId}`);
+    revalidatePath(`/panel/competencias/${competitionId}/editar`);
     revalidatePath("/mis-competencias");
 
     return { boardId: board.id };

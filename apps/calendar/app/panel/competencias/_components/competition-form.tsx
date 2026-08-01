@@ -294,7 +294,8 @@ export function CompetitionForm({
               `Competencia ${isEditing ? "actualizada" : "creada"} exitosamente`,
           );
 
-          router.push("/panel");
+          const id = result.competitionId ?? competition?.id;
+          router.push(id ? `/panel/competencias/${id}` : "/panel");
         } else {
           toast.error(
             result.message ||
