@@ -66,8 +66,8 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <div className="flex min-h-svh flex-col">
-            <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+          <div className="flex h-svh flex-col overflow-hidden">
+            <header className="z-40 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
               <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-4">
                 <div className="flex items-center gap-4">
                   <Link href="/" className="font-semibold tracking-tight">
@@ -85,7 +85,9 @@ export default function RootLayout({
                 </Suspense>
               </div>
             </header>
-            <main className="flex flex-1 flex-col">{children}</main>
+            <main className="flex min-h-0 flex-1 flex-col overflow-auto">
+              {children}
+            </main>
           </div>
           <Analytics />
           <Toaster />

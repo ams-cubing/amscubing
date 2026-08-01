@@ -21,7 +21,7 @@ export function SignInButton() {
             await authClient.signIn.oauth2({
               providerId: "wca",
               // Absolute URL so OAuth (on calendar) returns to boards
-              callbackURL: window.location.origin + "/",
+              callbackURL: window.location.href,
             });
           } catch (error) {
             if (error instanceof z.ZodError) {

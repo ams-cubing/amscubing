@@ -1,5 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
+import { TEMPLATE_BOARD_NAME } from "./data/ams-board-template";
 import { db } from "./index";
 import {
   boardLists,
@@ -21,6 +22,38 @@ function must<T>(value: T | undefined, label: string): T {
 }
 
 export async function getTemplateBoard() {
+  const named = await db.query.boards.findFirst({
+    where: and(
+      eq(boards.isTemplate, true),
+      eq(boards.name, TEMPLATE_BOARD_NAME),
+    ),
+    with: {
+      lists: {
+        orderBy: (list, { asc }) => [asc(list.position)],
+        with: {
+          cards: {
+            orderBy: (card, { asc }) => [asc(card.position)],
+            with: {
+              cardLabels: true,
+              checklists: {
+                orderBy: (checklist, { asc }) => [asc(checklist.position)],
+                with: {
+                  items: {
+                    orderBy: (item, { asc }) => [asc(item.position)],
+                  },
+                },
+              },
+              attachments: true,
+            },
+          },
+        },
+      },
+      labels: true,
+    },
+  });
+
+  if (named) return named;
+
   return db.query.boards.findFirst({
     where: eq(boards.isTemplate, true),
     with: {

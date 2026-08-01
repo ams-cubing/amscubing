@@ -223,6 +223,7 @@ export const boards = pgTable("board", {
   competitionId: integer("competition_id")
     .unique()
     .references((): AnyPgColumn => competitions.id, { onDelete: "cascade" }),
+  archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -231,6 +232,48 @@ export const boards = pgTable("board", {
 });
 
 export type Board = InferSelectModel<typeof boards>;
+
+export const boardMembers = pgTable(
+  "board_member",
+  {
+    boardId: integer("board_id")
+      .notNull()
+      .references(() => boards.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique().on(table.boardId, table.userId),
+    index("board_member_board_idx").on(table.boardId),
+    index("board_member_user_idx").on(table.userId),
+  ],
+);
+
+export type BoardMember = InferSelectModel<typeof boardMembers>;
+
+export const boardInvites = pgTable(
+  "board_invite",
+  {
+    id: serial("id").primaryKey(),
+    boardId: integer("board_id")
+      .notNull()
+      .references(() => boards.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    revokedAt: timestamp("revoked_at"),
+  },
+  (table) => [
+    index("board_invite_board_idx").on(table.boardId),
+    index("board_invite_token_idx").on(table.token),
+  ],
+);
+
+export type BoardInvite = InferSelectModel<typeof boardInvites>;
 
 export const boardLists = pgTable(
   "board_list",
@@ -497,6 +540,30 @@ export const boardsRelations = relations(boards, ({ one, many }) => ({
   }),
   lists: many(boardLists),
   labels: many(labels),
+  members: many(boardMembers),
+  invites: many(boardInvites),
+}));
+
+export const boardMembersRelations = relations(boardMembers, ({ one }) => ({
+  board: one(boards, {
+    fields: [boardMembers.boardId],
+    references: [boards.id],
+  }),
+  user: one(user, {
+    fields: [boardMembers.userId],
+    references: [user.id],
+  }),
+}));
+
+export const boardInvitesRelations = relations(boardInvites, ({ one }) => ({
+  board: one(boards, {
+    fields: [boardInvites.boardId],
+    references: [boards.id],
+  }),
+  createdBy: one(user, {
+    fields: [boardInvites.createdByUserId],
+    references: [user.id],
+  }),
 }));
 
 export const boardListsRelations = relations(boardLists, ({ one, many }) => ({

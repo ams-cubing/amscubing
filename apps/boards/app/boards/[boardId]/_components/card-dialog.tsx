@@ -18,6 +18,7 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { AvatarGroup } from "@workspace/ui/components/avatar-group";
+import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
@@ -100,28 +101,41 @@ type TeamPerson = {
 };
 
 function getCompetitionTeam(board: BoardDetail): TeamPerson[] {
-  if (!board.competition) return [];
   const byUserId = new Map<string, TeamPerson>();
 
-  for (const row of board.competition.delegates) {
-    if (!row.delegate) continue;
-    byUserId.set(row.delegate.id, {
-      userId: row.delegate.id,
-      wcaId: row.delegate.wcaId,
-      name: row.delegate.name,
-      image: row.delegate.image,
-      isPrimary: row.isPrimary,
-    });
+  if (board.competition) {
+    for (const row of board.competition.delegates) {
+      if (!row.delegate) continue;
+      byUserId.set(row.delegate.id, {
+        userId: row.delegate.id,
+        wcaId: row.delegate.wcaId,
+        name: row.delegate.name,
+        image: row.delegate.image,
+        isPrimary: row.isPrimary,
+      });
+    }
+    for (const row of board.competition.organizers) {
+      if (!row.organizer) continue;
+      const existing = byUserId.get(row.organizer.id);
+      byUserId.set(row.organizer.id, {
+        userId: row.organizer.id,
+        wcaId: row.organizer.wcaId,
+        name: row.organizer.name,
+        image: row.organizer.image,
+        isPrimary: existing?.isPrimary || row.isPrimary,
+      });
+    }
   }
-  for (const row of board.competition.organizers) {
-    if (!row.organizer) continue;
-    const existing = byUserId.get(row.organizer.id);
-    byUserId.set(row.organizer.id, {
-      userId: row.organizer.id,
-      wcaId: row.organizer.wcaId,
-      name: row.organizer.name,
-      image: row.organizer.image,
-      isPrimary: existing?.isPrimary || row.isPrimary,
+
+  for (const row of board.members ?? []) {
+    if (!row.user) continue;
+    if (byUserId.has(row.user.id)) continue;
+    byUserId.set(row.user.id, {
+      userId: row.user.id,
+      wcaId: row.user.wcaId,
+      name: row.user.name,
+      image: row.user.image,
+      isPrimary: false,
     });
   }
 
@@ -135,11 +149,13 @@ export function CardDialog({
   card,
   open,
   onOpenChange,
+  readOnly = false,
 }: {
   board: BoardDetail;
   card: BoardCard | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
@@ -191,8 +207,10 @@ export function CardDialog({
     !editingDescription && descriptionLong && !showFullDescription
       ? `${(description || card.description || "").slice(0, 280)}…`
       : description || card.description || "";
+  const canEdit = !readOnly && !pending;
 
   function persistTitle() {
+    if (readOnly) return;
     if (title.trim() && title !== card!.title) {
       startTransition(async () => {
         await updateCardAction({
@@ -205,6 +223,7 @@ export function CardDialog({
   }
 
   function persistDescription() {
+    if (readOnly) return;
     const next = description.trim() || null;
     if (next !== (card!.description ?? null)) {
       startTransition(async () => {
@@ -219,6 +238,7 @@ export function CardDialog({
   }
 
   function persistDueDate(value: string) {
+    if (readOnly) return;
     setDueDate(value);
     startTransition(async () => {
       await updateCardAction({
@@ -230,6 +250,7 @@ export function CardDialog({
   }
 
   async function moveToList(toListId: number) {
+    if (readOnly) return;
     if (toListId === card!.listId) return;
     const targetList = board.lists.find((list) => list.id === toListId);
     if (!targetList) return;
@@ -253,25 +274,29 @@ export function CardDialog({
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="secondary" size="sm">
-                  {currentList?.title ?? "Lista"}
-                  <ChevronDown className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {board.lists.map((list) => (
-                  <DropdownMenuItem
-                    key={list.id}
-                    onClick={() => void moveToList(list.id)}
-                    disabled={list.id === card.listId || pending}
-                  >
-                    {list.title}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {readOnly ? (
+              <Badge variant="secondary">{currentList?.title ?? "Lista"}</Badge>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="secondary" size="sm">
+                    {currentList?.title ?? "Lista"}
+                    <ChevronDown className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {board.lists.map((list) => (
+                    <DropdownMenuItem
+                      key={list.id}
+                      onClick={() => void moveToList(list.id)}
+                      disabled={list.id === card.listId || pending}
+                    >
+                      {list.title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <DialogTitle className="sr-only">{card.title}</DialogTitle>
             <DialogDescription className="sr-only">
               Detalle de la tarjeta
@@ -287,61 +312,64 @@ export function CardDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={persistTitle}
                 className="h-auto border-transparent bg-transparent px-0 text-xl font-semibold shadow-none focus-visible:border-input focus-visible:bg-background"
-                disabled={pending}
+                disabled={!canEdit}
+                readOnly={readOnly}
               />
 
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowDates(true);
-                  }}
-                >
-                  <CalendarClock className="size-4" />
-                  Fechas
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowChecklistForm(true);
-                    requestAnimationFrame(() =>
-                      checklistInputRef.current?.focus(),
-                    );
-                  }}
-                >
-                  <CheckSquare className="size-4" />
-                  Checklist
-                </Button>
-                {team.length > 0 && (
+              {!readOnly && (
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     size="sm"
                     variant="secondary"
-                    onClick={() => setShowMembers((v) => !v)}
+                    onClick={() => {
+                      setShowDates(true);
+                    }}
                   >
-                    <UserPlus className="size-4" />
-                    Miembros
+                    <CalendarClock className="size-4" />
+                    Fechas
                   </Button>
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowAttachmentForm(true);
-                    requestAnimationFrame(() =>
-                      attachmentUrlRef.current?.focus(),
-                    );
-                  }}
-                >
-                  <Paperclip className="size-4" />
-                  Adjunto
-                </Button>
-              </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowChecklistForm(true);
+                      requestAnimationFrame(() =>
+                        checklistInputRef.current?.focus(),
+                      );
+                    }}
+                  >
+                    <CheckSquare className="size-4" />
+                    Checklist
+                  </Button>
+                  {team.length > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setShowMembers((v) => !v)}
+                    >
+                      <UserPlus className="size-4" />
+                      Miembros
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowAttachmentForm(true);
+                      requestAnimationFrame(() =>
+                        attachmentUrlRef.current?.focus(),
+                      );
+                    }}
+                  >
+                    <Paperclip className="size-4" />
+                    Adjunto
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -353,14 +381,17 @@ export function CardDialog({
                     <button
                       key={label.id}
                       type="button"
+                      disabled={readOnly || pending}
                       className={cn(
                         "rounded-md px-2.5 py-1 text-xs font-medium text-white transition",
                         checked
                           ? "ring-2 ring-offset-2 ring-offset-background"
                           : "opacity-60",
+                        readOnly && "cursor-default",
                       )}
                       style={{ backgroundColor: label.color }}
                       onClick={() => {
+                        if (readOnly) return;
                         startTransition(async () => {
                           await toggleCardLabelAction({
                             boardId: board.id,
@@ -388,9 +419,10 @@ export function CardDialog({
                     className="w-auto"
                     value={dueDate}
                     onChange={(e) => persistDueDate(e.target.value)}
-                    disabled={pending}
+                    disabled={!canEdit}
+                    readOnly={readOnly}
                   />
-                  {dueDate && (
+                  {dueDate && !readOnly && (
                     <Button
                       type="button"
                       size="sm"

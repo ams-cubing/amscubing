@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import {
   boardLists,
+  boardMembers,
   boards,
   cardAttachments,
   cardComments,
@@ -20,28 +21,29 @@ import {
   user,
 } from "@workspace/db/schema";
 
-import { canAccessBoard } from "@/lib/boards";
+import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSession } from "@/lib/session";
 
 async function requireBoardAccess(boardId: number) {
   const session = await requireSession();
-  const user = session.user as unknown as User;
-  const allowed = await canAccessBoard(user, boardId);
+  const currentUser = session.user as unknown as User;
+  const allowed = await canAccessBoard(currentUser, boardId);
   if (!allowed) {
     throw new Error("No tienes acceso a este tablero");
   }
-  return user;
+  if (await isBoardArchived(boardId)) {
+    throw new Error("Este tablero está archivado y no se puede editar");
+  }
+  return currentUser;
 }
 
-async function assertUserOnCompetitionBoard(boardId: number, userId: string) {
+async function assertUserAssignableToBoard(boardId: number, userId: string) {
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, boardId),
     columns: { competitionId: true },
   });
-  if (!board?.competitionId) {
-    throw new Error(
-      "Solo se pueden asignar miembros en tableros de competencia",
-    );
+  if (!board) {
+    throw new Error("Tablero no encontrado");
   }
 
   const memberUser = await db.query.user.findFirst({
@@ -49,6 +51,18 @@ async function assertUserOnCompetitionBoard(boardId: number, userId: string) {
     columns: { id: true, wcaId: true },
   });
   if (!memberUser) throw new Error("Usuario no encontrado");
+
+  const asBoardMember = await db.query.boardMembers.findFirst({
+    where: and(
+      eq(boardMembers.boardId, boardId),
+      eq(boardMembers.userId, userId),
+    ),
+  });
+  if (asBoardMember) return;
+
+  if (!board.competitionId) {
+    throw new Error("El miembro debe haber sido invitado al tablero");
+  }
 
   const [asDelegate, asOrganizer] = await Promise.all([
     db.query.competitionDelegates.findFirst({
@@ -67,7 +81,7 @@ async function assertUserOnCompetitionBoard(boardId: number, userId: string) {
 
   if (!asDelegate && !asOrganizer) {
     throw new Error(
-      "El miembro debe ser organizador o delegado de la competencia",
+      "El miembro debe ser organizador, delegado de la competencia o invitado al tablero",
     );
   }
 }
@@ -172,7 +186,7 @@ export async function toggleCardMemberAction(input: {
   await requireBoardAccess(input.boardId);
 
   if (input.checked) {
-    await assertUserOnCompetitionBoard(input.boardId, input.userId);
+    await assertUserAssignableToBoard(input.boardId, input.userId);
     await db
       .insert(cardMembers)
       .values({ cardId: input.cardId, userId: input.userId })
@@ -339,6 +353,31 @@ export async function createCardAction(input: {
   await db.insert(cards).values({
     listId: input.listId,
     title: input.title.trim(),
+    position: nextPosition,
+  });
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function createListAction(input: {
+  boardId: number;
+  title: string;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  const title = input.title.trim();
+  if (!title) throw new Error("El título de la lista es obligatorio");
+
+  const existing = await db.query.boardLists.findMany({
+    where: eq(boardLists.boardId, input.boardId),
+    columns: { position: true },
+  });
+  const nextPosition =
+    existing.reduce((max, list) => Math.max(max, list.position), -1) + 1;
+
+  await db.insert(boardLists).values({
+    boardId: input.boardId,
+    title,
     position: nextPosition,
   });
 

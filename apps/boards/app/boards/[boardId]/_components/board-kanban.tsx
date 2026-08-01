@@ -27,7 +27,11 @@ import {
 } from "@workspace/ui/components/kanban";
 import { cn } from "@workspace/ui/lib/utils";
 
-import { createCardAction, moveCardAction } from "../_actions/board-actions";
+import {
+  createCardAction,
+  createListAction,
+  moveCardAction,
+} from "../_actions/board-actions";
 import {
   boardToColumns,
   flattenCards,
@@ -41,7 +45,13 @@ import {
 } from "../_lib/types";
 import { CardDialog, formatDueDate } from "./card-dialog";
 
-export function BoardKanban({ board }: { board: BoardDetail }) {
+export function BoardKanban({
+  board,
+  readOnly = false,
+}: {
+  board: BoardDetail;
+  readOnly?: boolean;
+}) {
   const [columns, setColumns] = React.useState<ColumnsState>(() =>
     boardToColumns(board),
   );
@@ -89,10 +99,11 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
   }
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <Kanban
         value={columns}
         onValueChange={(next) => {
+          if (readOnly) return;
           const previous = columns;
           setColumns(next);
 
@@ -120,7 +131,7 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
         }}
         getItemValue={(item) => item}
       >
-        <KanbanBoard className="flex h-full min-h-[calc(100svh-8rem)] gap-3 overflow-x-auto p-4">
+        <KanbanBoard className="h-full min-h-0 items-start gap-3 overflow-x-auto overflow-y-hidden p-4">
           {board.lists.map((list) => {
             const columnId = listKey(list.id);
             const cardIds = columns[columnId] ?? [];
@@ -129,18 +140,18 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
               <KanbanColumn
                 key={list.id}
                 value={columnId}
-                className="flex w-72 shrink-0 flex-col rounded-lg border bg-muted/40"
+                className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40 p-0"
               >
-                <div className="flex items-center justify-between gap-2 px-3 py-2">
+                <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
                   <h2 className="text-sm font-semibold">{list.title}</h2>
                   <Badge variant="secondary">{cardIds.length}</Badge>
                 </div>
-                <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2">
                   {cardIds.map((id) => {
                     const card = cardsById.get(id);
                     if (!card) return null;
                     return (
-                      <KanbanItem key={id} value={id} asHandle>
+                      <KanbanItem key={id} value={id} asHandle={!readOnly}>
                         <CardFace
                           card={card}
                           relevant={isCardRelevantNow(
@@ -153,15 +164,20 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
                       </KanbanItem>
                     );
                   })}
-                  <AddCardForm
-                    boardId={board.id}
-                    listId={list.id}
-                    listTitle={listsById.get(columnId)?.title ?? list.title}
-                  />
                 </div>
+                {!readOnly && (
+                  <div className="shrink-0 px-2 pb-2 pt-1">
+                    <AddCardForm
+                      boardId={board.id}
+                      listId={list.id}
+                      listTitle={listsById.get(columnId)?.title ?? list.title}
+                    />
+                  </div>
+                )}
               </KanbanColumn>
             );
           })}
+          {!readOnly && <AddListForm boardId={board.id} />}
         </KanbanBoard>
         <KanbanOverlay>
           {({ value, variant }) => {
@@ -187,8 +203,9 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
         onOpenChange={(open) => {
           if (!open) setSelectedCardId(null);
         }}
+        readOnly={readOnly}
       />
-    </>
+    </div>
   );
 }
 
@@ -352,6 +369,65 @@ function AddCardForm({
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending || !title.trim()}>
           Añadir
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setOpen(false);
+            setTitle("");
+          }}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function AddListForm({ boardId }: { boardId: number }) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [pending, startTransition] = React.useTransition();
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        className="h-fit w-72 shrink-0 justify-start bg-muted/60 text-muted-foreground hover:bg-muted"
+        onClick={() => setOpen(true)}
+      >
+        <Plus className="size-4" />
+        Añadir otra lista
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      className="flex h-fit w-72 shrink-0 flex-col gap-2 rounded-lg border bg-muted/40 p-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!title.trim()) return;
+        startTransition(async () => {
+          await createListAction({ boardId, title });
+          setTitle("");
+          setOpen(false);
+        });
+      }}
+    >
+      <Input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Título de la lista"
+        disabled={pending}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={pending || !title.trim()}>
+          Añadir lista
         </Button>
         <Button
           type="button"

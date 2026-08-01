@@ -113,6 +113,13 @@
       "when": 1785612999272,
       "tag": "0015_flashy_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785615696651,
+      "tag": "0016_clammy_hobgoblin",
+      "breakpoints": true
     }
   ]
 }
