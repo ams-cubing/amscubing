@@ -1,0 +1,14 @@
+:root {
+  --ams-green: #009543;
+  --ams-red: #ce1126;
+  --ams-ink: #0a0a0a;
+  --ams-mist: #f4f6f5;
+  --primary: var(--ams-green);
+  --primary-foreground: #ffffff;
+  --ring: var(--ams-green);
+}
+
+body {
+  background: var(--ams-mist);
+  color: var(--ams-ink);
+}

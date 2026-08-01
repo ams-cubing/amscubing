@@ -8,6 +8,7 @@ Monorepo for [Asociación Mexicana de Speedcubing](https://amscubing.org) apps. 
 
 | App                | Path            | Description                                         |
 | ------------------ | --------------- | --------------------------------------------------- |
+| Web                | `apps/web`      | Marketing homepage for Asociación Mexicana de Speedcubing |
 | Calendario Público | `apps/calendar` | Public competition calendar for Mexican speedcubing |
 
 ## Packages
@@ -52,6 +53,12 @@ Start only the calendar app:
 
 ```sh
 pnpm --filter calendar dev
+```
+
+Start only the marketing homepage (port 3001):
+
+```sh
+pnpm --filter web dev
 ```
 
 ## Database commands
