@@ -28,6 +28,7 @@ export async function getUserCompetitions(competitionIds: number[]) {
       startDate: competitions.startDate,
       endDate: competitions.endDate,
       trelloUrl: competitions.trelloUrl,
+      boardId: competitions.boardId,
       statusPublic: competitions.statusPublic,
       statusInternal: competitions.statusInternal,
       stateName: states.name,

@@ -4,6 +4,7 @@ import "./env";
 import { MEXICO_REGIONS } from "./data/mexico";
 import { db } from "./index";
 import { regions, states } from "./schema";
+import { seedAmsBoardTemplate } from "./seed-board-template";
 
 export async function runSeed() {
   console.log("⏳ Seeding regions and states...");
@@ -46,11 +47,14 @@ export async function runSeed() {
       },
     });
 
-  const end = Date.now();
-
   console.log(
-    `✅ Seeded ${MEXICO_REGIONS.length} regions and ${MEXICO_REGIONS.reduce((count, region) => count + region.states.length, 0)} states in ${end - start}ms`,
+    `✅ Seeded ${MEXICO_REGIONS.length} regions and ${MEXICO_REGIONS.reduce((count, region) => count + region.states.length, 0)} states`,
   );
+
+  await seedAmsBoardTemplate();
+
+  const end = Date.now();
+  console.log(`✅ Seed completed in ${end - start}ms`);
 
   process.exit(0);
 }

@@ -181,6 +181,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
             `,
           requestedBy: competitions.requestedBy,
           trelloUrl: competitions.trelloUrl,
+          boardId: competitions.boardId,
           wcaCompetitionUrl: competitions.wcaCompetitionUrl,
           startDate: competitions.startDate,
           endDate: competitions.endDate,

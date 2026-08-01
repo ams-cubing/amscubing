@@ -38,6 +38,12 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { cn } from "@workspace/ui/lib/utils";
+
+function getBoardsUrl() {
+  return (
+    process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002"
+  ).replace(/\/$/, "");
+}
 import {
   formatInternalStatus,
   formatPublicStatus,
@@ -351,10 +357,25 @@ export function getCompetitionsTableColumns({
       id: "trelloUrl",
       accessorKey: "trelloUrl",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Trello" />
+        <DataTableColumnHeader column={column} label="Tablero" />
       ),
       cell: ({ row }) => {
+        const boardId = row.original.boardId as number | null;
         const url = row.getValue("trelloUrl") as string | null;
+        if (boardId) {
+          return (
+            <a
+              href={`${getBoardsUrl()}/boards/${boardId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-500 hover:text-emerald-400 hover:underline transition-colors"
+            >
+              <ExternalLink className="size-3.5" />
+              Tablero
+            </a>
+          );
+        }
         if (!url) {
           return <span className="text-muted-foreground text-sm">—</span>;
         }
@@ -371,12 +392,12 @@ export function getCompetitionsTableColumns({
           </a>
         );
       },
-      size: 80,
+      size: 90,
     },
     {
       accessorKey: "trelloAssignedAt",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Trello asignado" />
+        <DataTableColumnHeader column={column} label="Tablero asignado" />
       ),
       cell: ({ row }) => {
         const v = row.getValue("trelloAssignedAt") as string | null;
