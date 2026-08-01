@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
+    "@workspace/db": "workspace:*",
     "@workspace/ui": "workspace:*",
     "lucide-react": "^0.548.0",
     "motion": "^12.35.2",

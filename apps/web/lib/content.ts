@@ -8,51 +8,6 @@ export const vision = `Aspiramos a convertirnos en la Federación de speedcubing
 
 export const aboutIntro = `Somos una comunidad apasionada por el speedcubing en México, dedicada a promover la diversión, la competencia y el compañerismo. En la AMS, creemos en el poder de resolver cubos de Rubik para unir a las personas, fomentar el crecimiento personal y promover valores.`;
 
-export const delegates = [
-  {
-    name: "Areli Rubí Gordillo Martínez",
-    wcaId: "2014MART08",
-    role: "Delegado Regional MCA",
-    region: "México y Centro América",
-  },
-  {
-    name: "Carlos Ricardo Chin Dzul",
-    wcaId: "2014DZUL02",
-    role: "Delegado Junior",
-    region: "Mérida — Suroeste",
-  },
-  {
-    name: "Christofer Alejandro Aguirre Robledo",
-    wcaId: "2016ROBL05",
-    role: "Delegado y Miembro del WCAT",
-    region: "Baja California — Noroeste",
-  },
-  {
-    name: "Jaime Tadeo Pérez Cardona",
-    wcaId: "2015CARD01",
-    role: "Delegado Junior",
-    region: "Ciudad de México — Centro",
-  },
-  {
-    name: "Leonardo Sánchez Del Toro",
-    wcaId: "2016TORO03",
-    role: "Delegado en Entrenamiento",
-    region: "Nayarit — Occidente",
-  },
-  {
-    name: "Rocío Rodríguez Rivera",
-    wcaId: "2016RIVE14",
-    role: "Delegado Junior",
-    region: "Ciudad de México — Centro",
-  },
-  {
-    name: "Saúl Emmanuel Ramírez González",
-    wcaId: "2018GONZ21",
-    role: "Delegado Junior",
-    region: "Jalisco — Occidente",
-  },
-] as const;
-
 export const blogPosts = [
   {
     title: "Preparándome para mi primera competencia oficial",

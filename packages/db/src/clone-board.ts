@@ -125,6 +125,7 @@ export async function cloneBoardFromTemplate(input: {
                 description: card.description,
                 position: card.position,
                 coverUrl: card.coverUrl,
+                dueDate: card.dueDate,
               })
               .returning()
           )[0],

@@ -1,9 +1,10 @@
 import { sql } from "drizzle-orm";
 
 import "./env";
+import { SEED_DELEGATES } from "./data/delegates";
 import { MEXICO_REGIONS } from "./data/mexico";
 import { db } from "./index";
-import { regions, states } from "./schema";
+import { regions, states, user } from "./schema";
 import { seedAmsBoardTemplate } from "./seed-board-template";
 
 export async function runSeed() {
@@ -50,6 +51,37 @@ export async function runSeed() {
   console.log(
     `✅ Seeded ${MEXICO_REGIONS.length} regions and ${MEXICO_REGIONS.reduce((count, region) => count + region.states.length, 0)} states`,
   );
+
+  console.log("⏳ Seeding delegates...");
+
+  await db
+    .insert(user)
+    .values(
+      SEED_DELEGATES.map((delegate) => ({
+        id: delegate.wcaId,
+        name: delegate.name,
+        email: delegate.email,
+        emailVerified: true,
+        wcaId: delegate.wcaId,
+        role: "delegate" as const,
+        regionId: delegate.regionId,
+        delegateTitle: delegate.title,
+        delegateLocation: delegate.location,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: user.wcaId,
+      set: {
+        name: sql`excluded.name`,
+        email: sql`excluded.email`,
+        role: sql`excluded.role`,
+        regionId: sql`excluded.region_id`,
+        delegateTitle: sql`excluded.delegate_title`,
+        delegateLocation: sql`excluded.delegate_location`,
+      },
+    });
+
+  console.log(`✅ Seeded ${SEED_DELEGATES.length} delegates`);
 
   await seedAmsBoardTemplate();
 

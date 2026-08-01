@@ -30,6 +30,10 @@ export const user = pgTable("user", {
     .default("user")
     .notNull(),
   regionId: text("region_id").references(() => regions.id),
+  /** Public-facing WCA title, e.g. "Delegado Junior". */
+  delegateTitle: text("delegate_title"),
+  /** Public-facing location label, e.g. "Mérida — Sureste". */
+  delegateLocation: text("delegate_location"),
   lastLogin: timestamp("last_login").defaultNow(),
 });
 
@@ -105,6 +109,8 @@ export const userRelations = relations(user, ({ one, many }) => ({
   organizedCompetitions: many(competitionOrganizers),
   availability: many(availability),
   activityLogs: many(logs),
+  cardMemberships: many(cardMembers),
+  cardComments: many(cardComments),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -252,6 +258,7 @@ export const cards = pgTable(
     description: text("description"),
     position: integer("position").notNull().default(0),
     coverUrl: text("cover_url"),
+    dueDate: timestamp("due_date"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -342,6 +349,46 @@ export const cardAttachments = pgTable(
 );
 
 export type CardAttachment = InferSelectModel<typeof cardAttachments>;
+
+export const cardMembers = pgTable(
+  "card_member",
+  {
+    cardId: integer("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    unique().on(table.cardId, table.userId),
+    index("card_member_card_idx").on(table.cardId),
+    index("card_member_user_idx").on(table.userId),
+  ],
+);
+
+export type CardMember = InferSelectModel<typeof cardMembers>;
+
+export const cardComments = pgTable(
+  "card_comment",
+  {
+    id: serial("id").primaryKey(),
+    cardId: integer("card_id")
+      .notNull()
+      .references(() => cards.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("card_comment_card_idx").on(table.cardId),
+    index("card_comment_author_idx").on(table.authorId),
+  ],
+);
+
+export type CardComment = InferSelectModel<typeof cardComments>;
 
 export const competitionDelegates = pgTable("competition_delegate", {
   competitionId: serial("competition_id")
@@ -468,6 +515,8 @@ export const cardsRelations = relations(cards, ({ one, many }) => ({
   cardLabels: many(cardLabels),
   checklists: many(checklists),
   attachments: many(cardAttachments),
+  members: many(cardMembers),
+  comments: many(cardComments),
 }));
 
 export const labelsRelations = relations(labels, ({ one, many }) => ({
@@ -513,6 +562,28 @@ export const cardAttachmentsRelations = relations(
     }),
   }),
 );
+
+export const cardMembersRelations = relations(cardMembers, ({ one }) => ({
+  card: one(cards, {
+    fields: [cardMembers.cardId],
+    references: [cards.id],
+  }),
+  user: one(user, {
+    fields: [cardMembers.userId],
+    references: [user.id],
+  }),
+}));
+
+export const cardCommentsRelations = relations(cardComments, ({ one }) => ({
+  card: one(cards, {
+    fields: [cardComments.cardId],
+    references: [cards.id],
+  }),
+  author: one(user, {
+    fields: [cardComments.authorId],
+    references: [user.id],
+  }),
+}));
 
 export const competitionDelegatesRelations = relations(
   competitionDelegates,

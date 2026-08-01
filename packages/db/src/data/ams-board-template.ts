@@ -148,6 +148,56 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "Diseñar materiales gráficos (banner, stories, diplomas, señalética).",
   },
   {
+    title: "Realizar inscripción",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Patrocinios y convenios",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Organización/Capacitación de staff",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Organiza grupos, imprime papeletas",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Preparación registro y Correo Informativo",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Entregar del primer avance de Costos",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Confirmación de equipo de competencia",
+    list: "Por Hacer",
+    phase: "post_announce",
+  },
+  {
+    title: "Correo Final y Encuesta de Calidad",
+    list: "Por Hacer",
+    phase: "post_celebrate",
+  },
+  {
+    title: "Entregar informe de costos final",
+    list: "Por Hacer",
+    phase: "post_celebrate",
+  },
+  {
+    title: "Captura de Resultados",
+    list: "Por Hacer",
+    phase: "post_celebrate",
+  },
+  {
     title: "Tutorial Trello AMS",
     list: "Recursos",
     phase: "resources",

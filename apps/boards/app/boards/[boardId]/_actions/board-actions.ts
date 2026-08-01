@@ -6,12 +6,18 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import {
   boardLists,
+  boards,
   cardAttachments,
+  cardComments,
   cardLabels,
+  cardMembers,
   cards,
   checklistItems,
   checklists,
+  competitionDelegates,
+  competitionOrganizers,
   type User,
+  user,
 } from "@workspace/db/schema";
 
 import { canAccessBoard } from "@/lib/boards";
@@ -25,6 +31,45 @@ async function requireBoardAccess(boardId: number) {
     throw new Error("No tienes acceso a este tablero");
   }
   return user;
+}
+
+async function assertUserOnCompetitionBoard(boardId: number, userId: string) {
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+    columns: { competitionId: true },
+  });
+  if (!board?.competitionId) {
+    throw new Error(
+      "Solo se pueden asignar miembros en tableros de competencia",
+    );
+  }
+
+  const memberUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { id: true, wcaId: true },
+  });
+  if (!memberUser) throw new Error("Usuario no encontrado");
+
+  const [asDelegate, asOrganizer] = await Promise.all([
+    db.query.competitionDelegates.findFirst({
+      where: and(
+        eq(competitionDelegates.competitionId, board.competitionId),
+        eq(competitionDelegates.delegateWcaId, memberUser.wcaId),
+      ),
+    }),
+    db.query.competitionOrganizers.findFirst({
+      where: and(
+        eq(competitionOrganizers.competitionId, board.competitionId),
+        eq(competitionOrganizers.organizerWcaId, memberUser.wcaId),
+      ),
+    }),
+  ]);
+
+  if (!asDelegate && !asOrganizer) {
+    throw new Error(
+      "El miembro debe ser organizador o delegado de la competencia",
+    );
+  }
 }
 
 export async function moveCardAction(input: {
@@ -66,6 +111,7 @@ export async function updateCardAction(input: {
   cardId: number;
   title?: string;
   description?: string | null;
+  dueDate?: string | null;
 }) {
   await requireBoardAccess(input.boardId);
 
@@ -75,6 +121,14 @@ export async function updateCardAction(input: {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined
         ? { description: input.description }
+        : {}),
+      ...(input.dueDate !== undefined
+        ? {
+            dueDate:
+              input.dueDate === null || input.dueDate === ""
+                ? null
+                : new Date(`${input.dueDate}T12:00:00`),
+          }
         : {}),
     })
     .where(eq(cards.id, input.cardId));
@@ -105,6 +159,72 @@ export async function toggleCardLabelAction(input: {
         ),
       );
   }
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function toggleCardMemberAction(input: {
+  boardId: number;
+  cardId: number;
+  userId: string;
+  checked: boolean;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  if (input.checked) {
+    await assertUserOnCompetitionBoard(input.boardId, input.userId);
+    await db
+      .insert(cardMembers)
+      .values({ cardId: input.cardId, userId: input.userId })
+      .onConflictDoNothing();
+  } else {
+    await db
+      .delete(cardMembers)
+      .where(
+        and(
+          eq(cardMembers.cardId, input.cardId),
+          eq(cardMembers.userId, input.userId),
+        ),
+      );
+  }
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function addCardCommentAction(input: {
+  boardId: number;
+  cardId: number;
+  body: string;
+}) {
+  const user = await requireBoardAccess(input.boardId);
+  const body = input.body.trim();
+  if (!body) throw new Error("El comentario no puede estar vacío");
+
+  await db.insert(cardComments).values({
+    cardId: input.cardId,
+    authorId: user.id,
+    body,
+  });
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function deleteCardCommentAction(input: {
+  boardId: number;
+  commentId: number;
+}) {
+  const user = await requireBoardAccess(input.boardId);
+
+  const comment = await db.query.cardComments.findFirst({
+    where: eq(cardComments.id, input.commentId),
+  });
+  if (!comment) throw new Error("Comentario no encontrado");
+
+  if (comment.authorId !== user.id && user.role !== "delegate") {
+    throw new Error("No puedes eliminar este comentario");
+  }
+
+  await db.delete(cardComments).where(eq(cardComments.id, input.commentId));
 
   revalidatePath(`/boards/${input.boardId}`);
 }

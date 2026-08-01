@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { delegates } from "@/lib/content";
+import type { PublicDelegate } from "@/lib/delegate-types";
 
-export function Delegados() {
+export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
   return (
     <section className="border-b border-black/5 bg-white py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
@@ -42,9 +42,9 @@ export function Delegados() {
                   {delegate.wcaId}
                 </p>
               </div>
-              <p className="text-sm text-black/70">{delegate.role}</p>
+              <p className="text-sm text-black/70">{delegate.title}</p>
               <p className="text-sm text-black/55 md:text-right">
-                {delegate.region}
+                {delegate.location}
               </p>
             </motion.li>
           ))}

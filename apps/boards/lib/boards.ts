@@ -125,6 +125,18 @@ export async function getBoardForUser(user: User, boardId: number) {
           statusPublic: true,
           statusInternal: true,
         },
+        with: {
+          delegates: {
+            with: {
+              delegate: true,
+            },
+          },
+          organizers: {
+            with: {
+              organizer: true,
+            },
+          },
+        },
       },
       labels: true,
       lists: {
@@ -144,6 +156,17 @@ export async function getBoardForUser(user: User, boardId: number) {
                 },
               },
               attachments: true,
+              members: {
+                with: {
+                  user: true,
+                },
+              },
+              comments: {
+                orderBy: (comment, { asc }) => [asc(comment.createdAt)],
+                with: {
+                  author: true,
+                },
+              },
             },
           },
         },

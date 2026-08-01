@@ -1,4 +1,6 @@
 import { db } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { user } from "@workspace/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -72,6 +74,16 @@ export function createAuth() {
           type: "string",
           input: false,
         },
+        delegateTitle: {
+          type: "string",
+          required: false,
+          input: false,
+        },
+        delegateLocation: {
+          type: "string",
+          required: false,
+          input: false,
+        },
         lastLogin: {
           type: "date",
           defaultValue: () => new Date(),
@@ -109,14 +121,24 @@ export function createAuth() {
                 role = "delegate";
               }
 
+              // Prefer a seeded row (matched by WCA ID) so region/title survive login.
+              const existing = data.me.wca_id
+                ? await db.query.user.findFirst({
+                    where: eq(user.wcaId, data.me.wca_id),
+                  })
+                : null;
+
               return {
-                id: String(data.me.id),
+                id: existing?.id ?? String(data.me.id),
                 name: data.me.name,
                 email: data.me.email,
                 image: data.me.avatar?.thumb_url,
                 emailVerified: true,
                 wcaId: data.me.wca_id,
                 role,
+                regionId: existing?.regionId ?? null,
+                delegateTitle: existing?.delegateTitle ?? null,
+                delegateLocation: existing?.delegateLocation ?? null,
               };
             },
             mapProfileToUser: (profile: Record<string, unknown>) => {
@@ -131,6 +153,8 @@ export function createAuth() {
                 wcaId: profile.wcaId as string,
                 role: profile.role as "delegate" | "user",
                 regionId: profile.regionId as string | null,
+                delegateTitle: profile.delegateTitle as string | null,
+                delegateLocation: profile.delegateLocation as string | null,
               };
             },
             overrideUserInfo: true,

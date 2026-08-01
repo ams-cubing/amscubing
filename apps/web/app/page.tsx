@@ -6,15 +6,18 @@ import { Delegados } from "@/components/delegados";
 import { BlogTeaser } from "@/components/blog-teaser";
 import { Contacto } from "@/components/contacto";
 import { SiteFooter } from "@/components/site-footer";
+import { getPublicDelegates } from "@/lib/delegates";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const delegates = await getPublicDelegates();
+
   return (
     <main>
       <SiteNav />
       <Hero />
       <QuienesSomos />
       <ProximasCompetencias />
-      <Delegados />
+      <Delegados delegates={delegates} />
       <BlogTeaser />
       <Contacto />
       <SiteFooter />

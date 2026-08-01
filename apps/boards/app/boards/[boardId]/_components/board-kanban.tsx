@@ -1,8 +1,20 @@
 "use client";
 
-import { AlignLeft, CheckSquare, Paperclip, Plus } from "lucide-react";
+import {
+  AlignLeft,
+  CalendarClock,
+  CheckSquare,
+  Paperclip,
+  Plus,
+} from "lucide-react";
 import * as React from "react";
 
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar";
+import { AvatarGroup } from "@workspace/ui/components/avatar-group";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -27,7 +39,7 @@ import {
   type BoardDetail,
   type ColumnsState,
 } from "../_lib/types";
-import { CardSheet } from "./card-sheet";
+import { CardDialog, formatDueDate } from "./card-dialog";
 
 export function BoardKanban({ board }: { board: BoardDetail }) {
   const [columns, setColumns] = React.useState<ColumnsState>(() =>
@@ -168,7 +180,7 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
         </KanbanOverlay>
       </Kanban>
 
-      <CardSheet
+      <CardDialog
         board={board}
         card={selectedCard}
         open={Boolean(selectedCard)}
@@ -178,6 +190,15 @@ export function BoardKanban({ board }: { board: BoardDetail }) {
       />
     </>
   );
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function CardFace({
@@ -202,6 +223,14 @@ function CardFace({
   );
   const hasDescription = Boolean(card.description?.trim());
   const attachmentCount = card.attachments.length;
+  const hasDueDate = Boolean(card.dueDate);
+  const hasMembers = card.members.length > 0;
+  const hasMeta =
+    hasDescription ||
+    checklistTotal > 0 ||
+    attachmentCount > 0 ||
+    hasDueDate ||
+    hasMembers;
 
   return (
     <button
@@ -226,9 +255,15 @@ function CardFace({
         </div>
       )}
       <div className="text-sm font-medium leading-snug">{card.title}</div>
-      {(hasDescription || checklistTotal > 0 || attachmentCount > 0) && (
+      {hasMeta && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {hasDescription && <AlignLeft className="size-3.5" />}
+          {hasDueDate && card.dueDate && (
+            <span className="inline-flex items-center gap-1">
+              <CalendarClock className="size-3.5" />
+              {formatDueDate(card.dueDate)}
+            </span>
+          )}
           {checklistTotal > 0 && (
             <span className="inline-flex items-center gap-1">
               <CheckSquare className="size-3.5" />
@@ -240,6 +275,21 @@ function CardFace({
               <Paperclip className="size-3.5" />
               {attachmentCount}
             </span>
+          )}
+          {hasMembers && (
+            <AvatarGroup size={18} className="ml-auto">
+              {card.members.map((member) => (
+                <Avatar key={member.userId} title={member.user.name}>
+                  <AvatarImage
+                    src={member.user.image || undefined}
+                    alt={member.user.name}
+                  />
+                  <AvatarFallback className="text-[8px]">
+                    {initials(member.user.name)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+            </AvatarGroup>
           )}
         </div>
       )}

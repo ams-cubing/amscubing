@@ -2,12 +2,27 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import type { User } from "@workspace/db/schema";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar";
+import { AvatarGroup } from "@workspace/ui/components/avatar-group";
 import { Badge } from "@workspace/ui/components/badge";
 
 import { BoardKanban } from "./_components/board-kanban";
 import { getBoardForUser } from "@/lib/boards";
 import { requireSession } from "@/lib/session";
 import { getCalendarUrl } from "@/lib/urls";
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default async function BoardPage({
   params,
@@ -29,6 +44,43 @@ export default async function BoardPage({
     ? `${calendarUrl}/panel/competencias/${board.competition.id}`
     : null;
 
+  const teamPeople = (() => {
+    if (!board.competition) return [];
+    const byWcaId = new Map<
+      string,
+      {
+        wcaId: string;
+        name: string;
+        image: string | null;
+        isPrimary: boolean;
+      }
+    >();
+
+    for (const row of board.competition.delegates) {
+      if (!row.delegate) continue;
+      byWcaId.set(row.delegate.wcaId, {
+        wcaId: row.delegate.wcaId,
+        name: row.delegate.name,
+        image: row.delegate.image,
+        isPrimary: row.isPrimary,
+      });
+    }
+    for (const row of board.competition.organizers) {
+      if (!row.organizer) continue;
+      const existing = byWcaId.get(row.organizer.wcaId);
+      byWcaId.set(row.organizer.wcaId, {
+        wcaId: row.organizer.wcaId,
+        name: row.organizer.name,
+        image: row.organizer.image,
+        isPrimary: existing?.isPrimary || row.isPrimary,
+      });
+    }
+
+    return [...byWcaId.values()].sort(
+      (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+    );
+  })();
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="border-b px-4 py-3">
@@ -46,7 +98,28 @@ export default async function BoardPage({
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            {board.competition &&
+              (teamPeople.length > 0 ? (
+                <AvatarGroup size={24}>
+                  {teamPeople.map((person) => (
+                    <Avatar
+                      key={person.wcaId}
+                      title={`${person.name}${person.isPrimary ? " (Principal)" : ""}`}
+                    >
+                      <AvatarImage
+                        src={person.image || undefined}
+                        alt={person.name}
+                      />
+                      <AvatarFallback>{initials(person.name)}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                </AvatarGroup>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Sin equipo
+                </span>
+              ))}
             {board.competition && (
               <Badge variant="outline">{board.competition.statusPublic}</Badge>
             )}
