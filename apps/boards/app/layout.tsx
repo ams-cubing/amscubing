@@ -46,6 +46,8 @@ async function HeaderAuth() {
         wcaId: session.user.wcaId,
         role: session.user.role as "delegate" | "user",
         regionId: session.user.regionId ?? null,
+        delegateTitle: session.user.delegateTitle ?? null,
+        delegateLocation: session.user.delegateLocation ?? null,
         lastLogin: session.user.lastLogin ?? null,
       }
     : null;
