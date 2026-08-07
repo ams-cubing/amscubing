@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@workspace/db";
-import { competitions, logs } from "@workspace/db/schema";
+import { boards, competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
@@ -29,12 +29,24 @@ export async function cancelCompetition(competitionId: number): Promise<{
         })
         .where(eq(competitions.id, competitionId));
 
+      await tx
+        .update(boards)
+        .set({
+          archivedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(boards.competitionId, competitionId));
+
       await tx.insert(logs).values({
         action: "update_competition",
         targetType: "competition",
         targetId: String(competitionId),
         actorId: session.user.id,
-        details: { statusPublic: "suspended", statusInternal: "cancelled" },
+        details: {
+          statusPublic: "suspended",
+          statusInternal: "cancelled",
+          boardArchived: true,
+        },
       });
     });
 

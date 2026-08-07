@@ -14,7 +14,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "bajio",
     displayName: "Bajío",
-    mapColor: "#f59e0b",
+    mapColor: "#86EFAC",
     states: [
       { id: "AGU", name: "Aguascalientes" },
       { id: "GUA", name: "Guanajuato" },
@@ -26,7 +26,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "centro",
     displayName: "Centro",
-    mapColor: "#ef4444",
+    mapColor: "#67E8F9",
     states: [
       { id: "CMX", name: "Ciudad de México" },
       { id: "MEX", name: "Estado de México" },
@@ -36,7 +36,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "noreste",
     displayName: "Noreste",
-    mapColor: "#8b5cf6",
+    mapColor: "#FDBA74",
     states: [
       { id: "COA", name: "Coahuila" },
       { id: "NLE", name: "Nuevo León" },
@@ -46,7 +46,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "noroeste",
     displayName: "Noroeste",
-    mapColor: "#3b82f6",
+    mapColor: "#FCA5A5",
     states: [
       { id: "BCN", name: "Baja California" },
       { id: "BCS", name: "Baja California Sur" },
@@ -59,7 +59,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "occidente",
     displayName: "Occidente",
-    mapColor: "#10b981",
+    mapColor: "#FDE047",
     states: [
       { id: "COL", name: "Colima" },
       { id: "JAL", name: "Jalisco" },
@@ -70,7 +70,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "oriente",
     displayName: "Oriente",
-    mapColor: "#ec4899",
+    mapColor: "#BEF264",
     states: [
       { id: "HID", name: "Hidalgo" },
       { id: "PUE", name: "Puebla" },
@@ -81,7 +81,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "sureste",
     displayName: "Sureste",
-    mapColor: "#06b6d4",
+    mapColor: "#93C5FD",
     states: [
       { id: "CAM", name: "Campeche" },
       { id: "ROO", name: "Quintana Roo" },
@@ -92,7 +92,7 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
   {
     id: "suroeste",
     displayName: "Suroeste",
-    mapColor: "#84cc16",
+    mapColor: "#C4B5FD",
     states: [
       { id: "CHP", name: "Chiapas" },
       { id: "GRO", name: "Guerrero" },
@@ -103,4 +103,4 @@ export const MEXICO_REGIONS: MexicoRegion[] = [
 
 export const MEXICAN_STATES: MexicoState[] = MEXICO_REGIONS.flatMap(
   (region) => region.states,
-);
+).sort((a, b) => a.name.localeCompare(b.name, "es"));

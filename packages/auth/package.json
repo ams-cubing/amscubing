@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/auth",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/auth.ts",
+    "./client": "./src/client.ts",
+    "./urls": "./src/urls.ts"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "better-auth": "^1.4.10",
+    "drizzle-orm": "^0.44.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.2"
+  }
+}

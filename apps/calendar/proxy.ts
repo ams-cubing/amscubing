@@ -3,7 +3,9 @@ import { getSessionCookie } from "better-auth/cookies";
 
 export async function proxy(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const sessionCookie = getSessionCookie(request);
+  const sessionCookie = getSessionCookie(request, {
+    cookiePrefix: "ams",
+  });
 
   // THIS IS NOT SECURE!
   // This is the recommended approach to optimistically redirect users

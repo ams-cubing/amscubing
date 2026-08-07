@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
-  transpilePackages: ["@workspace/ui", "@workspace/db"],
+  transpilePackages: ["@workspace/ui", "@workspace/db", "@workspace/auth"],
   images: {
     unoptimized: true,
   },

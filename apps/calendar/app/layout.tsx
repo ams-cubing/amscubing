@@ -59,6 +59,8 @@ async function AppSidebarWrapper() {
         ...user,
         image: user.image ?? null,
         regionId: user.regionId ?? null,
+        delegateTitle: user.delegateTitle ?? null,
+        delegateLocation: user.delegateLocation ?? null,
         lastLogin: user.lastLogin ?? null,
       }
     : undefined;

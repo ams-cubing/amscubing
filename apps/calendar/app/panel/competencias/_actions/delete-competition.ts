@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@workspace/db";
-import { competitions, logs } from "@workspace/db/schema";
+import { boards, competitions, logs } from "@workspace/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -26,6 +26,15 @@ export async function deleteCompetition(competitionId: number): Promise<{
     }
 
     await db.transaction(async (tx) => {
+      // Break the circular FK (competition.boardId ↔ board.competitionId)
+      // then delete the board explicitly before the competition.
+      await tx
+        .update(competitions)
+        .set({ boardId: null, updatedAt: new Date() })
+        .where(eq(competitions.id, competitionId));
+
+      await tx.delete(boards).where(eq(boards.competitionId, competitionId));
+
       await tx.delete(competitions).where(eq(competitions.id, competitionId));
 
       if (session?.user?.id) {
@@ -34,7 +43,7 @@ export async function deleteCompetition(competitionId: number): Promise<{
           targetType: "competition",
           targetId: String(competitionId),
           actorId: session.user.id,
-          details: null,
+          details: { boardDeleted: true },
         });
       }
     });

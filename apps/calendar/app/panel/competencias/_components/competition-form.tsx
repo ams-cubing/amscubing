@@ -39,6 +39,7 @@ import type { DateRange } from "react-day-picker";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { useRouter } from "next/navigation";
 import { OrganizerCombobox } from "./organizer-combobox";
+import { BoardAssignControls } from "./board-assign-controls";
 import { searchUsers } from "../_actions/wca-users";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
 import { Competition } from "@workspace/db/schema";
@@ -293,7 +294,8 @@ export function CompetitionForm({
               `Competencia ${isEditing ? "actualizada" : "creada"} exitosamente`,
           );
 
-          router.push("/panel");
+          const id = result.competitionId ?? competition?.id;
+          router.push(id ? `/panel/competencias/${id}` : "/panel");
         } else {
           toast.error(
             result.message ||
@@ -431,12 +433,19 @@ export function CompetitionForm({
           </FormMessage>
         </FormItem>
 
+        {isEditing && competition && (
+          <BoardAssignControls
+            competitionId={competition.id}
+            boardId={competition.boardId}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="trelloUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL de Trello</FormLabel>
+              <FormLabel>URL de Trello (legado)</FormLabel>
               <FormControl>
                 <Input
                   placeholder="https://trello.com/b/..."
@@ -444,6 +453,9 @@ export function CompetitionForm({
                   {...field}
                 />
               </FormControl>
+              <FormDescription>
+                Opcional. Usa el tablero AMS arriba cuando sea posible.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

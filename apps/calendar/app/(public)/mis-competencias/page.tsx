@@ -178,15 +178,26 @@ async function PageContent() {
                     </span>
                   </div>
 
-                  {comp.trelloUrl && (
+                  {comp.boardId ? (
                     <a
-                      href={comp.trelloUrl}
+                      href={`${(process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002").replace(/\/$/, "")}/boards/${comp.boardId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
                     >
-                      Ver en Trello
+                      Ver tablero AMS
                     </a>
+                  ) : (
+                    comp.trelloUrl && (
+                      <a
+                        href={comp.trelloUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                      >
+                        Ver en Trello
+                      </a>
+                    )
                   )}
                 </div>
               );
