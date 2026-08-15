@@ -64,7 +64,9 @@ function cardPlacementChanged(
   const nextList = findCardColumn(next, cardId);
   if (!prevList || !nextList) return false;
   if (prevList !== nextList) return true;
-  return previous[prevList]!.indexOf(cardId) !== next[nextList]!.indexOf(cardId);
+  return (
+    previous[prevList]!.indexOf(cardId) !== next[nextList]!.indexOf(cardId)
+  );
 }
 
 export function BoardKanban({
@@ -213,7 +215,9 @@ export function BoardKanban({
                 <div className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40">
                   <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{list.title}</span>
+                      <span className="text-sm font-semibold">
+                        {list.title}
+                      </span>
                       <Badge
                         variant="secondary"
                         className="pointer-events-none rounded-sm"
@@ -269,8 +273,10 @@ export function BoardKanban({
   );
 }
 
-interface BoardColumnProps
-  extends Omit<React.ComponentProps<typeof KanbanColumn>, "children"> {
+interface BoardColumnProps extends Omit<
+  React.ComponentProps<typeof KanbanColumn>,
+  "children"
+> {
   title: string;
   cardIds: string[];
   cardsById: Map<string, BoardCard>;
@@ -303,10 +309,7 @@ function BoardColumn({
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{title}</span>
-          <Badge
-            variant="secondary"
-            className="pointer-events-none rounded-sm"
-          >
+          <Badge variant="secondary" className="pointer-events-none rounded-sm">
             {cardIds.length}
           </Badge>
         </div>
@@ -350,8 +353,10 @@ function BoardColumn({
   );
 }
 
-interface BoardCardItemProps
-  extends Omit<React.ComponentProps<typeof KanbanItem>, "value" | "children"> {
+interface BoardCardItemProps extends Omit<
+  React.ComponentProps<typeof KanbanItem>,
+  "value" | "children"
+> {
   card: BoardCard;
   relevant: boolean;
   onOpen?: () => void;
