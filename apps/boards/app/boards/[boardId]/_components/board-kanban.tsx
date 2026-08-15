@@ -4,6 +4,7 @@ import {
   AlignLeft,
   CalendarClock,
   CheckSquare,
+  GripVertical,
   Paperclip,
   Plus,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import {
   Kanban,
   KanbanBoard,
   KanbanColumn,
+  KanbanColumnHandle,
   KanbanItem,
   KanbanOverlay,
 } from "@workspace/ui/components/kanban";
@@ -34,6 +36,7 @@ import {
 } from "../_actions/board-actions";
 import {
   boardToColumns,
+  cardKey,
   flattenCards,
   isCardRelevantNow,
   listKey,
@@ -44,6 +47,27 @@ import {
   type ColumnsState,
 } from "../_lib/types";
 import { CardDialog, formatDueDate } from "./card-dialog";
+
+function findCardColumn(columns: ColumnsState, cardId: string) {
+  for (const [columnId, cardIds] of Object.entries(columns)) {
+    if (cardIds.includes(cardId)) return columnId;
+  }
+  return null;
+}
+
+function cardPlacementChanged(
+  previous: ColumnsState,
+  next: ColumnsState,
+  cardId: string,
+) {
+  const prevList = findCardColumn(previous, cardId);
+  const nextList = findCardColumn(next, cardId);
+  if (!prevList || !nextList) return false;
+  if (prevList !== nextList) return true;
+  return (
+    previous[prevList]!.indexOf(cardId) !== next[nextList]!.indexOf(cardId)
+  );
+}
 
 export function BoardKanban({
   board,
@@ -58,9 +82,20 @@ export function BoardKanban({
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(
     null,
   );
+  const columnsRef = React.useRef(columns);
+  const dragSnapshotRef = React.useRef<ColumnsState | null>(null);
+  const activeDragIdRef = React.useRef<string | null>(null);
+  const isDraggingRef = React.useRef(false);
 
   React.useEffect(() => {
-    setColumns(boardToColumns(board));
+    columnsRef.current = columns;
+  }, [columns]);
+
+  React.useEffect(() => {
+    if (isDraggingRef.current) return;
+    const next = boardToColumns(board);
+    columnsRef.current = next;
+    setColumns(next);
   }, [board]);
 
   const cardsById = React.useMemo(() => flattenCards(board), [board]);
@@ -98,97 +133,126 @@ export function BoardKanban({
     });
   }
 
+  function commitDrag() {
+    const previous = dragSnapshotRef.current;
+    const activeId = activeDragIdRef.current;
+    const next = columnsRef.current;
+
+    dragSnapshotRef.current = null;
+    activeDragIdRef.current = null;
+    isDraggingRef.current = false;
+
+    if (readOnly || !previous || !activeId) return;
+    // Column drags use list keys; card persistence is only for cards.
+    if (activeId in next) return;
+    if (!cardPlacementChanged(previous, next, activeId)) return;
+
+    void persistMove(next, activeId).catch(() => {
+      columnsRef.current = previous;
+      setColumns(previous);
+    });
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <Kanban
         value={columns}
         onValueChange={(next) => {
           if (readOnly) return;
-          const previous = columns;
+          columnsRef.current = next;
           setColumns(next);
-
-          const moved = Object.values(next)
-            .flat()
-            .find((id) => {
-              const prevList = Object.entries(previous).find(([, ids]) =>
-                ids.includes(id),
-              )?.[0];
-              const nextList = Object.entries(next).find(([, ids]) =>
-                ids.includes(id),
-              )?.[0];
-              if (prevList !== nextList) return true;
-              if (!prevList || !nextList) return false;
-              return (
-                previous[prevList]!.indexOf(id) !== next[nextList]!.indexOf(id)
-              );
-            });
-
-          if (moved) {
-            void persistMove(next, moved).catch(() => {
-              setColumns(previous);
-            });
+        }}
+        onDragStart={(event) => {
+          if (readOnly) return;
+          isDraggingRef.current = true;
+          dragSnapshotRef.current = columnsRef.current;
+          activeDragIdRef.current = String(event.active.id);
+        }}
+        onDragEnd={() => {
+          // Kanban may still apply a same-column reorder via onValueChange
+          // after this user handler runs — read the final board in a microtask.
+          queueMicrotask(commitDrag);
+        }}
+        onDragCancel={() => {
+          const previous = dragSnapshotRef.current;
+          dragSnapshotRef.current = null;
+          activeDragIdRef.current = null;
+          isDraggingRef.current = false;
+          if (previous) {
+            columnsRef.current = previous;
+            setColumns(previous);
           }
         }}
         getItemValue={(item) => item}
       >
         <KanbanBoard className="h-full min-h-0 items-start gap-3 overflow-x-auto overflow-y-hidden p-4">
-          {board.lists.map((list) => {
-            const columnId = listKey(list.id);
-            const cardIds = columns[columnId] ?? [];
+          {Object.entries(columns).map(([columnId, cardIds]) => {
+            const list = listsById.get(columnId);
+            if (!list) return null;
 
             return (
-              <KanbanColumn
-                key={list.id}
+              <BoardColumn
+                key={columnId}
                 value={columnId}
-                className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40 p-0"
-              >
-                <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
-                  <h2 className="text-sm font-semibold">{list.title}</h2>
-                  <Badge variant="secondary">{cardIds.length}</Badge>
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2">
-                  {cardIds.map((id) => {
-                    const card = cardsById.get(id);
-                    if (!card) return null;
-                    return (
-                      <KanbanItem key={id} value={id} asHandle={!readOnly}>
-                        <CardFace
-                          card={card}
-                          relevant={isCardRelevantNow(
-                            card,
-                            board.competition?.statusPublic,
-                            board.competition?.statusInternal,
-                          )}
-                          onOpen={() => setSelectedCardId(id)}
-                        />
-                      </KanbanItem>
-                    );
-                  })}
-                </div>
-                {!readOnly && (
-                  <div className="shrink-0 px-2 pb-2 pt-1">
-                    <AddCardForm
-                      boardId={board.id}
-                      listId={list.id}
-                      listTitle={listsById.get(columnId)?.title ?? list.title}
-                    />
-                  </div>
-                )}
-              </KanbanColumn>
+                title={list.title}
+                cardIds={cardIds}
+                cardsById={cardsById}
+                board={board}
+                readOnly={readOnly}
+                onOpenCard={setSelectedCardId}
+              />
             );
           })}
           {!readOnly && <AddListForm boardId={board.id} />}
         </KanbanBoard>
         <KanbanOverlay>
           {({ value, variant }) => {
-            if (variant === "column") return null;
+            if (variant === "column") {
+              const cardIds = columns[String(value)] ?? [];
+              const list = listsById.get(String(value));
+              if (!list) return null;
+              return (
+                <div className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40">
+                  <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {list.title}
+                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="pointer-events-none rounded-sm"
+                      >
+                        {cardIds.length}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-0.5 px-2 pb-2">
+                    {cardIds.map((id) => {
+                      const card = cardsById.get(id);
+                      if (!card) return null;
+                      return (
+                        <CardFace
+                          key={id}
+                          card={card}
+                          relevant={isCardRelevantNow(
+                            card,
+                            board.competition?.statusPublic,
+                            board.competition?.statusInternal,
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
             const card = cardsById.get(String(value));
             if (!card) return null;
             return (
               <CardFace
                 card={card}
                 relevant
-                onOpen={() => undefined}
                 className="cursor-grabbing shadow-lg"
               />
             );
@@ -209,6 +273,116 @@ export function BoardKanban({
   );
 }
 
+interface BoardColumnProps extends Omit<
+  React.ComponentProps<typeof KanbanColumn>,
+  "children"
+> {
+  title: string;
+  cardIds: string[];
+  cardsById: Map<string, BoardCard>;
+  board: BoardDetail;
+  readOnly?: boolean;
+  onOpenCard: (cardId: string) => void;
+}
+
+function BoardColumn({
+  value,
+  title,
+  cardIds,
+  cardsById,
+  board,
+  readOnly = false,
+  onOpenCard,
+  className,
+  ...props
+}: BoardColumnProps) {
+  return (
+    <KanbanColumn
+      value={value}
+      disabled={readOnly}
+      className={cn(
+        "flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40 p-0",
+        className,
+      )}
+      {...props}
+    >
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">{title}</span>
+          <Badge variant="secondary" className="pointer-events-none rounded-sm">
+            {cardIds.length}
+          </Badge>
+        </div>
+        {!readOnly && (
+          <KanbanColumnHandle asChild>
+            <Button variant="ghost" size="icon" className="size-8 shrink-0">
+              <GripVertical className="size-4" />
+            </Button>
+          </KanbanColumnHandle>
+        )}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-0.5 px-2">
+        {cardIds.map((id) => {
+          const card = cardsById.get(id);
+          if (!card) return null;
+          return (
+            <BoardCardItem
+              key={id}
+              card={card}
+              relevant={isCardRelevantNow(
+                card,
+                board.competition?.statusPublic,
+                board.competition?.statusInternal,
+              )}
+              asHandle={!readOnly}
+              onOpen={() => onOpenCard(id)}
+            />
+          );
+        })}
+      </div>
+      {!readOnly && (
+        <div className="shrink-0 px-2 pb-2 pt-1">
+          <AddCardForm
+            boardId={board.id}
+            listId={parseListKey(String(value))}
+            listTitle={title}
+          />
+        </div>
+      )}
+    </KanbanColumn>
+  );
+}
+
+interface BoardCardItemProps extends Omit<
+  React.ComponentProps<typeof KanbanItem>,
+  "value" | "children"
+> {
+  card: BoardCard;
+  relevant: boolean;
+  onOpen?: () => void;
+}
+
+function BoardCardItem({
+  card,
+  relevant,
+  onOpen,
+  asHandle,
+  className,
+  ...props
+}: BoardCardItemProps) {
+  return (
+    <KanbanItem
+      value={cardKey(card.id)}
+      asHandle={asHandle}
+      asChild
+      className={className}
+      {...props}
+    >
+      <CardFace card={card} relevant={relevant} onOpen={onOpen} />
+    </KanbanItem>
+  );
+}
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -223,12 +397,13 @@ function CardFace({
   relevant,
   onOpen,
   className,
+  ...props
 }: {
   card: BoardCard;
   relevant: boolean;
-  onOpen: () => void;
+  onOpen?: () => void;
   className?: string;
-}) {
+} & React.ComponentProps<"div">) {
   const checklistTotal = card.checklists.reduce(
     (sum, checklist) => sum + checklist.items.length,
     0,
@@ -250,11 +425,17 @@ function CardFace({
     hasMembers;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <div
+      {...props}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : props.tabIndex}
+      onClick={(event) => {
+        props.onClick?.(event);
+        onOpen?.();
+      }}
       className={cn(
-        "w-full rounded-md border bg-background p-2.5 text-left shadow-sm transition hover:border-foreground/20",
+        "w-full rounded-md border bg-card p-2.5 text-left shadow-xs transition hover:border-foreground/20",
+        onOpen && "cursor-pointer",
         !relevant && "opacity-50",
         className,
       )}
@@ -310,7 +491,7 @@ function CardFace({
           )}
         </div>
       )}
-    </button>
+    </div>
   );
 }
 

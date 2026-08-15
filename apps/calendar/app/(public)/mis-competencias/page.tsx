@@ -16,6 +16,7 @@ import {
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
+import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
 
 async function PageContent() {
   const headersList = await headers();
@@ -178,9 +179,9 @@ async function PageContent() {
                     </span>
                   </div>
 
-                  {comp.boardId ? (
+                  {isBoardsEnabled() && comp.boardId ? (
                     <a
-                      href={`${(process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002").replace(/\/$/, "")}/boards/${comp.boardId}`}
+                      href={`${getBoardsUrl()}/boards/${comp.boardId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"

@@ -24,15 +24,11 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
+import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
+
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
 >;
-
-function getBoardsUrl() {
-  return (
-    process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002"
-  ).replace(/\/$/, "");
-}
 
 function formatDate(date: string) {
   return new Date(date + "T00:00:00").toLocaleDateString("es-MX", {
@@ -47,6 +43,7 @@ export function CompetitionDetailView({
 }: {
   competition: CompetitionDetail;
 }) {
+  const boardsEnabled = isBoardsEnabled();
   const boardsUrl = getBoardsUrl();
   const location = [
     competition.city,
@@ -216,7 +213,7 @@ export function CompetitionDetailView({
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          {competition.boardId && (
+          {boardsEnabled && competition.boardId && (
             <Button asChild variant="outline" size="sm">
               <a
                 href={`${boardsUrl}/boards/${competition.boardId}`}
@@ -228,7 +225,7 @@ export function CompetitionDetailView({
               </a>
             </Button>
           )}
-          {!competition.boardId && competition.trelloUrl && (
+          {!(boardsEnabled && competition.boardId) && competition.trelloUrl && (
             <Button asChild variant="outline" size="sm">
               <a
                 href={competition.trelloUrl}

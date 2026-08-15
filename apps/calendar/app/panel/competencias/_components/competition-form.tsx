@@ -44,6 +44,7 @@ import { searchUsers } from "../_actions/wca-users";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
 import { Competition } from "@workspace/db/schema";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { isBoardsEnabled } from "@/lib/boards";
 
 function getPublicStatusColor(status: Competition["statusPublic"]): string {
   switch (status) {
@@ -445,7 +446,9 @@ export function CompetitionForm({
           name="trelloUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL de Trello (legado)</FormLabel>
+              <FormLabel>
+                {isBoardsEnabled() ? "URL de Trello (legado)" : "URL de Trello"}
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="https://trello.com/b/..."
@@ -454,7 +457,10 @@ export function CompetitionForm({
                 />
               </FormControl>
               <FormDescription>
-                Opcional. Usa el tablero AMS arriba cuando sea posible.
+                Opcional
+                {isBoardsEnabled()
+                  ? ". Usa el tablero AMS arriba cuando sea posible."
+                  : "."}
               </FormDescription>
               <FormMessage />
             </FormItem>
