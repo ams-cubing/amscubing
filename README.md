@@ -4,6 +4,8 @@
 
 Monorepo for [Asociación Mexicana de Speedcubing](https://amscubing.org) apps. Shared PostgreSQL schema and local Docker setup for development.
 
+See [ROADMAP.md](ROADMAP.md) for planned work (auth on web, CMS/blog/courses parity with amscubing.org).
+
 ## Apps
 
 | App                | Path            | Port | Description                                               |
