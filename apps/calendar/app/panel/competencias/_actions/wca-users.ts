@@ -3,6 +3,7 @@
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
 import { eq, ilike, or } from "drizzle-orm";
+import { requireDelegate } from "@/lib/session";
 
 type WCAPerson = {
   person: {
@@ -17,6 +18,11 @@ type WCAPerson = {
 
 export async function fetchAndCreateWCAUser(wcaId: string) {
   try {
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return { success: false, message: authResult.message };
+    }
+
     const existingUser = await db.query.user.findFirst({
       where: eq(user.wcaId, wcaId),
     });
@@ -70,6 +76,11 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
 
 export async function searchUsers(query: string) {
   try {
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return [];
+    }
+
     if (!query) {
       const allUsers = await db
         .select({

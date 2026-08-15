@@ -86,7 +86,7 @@ export default function RootLayout({
             </Suspense>
             <SidebarInset>
               <div className="sticky top-0 z-50">
-                <Suspense fallback={null}>
+                <Suspense fallback={<div className="h-0" aria-hidden />}>
                   <PreviewBanner productionHost="calendario.amscubing.org" />
                 </Suspense>
                 <Header />
@@ -96,7 +96,7 @@ export default function RootLayout({
                   {children}
                 </div>
               </div>
-              <Suspense>
+              <Suspense fallback={null}>
                 <Footer />
               </Suspense>
             </SidebarInset>

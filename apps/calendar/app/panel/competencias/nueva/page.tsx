@@ -1,7 +1,7 @@
-import { db } from "@workspace/db";
 import { CompetitionForm } from "../_components/competition-form";
 import { Suspense } from "react";
 import { getDelegates } from "./_lib/queries";
+import Loading from "./loading";
 
 async function PageContent() {
   const delegates = await getDelegates();
@@ -17,9 +17,7 @@ async function PageContent() {
             Usa el formulario a continuación para crear una nueva competencia.
           </p>
         </div>
-        <Suspense>
-          <CompetitionForm delegates={delegates} />
-        </Suspense>
+        <CompetitionForm delegates={delegates} />
       </div>
     </main>
   );
@@ -27,7 +25,7 @@ async function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent />
     </Suspense>
   );

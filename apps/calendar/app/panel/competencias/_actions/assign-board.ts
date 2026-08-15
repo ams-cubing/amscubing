@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { revalidatePath, updateTag } from "next/cache";
 
 import { cloneBoardFromTemplate } from "@workspace/db/clone-board";
@@ -8,24 +7,17 @@ import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
 import { isBoardsEnabled } from "@/lib/boards";
+import { requireDelegate } from "@/lib/session";
 
 export async function assignBoardToCompetition(competitionId: number) {
   if (!isBoardsEnabled()) {
     return { error: "Tableros AMS no están habilitados" };
   }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    return { error: "No autenticado" };
-  }
-
-  if (session.user.role !== "delegate") {
-    return { error: "Solo delegados pueden asignar tableros" };
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { error: authResult.message };
   }
 
   const competition = await db.query.competitions.findFirst({

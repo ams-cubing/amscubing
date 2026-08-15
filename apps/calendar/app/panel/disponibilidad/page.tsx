@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buttonVariants } from "@workspace/ui/components/button";
 import { Edit } from "lucide-react";
 import { getDelegatesForAvailability } from "./_lib/queries";
+import Loading from "./loading";
 
 async function PageContent() {
   const delegates = await getDelegatesForAvailability();
@@ -38,7 +39,7 @@ async function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent />
     </Suspense>
   );

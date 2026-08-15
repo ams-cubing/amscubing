@@ -11,10 +11,9 @@ import {
 import { Resend } from "resend";
 import { z } from "zod";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { updateCompetitionSchema } from "../../_lib/validations";
+import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -27,18 +26,11 @@ export async function updateCompetition(
   competitionId?: number;
 }> {
   try {
-    const headersList = await headers();
-
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
-
-    if (!session?.user?.wcaId) {
-      return {
-        success: false,
-        message: "No autenticado",
-      };
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return { success: false, message: authResult.message };
     }
+    const { session } = authResult;
 
     // Validate input
     const validatedData = updateCompetitionSchema.parse(data);
@@ -146,15 +138,13 @@ export async function updateCompetition(
         await tx.insert(competitionOrganizers).values(organizerAssignments);
       }
 
-      if (session?.user?.id) {
-        await tx.insert(logs).values({
-          action: "update_competition",
-          targetType: "competition",
-          targetId: String(competitionId),
-          actorId: session.user.id,
-          details: validatedData,
-        });
-      }
+      await tx.insert(logs).values({
+        action: "update_competition",
+        targetType: "competition",
+        targetId: String(competitionId),
+        actorId: session.user.id,
+        details: validatedData,
+      });
     });
 
     // Notify newly added delegates

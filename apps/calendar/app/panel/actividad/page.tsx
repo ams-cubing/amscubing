@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import ActivityTable from "./_components/data-table";
 import { getActivityLogs } from "./_lib/queries";
+import Loading from "./loading";
 
 async function PageContent() {
   const logsForClient = await getActivityLogs();
@@ -22,7 +23,7 @@ async function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent />
     </Suspense>
   );

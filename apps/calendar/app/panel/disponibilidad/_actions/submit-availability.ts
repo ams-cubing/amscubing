@@ -2,25 +2,23 @@
 
 import { db } from "@workspace/db";
 import { availability, logs } from "@workspace/db/schema";
-import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
+import { requireDelegate } from "@/lib/session";
 
 export async function submitAvailability(data: { dates: Date[] }) {
   try {
-    const headersList = await headers();
-
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
-
-    const userWcaId = session?.user?.wcaId;
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return { success: false, message: authResult.message };
+    }
+    const { session } = authResult;
+    const userWcaId = session.user.wcaId;
 
     if (!userWcaId) {
       return {
         success: false,
-        message: "Debes iniciar sesión para registrar disponibilidad",
+        message: "Tu cuenta no tiene un WCA ID asociado",
       };
     }
 
@@ -66,18 +64,16 @@ export async function submitAvailability(data: { dates: Date[] }) {
         );
       }
 
-      if (session?.user?.id) {
-        await tx.insert(logs).values({
-          action: "submit_availability",
-          targetType: "availability",
-          targetId: userWcaId,
-          actorId: session.user.id,
-          details: {
-            inserted: toInsert,
-            deleted: toDelete,
-          },
-        });
-      }
+      await tx.insert(logs).values({
+        action: "submit_availability",
+        targetType: "availability",
+        targetId: userWcaId,
+        actorId: session.user.id,
+        details: {
+          inserted: toInsert,
+          deleted: toDelete,
+        },
+      });
     });
 
     revalidatePath("/panel/disponibilidad");
@@ -95,4 +91,3 @@ export async function submitAvailability(data: { dates: Date[] }) {
     };
   }
 }
-// ...existing code...

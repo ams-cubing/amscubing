@@ -8,6 +8,7 @@ import {
   UserIcon,
   PlusCircle,
   CalendarCheck,
+  CalendarDays,
   Activity,
   LayoutDashboard,
 } from "lucide-react";
@@ -61,6 +62,11 @@ const data = {
       name: "Disponibilidad",
       url: "/panel/disponibilidad",
       icon: CalendarCheck,
+    },
+    {
+      name: "Feriados",
+      url: "/panel/feriados",
+      icon: CalendarDays,
     },
     {
       name: "Actividad",

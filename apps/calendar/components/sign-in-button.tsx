@@ -23,8 +23,8 @@ export function SignInButton() {
           } catch (error) {
             if (error instanceof z.ZodError) {
               console.error(error);
-              toast.error("Failed to sign in with WCA", {
-                description: "Please try again",
+              toast.error("No se pudo iniciar sesión con WCA", {
+                description: "Inténtalo de nuevo",
               });
             }
           }

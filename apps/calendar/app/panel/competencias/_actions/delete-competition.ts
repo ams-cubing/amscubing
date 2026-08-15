@@ -2,28 +2,20 @@
 
 import { db } from "@workspace/db";
 import { boards, competitions, logs } from "@workspace/db/schema";
-import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { requireDelegate } from "@/lib/session";
 
 export async function deleteCompetition(competitionId: number): Promise<{
   success: boolean;
   message: string;
 }> {
   try {
-    const headersList = await headers();
-
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
-
-    if (!session?.user?.wcaId) {
-      return {
-        success: false,
-        message: "No autenticado",
-      };
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return { success: false, message: authResult.message };
     }
+    const { session } = authResult;
 
     await db.transaction(async (tx) => {
       // Break the circular FK (competition.boardId ↔ board.competitionId)
@@ -37,15 +29,13 @@ export async function deleteCompetition(competitionId: number): Promise<{
 
       await tx.delete(competitions).where(eq(competitions.id, competitionId));
 
-      if (session?.user?.id) {
-        await tx.insert(logs).values({
-          action: "delete_competition",
-          targetType: "competition",
-          targetId: String(competitionId),
-          actorId: session.user.id,
-          details: { boardDeleted: true },
-        });
-      }
+      await tx.insert(logs).values({
+        action: "delete_competition",
+        targetType: "competition",
+        targetId: String(competitionId),
+        actorId: session.user.id,
+        details: { boardDeleted: true },
+      });
     });
 
     revalidateTag("competitions", "days");

@@ -8,13 +8,12 @@ import {
   logs,
   availability,
 } from "@workspace/db/schema";
-import { auth } from "@/lib/auth";
 import { and, gte, inArray, lte } from "drizzle-orm";
-import { headers } from "next/headers";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createCompetitionSchema } from "../../_lib/validations";
+import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -26,18 +25,11 @@ export async function createCompetition(
   competitionId?: number;
 }> {
   try {
-    const headersList = await headers();
-
-    const session = await auth.api.getSession({
-      headers: headersList,
-    });
-
-    if (!session?.user?.wcaId) {
-      return {
-        success: false,
-        message: "No autenticado",
-      };
+    const authResult = await requireDelegate();
+    if (!authResult.ok) {
+      return { success: false, message: authResult.message };
     }
+    const { session } = authResult;
 
     // Validate input
     const validatedData = createCompetitionSchema.parse(data);
@@ -106,15 +98,13 @@ export async function createCompetition(
         await tx.insert(competitionOrganizers).values(organizerAssignments);
       }
 
-      if (session?.user?.id) {
-        await tx.insert(logs).values({
-          action: "create_competition",
-          targetType: "competition",
-          targetId: String(newCompetitionId),
-          actorId: session.user.id,
-          details: validatedData,
-        });
-      }
+      await tx.insert(logs).values({
+        action: "create_competition",
+        targetType: "competition",
+        targetId: String(newCompetitionId),
+        actorId: session.user.id,
+        details: validatedData,
+      });
     });
 
     try {

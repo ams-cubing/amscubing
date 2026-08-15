@@ -9,6 +9,7 @@ import {
   getCompetitionLogs,
   getCompetitionWithRelations,
 } from "./_lib/queries";
+import Loading from "./loading";
 
 type Params = Promise<{ id: string }>;
 
@@ -73,7 +74,7 @@ async function PageContent({
 
 export default function Page({ params }: { params: Params }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent params={params} />
     </Suspense>
   );
