@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "@workspace/ui/globals.css";
 
 import { Providers } from "@/components/providers";
+import { PreviewBanner } from "@/components/preview-banner";
 import { SignInButton } from "@/components/sign-in-button";
 import { UserMenu } from "@/components/user-menu";
 import { auth } from "@/lib/auth";
@@ -70,6 +71,9 @@ export default function RootLayout({
         <Providers>
           <div className="flex h-svh flex-col overflow-hidden">
             <header className="z-40 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+              <Suspense fallback={null}>
+                <PreviewBanner productionHost="tablero.amscubing.org" />
+              </Suspense>
               <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-4">
                 <div className="flex items-center gap-4">
                   <Link href="/" className="font-semibold tracking-tight">

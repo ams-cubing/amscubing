@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 bg-card border-b">
+    <header className="bg-card border-b">
       <div className="mx-auto flex items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
         <SidebarTrigger />
         <Link
