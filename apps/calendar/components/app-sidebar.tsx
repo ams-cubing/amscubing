@@ -9,6 +9,7 @@ import {
   PlusCircle,
   CalendarCheck,
   Activity,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { NavCalendar } from "@/components/nav-calendar";
@@ -25,6 +26,7 @@ import {
 import Image from "next/image";
 import { NavDelegate } from "./nav-delegate";
 import type { User } from "@workspace/db/schema";
+import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
 
 const data = {
   calendar: [
@@ -74,6 +76,17 @@ export function AppSidebar({
 }: {
   user: User | undefined;
 } & React.ComponentProps<typeof Sidebar>) {
+  const calendarNav = isBoardsEnabled()
+    ? [
+        ...data.calendar,
+        {
+          name: "Tableros AMS",
+          url: getBoardsUrl(),
+          icon: LayoutDashboard,
+        },
+      ]
+    : data.calendar;
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -96,7 +109,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavCalendar calendar={data.calendar} user={user} />
+        <NavCalendar calendar={calendarNav} user={user} />
         <NavDelegate delegate={data.delegate} user={user} />
       </SidebarContent>
       <SidebarFooter>

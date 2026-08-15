@@ -48,6 +48,25 @@ import {
 } from "../_lib/types";
 import { CardDialog, formatDueDate } from "./card-dialog";
 
+function findCardColumn(columns: ColumnsState, cardId: string) {
+  for (const [columnId, cardIds] of Object.entries(columns)) {
+    if (cardIds.includes(cardId)) return columnId;
+  }
+  return null;
+}
+
+function cardPlacementChanged(
+  previous: ColumnsState,
+  next: ColumnsState,
+  cardId: string,
+) {
+  const prevList = findCardColumn(previous, cardId);
+  const nextList = findCardColumn(next, cardId);
+  if (!prevList || !nextList) return false;
+  if (prevList !== nextList) return true;
+  return previous[prevList]!.indexOf(cardId) !== next[nextList]!.indexOf(cardId);
+}
+
 export function BoardKanban({
   board,
   readOnly = false,
@@ -61,9 +80,20 @@ export function BoardKanban({
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(
     null,
   );
+  const columnsRef = React.useRef(columns);
+  const dragSnapshotRef = React.useRef<ColumnsState | null>(null);
+  const activeDragIdRef = React.useRef<string | null>(null);
+  const isDraggingRef = React.useRef(false);
 
   React.useEffect(() => {
-    setColumns(boardToColumns(board));
+    columnsRef.current = columns;
+  }, [columns]);
+
+  React.useEffect(() => {
+    if (isDraggingRef.current) return;
+    const next = boardToColumns(board);
+    columnsRef.current = next;
+    setColumns(next);
   }, [board]);
 
   const cardsById = React.useMemo(() => flattenCards(board), [board]);
@@ -101,35 +131,54 @@ export function BoardKanban({
     });
   }
 
+  function commitDrag() {
+    const previous = dragSnapshotRef.current;
+    const activeId = activeDragIdRef.current;
+    const next = columnsRef.current;
+
+    dragSnapshotRef.current = null;
+    activeDragIdRef.current = null;
+    isDraggingRef.current = false;
+
+    if (readOnly || !previous || !activeId) return;
+    // Column drags use list keys; card persistence is only for cards.
+    if (activeId in next) return;
+    if (!cardPlacementChanged(previous, next, activeId)) return;
+
+    void persistMove(next, activeId).catch(() => {
+      columnsRef.current = previous;
+      setColumns(previous);
+    });
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <Kanban
         value={columns}
         onValueChange={(next) => {
           if (readOnly) return;
-          const previous = columns;
+          columnsRef.current = next;
           setColumns(next);
-
-          const moved = Object.values(next)
-            .flat()
-            .find((id) => {
-              const prevList = Object.entries(previous).find(([, ids]) =>
-                ids.includes(id),
-              )?.[0];
-              const nextList = Object.entries(next).find(([, ids]) =>
-                ids.includes(id),
-              )?.[0];
-              if (prevList !== nextList) return true;
-              if (!prevList || !nextList) return false;
-              return (
-                previous[prevList]!.indexOf(id) !== next[nextList]!.indexOf(id)
-              );
-            });
-
-          if (moved) {
-            void persistMove(next, moved).catch(() => {
-              setColumns(previous);
-            });
+        }}
+        onDragStart={(event) => {
+          if (readOnly) return;
+          isDraggingRef.current = true;
+          dragSnapshotRef.current = columnsRef.current;
+          activeDragIdRef.current = String(event.active.id);
+        }}
+        onDragEnd={() => {
+          // Kanban may still apply a same-column reorder via onValueChange
+          // after this user handler runs — read the final board in a microtask.
+          queueMicrotask(commitDrag);
+        }}
+        onDragCancel={() => {
+          const previous = dragSnapshotRef.current;
+          dragSnapshotRef.current = null;
+          activeDragIdRef.current = null;
+          isDraggingRef.current = false;
+          if (previous) {
+            columnsRef.current = previous;
+            setColumns(previous);
           }
         }}
         getItemValue={(item) => item}
@@ -161,21 +210,48 @@ export function BoardKanban({
               const list = listsById.get(String(value));
               if (!list) return null;
               return (
-                <BoardColumn
-                  value={String(value)}
-                  title={list.title}
-                  cardIds={cardIds}
-                  cardsById={cardsById}
-                  board={board}
-                  readOnly={readOnly}
-                  onOpenCard={() => undefined}
-                />
+                <div className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40">
+                  <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{list.title}</span>
+                      <Badge
+                        variant="secondary"
+                        className="pointer-events-none rounded-sm"
+                      >
+                        {cardIds.length}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-0.5 px-2 pb-2">
+                    {cardIds.map((id) => {
+                      const card = cardsById.get(id);
+                      if (!card) return null;
+                      return (
+                        <CardFace
+                          key={id}
+                          card={card}
+                          relevant={isCardRelevantNow(
+                            card,
+                            board.competition?.statusPublic,
+                            board.competition?.statusInternal,
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
               );
             }
 
             const card = cardsById.get(String(value));
             if (!card) return null;
-            return <BoardCardItem card={card} relevant />;
+            return (
+              <CardFace
+                card={card}
+                relevant
+                className="cursor-grabbing shadow-lg"
+              />
+            );
           }}
         </KanbanOverlay>
       </Kanban>

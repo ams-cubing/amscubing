@@ -9,8 +9,13 @@ import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
+import { isBoardsEnabled } from "@/lib/boards";
 
 export async function assignBoardToCompetition(competitionId: number) {
+  if (!isBoardsEnabled()) {
+    return { error: "Tableros AMS no están habilitados" };
+  }
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });

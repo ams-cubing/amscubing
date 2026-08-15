@@ -7,13 +7,9 @@ import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
 
-import { assignBoardToCompetition } from "../_actions/assign-board";
+import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
 
-function getBoardsUrl() {
-  return (
-    process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002"
-  ).replace(/\/$/, "");
-}
+import { assignBoardToCompetition } from "../_actions/assign-board";
 
 export function BoardAssignControls({
   competitionId,
@@ -25,6 +21,10 @@ export function BoardAssignControls({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const boardsUrl = getBoardsUrl();
+
+  if (!isBoardsEnabled()) {
+    return null;
+  }
 
   return (
     <div className="space-y-2 rounded-lg border p-4">

@@ -38,12 +38,7 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { cn } from "@workspace/ui/lib/utils";
-
-function getBoardsUrl() {
-  return (
-    process.env.NEXT_PUBLIC_BOARDS_URL ?? "http://localhost:3002"
-  ).replace(/\/$/, "");
-}
+import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
 import {
   formatInternalStatus,
   formatPublicStatus,
@@ -362,7 +357,7 @@ export function getCompetitionsTableColumns({
       cell: ({ row }) => {
         const boardId = row.original.boardId as number | null;
         const url = row.getValue("trelloUrl") as string | null;
-        if (boardId) {
+        if (isBoardsEnabled() && boardId) {
           return (
             <a
               href={`${getBoardsUrl()}/boards/${boardId}`}
