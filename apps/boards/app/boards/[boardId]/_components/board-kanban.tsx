@@ -14,6 +14,7 @@ import { runBoardAction } from "@/lib/run-board-action";
 import { moveCardAction } from "../_actions/board-actions";
 import {
   boardToColumns,
+  cardKey,
   flattenCards,
   isCardRelevantNow,
   listKey,
@@ -50,16 +51,29 @@ function cardPlacementChanged(
 export function BoardKanban({
   board,
   readOnly = false,
+  initialCardId = null,
 }: {
   board: BoardDetail;
   readOnly?: boolean;
+  initialCardId?: number | null;
 }) {
   const [columns, setColumns] = React.useState<ColumnsState>(() =>
     boardToColumns(board),
   );
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(
-    null,
+    () => (initialCardId != null ? cardKey(initialCardId) : null),
   );
+  function selectCard(cardId: string | null) {
+    setSelectedCardId(cardId);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (cardId) {
+      url.searchParams.set("card", String(parseCardKey(cardId)));
+    } else {
+      url.searchParams.delete("card");
+    }
+    window.history.replaceState(null, "", url);
+  }
   const columnsRef = React.useRef(columns);
   const dragSnapshotRef = React.useRef<ColumnsState | null>(null);
   const activeDragIdRef = React.useRef<string | null>(null);
@@ -180,7 +194,7 @@ export function BoardKanban({
                 cardsById={cardsById}
                 board={board}
                 readOnly={readOnly}
-                onOpenCard={setSelectedCardId}
+                onOpenCard={selectCard}
               />
             );
           })}
@@ -246,7 +260,7 @@ export function BoardKanban({
         card={selectedCard}
         open={Boolean(selectedCard)}
         onOpenChange={(open) => {
-          if (!open) setSelectedCardId(null);
+          if (!open) selectCard(null);
         }}
         readOnly={readOnly}
       />

@@ -35,12 +35,19 @@ function initials(name: string) {
 
 export default async function BoardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ boardId: string }>;
+  searchParams: Promise<{ card?: string | string[] }>;
 }) {
   const { boardId: boardIdParam } = await params;
+  const { card: cardParam } = await searchParams;
   const boardId = Number(boardIdParam);
   if (!Number.isFinite(boardId)) notFound();
+
+  const cardRaw = Array.isArray(cardParam) ? cardParam[0] : cardParam;
+  const parsedCardId = cardRaw ? Number(cardRaw) : NaN;
+  const initialCardId = Number.isFinite(parsedCardId) ? parsedCardId : null;
 
   const session = await requireSession();
   const user = session.user as unknown as User;
@@ -205,7 +212,11 @@ export default async function BoardPage({
           </div>
         </div>
       </div>
-      <BoardKanban board={board} readOnly={isArchived} />
+      <BoardKanban
+        board={board}
+        readOnly={isArchived}
+        initialCardId={initialCardId}
+      />
     </div>
   );
 }

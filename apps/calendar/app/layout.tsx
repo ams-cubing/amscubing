@@ -5,6 +5,7 @@ import "@workspace/ui/globals.css";
 import "leaflet/dist/leaflet.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
+import { HeaderNotifications } from "@/components/header-notifications";
 import { PreviewBanner } from "@/components/preview-banner";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -89,7 +90,11 @@ export default function RootLayout({
                 <Suspense fallback={<div className="h-0" aria-hidden />}>
                   <PreviewBanner productionHost="calendario.amscubing.org" />
                 </Suspense>
-                <Header />
+                <Header>
+                  <Suspense fallback={null}>
+                    <HeaderNotifications />
+                  </Suspense>
+                </Header>
               </div>
               <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">

@@ -2,6 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
+  competitionNotificationRow,
+  insertNotifications,
+} from "@workspace/db/notifications";
+import {
   competitions,
   user,
   states,
@@ -13,6 +17,7 @@ import {
 import { z } from "zod";
 import { eq, and, lte, gte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { headers } from "next/headers";
 import { Resend } from "resend";
 
@@ -83,13 +88,13 @@ export async function submitDateRequest(
 
     let candidates = await db.query.user.findMany({
       where: and(eq(user.regionId, state.regionId), eq(user.role, "delegate")),
-      columns: { wcaId: true, name: true, email: true },
+      columns: { id: true, wcaId: true, name: true, email: true, role: true },
     });
 
     if (candidates.length === 0) {
       candidates = await db.query.user.findMany({
         where: eq(user.role, "delegate"),
-        columns: { wcaId: true, name: true, email: true },
+        columns: { id: true, wcaId: true, name: true, email: true, role: true },
       });
     }
 
@@ -182,6 +187,23 @@ export async function submitDateRequest(
           actorId: session?.user.id,
           details: validatedData,
         });
+
+        if (comp?.id && session?.user?.id) {
+          await insertNotifications(tx, [
+            competitionNotificationRow({
+              recipient: {
+                id: delegateInRegion.id,
+                role: delegateInRegion.role,
+                wcaId: delegateInRegion.wcaId,
+              },
+              actorId: session.user.id,
+              type: "date_requested",
+              urls: notificationAppUrls(),
+              competitionId: comp.id,
+              city: validatedData.city,
+            }),
+          ]);
+        }
 
         return { comp };
       });

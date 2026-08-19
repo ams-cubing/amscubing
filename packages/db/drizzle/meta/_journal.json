@@ -120,6 +120,13 @@
       "when": 1785615696651,
       "tag": "0016_clammy_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787165313182,
+      "tag": "0017_far_caretaker",
+      "breakpoints": true
     }
   ]
 }

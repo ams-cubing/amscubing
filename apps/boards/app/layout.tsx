@@ -7,12 +7,19 @@ import { Analytics } from "@vercel/analytics/next";
 
 import "@workspace/ui/globals.css";
 
+import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
+
 import { Providers } from "@/components/providers";
 import { PreviewBanner } from "@/components/preview-banner";
 import { SignInButton } from "@/components/sign-in-button";
 import { UserMenu } from "@/components/user-menu";
 import { auth } from "@/lib/auth";
 import { getCalendarUrl } from "@/lib/urls";
+import {
+  getNotificationInbox,
+  markAllNotificationsReadAction,
+  markNotificationReadAction,
+} from "@/app/_actions/notifications";
 
 const fontSans = Rubik({
   subsets: ["latin"],
@@ -53,7 +60,24 @@ async function HeaderAuth() {
       }
     : null;
 
-  return user ? <UserMenu user={user} /> : <SignInButton />;
+  if (!user) {
+    return <SignInButton />;
+  }
+
+  const inbox = await getNotificationInbox();
+
+  return (
+    <div className="flex items-center gap-1">
+      <NotificationInbox
+        items={inbox.items}
+        unreadCount={inbox.unreadCount}
+        onMarkRead={markNotificationReadAction}
+        onMarkAllRead={markAllNotificationsReadAction}
+        onRefresh={getNotificationInbox}
+      />
+      <UserMenu user={user} />
+    </div>
+  );
 }
 
 export default function RootLayout({

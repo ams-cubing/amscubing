@@ -1,9 +1,16 @@
 "use server";
 
 import { db } from "@workspace/db";
+import {
+  competitionNotificationRow,
+  competitionTeamUsers,
+  formatInternalStatusLabel,
+  insertNotifications,
+} from "@workspace/db/notifications";
 import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
 export async function markAsCelebrated(competitionId: number): Promise<{
@@ -18,6 +25,11 @@ export async function markAsCelebrated(competitionId: number): Promise<{
 
   try {
     await db.transaction(async (tx) => {
+      const competition = await tx.query.competitions.findFirst({
+        where: eq(competitions.id, competitionId),
+        columns: { city: true, statusPublic: true },
+      });
+
       await tx
         .update(competitions)
         .set({
@@ -33,6 +45,25 @@ export async function markAsCelebrated(competitionId: number): Promise<{
         actorId: session.user.id,
         details: { statusInternal: "celebrated" },
       });
+
+      const team = await competitionTeamUsers(tx, competitionId);
+      const urls = notificationAppUrls();
+      await insertNotifications(
+        tx,
+        team.map((recipient) =>
+          competitionNotificationRow({
+            recipient,
+            actorId: session.user.id,
+            type: "competition_status_changed",
+            urls,
+            competitionId,
+            city: competition?.city ?? "",
+            statusLabel: formatInternalStatusLabel("celebrated"),
+            statusPublic: competition?.statusPublic,
+            statusInternal: "celebrated",
+          }),
+        ),
+      );
     });
 
     revalidateTag("competitions", "days");
