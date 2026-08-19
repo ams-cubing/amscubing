@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
+    "./notifications": "./src/notifications.ts",
     "./utils": "./src/utils.ts",
     "./data/mexico": "./src/data/mexico.ts",
     "./data/delegates": "./src/data/delegates.ts",

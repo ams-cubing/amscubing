@@ -14,7 +14,8 @@
     "db:seed": "pnpm --filter @workspace/db db:seed",
     "db:generate": "pnpm --filter @workspace/db db:generate",
     "db:studio": "pnpm --filter @workspace/db db:studio",
-    "test": "pnpm --filter calendar test"
+    "test": "pnpm --filter calendar test",
+    "clean": "rm -rf .turbo node_modules coverage apps/*/.next apps/*/.turbo apps/*/node_modules packages/*/dist packages/*/node_modules"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

@@ -3,6 +3,11 @@
 import { z } from "zod";
 import { db } from "@workspace/db";
 import {
+  competitionNotificationRow,
+  insertNotifications,
+  userIdsByWcaIds,
+} from "@workspace/db/notifications";
+import {
   competitionOrganizers,
   competitions,
   logs,
@@ -11,6 +16,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { Resend } from "resend";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
@@ -35,6 +41,11 @@ export async function sendUltimatum(
 
   try {
     await db.transaction(async (tx) => {
+      const competition = await tx.query.competitions.findFirst({
+        where: eq(competitions.id, validatedData.competitionId),
+        columns: { city: true },
+      });
+
       await tx
         .update(competitions)
         .set({
@@ -49,6 +60,33 @@ export async function sendUltimatum(
         actorId: session.user.id,
         details: validatedData,
       });
+
+      const organizerRows = await tx
+        .select({
+          organizerWcaId: competitionOrganizers.organizerWcaId,
+        })
+        .from(competitionOrganizers)
+        .where(
+          eq(competitionOrganizers.competitionId, validatedData.competitionId),
+        );
+      const usersByWca = await userIdsByWcaIds(
+        tx,
+        organizerRows.map((row) => row.organizerWcaId),
+      );
+      const urls = notificationAppUrls();
+      await insertNotifications(
+        tx,
+        [...usersByWca.values()].map((recipient) =>
+          competitionNotificationRow({
+            recipient,
+            actorId: session.user.id,
+            type: "ultimatum_sent",
+            urls,
+            competitionId: validatedData.competitionId,
+            city: competition?.city ?? "",
+          }),
+        ),
+      );
     });
 
     const organizers = await db

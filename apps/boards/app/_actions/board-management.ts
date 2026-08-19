@@ -7,6 +7,11 @@ import { randomBytes } from "crypto";
 
 import { db } from "@workspace/db";
 import {
+  formatNotificationTitle,
+  hrefForNotification,
+  insertNotifications,
+} from "@workspace/db/notifications";
+import {
   boardInvites,
   boardMembers,
   boards,
@@ -14,7 +19,7 @@ import {
 } from "@workspace/db/schema";
 
 import { requireSession } from "@/lib/session";
-import { getBoardsUrl } from "@/lib/urls";
+import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 async function requireDelegate() {
   const session = await requireSession();
@@ -218,7 +223,7 @@ export async function acceptBoardInvite(token: string) {
     where: eq(boardInvites.token, token),
     with: {
       board: {
-        columns: { id: true, isTemplate: true, archivedAt: true },
+        columns: { id: true, name: true, isTemplate: true, archivedAt: true },
       },
     },
   });
@@ -230,13 +235,41 @@ export async function acceptBoardInvite(token: string) {
     throw new Error("Invitación no válida");
   }
 
-  await db
+  const [inserted] = await db
     .insert(boardMembers)
     .values({
       boardId: invite.boardId,
       userId: currentUser.id,
     })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning();
+
+  if (inserted) {
+    await insertNotifications(db, [
+      {
+        recipientId: invite.createdByUserId,
+        actorId: currentUser.id,
+        type: "board_member_joined",
+        title: formatNotificationTitle("board_member_joined", {
+          actorName: currentUser.name,
+          boardName: invite.board.name,
+        }),
+        href: hrefForNotification("board_member_joined", {
+          urls: {
+            calendarUrl: getCalendarUrl(),
+            boardsUrl: getBoardsUrl(),
+          },
+          recipientRole: "delegate",
+          boardId: invite.boardId,
+        }),
+        payload: {
+          boardId: invite.boardId,
+          boardName: invite.board.name,
+          actorName: currentUser.name,
+        },
+      },
+    ]);
+  }
 
   revalidatePath("/");
   return { boardId: invite.boardId };

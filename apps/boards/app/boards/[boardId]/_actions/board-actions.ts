@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
 import {
+  formatNotificationTitle,
+  hrefForNotification,
+  insertNotifications,
+} from "@workspace/db/notifications";
+import {
   boardLists,
   boardMembers,
   boards,
@@ -23,6 +28,7 @@ import {
 
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSession } from "@/lib/session";
+import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 async function requireBoardAccess(boardId: number) {
   const session = await requireSession();
@@ -183,14 +189,55 @@ export async function toggleCardMemberAction(input: {
   userId: string;
   checked: boolean;
 }) {
-  await requireBoardAccess(input.boardId);
+  const actor = await requireBoardAccess(input.boardId);
 
   if (input.checked) {
     await assertUserAssignableToBoard(input.boardId, input.userId);
-    await db
-      .insert(cardMembers)
-      .values({ cardId: input.cardId, userId: input.userId })
-      .onConflictDoNothing();
+    await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(cardMembers)
+        .values({ cardId: input.cardId, userId: input.userId })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!inserted) return;
+
+      const card = await tx.query.cards.findFirst({
+        where: eq(cards.id, input.cardId),
+        columns: { title: true },
+      });
+      const board = await tx.query.boards.findFirst({
+        where: eq(boards.id, input.boardId),
+        columns: { name: true },
+      });
+
+      await insertNotifications(tx, [
+        {
+          recipientId: input.userId,
+          actorId: actor.id,
+          type: "card_assigned",
+          title: formatNotificationTitle("card_assigned", {
+            cardTitle: card?.title,
+          }),
+          href: hrefForNotification("card_assigned", {
+            urls: {
+              calendarUrl: getCalendarUrl(),
+              boardsUrl: getBoardsUrl(),
+            },
+            recipientRole: "user",
+            boardId: input.boardId,
+            cardId: input.cardId,
+          }),
+          payload: {
+            boardId: input.boardId,
+            boardName: board?.name,
+            cardId: input.cardId,
+            cardTitle: card?.title,
+            actorName: actor.name,
+          },
+        },
+      ]);
+    });
   } else {
     await db
       .delete(cardMembers)
@@ -214,10 +261,54 @@ export async function addCardCommentAction(input: {
   const body = input.body.trim();
   if (!body) throw new Error("El comentario no puede estar vacío");
 
-  await db.insert(cardComments).values({
-    cardId: input.cardId,
-    authorId: user.id,
-    body,
+  await db.transaction(async (tx) => {
+    await tx.insert(cardComments).values({
+      cardId: input.cardId,
+      authorId: user.id,
+      body,
+    });
+
+    const members = await tx.query.cardMembers.findMany({
+      where: eq(cardMembers.cardId, input.cardId),
+      columns: { userId: true },
+    });
+    const card = await tx.query.cards.findFirst({
+      where: eq(cards.id, input.cardId),
+      columns: { title: true },
+    });
+    const board = await tx.query.boards.findFirst({
+      where: eq(boards.id, input.boardId),
+      columns: { name: true },
+    });
+    const urls = {
+      calendarUrl: getCalendarUrl(),
+      boardsUrl: getBoardsUrl(),
+    };
+
+    await insertNotifications(
+      tx,
+      members.map((member) => ({
+        recipientId: member.userId,
+        actorId: user.id,
+        type: "card_comment" as const,
+        title: formatNotificationTitle("card_comment", {
+          cardTitle: card?.title,
+        }),
+        href: hrefForNotification("card_comment", {
+          urls,
+          recipientRole: "user",
+          boardId: input.boardId,
+          cardId: input.cardId,
+        }),
+        payload: {
+          boardId: input.boardId,
+          boardName: board?.name,
+          cardId: input.cardId,
+          cardTitle: card?.title,
+          actorName: user.name,
+        },
+      })),
+    );
   });
 
   revalidatePath(`/boards/${input.boardId}`);

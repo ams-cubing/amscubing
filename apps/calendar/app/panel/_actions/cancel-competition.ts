@@ -1,9 +1,16 @@
 "use server";
 
 import { db } from "@workspace/db";
+import {
+  competitionNotificationRow,
+  competitionTeamUsers,
+  formatPublicStatusLabel,
+  insertNotifications,
+} from "@workspace/db/notifications";
 import { boards, competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
 export async function cancelCompetition(competitionId: number): Promise<{
@@ -18,6 +25,11 @@ export async function cancelCompetition(competitionId: number): Promise<{
 
   try {
     await db.transaction(async (tx) => {
+      const competition = await tx.query.competitions.findFirst({
+        where: eq(competitions.id, competitionId),
+        columns: { city: true },
+      });
+
       await tx
         .update(competitions)
         .set({
@@ -46,6 +58,25 @@ export async function cancelCompetition(competitionId: number): Promise<{
           boardArchived: true,
         },
       });
+
+      const team = await competitionTeamUsers(tx, competitionId);
+      const urls = notificationAppUrls();
+      await insertNotifications(
+        tx,
+        team.map((recipient) =>
+          competitionNotificationRow({
+            recipient,
+            actorId: session.user.id,
+            type: "competition_status_changed",
+            urls,
+            competitionId,
+            city: competition?.city ?? "",
+            statusLabel: formatPublicStatusLabel("suspended"),
+            statusPublic: "suspended",
+            statusInternal: "cancelled",
+          }),
+        ),
+      );
     });
 
     revalidateTag("competitions", "days");

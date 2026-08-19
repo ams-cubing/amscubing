@@ -2,6 +2,13 @@
 
 import { db } from "@workspace/db";
 import {
+  competitionNotificationRow,
+  formatInternalStatusLabel,
+  formatPublicStatusLabel,
+  insertNotifications,
+  userIdsByWcaIds,
+} from "@workspace/db/notifications";
+import {
   competitions,
   competitionDelegates,
   competitionOrganizers,
@@ -13,6 +20,7 @@ import { z } from "zod";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { updateCompetitionSchema } from "../../_lib/validations";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
@@ -41,7 +49,13 @@ export async function updateCompetition(
     // Fetch existing trelloUrl to detect changes
     const existingCompetition = await db.query.competitions.findFirst({
       where: (c, { eq }) => eq(c.id, competitionId),
-      columns: { trelloUrl: true, trelloAssignedAt: true },
+      columns: {
+        trelloUrl: true,
+        trelloAssignedAt: true,
+        statusPublic: true,
+        statusInternal: true,
+        city: true,
+      },
     });
 
     const newTrelloUrl = validatedData.trelloUrl || null;
@@ -63,6 +77,29 @@ export async function updateCompetition(
     const removedDelegateWcaIds = previousDelegateWcaIds.filter(
       (id) => !newDelegateWcaIds.includes(id),
     );
+
+    const existingOrganizersRows = await db.query.competitionOrganizers.findMany(
+      {
+        where: (co, { eq }) => eq(co.competitionId, competitionId),
+        columns: { organizerWcaId: true },
+      },
+    );
+
+    const previousOrganizerWcaIds = existingOrganizersRows.map(
+      (r) => r.organizerWcaId,
+    );
+    const newOrganizerWcaIds = validatedData.organizerWcaIds;
+    const addedOrganizerWcaIds = newOrganizerWcaIds.filter(
+      (id) => !previousOrganizerWcaIds.includes(id),
+    );
+    const removedOrganizerWcaIds = previousOrganizerWcaIds.filter(
+      (id) => !newOrganizerWcaIds.includes(id),
+    );
+
+    const publicChanged =
+      existingCompetition?.statusPublic !== validatedData.statusPublic;
+    const internalChanged =
+      existingCompetition?.statusInternal !== validatedData.statusInternal;
 
     // Use a transaction for all DB changes
     await db.transaction(async (tx) => {
@@ -145,6 +182,73 @@ export async function updateCompetition(
         actorId: session.user.id,
         details: validatedData,
       });
+
+      const usersByWca = await userIdsByWcaIds(tx, [
+        ...addedDelegateWcaIds,
+        ...removedDelegateWcaIds,
+        ...addedOrganizerWcaIds,
+        ...removedOrganizerWcaIds,
+        ...newDelegateWcaIds,
+        ...newOrganizerWcaIds,
+      ]);
+      const urls = notificationAppUrls();
+      const assignedRecipientIds = new Set<string>();
+      const city = validatedData.city;
+
+      const assignmentRows = (
+        [
+          [addedDelegateWcaIds, "delegate_added"],
+          [removedDelegateWcaIds, "delegate_removed"],
+          [addedOrganizerWcaIds, "organizer_added"],
+          [removedOrganizerWcaIds, "organizer_removed"],
+        ] as const
+      ).flatMap(([wcaIds, type]) =>
+        wcaIds.flatMap((wcaId) => {
+          const recipient = usersByWca.get(wcaId);
+          if (!recipient) return [];
+          assignedRecipientIds.add(recipient.id);
+          return [
+            competitionNotificationRow({
+              recipient,
+              actorId: session.user.id,
+              type,
+              urls,
+              competitionId,
+              city,
+            }),
+          ];
+        }),
+      );
+
+      const statusRows =
+        publicChanged || internalChanged
+          ? [...new Set([...newDelegateWcaIds, ...newOrganizerWcaIds])].flatMap(
+              (wcaId) => {
+                const recipient = usersByWca.get(wcaId);
+                if (!recipient || assignedRecipientIds.has(recipient.id)) {
+                  return [];
+                }
+                const statusLabel = publicChanged
+                  ? formatPublicStatusLabel(validatedData.statusPublic)
+                  : formatInternalStatusLabel(validatedData.statusInternal);
+                return [
+                  competitionNotificationRow({
+                    recipient,
+                    actorId: session.user.id,
+                    type: "competition_status_changed",
+                    urls,
+                    competitionId,
+                    city,
+                    statusLabel,
+                    statusPublic: validatedData.statusPublic,
+                    statusInternal: validatedData.statusInternal,
+                  }),
+                ];
+              },
+            )
+          : [];
+
+      await insertNotifications(tx, [...assignmentRows, ...statusRows]);
     });
 
     // Notify newly added delegates

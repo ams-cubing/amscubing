@@ -1,7 +1,8 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 
-export function Header() {
+export function Header({ children }: { children?: ReactNode }) {
   return (
     <header className="bg-card border-b">
       <div className="mx-auto flex items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
@@ -12,6 +13,7 @@ export function Header() {
         >
           Calendario Público de Competencias en México
         </Link>
+        {children ? <div className="ml-auto flex items-center">{children}</div> : null}
       </div>
     </header>
   );

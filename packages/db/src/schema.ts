@@ -1,4 +1,4 @@
-import { InferSelectModel, relations } from "drizzle-orm";
+import { InferSelectModel, relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   integer,
@@ -111,6 +111,12 @@ export const userRelations = relations(user, ({ one, many }) => ({
   activityLogs: many(logs),
   cardMemberships: many(cardMembers),
   cardComments: many(cardComments),
+  receivedNotifications: many(notifications, {
+    relationName: "notificationRecipient",
+  }),
+  actedNotifications: many(notifications, {
+    relationName: "notificationActor",
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -503,6 +509,78 @@ export const logs = pgTable(
 );
 
 export type Logs = InferSelectModel<typeof logs>;
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "card_assigned",
+  "card_comment",
+  "board_member_joined",
+  "delegate_added",
+  "delegate_removed",
+  "organizer_added",
+  "organizer_removed",
+  "competition_status_changed",
+  "date_requested",
+  "ultimatum_sent",
+]);
+
+export type NotificationType =
+  (typeof notificationTypeEnum.enumValues)[number];
+
+export type NotificationPayload = {
+  boardId?: number;
+  boardName?: string;
+  cardId?: number;
+  cardTitle?: string;
+  competitionId?: number;
+  city?: string;
+  statusPublic?: string;
+  statusInternal?: string;
+  statusLabel?: string;
+  actorName?: string;
+};
+
+export const notifications = pgTable(
+  "notification",
+  {
+    id: serial("id").primaryKey(),
+    recipientId: text("recipient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    actorId: text("actor_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    type: notificationTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    href: text("href").notNull(),
+    payload: jsonb("payload").$type<NotificationPayload>(),
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("notification_recipient_created_idx").on(
+      table.recipientId,
+      table.createdAt,
+    ),
+    index("notification_recipient_unread_idx")
+      .on(table.recipientId)
+      .where(sql`${table.readAt} is null`),
+  ],
+);
+
+export type Notification = InferSelectModel<typeof notifications>;
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  recipient: one(user, {
+    fields: [notifications.recipientId],
+    references: [user.id],
+    relationName: "notificationRecipient",
+  }),
+  actor: one(user, {
+    fields: [notifications.actorId],
+    references: [user.id],
+    relationName: "notificationActor",
+  }),
+}));
 
 export const statesRelations = relations(states, ({ one, many }) => ({
   region: one(regions, {

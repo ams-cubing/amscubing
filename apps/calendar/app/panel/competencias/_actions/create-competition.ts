@@ -2,6 +2,11 @@
 
 import { db } from "@workspace/db";
 import {
+  competitionNotificationRow,
+  insertNotifications,
+  userIdsByWcaIds,
+} from "@workspace/db/notifications";
+import {
   competitions,
   competitionDelegates,
   competitionOrganizers,
@@ -13,6 +18,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { Resend } from "resend";
 import { z } from "zod";
 import { createCompetitionSchema } from "../../_lib/validations";
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
@@ -105,6 +111,42 @@ export async function createCompetition(
         actorId: session.user.id,
         details: validatedData,
       });
+
+      const usersByWca = await userIdsByWcaIds(tx, [
+        ...validatedData.delegateWcaIds,
+        ...validatedData.organizerWcaIds,
+      ]);
+      const urls = notificationAppUrls();
+      await insertNotifications(tx, [
+        ...validatedData.delegateWcaIds.flatMap((wcaId) => {
+          const recipient = usersByWca.get(wcaId);
+          if (!recipient) return [];
+          return [
+            competitionNotificationRow({
+              recipient,
+              actorId: session.user.id,
+              type: "delegate_added",
+              urls,
+              competitionId: newCompetitionId!,
+              city: validatedData.city,
+            }),
+          ];
+        }),
+        ...validatedData.organizerWcaIds.flatMap((wcaId) => {
+          const recipient = usersByWca.get(wcaId);
+          if (!recipient) return [];
+          return [
+            competitionNotificationRow({
+              recipient,
+              actorId: session.user.id,
+              type: "organizer_added",
+              urls,
+              competitionId: newCompetitionId!,
+              city: validatedData.city,
+            }),
+          ];
+        }),
+      ]);
     });
 
     try {
