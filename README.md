@@ -1,48 +1,48 @@
-# AMS Cubing Monorepo
+# Monorepo AMS Cubing
 
 ![Logo AMS](apps/calendar/public/icon.png)
 
-Monorepo for [Asociación Mexicana de Speedcubing](https://amscubing.org) apps. Shared PostgreSQL schema and local Docker setup for development.
+Monorepo de las apps de la [Asociación Mexicana de Speedcubing](https://amscubing.org). Esquema PostgreSQL compartido y entorno Docker local para desarrollo.
 
-See [ROADMAP.md](ROADMAP.md) for planned work (auth on web, CMS/blog/courses parity with amscubing.org).
+Ver [ROADMAP.md](ROADMAP.md) para el trabajo planeado (auth en web, paridad de CMS/blog con amscubing.org, cursos en subdominio).
 
 ## Apps
 
-| App                | Path            | Port | Description                                               |
-| ------------------ | --------------- | ---- | --------------------------------------------------------- |
-| Web                | `apps/web`      | 3000 | Marketing homepage for Asociación Mexicana de Speedcubing |
-| Calendario Público | `apps/calendar` | 3001 | Public competition calendar for Mexican speedcubing       |
-| Tableros AMS       | `apps/boards`   | 3002 | Trello-style org boards linked to competitions            |
+| App                | Ruta            | Puerto | Descripción                                               |
+| ------------------ | --------------- | ------ | --------------------------------------------------------- |
+| Web                | `apps/web`      | 3000   | Portada de la Asociación Mexicana de Speedcubing          |
+| Calendario Público | `apps/calendar` | 3001   | Calendario público de competencias de speedcubing en México |
+| Tableros AMS       | `apps/boards`   | 3002   | Tableros de organización estilo Trello ligados a competencias |
 
-## Packages
+## Paquetes
 
-| Package           | Path            | Description                                              |
+| Paquete           | Ruta            | Descripción                                              |
 | ----------------- | --------------- | -------------------------------------------------------- |
-| `@workspace/db`   | `packages/db`   | Shared PostgreSQL schema, migrations, and Drizzle client |
-| `@workspace/ui`   | `packages/ui`   | Shared UI components                                     |
-| `@workspace/auth` | `packages/auth` | Shared Better Auth (WCA) + session cookies across apps   |
+| `@workspace/db`   | `packages/db`   | Esquema PostgreSQL compartido, migraciones y cliente Drizzle |
+| `@workspace/ui`   | `packages/ui`   | Componentes de UI compartidos                            |
+| `@workspace/auth` | `packages/auth` | Better Auth compartido (WCA) + cookies de sesión entre apps |
 
-Sign-in is issued by the **calendar** app. Calendar and boards share the `ams.*` session cookie (same `BETTER_AUTH_SECRET`). In production set `AUTH_COOKIE_DOMAIN=.amscubing.org` on both apps.
+El inicio de sesión lo emite la app de **calendario**. Calendario y tableros comparten la cookie de sesión `ams.*` (el mismo `BETTER_AUTH_SECRET`). En producción hay que definir `AUTH_COOKIE_DOMAIN=.amscubing.org` en ambas apps.
 
-## Requirements
+## Requisitos
 
 - Node.js 20+
 - pnpm
-- Docker (for local PostgreSQL)
+- Docker (para PostgreSQL local)
 
-## Setup
+## Configuración
 
 ```sh
 pnpm install
 cp .env.example .env.local
 cp apps/calendar/.env.local.example apps/calendar/.env.local
 cp apps/boards/.env.local.example apps/boards/.env.local
-# Fill in WCA, auth, and Resend keys (same secret works for calendar + boards)
+# Completar claves de WCA, auth y Resend (el mismo secret sirve para calendario + tableros)
 ```
 
-## Local development
+## Desarrollo local
 
-Start PostgreSQL and apply migrations:
+Levantar PostgreSQL y aplicar migraciones:
 
 ```sh
 pnpm db:up
@@ -50,42 +50,42 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-Start all apps:
+Arrancar todas las apps:
 
 ```sh
 pnpm dev
 ```
 
-Start only the calendar app:
+Arrancar solo la app de calendario:
 
 ```sh
 pnpm --filter calendar dev
 ```
 
-Start only the boards app:
+Arrancar solo la app de tableros:
 
 ```sh
 pnpm --filter boards dev
 ```
 
-Start only the marketing homepage (port 3000):
+Arrancar solo la portada (puerto 3000):
 
 ```sh
 pnpm --filter web dev
 ```
 
-## Database commands
+## Comandos de base de datos
 
-| Command            | Description                                  |
+| Comando            | Descripción                                  |
 | ------------------ | -------------------------------------------- |
-| `pnpm db:up`       | Start local Postgres via Docker              |
-| `pnpm db:down`     | Stop Postgres container                      |
-| `pnpm db:reset`    | Reset Postgres volume and restart            |
-| `pnpm db:migrate`  | Apply pending migrations                     |
-| `pnpm db:seed`     | Seed regions, states, and AMS board template |
-| `pnpm db:generate` | Generate migration from schema changes       |
-| `pnpm db:studio`   | Open Drizzle Studio                          |
+| `pnpm db:up`       | Levantar Postgres local con Docker           |
+| `pnpm db:down`     | Detener el contenedor de Postgres            |
+| `pnpm db:reset`    | Resetear el volumen de Postgres y reiniciar  |
+| `pnpm db:migrate`  | Aplicar migraciones pendientes               |
+| `pnpm db:seed`     | Sembrar regiones, estados y plantilla de tablero AMS |
+| `pnpm db:generate` | Generar migración a partir de cambios de esquema |
+| `pnpm db:studio`   | Abrir Drizzle Studio                         |
 
-## License
+## Licencia
 
-See [LICENSE](LICENSE).
+Ver [LICENSE](LICENSE).

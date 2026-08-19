@@ -1,104 +1,104 @@
 # Roadmap
 
-Living plan for the AMS Cubing monorepo. Items move between phases as we ship.
+Plan vivo del monorepo de AMS Cubing. Los ítems cambian de fase conforme se van entregando.
 
-## Principles
+## Principios
 
-- One identity: WCA sign-in via Better Auth, shared `ams.*` cookies across `*.amscubing.org`.
-- Domain-focused apps: web is the public home; calendar owns competitions; boards own org work; courses stay their own product (WordPress now, an app later).
-- Prefer shared packages (`@workspace/db`, `@workspace/auth`, `@workspace/ui`) over duplicating logic.
-- Web **reads** shared data (delegates, announced competitions). It does not own those lifecycles.
-
----
-
-## Now / Near-term
-
-### Auth on the web app
-
-- [ ] Move the canonical Better Auth host from calendar → **web** (`amscubing.org` / port 3000).
-- [ ] Update `@workspace/auth` (`getAuthBaseUrl`, trusted origins, cookie domain) so web, calendar, and boards share sessions.
-- [ ] Point WCA OAuth redirect URIs at the web app; keep calendar/boards as cookie consumers only.
-- [ ] Sign-in / sign-out UX on web; deep-links back to calendar and boards after login.
-- [ ] Document env vars (`BETTER_AUTH_URL`, `NEXT_PUBLIC_*`, `AUTH_COOKIE_DOMAIN`) for all three apps.
-
-### Web as replacement for amscubing.org
-
-Parity with the current WordPress **homepage and blog**, then retire WordPress from the apex. Courses stay on a subdomain (see below).
-
-**Public**
-
-- [ ] Upcoming competitions on web from `@workspace/db`: `statusPublic = announced`, future dates, small list + link to `calendario.*`. Same pattern as delegates (`getPublicDelegates`).
-- [ ] Blog: list, post detail, categories/tags, SEO (titles, OG, sitemap).
-- [ ] Comments on posts (auth required or moderated guest — decide).
-- [ ] Keep misión, visión, delegados, and contacto in sync with CMS or DB where needed.
-- [ ] Nav / teaser link to `cursos.amscubing.org` (do not rebuild the LMS on web).
-- [ ] Redirects from old WordPress URLs → new Next.js routes (and `/detalle-cursos/` → `cursos.*`).
-
-**Admin / management (panel on web)**
-
-- [ ] CRUD blog posts (draft/publish, rich text or MDX, cover image via Blob or similar).
-- [ ] Moderate comments.
-- [ ] Role checks (delegate / content editor — extend roles if needed).
-- [ ] Media library / uploads.
-
-**Data**
-
-- [ ] Schema in `@workspace/db`: `post`, `post_comment` (names TBD). No course tables until we migrate off WordPress.
-- [ ] Migrations + seed from existing WordPress **blog** content if migrating history.
-
-### Isolate courses on WordPress
-
-Leave the existing LMS plugin running; stop serving it from the apex.
-
-- [ ] Host the plugin only at `cursos.amscubing.org`.
-- [ ] Apex `amscubing.org` → `apps/web`; keep `calendario.*` / `tablero.*`.
-- [ ] Confirm login/progress on the plugin still works on the subdomain.
-
-Calendar remains the system of record for competitions. Setting **Anunciada** is what makes a comp appear on the web. No extra “public for website” flag.
+- Una sola identidad: inicio de sesión con WCA vía Better Auth y cookies `ams.*` compartidas en `*.amscubing.org`.
+- Apps por dominio: web es la casa pública; el calendario es dueño de las competencias; los tableros son dueños del trabajo de organización; los cursos siguen siendo un producto aparte (WordPress ahora, una app después).
+- Preferir paquetes compartidos (`@workspace/db`, `@workspace/auth`, `@workspace/ui`) en lugar de duplicar lógica.
+- La web **lee** datos compartidos (delegados, competencias anunciadas). No es dueña de esos ciclos de vida.
 
 ---
 
-## Next
+## Ahora / Corto plazo
 
-### Calendar & boards product depth
+### Auth en la app web
 
-- [ ] Holidays / calendar polish already in flight.
-- [ ] Cross-app nav: consistent account menu linking web ↔ calendar ↔ boards (and cursos).
+- [ ] Mover el host canónico de Better Auth del calendario → **web** (`amscubing.org` / puerto 3000).
+- [ ] Actualizar `@workspace/auth` (`getAuthBaseUrl`, orígenes de confianza, dominio de cookies) para que web, calendario y tableros compartan sesión.
+- [ ] Apuntar las URIs de redirección de OAuth de la WCA a la app web; dejar calendario/tableros solo como consumidores de cookies.
+- [ ] UX de iniciar / cerrar sesión en web; deep-links de vuelta a calendario y tableros después del login.
+- [ ] Documentar variables de entorno (`BETTER_AUTH_URL`, `NEXT_PUBLIC_*`, `AUTH_COOKIE_DOMAIN`) para las tres apps.
 
-### Platform
+### Web como reemplazo de amscubing.org
 
-- [ ] Shared session helpers used by all apps (pattern from calendar `lib/session`).
-- [ ] CI: typecheck, lint, tests per app; DB migrate in preview if needed.
+Paridad con la **portada y el blog** actuales de WordPress, y luego retirar WordPress del apex. Los cursos se quedan en un subdominio (ver abajo).
+
+**Público**
+
+- [ ] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`).
+- [ ] Blog: listado, detalle de post, categorías/etiquetas, SEO (títulos, OG, sitemap).
+- [ ] Comentarios en posts (auth obligatorio o invitado moderado — por decidir).
+- [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta.
+- [ ] Enlace en nav / teaser a `cursos.amscubing.org` (no reconstruir el LMS en la web).
+- [ ] Redirecciones de URLs viejas de WordPress → rutas nuevas de Next.js (y `/detalle-cursos/` → `cursos.*`).
+
+**Admin / gestión (panel en web)**
+
+- [ ] CRUD de posts del blog (borrador/publicar, texto enriquecido o MDX, imagen de portada vía Blob o similar).
+- [ ] Moderar comentarios.
+- [ ] Comprobación de roles (delegado / editor de contenido — ampliar roles si hace falta).
+- [ ] Biblioteca de medios / subidas.
+
+**Datos**
+
+- [ ] Esquema en `@workspace/db`: `post`, `post_comment` (nombres por definir). Sin tablas de cursos hasta migrar fuera de WordPress.
+- [ ] Migraciones + seed del contenido del **blog** de WordPress si se migra el historial.
+
+### Aislar cursos en WordPress
+
+Dejar el plugin LMS actual en marcha; dejar de servirlo desde el apex.
+
+- [ ] Hospedar el plugin solo en `cursos.amscubing.org`.
+- [ ] Apex `amscubing.org` → `apps/web`; conservar `calendario.*` / `tablero.*`.
+- [ ] Confirmar que login/progreso del plugin siguen funcionando en el subdominio.
+
+El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anunciada** es lo que hace que una competencia aparezca en la web. Sin un flag extra de “público para el sitio”.
 
 ---
 
-## Later
+## Siguiente
 
-- [ ] Decommission WordPress **blog/homepage** once redirects + content parity are verified. Keep `cursos.*` until the LMS is replaced.
-- [ ] Courses app in the monorepo (`apps/courses` or similar): catalog, modules, enrollment, shared `ams.*` cookies. Schema (`course`, `course_module`, `enrollment`) lands then.
-- [ ] Course certificates / completion badges.
-- [ ] Optional: dedicated **Anunciar** action that drafts (or later posts) social copy from name, city, dates, WCA URL. Do not auto-post on every status save. Store `announcedAt` / post ids to avoid duplicates. Board card “Publicación FB Torneo de Rubik” stays the human checklist.
-- [ ] Newsletter or announcement digests.
-- [ ] Public API or RSS for blog.
-- [ ] Stronger RBAC (content editor vs delegate vs admin).
+### Profundidad de producto en calendario y tableros
 
----
+- [ ] Feriados / pulido del calendario (ya en curso).
+- [ ] Nav entre apps: menú de cuenta consistente que enlace web ↔ calendario ↔ tableros (y cursos).
 
-## Out of scope (for now)
+### Plataforma
 
-- Replacing WCA as identity provider.
-- Merging calendar + boards into a single deployable.
-- Rebuilding the LMS inside `apps/web`.
-- Auto-posting to Facebook/Instagram when a competition is saved as announced.
+- [ ] Helpers de sesión compartidos usados por todas las apps (patrón de `lib/session` del calendario).
+- [ ] CI: typecheck, lint, tests por app; migrar la BD en preview si hace falta.
 
 ---
 
-## Decision log
+## Después
 
-| Date | Decision | Notes |
+- [ ] Dar de baja WordPress de **blog/portada** cuando las redirecciones y la paridad de contenido estén verificadas. Conservar `cursos.*` hasta reemplazar el LMS.
+- [ ] App de cursos en el monorepo (`apps/courses` o similar): catálogo, módulos, inscripción, cookies `ams.*` compartidas. El esquema (`course`, `course_module`, `enrollment`) llega entonces.
+- [ ] Certificados de curso / insignias de finalización.
+- [ ] Opcional: acción dedicada **Anunciar** que redacte (o más adelante publique) el texto para redes a partir de nombre, ciudad, fechas y URL de la WCA. No auto-publicar en cada guardado de estatus. Guardar `announcedAt` / ids de posts para evitar duplicados. La tarjeta del tablero “Publicación FB Torneo de Rubik” sigue siendo la checklist humana.
+- [ ] Newsletter o resúmenes de anuncios.
+- [ ] API pública o RSS del blog.
+- [ ] RBAC más fuerte (editor de contenido vs delegado vs admin).
+
+---
+
+## Fuera de alcance (por ahora)
+
+- Reemplazar a la WCA como proveedor de identidad.
+- Fusionar calendario + tableros en un solo deployable.
+- Reconstruir el LMS dentro de `apps/web`.
+- Auto-publicar en Facebook/Instagram al guardar una competencia como anunciada.
+
+---
+
+## Registro de decisiones
+
+| Fecha | Decisión | Notas |
 | ---- | -------- | ----- |
-| TBD | Auth host = web | Calendar stops owning OAuth callbacks |
-| TBD | CMS approach | DB + admin UI vs MDX files — prefer DB for blog/comments |
-| 2026-08-18 | Courses stay off web | WordPress LMS on `cursos.amscubing.org` first; later a dedicated app, not `apps/web` |
-| 2026-08-18 | Web comps = `announced` | Calendar owns lifecycle; web only lists future `statusPublic = announced` rows |
-| 2026-08-18 | Social ≠ status change | Showing on the site is a DB read; posting to AMS social is a later, explicit action |
+| TBD | Host de auth = web | El calendario deja de ser dueño de los callbacks de OAuth |
+| TBD | Enfoque de CMS | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios |
+| 2026-08-18 | Los cursos no van en la web | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web` |
+| 2026-08-18 | Comps en web = `announced` | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced` |
+| 2026-08-18 | Redes ≠ cambio de estatus | Mostrar en el sitio es una lectura de BD; publicar en redes de AMS es una acción posterior y explícita |
