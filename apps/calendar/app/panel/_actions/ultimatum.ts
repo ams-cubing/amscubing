@@ -1,7 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import {
@@ -13,6 +11,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { Resend } from "resend";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { requireDelegate } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -25,12 +24,11 @@ const createUltimatumSchema = z.object({
 export async function sendUltimatum(
   data: z.infer<typeof createUltimatumSchema>,
 ) {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-
-  if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { success: false, message: authResult.message };
   }
+  const { session } = authResult;
 
   // Validate input
   const validatedData = createUltimatumSchema.parse(data);
@@ -48,8 +46,7 @@ export async function sendUltimatum(
         action: "send_ultimatum",
         targetType: "competition",
         targetId: String(validatedData.competitionId),
-        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-        actorId: session?.user.id!,
+        actorId: session.user.id,
         details: validatedData,
       });
     });
@@ -90,7 +87,7 @@ export async function sendUltimatum(
     revalidateTag("competitions", "days");
     revalidatePath("/panel");
   } catch {
-    return { success: false, message: "Database error" };
+    return { success: false, message: "Error de base de datos" };
   }
 
   return { success: true };

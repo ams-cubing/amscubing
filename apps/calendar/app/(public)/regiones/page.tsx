@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { ClientMap } from "./_components/client-map";
+import Loading from "./loading";
 import { getDelegatesWithRegions, getRegionsWithStates } from "./_lib/queries";
 
 async function PageContent() {
@@ -135,7 +136,7 @@ async function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent />
     </Suspense>
   );

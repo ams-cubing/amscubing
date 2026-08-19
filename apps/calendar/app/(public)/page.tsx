@@ -10,6 +10,7 @@ import {
   getHolidays,
   getRegions,
 } from "./_lib/queries";
+import Loading from "./loading";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -53,7 +54,7 @@ async function PageContent({
 
 export default function Page(props: PageProps) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent searchParams={props.searchParams} />
     </Suspense>
   );

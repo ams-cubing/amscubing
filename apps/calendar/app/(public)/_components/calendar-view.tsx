@@ -197,7 +197,7 @@ export function CalendarView({
           </h2>
           <div className="flex gap-2 md:gap-4">
             {!isCurrentMonth && (
-              <Button onClick={goToToday}>
+              <Button onClick={goToToday} aria-label="Ir al mes de referencia">
                 <Calendar />
               </Button>
             )}
@@ -206,6 +206,7 @@ export function CalendarView({
                 variant="outline"
                 onClick={previousMonth}
                 size="icon"
+                aria-label="Mes anterior"
                 disabled={
                   year === new Date().getFullYear() &&
                   month === new Date().getMonth()
@@ -217,6 +218,7 @@ export function CalendarView({
                 variant="outline"
                 onClick={nextMonth}
                 size="icon"
+                aria-label="Mes siguiente"
                 disabled={year === new Date().getFullYear() + 1 && month === 11}
               >
                 <ChevronRight />
@@ -291,22 +293,28 @@ export function CalendarView({
                 )}
                 <div className="space-y-1">
                   {dayCompetitions.map((comp) => (
-                    <div
+                    <button
                       key={comp.id}
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCompetitionClick(comp);
                       }}
                       className={cn(
-                        "text-[10px] md:text-xs p-1 rounded truncate cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm font-medium",
+                        "w-full text-left text-[10px] md:text-xs p-1 rounded truncate cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm font-medium",
                         getPublicStatusColor(comp.statusPublic),
                       )}
                       title={`Competencia en ${comp.state.region.displayName}`}
+                      aria-label={
+                        comp.statusPublic === "announced" || isDelegate
+                          ? `Ver competencia ${comp.name || comp.state.name}`
+                          : `Ver competencia en ${comp.state.region.displayName}`
+                      }
                     >
                       {comp.statusPublic === "announced" || isDelegate
                         ? comp.name || comp.state.name
                         : comp.state.region.displayName}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

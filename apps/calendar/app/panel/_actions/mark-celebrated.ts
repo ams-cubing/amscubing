@@ -1,22 +1,20 @@
 "use server";
 
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@workspace/db";
 import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { requireDelegate } from "@/lib/session";
 
 export async function markAsCelebrated(competitionId: number): Promise<{
   success: boolean;
   message: string;
 }> {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-
-  if (!session?.user?.id) {
-    return { success: false, message: "No autenticado" };
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { success: false, message: authResult.message };
   }
+  const { session } = authResult;
 
   try {
     await db.transaction(async (tx) => {

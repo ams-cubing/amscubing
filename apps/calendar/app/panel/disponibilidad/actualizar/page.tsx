@@ -3,6 +3,7 @@ import { AvailabilityForm } from "../_components/availability-form";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getUserAvailability, getDelegateBusyDays } from "./_lib/queries";
+import Loading from "./loading";
 
 async function PageContent() {
   const session = await auth.api.getSession({
@@ -38,7 +39,7 @@ async function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Loading />}>
       <PageContent />
     </Suspense>
   );

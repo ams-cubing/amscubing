@@ -5,6 +5,7 @@ import "@workspace/ui/globals.css";
 import "leaflet/dist/leaflet.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
+import { PreviewBanner } from "@/components/preview-banner";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -84,13 +85,18 @@ export default function RootLayout({
               <AppSidebarWrapper />
             </Suspense>
             <SidebarInset>
-              <Header />
+              <div className="sticky top-0 z-50">
+                <Suspense fallback={<div className="h-0" aria-hidden />}>
+                  <PreviewBanner productionHost="calendario.amscubing.org" />
+                </Suspense>
+                <Header />
+              </div>
               <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">
                   {children}
                 </div>
               </div>
-              <Suspense>
+              <Suspense fallback={null}>
                 <Footer />
               </Suspense>
             </SidebarInset>
