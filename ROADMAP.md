@@ -65,6 +65,16 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 - [ ] Feriados / pulido del calendario (ya en curso).
 - [ ] Nav entre apps: menú de cuenta consistente que enlace web ↔ calendario ↔ tableros (y cursos).
 
+### Publicar en redes al marcar como celebrada
+
+Al usar **Marcar como celebrada** en el panel de delegados, publicar en las redes de AMS (p. ej. Facebook/Instagram) un post con los datos de la competencia (nombre, ciudad, fechas, URL WCA, etc.).
+
+- [ ] Campo `logo` (o similar) en `competition`: URL/Blob. La mayoría ya tienen logo; algunas no — el flujo debe permitir publicarlo sin logo o pedir uno opcional al marcar celebrada.
+- [ ] UI para subir / editar el logo de la competencia (formulario y/o prompt al celebrar si falta).
+- [ ] Integración de APIs de redes AMS: al confirmar **Marcar como celebrada**, redactar y publicar el post con los datos + logo si existe.
+- [ ] Guardar ids de posts / `celebratedPostedAt` (o similar) para evitar duplicados si se reintenta.
+- [ ] La tarjeta del tablero “Publicación FB Torneo de Rubik” puede quedar como checklist humana o alinearse con este flujo automático.
+
 ### Plataforma
 
 - [ ] Helpers de sesión compartidos usados por todas las apps (patrón de `lib/session` del calendario).
@@ -77,7 +87,7 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 - [ ] Dar de baja WordPress de **blog/portada** cuando las redirecciones y la paridad de contenido estén verificadas. Conservar `cursos.*` hasta reemplazar el LMS.
 - [ ] App de cursos en el monorepo (`apps/courses` o similar): catálogo, módulos, inscripción, cookies `ams.*` compartidas. El esquema (`course`, `course_module`, `enrollment`) llega entonces.
 - [ ] Certificados de curso / insignias de finalización.
-- [ ] Opcional: acción dedicada **Anunciar** que redacte (o más adelante publique) el texto para redes a partir de nombre, ciudad, fechas y URL de la WCA. No auto-publicar en cada guardado de estatus. Guardar `announcedAt` / ids de posts para evitar duplicados. La tarjeta del tablero “Publicación FB Torneo de Rubik” sigue siendo la checklist humana.
+- [ ] Opcional: acción dedicada **Anunciar** que redacte (o más adelante publique) el texto previo al evento. Distinto de la publicación post-celebración. No auto-publicar solo por guardar estatus como anunciada.
 - [ ] Newsletter o resúmenes de anuncios.
 - [ ] API pública o RSS del blog.
 - [ ] RBAC más fuerte (editor de contenido vs delegado vs admin).
@@ -89,16 +99,17 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 - Reemplazar a la WCA como proveedor de identidad.
 - Fusionar calendario + tableros en un solo deployable.
 - Reconstruir el LMS dentro de `apps/web`.
-- Auto-publicar en Facebook/Instagram al guardar una competencia como anunciada.
+- Auto-publicar en Facebook/Instagram solo por guardar una competencia como **anunciada** (la publicación automática va ligada a **celebrada**).
 
 ---
 
 ## Registro de decisiones
 
-| Fecha      | Decisión                    | Notas                                                                                                    |
-| ---------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
-| TBD        | Host de auth = web          | El calendario deja de ser dueño de los callbacks de OAuth                                                |
-| TBD        | Enfoque de CMS              | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                     |
-| 2026-08-18 | Los cursos no van en la web | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`              |
-| 2026-08-18 | Comps en web = `announced`  | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced` |
-| 2026-08-18 | Redes ≠ cambio de estatus   | Mostrar en el sitio es una lectura de BD; publicar en redes de AMS es una acción posterior y explícita   |
+| Fecha      | Decisión                         | Notas                                                                                                                         |
+| ---------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| TBD        | Host de auth = web               | El calendario deja de ser dueño de los callbacks de OAuth                                                                     |
+| TBD        | Enfoque de CMS                   | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                          |
+| 2026-08-18 | Los cursos no van en la web      | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                   |
+| 2026-08-18 | Comps en web = `announced`       | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                      |
+| 2026-08-20 | Redes al marcar **celebrada**    | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe) |
+| 2026-08-18 | Anunciada ≠ post en redes        | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                   |
