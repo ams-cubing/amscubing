@@ -13,7 +13,9 @@ export function Header({ children }: { children?: ReactNode }) {
         >
           Calendario Público de Competencias en México
         </Link>
-        {children ? <div className="ml-auto flex items-center">{children}</div> : null}
+        {children ? (
+          <div className="ml-auto flex items-center">{children}</div>
+        ) : null}
       </div>
     </header>
   );

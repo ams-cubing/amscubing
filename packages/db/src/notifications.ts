@@ -290,10 +290,7 @@ export async function countUnreadNotifications(userId: string) {
     .select({ value: count() })
     .from(notifications)
     .where(
-      and(
-        eq(notifications.recipientId, userId),
-        isNull(notifications.readAt),
-      ),
+      and(eq(notifications.recipientId, userId), isNull(notifications.readAt)),
     );
 
   return row?.value ?? 0;
@@ -317,9 +314,6 @@ export async function markAllNotificationsRead(userId: string) {
     .update(notifications)
     .set({ readAt: new Date() })
     .where(
-      and(
-        eq(notifications.recipientId, userId),
-        isNull(notifications.readAt),
-      ),
+      and(eq(notifications.recipientId, userId), isNull(notifications.readAt)),
     );
 }

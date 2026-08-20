@@ -19,7 +19,7 @@ interface PageProps {
 export default function Page(props: PageProps) {
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+      <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8 xl:max-w-none">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">
             Vista Privada de Delegado
