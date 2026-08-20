@@ -523,8 +523,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "ultimatum_sent",
 ]);
 
-export type NotificationType =
-  (typeof notificationTypeEnum.enumValues)[number];
+export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
 
 export type NotificationPayload = {
   boardId?: number;

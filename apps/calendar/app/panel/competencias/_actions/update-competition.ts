@@ -78,12 +78,11 @@ export async function updateCompetition(
       (id) => !newDelegateWcaIds.includes(id),
     );
 
-    const existingOrganizersRows = await db.query.competitionOrganizers.findMany(
-      {
+    const existingOrganizersRows =
+      await db.query.competitionOrganizers.findMany({
         where: (co, { eq }) => eq(co.competitionId, competitionId),
         columns: { organizerWcaId: true },
-      },
-    );
+      });
 
     const previousOrganizerWcaIds = existingOrganizersRows.map(
       (r) => r.organizerWcaId,

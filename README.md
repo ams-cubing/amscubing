@@ -8,19 +8,19 @@ Ver [ROADMAP.md](ROADMAP.md) para el trabajo planeado (auth en web, paridad de C
 
 ## Apps
 
-| App                | Ruta            | Puerto | Descripción                                               |
-| ------------------ | --------------- | ------ | --------------------------------------------------------- |
-| Web                | `apps/web`      | 3000   | Portada de la Asociación Mexicana de Speedcubing          |
-| Calendario Público | `apps/calendar` | 3001   | Calendario público de competencias de speedcubing en México |
+| App                | Ruta            | Puerto | Descripción                                                   |
+| ------------------ | --------------- | ------ | ------------------------------------------------------------- |
+| Web                | `apps/web`      | 3000   | Portada de la Asociación Mexicana de Speedcubing              |
+| Calendario Público | `apps/calendar` | 3001   | Calendario público de competencias de speedcubing en México   |
 | Tableros AMS       | `apps/boards`   | 3002   | Tableros de organización estilo Trello ligados a competencias |
 
 ## Paquetes
 
-| Paquete           | Ruta            | Descripción                                              |
-| ----------------- | --------------- | -------------------------------------------------------- |
+| Paquete           | Ruta            | Descripción                                                  |
+| ----------------- | --------------- | ------------------------------------------------------------ |
 | `@workspace/db`   | `packages/db`   | Esquema PostgreSQL compartido, migraciones y cliente Drizzle |
-| `@workspace/ui`   | `packages/ui`   | Componentes de UI compartidos                            |
-| `@workspace/auth` | `packages/auth` | Better Auth compartido (WCA) + cookies de sesión entre apps |
+| `@workspace/ui`   | `packages/ui`   | Componentes de UI compartidos                                |
+| `@workspace/auth` | `packages/auth` | Better Auth compartido (WCA) + cookies de sesión entre apps  |
 
 El inicio de sesión lo emite la app de **calendario**. Calendario y tableros comparten la cookie de sesión `ams.*` (el mismo `BETTER_AUTH_SECRET`). En producción hay que definir `AUTH_COOKIE_DOMAIN=.amscubing.org` en ambas apps.
 
@@ -76,15 +76,15 @@ pnpm --filter web dev
 
 ## Comandos de base de datos
 
-| Comando            | Descripción                                  |
-| ------------------ | -------------------------------------------- |
-| `pnpm db:up`       | Levantar Postgres local con Docker           |
-| `pnpm db:down`     | Detener el contenedor de Postgres            |
-| `pnpm db:reset`    | Resetear el volumen de Postgres y reiniciar  |
-| `pnpm db:migrate`  | Aplicar migraciones pendientes               |
+| Comando            | Descripción                                          |
+| ------------------ | ---------------------------------------------------- |
+| `pnpm db:up`       | Levantar Postgres local con Docker                   |
+| `pnpm db:down`     | Detener el contenedor de Postgres                    |
+| `pnpm db:reset`    | Resetear el volumen de Postgres y reiniciar          |
+| `pnpm db:migrate`  | Aplicar migraciones pendientes                       |
 | `pnpm db:seed`     | Sembrar regiones, estados y plantilla de tablero AMS |
-| `pnpm db:generate` | Generar migración a partir de cambios de esquema |
-| `pnpm db:studio`   | Abrir Drizzle Studio                         |
+| `pnpm db:generate` | Generar migración a partir de cambios de esquema     |
+| `pnpm db:studio`   | Abrir Drizzle Studio                                 |
 
 ## Licencia
 

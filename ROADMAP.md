@@ -95,10 +95,10 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 
 ## Registro de decisiones
 
-| Fecha | Decisión | Notas |
-| ---- | -------- | ----- |
-| TBD | Host de auth = web | El calendario deja de ser dueño de los callbacks de OAuth |
-| TBD | Enfoque de CMS | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios |
-| 2026-08-18 | Los cursos no van en la web | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web` |
-| 2026-08-18 | Comps en web = `announced` | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced` |
-| 2026-08-18 | Redes ≠ cambio de estatus | Mostrar en el sitio es una lectura de BD; publicar en redes de AMS es una acción posterior y explícita |
+| Fecha      | Decisión                    | Notas                                                                                                    |
+| ---------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| TBD        | Host de auth = web          | El calendario deja de ser dueño de los callbacks de OAuth                                                |
+| TBD        | Enfoque de CMS              | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                     |
+| 2026-08-18 | Los cursos no van en la web | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`              |
+| 2026-08-18 | Comps en web = `announced`  | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced` |
+| 2026-08-18 | Redes ≠ cambio de estatus   | Mostrar en el sitio es una lectura de BD; publicar en redes de AMS es una acción posterior y explícita   |
