@@ -4,11 +4,18 @@ export async function runBoardAction<T>(
   action: () => Promise<T>,
   options?: {
     errorMessage?: string;
+    successMessage?: string;
     onError?: (error: unknown) => void;
+    onSuccess?: (result: T) => void;
   },
 ): Promise<T | undefined> {
   try {
-    return await action();
+    const result = await action();
+    if (options?.successMessage) {
+      toast.success(options.successMessage);
+    }
+    options?.onSuccess?.(result);
+    return result;
   } catch (error) {
     console.error(error);
     options?.onError?.(error);

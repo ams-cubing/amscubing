@@ -9,10 +9,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@tiptap/extension-image": "^3.10.6",
+    "@tiptap/extension-link": "^3.10.6",
+    "@tiptap/extension-placeholder": "^3.10.6",
+    "@tiptap/extension-underline": "^3.10.6",
+    "@tiptap/markdown": "^3.10.6",
+    "@tiptap/react": "^3.10.6",
+    "@tiptap/starter-kit": "^3.10.6",
     "@hookform/resolvers": "^5.2.2",
     "@vercel/analytics": "^1.6.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/email": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.4.10",
     "date-fns": "^4.1.0",
@@ -23,6 +31,8 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "zod": "^4.1.13"
   },

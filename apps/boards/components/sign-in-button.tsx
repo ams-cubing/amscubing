@@ -1,42 +1,37 @@
 "use client";
 
-import { LoaderCircle, LogIn } from "lucide-react";
-import { useTransition } from "react";
-import { toast } from "sonner";
-import z from "zod";
+import { LogIn } from "lucide-react";
+import { useSyncExternalStore } from "react";
 
 import { Button } from "@workspace/ui/components/button";
 
-import { authClient } from "@/lib/auth-client";
+import { getCrossAppSignInUrl, getBoardsUrl } from "@/lib/urls";
+
+function getSignInHref() {
+  return getCrossAppSignInUrl(window.location.href);
+}
+
+function subscribe() {
+  return () => {};
+}
+
+function getServerSnapshot() {
+  return getCrossAppSignInUrl(getBoardsUrl());
+}
 
 export function SignInButton() {
-  const [pending, startTransition] = useTransition();
+  const href = useSyncExternalStore(
+    subscribe,
+    getSignInHref,
+    getServerSnapshot,
+  );
 
   return (
-    <Button
-      disabled={pending}
-      onClick={() => {
-        startTransition(async () => {
-          try {
-            await authClient.signIn.oauth2({
-              providerId: "wca",
-              // Absolute URL so OAuth (on calendar) returns to boards
-              callbackURL: window.location.href,
-            });
-          } catch (error) {
-            if (error instanceof z.ZodError) {
-              toast.error("No se pudo iniciar sesión con WCA");
-            }
-          }
-        });
-      }}
-    >
-      {pending ? (
-        <LoaderCircle className="animate-spin" />
-      ) : (
+    <Button asChild>
+      <a href={href}>
         <LogIn className="size-4" />
-      )}
-      Iniciar sesión con WCA
+        Iniciar sesión con WCA
+      </a>
     </Button>
   );
 }

@@ -1,61 +1,118 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import * as React from "react";
 
 import { Button } from "@workspace/ui/components/button";
 import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
 import { cn } from "@workspace/ui/lib/utils";
+
+import {
+  DescriptionEditorField,
+  type DescriptionEditorHandle,
+} from "./description-editor";
+import { MarkdownContent } from "./markdown-content";
 
 export function CardDescriptionSection({
   description,
-  visibleDescription,
+  descriptionDraft,
   descriptionLong,
   showFullDescription,
   editingDescription,
   pending,
-  descriptionRef,
+  readOnly,
+  editorRef,
   onEdit,
-  onChange,
-  onBlur,
+  onDraftChange,
+  onSave,
+  onCancel,
   onToggleFull,
+  onOpenAttachments,
 }: {
   description: string;
-  visibleDescription: string;
+  descriptionDraft: string;
   descriptionLong: boolean;
   showFullDescription: boolean;
   editingDescription: boolean;
   pending: boolean;
-  descriptionRef: React.RefObject<HTMLTextAreaElement | null>;
+  readOnly?: boolean;
+  editorRef: React.RefObject<DescriptionEditorHandle | null>;
   onEdit: () => void;
-  onChange: (value: string) => void;
-  onBlur: () => void;
+  onDraftChange: (value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
   onToggleFull: () => void;
+  onOpenAttachments?: () => void;
 }) {
+  const [markdownMode, setMarkdownMode] = React.useState(false);
+  const hasDescription = Boolean(description.trim());
+
+  React.useEffect(() => {
+    if (!editingDescription) {
+      setMarkdownMode(false);
+    }
+  }, [editingDescription]);
+
+  function handleSave() {
+    onSave();
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <Label>Descripción</Label>
-        {!editingDescription && (
+        {!editingDescription && !readOnly && (
           <Button type="button" size="sm" variant="ghost" onClick={onEdit}>
             Editar
           </Button>
         )}
       </div>
       {editingDescription ? (
-        <Textarea
-          ref={descriptionRef}
-          value={description}
-          rows={8}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          disabled={pending}
-        />
+        <div className="space-y-3">
+          <DescriptionEditorField
+            ref={editorRef}
+            value={descriptionDraft}
+            onChange={onDraftChange}
+            disabled={pending}
+            markdownMode={markdownMode}
+            onMarkdownModeChange={setMarkdownMode}
+            onOpenAttachments={onOpenAttachments}
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={pending}
+            >
+              Guardar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={pending}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-2">
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {visibleDescription || "Sin descripción"}
-          </p>
+          {hasDescription ? (
+            <div
+              className={cn(
+                descriptionLong &&
+                  !showFullDescription &&
+                  "max-h-36 overflow-hidden",
+              )}
+            >
+              <MarkdownContent content={description} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sin descripción</p>
+          )}
           {descriptionLong && (
             <Button
               type="button"

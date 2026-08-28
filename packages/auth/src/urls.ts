@@ -47,3 +47,29 @@ export function getAuthCookieDomain() {
   const domain = process.env.AUTH_COOKIE_DOMAIN?.trim();
   return domain || undefined;
 }
+
+/** OAuth callback targets we allow after sign-in (boards, calendar, same-app paths). */
+export function isAllowedReturnTo(returnTo: string) {
+  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+    return true;
+  }
+
+  try {
+    const origin = stripTrailingSlash(new URL(returnTo).origin);
+    return getTrustedOrigins().some(
+      (allowed) => stripTrailingSlash(allowed) === origin,
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Calendar-hosted login page for cross-app sign-in (e.g. from boards).
+ * OAuth must start same-origin on the auth host; fetch from another app is blocked by CORS.
+ */
+export function getCrossAppSignInUrl(returnTo: string) {
+  const url = new URL(`${getCalendarUrl()}/iniciar-sesion`);
+  url.searchParams.set("returnTo", returnTo);
+  return url.toString();
+}

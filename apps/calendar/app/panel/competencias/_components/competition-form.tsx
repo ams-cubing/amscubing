@@ -113,6 +113,7 @@ const competitionSchema = z
     primaryOrganizerWcaId: z
       .string()
       .min(1, "Selecciona un organizador principal"),
+    assignBoard: z.boolean().optional().default(false),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
@@ -182,6 +183,7 @@ export function CompetitionForm({
     { wcaId: string; name: string }[]
   >([]);
   const isEditing = !!competition;
+  const boardsEnabled = isBoardsEnabled();
 
   const minDate = addWeeks(new Date(), 5);
 
@@ -229,6 +231,7 @@ export function CompetitionForm({
           primaryDelegateWcaId: "",
           organizerWcaIds: [],
           primaryOrganizerWcaId: "",
+          assignBoard: boardsEnabled,
         },
   });
 
@@ -285,15 +288,23 @@ export function CompetitionForm({
   async function onSubmit(data: CompetitionFormValues) {
     startTransition(async () => {
       try {
+        const { assignBoard, ...rest } = data;
         const result = isEditing
-          ? await updateCompetition(competition.id, data)
-          : await createCompetition(data);
+          ? await updateCompetition(competition.id, rest)
+          : await createCompetition({ ...rest, assignBoard });
 
         if (result.success) {
-          toast.success(
-            result.message ||
-              `Competencia ${isEditing ? "actualizada" : "creada"} exitosamente`,
-          );
+          if (
+            !isEditing &&
+            result.message?.includes("no se pudo asignar el tablero")
+          ) {
+            toast.warning(result.message);
+          } else {
+            toast.success(
+              result.message ||
+                `Competencia ${isEditing ? "actualizada" : "creada"} exitosamente`,
+            );
+          }
 
           const id = result.competitionId ?? competition?.id;
           router.push(id ? `/panel/competencias/${id}` : "/panel");
@@ -441,31 +452,61 @@ export function CompetitionForm({
           />
         )}
 
-        <FormField
-          control={form.control}
-          name="trelloUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {isBoardsEnabled() ? "URL de Trello (legado)" : "URL de Trello"}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://trello.com/b/..."
-                  type="url"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Opcional
-                {isBoardsEnabled()
-                  ? ". Usa el tablero AMS arriba cuando sea posible."
-                  : "."}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {!isEditing && boardsEnabled && (
+          <FormField
+            control={form.control}
+            name="assignBoard"
+            render={({ field }) => (
+              <div className="space-y-2 rounded-lg border p-4">
+                <div className="text-sm font-medium">Tablero AMS</div>
+                <p className="text-sm text-muted-foreground">
+                  Se clonará la plantilla AMS estándar para los organizadores.
+                </p>
+                <FormItem className="flex flex-row items-start gap-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Crear tablero AMS automáticamente</FormLabel>
+                  </div>
+                </FormItem>
+              </div>
+            )}
+          />
+        )}
+
+        {(isEditing || !boardsEnabled || !form.watch("assignBoard")) && (
+          <FormField
+            control={form.control}
+            name="trelloUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {boardsEnabled ? "URL de Trello (legado)" : "URL de Trello"}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://trello.com/b/..."
+                    type="url"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Opcional
+                  {boardsEnabled
+                    ? isEditing
+                      ? ". Usa el tablero AMS arriba cuando sea posible."
+                      : ". Solo si no usas tablero AMS."
+                    : "."}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

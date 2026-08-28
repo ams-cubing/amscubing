@@ -34,69 +34,33 @@ import {
   addCardCommentAction,
   addChecklistAction,
   addChecklistItemAction,
+  deleteChecklistAction,
+  createLabelAction,
   deleteCardCommentAction,
+  deleteLabelAction,
   moveCardAction,
   removeAttachmentAction,
   toggleCardLabelAction,
   toggleCardMemberAction,
   toggleChecklistItemAction,
+  updateAttachmentAction,
   updateCardAction,
+  updateLabelAction,
 } from "../_actions/board-actions";
 import { dueDateInputValue, formatDueDate } from "../_lib/card-format";
 import type { BoardCard, BoardDetail } from "../_lib/types";
+import { CardLabelsBar } from "./card-dialog/card-labels-bar";
+import { CardLabelsPopover } from "./card-dialog/card-labels-popover";
 import { CardAttachmentsSection } from "./card-dialog/card-attachments-section";
 import { CardChecklistsSection } from "./card-dialog/card-checklists-section";
 import { CardCommentsSection } from "./card-dialog/card-comments-section";
 import { CardDescriptionSection } from "./card-dialog/card-description-section";
-import { CardLabelsSection } from "./card-dialog/card-labels-section";
+import type { DescriptionEditorHandle } from "./card-dialog/description-editor";
 import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
-
-function getCompetitionTeam(board: BoardDetail): TeamPerson[] {
-  const byUserId = new Map<string, TeamPerson>();
-
-  if (board.competition) {
-    for (const row of board.competition.delegates) {
-      if (!row.delegate) continue;
-      byUserId.set(row.delegate.id, {
-        userId: row.delegate.id,
-        wcaId: row.delegate.wcaId,
-        name: row.delegate.name,
-        image: row.delegate.image,
-        isPrimary: row.isPrimary,
-      });
-    }
-    for (const row of board.competition.organizers) {
-      if (!row.organizer) continue;
-      const existing = byUserId.get(row.organizer.id);
-      byUserId.set(row.organizer.id, {
-        userId: row.organizer.id,
-        wcaId: row.organizer.wcaId,
-        name: row.organizer.name,
-        image: row.organizer.image,
-        isPrimary: existing?.isPrimary || row.isPrimary,
-      });
-    }
-  }
-
-  for (const row of board.members ?? []) {
-    if (!row.user) continue;
-    if (byUserId.has(row.user.id)) continue;
-    byUserId.set(row.user.id, {
-      userId: row.user.id,
-      wcaId: row.user.wcaId,
-      name: row.user.name,
-      image: row.user.image,
-      isPrimary: false,
-    });
-  }
-
-  return [...byUserId.values()].sort(
-    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
-  );
-}
+import { getCompetitionTeam } from "../_lib/team";
 
 export function CardDialog({
   board,
@@ -113,6 +77,9 @@ export function CardDialog({
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
+  const [descriptionDraft, setDescriptionDraft] = React.useState(
+    card?.description ?? "",
+  );
   const [editingDescription, setEditingDescription] = React.useState(false);
   const [showFullDescription, setShowFullDescription] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
@@ -122,6 +89,8 @@ export function CardDialog({
   const [checklistTitle, setChecklistTitle] = React.useState("");
   const [commentBody, setCommentBody] = React.useState("");
   const [showDates, setShowDates] = React.useState(false);
+  const [labelsOpen, setLabelsOpen] = React.useState(false);
+  const [editLabelId, setEditLabelId] = React.useState<number | null>(null);
   const [showChecklistForm, setShowChecklistForm] = React.useState(false);
   const [showMembers, setShowMembers] = React.useState(false);
   const [showAttachmentForm, setShowAttachmentForm] = React.useState(false);
@@ -129,13 +98,13 @@ export function CardDialog({
     dueDateInputValue(card?.dueDate),
   );
 
-  const descriptionRef = React.useRef<HTMLTextAreaElement>(null);
+  const descriptionEditorRef = React.useRef<DescriptionEditorHandle>(null);
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
   const attachmentUrlRef = React.useRef<HTMLInputElement>(null);
-
   React.useEffect(() => {
     setTitle(card?.title ?? "");
     setDescription(card?.description ?? "");
+    setDescriptionDraft(card?.description ?? "");
     setDueDate(dueDateInputValue(card?.dueDate));
     setEditingDescription(false);
     setShowFullDescription(false);
@@ -145,6 +114,8 @@ export function CardDialog({
     setChecklistTitle("");
     setCommentBody("");
     setShowDates(false);
+    setLabelsOpen(false);
+    setEditLabelId(null);
     setShowChecklistForm(false);
     setShowMembers(false);
     setShowAttachmentForm(false);
@@ -157,10 +128,7 @@ export function CardDialog({
   const currentList = board.lists.find((list) => list.id === card.listId);
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
-  const visibleDescription =
-    !editingDescription && descriptionLong && !showFullDescription
-      ? `${(description || card.description || "").slice(0, 280)}…`
-      : description || card.description || "";
+  const displayDescription = description || card.description || "";
   const canEdit = !readOnly && !pending;
 
   function run(message: string, action: () => Promise<unknown>) {
@@ -182,9 +150,9 @@ export function CardDialog({
     }
   }
 
-  function persistDescription() {
+  function persistDescription(nextDescription: string) {
     if (readOnly) return;
-    const next = description.trim() || null;
+    const next = nextDescription.trim() || null;
     if (next !== (card!.description ?? null)) {
       run("No se pudo actualizar la descripción", () =>
         updateCardAction({
@@ -194,7 +162,27 @@ export function CardDialog({
         }),
       );
     }
+    setDescription(next ?? "");
     setEditingDescription(false);
+  }
+
+  function saveDescription() {
+    const latest =
+      descriptionEditorRef.current?.getMarkdown() ?? descriptionDraft;
+    setDescriptionDraft(latest);
+    persistDescription(latest);
+  }
+
+  function cancelDescriptionEdit() {
+    const original = card!.description ?? "";
+    setDescriptionDraft(original);
+    setEditingDescription(false);
+  }
+
+  function startDescriptionEdit() {
+    setDescriptionDraft(card!.description ?? "");
+    setEditingDescription(true);
+    requestAnimationFrame(() => descriptionEditorRef.current?.focus());
   }
 
   function persistDueDate(value: string) {
@@ -224,6 +212,21 @@ export function CardDialog({
         orderedCardIdsInTargetList: ordered,
       }),
     );
+  }
+
+  function openLabelsList() {
+    setEditLabelId(null);
+    setLabelsOpen(true);
+  }
+
+  function openLabelEdit(labelId: number) {
+    setEditLabelId(labelId);
+    setLabelsOpen(true);
+  }
+
+  function handleLabelsOpenChange(open: boolean) {
+    setLabelsOpen(open);
+    if (!open) setEditLabelId(null);
   }
 
   return (
@@ -330,11 +333,14 @@ export function CardDialog({
               )}
             </div>
 
-            <CardLabelsSection
+            <CardLabelsPopover
               board={board}
               labelIds={labelIds}
               readOnly={readOnly}
               pending={pending}
+              open={labelsOpen}
+              editLabelId={editLabelId}
+              onOpenChange={handleLabelsOpenChange}
               onToggle={(labelId, checked) =>
                 run("No se pudo actualizar la etiqueta", () =>
                   toggleCardLabelAction({
@@ -345,7 +351,42 @@ export function CardDialog({
                   }),
                 )
               }
-            />
+              onCreate={(name, color) =>
+                run("No se pudo crear la etiqueta", () =>
+                  createLabelAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    name,
+                    color,
+                  }),
+                )
+              }
+              onUpdate={(labelId, name, color) =>
+                run("No se pudo actualizar la etiqueta", () =>
+                  updateLabelAction({
+                    boardId: board.id,
+                    labelId,
+                    name,
+                    color,
+                  }),
+                )
+              }
+              onDelete={(labelId) =>
+                run("No se pudo eliminar la etiqueta", () =>
+                  deleteLabelAction({
+                    boardId: board.id,
+                    labelId,
+                  }),
+                )
+              }
+            >
+              <CardLabelsBar
+                card={card}
+                readOnly={readOnly}
+                onOpenList={openLabelsList}
+                onOpenEdit={openLabelEdit}
+              />
+            </CardLabelsPopover>
 
             {(showDates || card.dueDate) && (
               <div className="space-y-2">
@@ -393,20 +434,23 @@ export function CardDialog({
             )}
 
             <CardDescriptionSection
-              description={description}
-              visibleDescription={visibleDescription}
+              description={displayDescription}
+              descriptionDraft={descriptionDraft}
               descriptionLong={descriptionLong}
               showFullDescription={showFullDescription}
               editingDescription={editingDescription}
               pending={pending}
-              descriptionRef={descriptionRef}
-              onEdit={() => {
-                setEditingDescription(true);
-                requestAnimationFrame(() => descriptionRef.current?.focus());
-              }}
-              onChange={setDescription}
-              onBlur={persistDescription}
+              readOnly={readOnly}
+              editorRef={descriptionEditorRef}
+              onEdit={startDescriptionEdit}
+              onDraftChange={setDescriptionDraft}
+              onSave={saveDescription}
+              onCancel={cancelDescriptionEdit}
               onToggleFull={() => setShowFullDescription((v) => !v)}
+              onOpenAttachments={() => {
+                setShowAttachmentForm(true);
+                requestAnimationFrame(() => attachmentUrlRef.current?.focus());
+              }}
             />
 
             <CardChecklistsSection
@@ -415,6 +459,7 @@ export function CardDialog({
               showChecklistForm={showChecklistForm}
               newItem={newItem}
               checklistInputRef={checklistInputRef}
+              readOnly={readOnly}
               onChecklistTitleChange={setChecklistTitle}
               onShowChecklistForm={setShowChecklistForm}
               onNewItemChange={setNewItem}
@@ -448,6 +493,14 @@ export function CardDialog({
                   setNewItem((prev) => ({ ...prev, [checklistId]: "" }));
                 })
               }
+              onDeleteChecklist={(checklistId) =>
+                run("No se pudo eliminar la checklist", () =>
+                  deleteChecklistAction({
+                    boardId: board.id,
+                    checklistId,
+                  }),
+                )
+              }
             />
 
             <CardAttachmentsSection
@@ -456,15 +509,30 @@ export function CardDialog({
               attachmentName={attachmentName}
               attachmentUrl={attachmentUrl}
               pending={pending}
+              readOnly={readOnly}
               attachmentUrlRef={attachmentUrlRef}
               onNameChange={setAttachmentName}
               onUrlChange={setAttachmentUrl}
               onHideForm={() => setShowAttachmentForm(false)}
+              onShowForm={() => {
+                setShowAttachmentForm(true);
+                requestAnimationFrame(() => attachmentUrlRef.current?.focus());
+              }}
               onRemove={(attachmentId) =>
                 run("No se pudo eliminar el adjunto", () =>
                   removeAttachmentAction({
                     boardId: board.id,
                     attachmentId,
+                  }),
+                )
+              }
+              onUpdate={(attachmentId, name, url) =>
+                run("No se pudo actualizar el adjunto", () =>
+                  updateAttachmentAction({
+                    boardId: board.id,
+                    attachmentId,
+                    name,
+                    url,
                   }),
                 )
               }
@@ -486,6 +554,7 @@ export function CardDialog({
 
           <CardCommentsSection
             card={card}
+            team={team}
             commentBody={commentBody}
             pending={pending}
             onCommentBodyChange={setCommentBody}

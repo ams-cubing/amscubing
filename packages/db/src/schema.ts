@@ -513,12 +513,15 @@ export type Logs = InferSelectModel<typeof logs>;
 export const notificationTypeEnum = pgEnum("notification_type", [
   "card_assigned",
   "card_comment",
+  "card_mention",
+  "card_ready_for_review",
   "board_member_joined",
   "delegate_added",
   "delegate_removed",
   "organizer_added",
   "organizer_removed",
   "competition_status_changed",
+  "competition_readiness",
   "date_requested",
   "ultimatum_sent",
 ]);
@@ -536,6 +539,7 @@ export type NotificationPayload = {
   statusInternal?: string;
   statusLabel?: string;
   actorName?: string;
+  suggestionKind?: string;
 };
 
 export const notifications = pgTable(

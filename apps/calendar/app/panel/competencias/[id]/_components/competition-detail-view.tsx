@@ -26,6 +26,8 @@ import { cn } from "@workspace/ui/lib/utils";
 
 import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
 
+import { BoardAssignControls } from "../../_components/board-assign-controls";
+
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
 >;
@@ -224,6 +226,12 @@ export function CompetitionDetailView({
                 Tablero AMS
               </a>
             </Button>
+          )}
+          {boardsEnabled && !competition.boardId && (
+            <BoardAssignControls
+              competitionId={competition.id}
+              boardId={competition.boardId}
+            />
           )}
           {!(boardsEnabled && competition.boardId) && competition.trelloUrl && (
             <Button asChild variant="outline" size="sm">
