@@ -625,6 +625,29 @@ export async function addAttachmentAction(input: {
   revalidatePath(`/boards/${input.boardId}`);
 }
 
+export async function updateAttachmentAction(input: {
+  boardId: number;
+  attachmentId: number;
+  name: string;
+  url: string;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  const name = input.name.trim();
+  const url = input.url.trim();
+  if (!url) throw new Error("La URL del adjunto no puede estar vacía");
+
+  await db
+    .update(cardAttachments)
+    .set({
+      name: name || url,
+      url,
+    })
+    .where(eq(cardAttachments.id, input.attachmentId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
 export async function removeAttachmentAction(input: {
   boardId: number;
   attachmentId: number;

@@ -43,6 +43,7 @@ import {
   toggleCardLabelAction,
   toggleCardMemberAction,
   toggleChecklistItemAction,
+  updateAttachmentAction,
   updateCardAction,
   updateLabelAction,
 } from "../_actions/board-actions";
@@ -100,7 +101,6 @@ export function CardDialog({
   const descriptionEditorRef = React.useRef<DescriptionEditorHandle>(null);
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
   const attachmentUrlRef = React.useRef<HTMLInputElement>(null);
-
   React.useEffect(() => {
     setTitle(card?.title ?? "");
     setDescription(card?.description ?? "");
@@ -509,15 +509,30 @@ export function CardDialog({
               attachmentName={attachmentName}
               attachmentUrl={attachmentUrl}
               pending={pending}
+              readOnly={readOnly}
               attachmentUrlRef={attachmentUrlRef}
               onNameChange={setAttachmentName}
               onUrlChange={setAttachmentUrl}
               onHideForm={() => setShowAttachmentForm(false)}
+              onShowForm={() => {
+                setShowAttachmentForm(true);
+                requestAnimationFrame(() => attachmentUrlRef.current?.focus());
+              }}
               onRemove={(attachmentId) =>
                 run("No se pudo eliminar el adjunto", () =>
                   removeAttachmentAction({
                     boardId: board.id,
                     attachmentId,
+                  }),
+                )
+              }
+              onUpdate={(attachmentId, name, url) =>
+                run("No se pudo actualizar el adjunto", () =>
+                  updateAttachmentAction({
+                    boardId: board.id,
+                    attachmentId,
+                    name,
+                    url,
                   }),
                 )
               }
