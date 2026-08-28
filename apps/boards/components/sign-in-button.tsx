@@ -20,7 +20,11 @@ function getServerSnapshot() {
 }
 
 export function SignInButton() {
-  const href = useSyncExternalStore(subscribe, getSignInHref, getServerSnapshot);
+  const href = useSyncExternalStore(
+    subscribe,
+    getSignInHref,
+    getServerSnapshot,
+  );
 
   return (
     <Button asChild>

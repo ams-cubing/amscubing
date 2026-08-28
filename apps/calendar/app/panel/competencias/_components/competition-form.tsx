@@ -479,33 +479,33 @@ export function CompetitionForm({
         )}
 
         {(isEditing || !boardsEnabled || !form.watch("assignBoard")) && (
-        <FormField
-          control={form.control}
-          name="trelloUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {boardsEnabled ? "URL de Trello (legado)" : "URL de Trello"}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://trello.com/b/..."
-                  type="url"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Opcional
-                {boardsEnabled
-                  ? isEditing
-                    ? ". Usa el tablero AMS arriba cuando sea posible."
-                    : ". Solo si no usas tablero AMS."
-                  : "."}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="trelloUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {boardsEnabled ? "URL de Trello (legado)" : "URL de Trello"}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://trello.com/b/..."
+                    type="url"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Opcional
+                  {boardsEnabled
+                    ? isEditing
+                      ? ". Usa el tablero AMS arriba cuando sea posible."
+                      : ". Solo si no usas tablero AMS."
+                    : "."}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         )}
 
         <FormField

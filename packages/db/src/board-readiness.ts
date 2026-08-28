@@ -2,11 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "./index";
 import { TEMPLATE_LISTS } from "./data/ams-board-template";
-import {
-  boardLists,
-  boards,
-  competitions,
-} from "./schema";
+import { boardLists, boards, competitions } from "./schema";
 
 export const APPROVED_LIST_TITLE = TEMPLATE_LISTS[3]; // Aprobado
 export const HECHO_LIST_TITLE = TEMPLATE_LISTS[2]; // Hecho
@@ -19,7 +15,11 @@ export function isListTitle(title: string, expected: string) {
   return normalizeListTitle(title) === normalizeListTitle(expected);
 }
 
-type PhaseKey = "pre_announce" | "post_announce" | "post_celebrate" | "resources";
+type PhaseKey =
+  | "pre_announce"
+  | "post_announce"
+  | "post_celebrate"
+  | "resources";
 
 type BoardCardRow = {
   id: number;
@@ -213,7 +213,11 @@ export async function evaluateBoardReadiness(
       true,
       { public: "confirmed", internal: "venue_found" },
     );
-  } else if (statusPublic === "confirmed" && preAnnounceReady && preAnnounce.length > 0) {
+  } else if (
+    statusPublic === "confirmed" &&
+    preAnnounceReady &&
+    preAnnounce.length > 0
+  ) {
     suggestion = buildSuggestion(
       "announce_ready",
       preAnnounce,
@@ -264,7 +268,11 @@ export async function evaluateBoardReadiness(
       false,
       { public: "confirmed", internal: "venue_found" },
     );
-  } else if (postAnnounce.length > 0 && !postAnnounceReady && statusPublic === "announced") {
+  } else if (
+    postAnnounce.length > 0 &&
+    !postAnnounceReady &&
+    statusPublic === "announced"
+  ) {
     suggestion = buildSuggestion(
       "registration_open",
       postAnnounce,

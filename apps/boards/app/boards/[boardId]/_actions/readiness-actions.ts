@@ -81,7 +81,8 @@ export async function applyReadinessSuggestionAction(input: {
     await tx
       .update(competitions)
       .set({
-        statusPublic: targetStatusPublic as typeof competitions.$inferSelect.statusPublic,
+        statusPublic:
+          targetStatusPublic as typeof competitions.$inferSelect.statusPublic,
         statusInternal:
           targetStatusInternal as typeof competitions.$inferSelect.statusInternal,
         updatedAt: new Date(),

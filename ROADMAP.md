@@ -105,11 +105,11 @@ Al usar **Marcar como celebrada** en el panel de delegados, publicar en las rede
 
 ## Registro de decisiones
 
-| Fecha      | Decisión                         | Notas                                                                                                                         |
-| ---------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| TBD        | Host de auth = web               | El calendario deja de ser dueño de los callbacks de OAuth                                                                     |
-| TBD        | Enfoque de CMS                   | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                          |
-| 2026-08-18 | Los cursos no van en la web      | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                   |
-| 2026-08-18 | Comps en web = `announced`       | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                      |
-| 2026-08-20 | Redes al marcar **celebrada**    | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe) |
-| 2026-08-18 | Anunciada ≠ post en redes        | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                   |
+| Fecha      | Decisión                      | Notas                                                                                                                        |
+| ---------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                    |
+| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                         |
+| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                  |
+| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                     |
+| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe) |
+| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                  |

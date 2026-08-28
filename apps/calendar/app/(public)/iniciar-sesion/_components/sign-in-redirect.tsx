@@ -6,11 +6,7 @@ import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 
-export function SignInRedirect({
-  callbackURL,
-}: {
-  callbackURL: string;
-}) {
+export function SignInRedirect({ callbackURL }: { callbackURL: string }) {
   const started = useRef(false);
 
   useEffect(() => {
@@ -19,14 +15,16 @@ export function SignInRedirect({
     }
     started.current = true;
 
-    void authClient.signIn.oauth2({
-      providerId: "wca",
-      callbackURL,
-    }).catch(() => {
-      toast.error("No se pudo iniciar sesión con WCA", {
-        description: "Inténtalo de nuevo",
+    void authClient.signIn
+      .oauth2({
+        providerId: "wca",
+        callbackURL,
+      })
+      .catch(() => {
+        toast.error("No se pudo iniciar sesión con WCA", {
+          description: "Inténtalo de nuevo",
+        });
       });
-    });
   }, [callbackURL]);
 
   return (

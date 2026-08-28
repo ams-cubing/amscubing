@@ -8,8 +8,7 @@ export default async function IniciarSesionPage({
   searchParams: Promise<{ returnTo?: string }>;
 }) {
   const { returnTo } = await searchParams;
-  const callbackURL =
-    returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/";
+  const callbackURL = returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/";
 
   return <SignInRedirect callbackURL={callbackURL} />;
 }

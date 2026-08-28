@@ -1,7 +1,6 @@
 import { Resend } from "resend";
 
-const FROM =
-  "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>";
+const FROM = "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>";
 
 let resendClient: Resend | null = null;
 
@@ -14,7 +13,9 @@ function getResend() {
   return resendClient;
 }
 
-export function isDeliverableEmail(email: string | null | undefined): email is string {
+export function isDeliverableEmail(
+  email: string | null | undefined,
+): email is string {
   if (!email) return false;
   return !email.includes("@ams.placeholder");
 }
