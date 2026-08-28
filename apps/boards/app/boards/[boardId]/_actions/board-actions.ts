@@ -597,6 +597,17 @@ export async function addChecklistAction(input: {
   revalidatePath(`/boards/${input.boardId}`);
 }
 
+export async function deleteChecklistAction(input: {
+  boardId: number;
+  checklistId: number;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  await db.delete(checklists).where(eq(checklists.id, input.checklistId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
 export async function addAttachmentAction(input: {
   boardId: number;
   cardId: number;

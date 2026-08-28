@@ -34,6 +34,7 @@ import {
   addCardCommentAction,
   addChecklistAction,
   addChecklistItemAction,
+  deleteChecklistAction,
   createLabelAction,
   deleteCardCommentAction,
   deleteLabelAction,
@@ -458,6 +459,7 @@ export function CardDialog({
               showChecklistForm={showChecklistForm}
               newItem={newItem}
               checklistInputRef={checklistInputRef}
+              readOnly={readOnly}
               onChecklistTitleChange={setChecklistTitle}
               onShowChecklistForm={setShowChecklistForm}
               onNewItemChange={setNewItem}
@@ -490,6 +492,14 @@ export function CardDialog({
                   });
                   setNewItem((prev) => ({ ...prev, [checklistId]: "" }));
                 })
+              }
+              onDeleteChecklist={(checklistId) =>
+                run("No se pudo eliminar la checklist", () =>
+                  deleteChecklistAction({
+                    boardId: board.id,
+                    checklistId,
+                  }),
+                )
               }
             />
 
