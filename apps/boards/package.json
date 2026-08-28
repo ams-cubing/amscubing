@@ -13,6 +13,7 @@
     "@vercel/analytics": "^1.6.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/email": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.4.10",
     "date-fns": "^4.1.0",

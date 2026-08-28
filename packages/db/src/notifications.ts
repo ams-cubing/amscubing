@@ -1,7 +1,9 @@
-import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 
 import { db } from "./index";
 import {
+  boardMembers,
+  boards,
   competitionDelegates,
   competitionOrganizers,
   notifications,
@@ -83,6 +85,10 @@ export function formatNotificationTitle(
       return `Te asignaron a «${card}»`;
     case "card_comment":
       return `Nuevo comentario en «${card}»`;
+    case "card_mention":
+      return `${actor} te mencionó en «${card}»`;
+    case "card_ready_for_review":
+      return `${actor} marcó «${card}» como hecho — revisión pendiente`;
     case "board_member_joined":
       return `${actor} se unió a ${board}`;
     case "delegate_added":
@@ -95,6 +101,8 @@ export function formatNotificationTitle(
       return `Te removieron como organizador de ${city}`;
     case "competition_status_changed":
       return `Estatus: ${ctx.statusLabel ?? "actualizado"} — ${city}`;
+    case "competition_readiness":
+      return `Tablero listo: ${ctx.statusLabel ?? "revisar estatus"} — ${city}`;
     case "date_requested":
       return `Nueva solicitud de fecha: ${city}`;
     case "ultimatum_sent":
@@ -118,6 +126,8 @@ export function hrefForNotification(
   if (
     type === "card_assigned" ||
     type === "card_comment" ||
+    type === "card_mention" ||
+    type === "card_ready_for_review" ||
     type === "board_member_joined"
   ) {
     const boardPath = `${boards}/boards/${opts.boardId}`;
@@ -125,6 +135,15 @@ export function hrefForNotification(
       return `${boardPath}?card=${opts.cardId}`;
     }
     return boardPath;
+  }
+
+  if (
+    type === "competition_readiness" ||
+    type === "competition_status_changed"
+  ) {
+    if (opts.recipientRole === "delegate" && opts.competitionId != null) {
+      return `${calendar}/panel/competencias/${opts.competitionId}`;
+    }
   }
 
   if (opts.recipientRole === "delegate" && opts.competitionId != null) {
@@ -247,6 +266,132 @@ export async function competitionTeamUsers(
     byId.set(row.id, row);
   }
   return [...byId.values()];
+}
+
+export type BoardTeamUser = NotificationUser & {
+  name: string;
+  email: string | null;
+  image: string | null;
+};
+
+export async function boardTeamUsers(
+  dbOrTx: DbOrTx,
+  boardId: number,
+): Promise<BoardTeamUser[]> {
+  const board = await dbOrTx.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+    columns: { competitionId: true },
+  });
+  if (!board) return [];
+
+  const byId = new Map<string, BoardTeamUser>();
+
+  if (board.competitionId) {
+    const team = await competitionTeamUsers(dbOrTx, board.competitionId);
+    const userIds = team.map((member) => member.id);
+    if (userIds.length > 0) {
+      const profiles = await dbOrTx
+        .select({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: user.role,
+          wcaId: user.wcaId,
+        })
+        .from(user)
+        .where(inArray(user.id, userIds));
+
+      for (const profile of profiles) {
+        byId.set(profile.id, profile);
+      }
+    }
+  }
+
+  const members = await dbOrTx
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(boardMembers)
+    .innerJoin(user, eq(user.id, boardMembers.userId))
+    .where(eq(boardMembers.boardId, boardId));
+
+  for (const member of members) {
+    if (!byId.has(member.id)) {
+      byId.set(member.id, member);
+    }
+  }
+
+  return [...byId.values()];
+}
+
+export async function competitionDelegatesOnly(
+  dbOrTx: DbOrTx,
+  competitionId: number,
+): Promise<BoardTeamUser[]> {
+  const rows = await dbOrTx
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(competitionDelegates)
+    .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
+    .where(eq(competitionDelegates.competitionId, competitionId));
+
+  return rows;
+}
+
+export async function isCompetitionOrganizer(
+  dbOrTx: DbOrTx,
+  competitionId: number,
+  wcaId: string,
+) {
+  const row = await dbOrTx.query.competitionOrganizers.findFirst({
+    where: and(
+      eq(competitionOrganizers.competitionId, competitionId),
+      eq(competitionOrganizers.organizerWcaId, wcaId),
+    ),
+    columns: { organizerWcaId: true },
+  });
+  return Boolean(row);
+}
+
+export async function hasRecentNotificationForKind(
+  dbOrTx: DbOrTx,
+  input: {
+    type: NotificationType;
+    competitionId: number;
+    suggestionKind: string;
+    withinHours?: number;
+  },
+) {
+  const since = new Date(
+    Date.now() - (input.withinHours ?? 24) * 60 * 60 * 1000,
+  );
+  const rows = await dbOrTx.query.notifications.findMany({
+    where: and(
+      eq(notifications.type, input.type),
+      gte(notifications.createdAt, since),
+      isNull(notifications.readAt),
+    ),
+    columns: { payload: true },
+    limit: 100,
+  });
+
+  return rows.some(
+    (row) =>
+      row.payload?.competitionId === input.competitionId &&
+      row.payload?.suggestionKind === input.suggestionKind,
+  );
 }
 
 export type InboxNotification = {

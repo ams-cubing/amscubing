@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import type { User } from "@workspace/db/schema";
 import { db } from "@workspace/db";
+import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
 import { boardInvites } from "@workspace/db/schema";
 import {
   Avatar,
@@ -15,6 +16,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
 
 import { BoardKanban } from "./_components/board-kanban";
+import { BoardReadinessBanner } from "./_components/board-readiness-banner";
 import { BoardDelegateControls } from "./_components/board-delegate-controls";
 import { getBoardForUser } from "@/lib/boards";
 import {
@@ -54,6 +56,10 @@ export default async function BoardPage({
   const board = await getBoardForUser(user, boardId);
 
   if (!board) notFound();
+
+  const readiness = board.competition
+    ? await evaluateBoardReadiness(boardId)
+    : null;
 
   const isDelegate = user.role === "delegate";
   const isArchived = Boolean(board.archivedAt);
@@ -212,6 +218,14 @@ export default async function BoardPage({
           </div>
         </div>
       </div>
+      {readiness?.suggestion && !board.isTemplate ? (
+        <BoardReadinessBanner
+          boardId={boardId}
+          suggestion={readiness.suggestion}
+          competitionHref={competitionHref}
+          isDelegate={isDelegate}
+        />
+      ) : null}
       <BoardKanban
         board={board}
         readOnly={isArchived}

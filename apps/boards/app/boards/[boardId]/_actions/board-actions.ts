@@ -4,10 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
+import { HECHO_LIST_TITLE, isListTitle } from "@workspace/db/board-readiness";
+import { parseMentions, resolveMentionedUsers } from "@workspace/db/mentions";
 import {
+  boardTeamUsers,
   formatNotificationTitle,
   hrefForNotification,
   insertNotifications,
+  isCompetitionOrganizer,
 } from "@workspace/db/notifications";
 import {
   boardLists,
@@ -26,6 +30,11 @@ import {
   user,
 } from "@workspace/db/schema";
 
+import {
+  maybeNotifyReadinessSuggestion,
+  notifyHechoReview,
+} from "@/lib/board-notifications";
+import { sendBoardNotificationEmail } from "@/lib/board-emails";
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSession } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
@@ -99,7 +108,16 @@ export async function moveCardAction(input: {
   toPosition: number;
   orderedCardIdsInTargetList: number[];
 }) {
-  await requireBoardAccess(input.boardId);
+  const actor = await requireBoardAccess(input.boardId);
+
+  const card = await db.query.cards.findFirst({
+    where: eq(cards.id, input.cardId),
+    columns: { id: true, title: true, listId: true },
+    with: {
+      list: { columns: { title: true } },
+    },
+  });
+  if (!card) throw new Error("Tarjeta no encontrada");
 
   const list = await db.query.boardLists.findFirst({
     where: and(
@@ -108,6 +126,12 @@ export async function moveCardAction(input: {
     ),
   });
   if (!list) throw new Error("Lista no encontrada");
+
+  const fromListTitle = card.list?.title ?? "";
+  const toListTitle = list.title;
+  const movedIntoHecho =
+    !isListTitle(fromListTitle, HECHO_LIST_TITLE) &&
+    isListTitle(toListTitle, HECHO_LIST_TITLE);
 
   await db
     .update(cards)
@@ -122,6 +146,42 @@ export async function moveCardAction(input: {
         .where(eq(cards.id, id)),
     ),
   );
+
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, input.boardId),
+    columns: { competitionId: true, name: true },
+    with: {
+      competition: {
+        columns: { id: true, city: true },
+      },
+    },
+  });
+
+  const urls = {
+    calendarUrl: getCalendarUrl(),
+    boardsUrl: getBoardsUrl(),
+  };
+
+  if (
+    movedIntoHecho &&
+    board?.competitionId &&
+    board.competition &&
+    (await isCompetitionOrganizer(db, board.competitionId, actor.wcaId))
+  ) {
+    await notifyHechoReview({
+      boardId: input.boardId,
+      cardId: input.cardId,
+      cardTitle: card.title,
+      city: board.competition.city,
+      competitionId: board.competitionId,
+      actor: { id: actor.id, name: actor.name },
+      urls,
+    });
+  }
+
+  if (board?.competitionId) {
+    await maybeNotifyReadinessSuggestion(input.boardId, actor.id, urls);
+  }
 
   revalidatePath(`/boards/${input.boardId}`);
 }
@@ -261,6 +321,24 @@ export async function addCardCommentAction(input: {
   const body = input.body.trim();
   if (!body) throw new Error("El comentario no puede estar vacío");
 
+  const team = await boardTeamUsers(db, input.boardId);
+  const mentionWcaIds = parseMentions(body);
+  const mentioned = resolveMentionedUsers(
+    mentionWcaIds,
+    team.map((member) => ({
+      userId: member.id,
+      wcaId: member.wcaId,
+      name: member.name,
+    })),
+  );
+
+  if (mentionWcaIds.length > mentioned.length) {
+    throw new Error("Una o más menciones no son válidas para este tablero");
+  }
+
+  const mentionedIds = new Set(mentioned.map((member) => member.userId));
+  const emailRecipients: { email: string; name: string }[] = [];
+
   await db.transaction(async (tx) => {
     await tx.insert(cardComments).values({
       cardId: input.cardId,
@@ -284,10 +362,41 @@ export async function addCardCommentAction(input: {
       calendarUrl: getCalendarUrl(),
       boardsUrl: getBoardsUrl(),
     };
+    const cardHref = hrefForNotification("card_mention", {
+      urls,
+      recipientRole: "user",
+      boardId: input.boardId,
+      cardId: input.cardId,
+    });
 
-    await insertNotifications(
-      tx,
-      members.map((member) => ({
+    const mentionRows = mentioned.map((member) => {
+      const profile = team.find((person) => person.id === member.userId);
+      if (profile?.email) {
+        emailRecipients.push({ email: profile.email, name: profile.name });
+      }
+
+      return {
+        recipientId: member.userId,
+        actorId: user.id,
+        type: "card_mention" as const,
+        title: formatNotificationTitle("card_mention", {
+          cardTitle: card?.title,
+          actorName: user.name,
+        }),
+        href: cardHref,
+        payload: {
+          boardId: input.boardId,
+          boardName: board?.name,
+          cardId: input.cardId,
+          cardTitle: card?.title,
+          actorName: user.name,
+        },
+      };
+    });
+
+    const commentRows = members
+      .filter((member) => !mentionedIds.has(member.userId))
+      .map((member) => ({
         recipientId: member.userId,
         actorId: user.id,
         type: "card_comment" as const,
@@ -307,9 +416,23 @@ export async function addCardCommentAction(input: {
           cardTitle: card?.title,
           actorName: user.name,
         },
-      })),
-    );
+      }));
+
+    await insertNotifications(tx, [...mentionRows, ...commentRows]);
   });
+
+  const boardHref = `${getBoardsUrl().replace(/\/$/, "")}/boards/${input.boardId}?card=${input.cardId}`;
+  for (const recipient of emailRecipients) {
+    await sendBoardNotificationEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      subject: `${user.name} te mencionó en un comentario`,
+      title: `${user.name} te mencionó en un comentario`,
+      bodyHtml: `<p>${body.replaceAll("\n", "<br/>")}</p>`,
+      ctaLabel: "Ver comentario",
+      ctaHref: boardHref,
+    });
+  }
 
   revalidatePath(`/boards/${input.boardId}`);
 }

@@ -7,6 +7,8 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
     "./notifications": "./src/notifications.ts",
+    "./mentions": "./src/mentions.ts",
+    "./board-readiness": "./src/board-readiness.ts",
     "./utils": "./src/utils.ts",
     "./data/mexico": "./src/data/mexico.ts",
     "./data/delegates": "./src/data/delegates.ts",
@@ -22,7 +24,9 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
-    "db:up": "drizzle-kit up"
+    "db:up": "drizzle-kit up",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
@@ -34,6 +38,7 @@
     "drizzle-kit": "^0.31.5",
     "pg": "^8.16.3",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
   }
 }

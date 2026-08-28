@@ -8,13 +8,16 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 import { formatCommentTime, initials } from "../../_lib/card-format";
 import type { BoardCard } from "../../_lib/types";
+import type { TeamPerson } from "../../_lib/team";
+import { CommentBody } from "./comment-body";
+import { MentionTextarea } from "./mention-textarea";
 
 export function CardCommentsSection({
   card,
+  team,
   commentBody,
   pending,
   onCommentBodyChange,
@@ -22,6 +25,7 @@ export function CardCommentsSection({
   onAdd,
 }: {
   card: BoardCard;
+  team: TeamPerson[];
   commentBody: string;
   pending: boolean;
   onCommentBodyChange: (value: string) => void;
@@ -58,9 +62,7 @@ export function CardCommentsSection({
                     {formatCommentTime(comment.createdAt)}
                   </span>
                 </div>
-                <p className="whitespace-pre-wrap rounded-md border bg-background px-3 py-2 text-sm">
-                  {comment.body}
-                </p>
+                <CommentBody body={comment.body} team={team} />
                 <Button
                   type="button"
                   size="sm"
@@ -83,12 +85,11 @@ export function CardCommentsSection({
           onAdd();
         }}
       >
-        <Textarea
-          placeholder="Escribe un comentario..."
+        <MentionTextarea
           value={commentBody}
-          rows={3}
-          onChange={(e) => onCommentBodyChange(e.target.value)}
+          team={team}
           disabled={pending}
+          onChange={onCommentBodyChange}
         />
         <Button
           type="submit"
