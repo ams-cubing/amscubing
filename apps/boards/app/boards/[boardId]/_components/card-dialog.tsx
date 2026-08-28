@@ -53,6 +53,7 @@ import { CardAttachmentsSection } from "./card-dialog/card-attachments-section";
 import { CardChecklistsSection } from "./card-dialog/card-checklists-section";
 import { CardCommentsSection } from "./card-dialog/card-comments-section";
 import { CardDescriptionSection } from "./card-dialog/card-description-section";
+import type { DescriptionEditorHandle } from "./card-dialog/description-editor";
 import {
   CardMembersSection,
   type TeamPerson,
@@ -74,6 +75,9 @@ export function CardDialog({
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
+  const [descriptionDraft, setDescriptionDraft] = React.useState(
+    card?.description ?? "",
+  );
   const [editingDescription, setEditingDescription] = React.useState(false);
   const [showFullDescription, setShowFullDescription] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
@@ -92,13 +96,14 @@ export function CardDialog({
     dueDateInputValue(card?.dueDate),
   );
 
-  const descriptionRef = React.useRef<HTMLTextAreaElement>(null);
+  const descriptionEditorRef = React.useRef<DescriptionEditorHandle>(null);
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
   const attachmentUrlRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     setTitle(card?.title ?? "");
     setDescription(card?.description ?? "");
+    setDescriptionDraft(card?.description ?? "");
     setDueDate(dueDateInputValue(card?.dueDate));
     setEditingDescription(false);
     setShowFullDescription(false);
@@ -122,10 +127,7 @@ export function CardDialog({
   const currentList = board.lists.find((list) => list.id === card.listId);
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
-  const visibleDescription =
-    !editingDescription && descriptionLong && !showFullDescription
-      ? `${(description || card.description || "").slice(0, 280)}…`
-      : description || card.description || "";
+  const displayDescription = description || card.description || "";
   const canEdit = !readOnly && !pending;
 
   function run(message: string, action: () => Promise<unknown>) {
@@ -147,9 +149,9 @@ export function CardDialog({
     }
   }
 
-  function persistDescription() {
+  function persistDescription(nextDescription: string) {
     if (readOnly) return;
-    const next = description.trim() || null;
+    const next = nextDescription.trim() || null;
     if (next !== (card!.description ?? null)) {
       run("No se pudo actualizar la descripción", () =>
         updateCardAction({
@@ -159,7 +161,27 @@ export function CardDialog({
         }),
       );
     }
+    setDescription(next ?? "");
     setEditingDescription(false);
+  }
+
+  function saveDescription() {
+    const latest =
+      descriptionEditorRef.current?.getMarkdown() ?? descriptionDraft;
+    setDescriptionDraft(latest);
+    persistDescription(latest);
+  }
+
+  function cancelDescriptionEdit() {
+    const original = card!.description ?? "";
+    setDescriptionDraft(original);
+    setEditingDescription(false);
+  }
+
+  function startDescriptionEdit() {
+    setDescriptionDraft(card!.description ?? "");
+    setEditingDescription(true);
+    requestAnimationFrame(() => descriptionEditorRef.current?.focus());
   }
 
   function persistDueDate(value: string) {
@@ -411,20 +433,23 @@ export function CardDialog({
             )}
 
             <CardDescriptionSection
-              description={description}
-              visibleDescription={visibleDescription}
+              description={displayDescription}
+              descriptionDraft={descriptionDraft}
               descriptionLong={descriptionLong}
               showFullDescription={showFullDescription}
               editingDescription={editingDescription}
               pending={pending}
-              descriptionRef={descriptionRef}
-              onEdit={() => {
-                setEditingDescription(true);
-                requestAnimationFrame(() => descriptionRef.current?.focus());
-              }}
-              onChange={setDescription}
-              onBlur={persistDescription}
+              readOnly={readOnly}
+              editorRef={descriptionEditorRef}
+              onEdit={startDescriptionEdit}
+              onDraftChange={setDescriptionDraft}
+              onSave={saveDescription}
+              onCancel={cancelDescriptionEdit}
               onToggleFull={() => setShowFullDescription((v) => !v)}
+              onOpenAttachments={() => {
+                setShowAttachmentForm(true);
+                requestAnimationFrame(() => attachmentUrlRef.current?.focus());
+              }}
             />
 
             <CardChecklistsSection
