@@ -94,11 +94,11 @@ Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No
 
 Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 0). No hay E2E.
 
-- [ ] Tests unitarios en `@workspace/auth` (tipos, URLs, cookie domain).
-- [ ] Tests en `apps/boards` — empezar por server actions (`board-actions.ts`, ~700 líneas sin cobertura).
-- [ ] Tests en `apps/web` cuando tenga lógica de BD/auth.
+- [x] Tests unitarios en `@workspace/auth` (tipos, URLs, cookie domain).
+- [x] Tests en `apps/boards` — empezar por server actions (`board-actions.ts`, ~700 líneas sin cobertura).
+- [x] Tests en `apps/web` cuando tenga lógica de BD/auth.
 - [ ] E2E mínimo: login WCA, ciclo de vida de una competencia, operación básica en tablero.
-- [ ] Reutilizar el patrón de mocks del calendario (`auth`, `db`, `revalidatePath`) en tableros.
+- [x] Reutilizar el patrón de mocks del calendario (`auth`, `db`, `revalidatePath`) en tableros.
 
 #### Lint, formato y hooks
 
