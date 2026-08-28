@@ -55,14 +55,17 @@ export function isCardRelevantNow(
   const celebrated = statusInternal === "celebrated";
   const announced = statusPublic === "announced" || celebrated;
 
-  // green = pre announce, red = post announce, blue = post celebrate, pink = resources
+  // yellow = pre-org, green = pre announce, red = post announce,
+  // blue = post celebrate, purple = during competition, pink = resources
+  const isYellow = colors.some((c) => c.includes("eab308") || c === "#eab308");
   const isGreen = colors.some((c) => c.includes("22c55e") || c === "#22c55e");
   const isRed = colors.some((c) => c.includes("ef4444") || c === "#ef4444");
   const isBlue = colors.some((c) => c.includes("3b82f6") || c === "#3b82f6");
+  const isPurple = colors.some((c) => c.includes("5e4db2") || c === "#5e4db2");
   const isPink = colors.some((c) => c.includes("ec4899") || c === "#ec4899");
 
   if (isPink) return true;
-  if (celebrated) return isBlue;
-  if (announced) return isRed;
-  return isGreen;
+  if (celebrated) return isBlue || isPurple;
+  if (announced) return isRed || isPurple;
+  return isYellow || isGreen;
 }

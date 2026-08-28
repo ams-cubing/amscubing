@@ -51,6 +51,11 @@ function cardPhase(labelColors: string[]): PhaseKey | null {
   );
   if (isGreen) return "pre_announce";
 
+  const isYellow = labelColors.some(
+    (c) => c.includes("eab308") || c === "#eab308",
+  );
+  if (isYellow) return "pre_announce";
+
   return "pre_announce";
 }
 
