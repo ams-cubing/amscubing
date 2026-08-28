@@ -27,6 +27,7 @@ import {
   cardLabels,
   cardMembers,
   cards,
+  labels,
   checklistItems,
   checklists,
   competitionDelegates,
@@ -217,6 +218,85 @@ export async function updateCardAction(input: {
         : {}),
     })
     .where(eq(cards.id, input.cardId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function createLabelAction(input: {
+  boardId: number;
+  cardId?: number;
+  name: string;
+  color: string;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  const name = input.name.trim();
+  if (!name) throw new Error("El nombre de la etiqueta es obligatorio");
+
+  const color = input.color.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+    throw new Error("Color de etiqueta no válido");
+  }
+
+  const [label] = await db
+    .insert(labels)
+    .values({ boardId: input.boardId, name, color })
+    .returning();
+
+  if (!label) throw new Error("No se pudo crear la etiqueta");
+
+  if (input.cardId !== undefined) {
+    await db
+      .insert(cardLabels)
+      .values({ cardId: input.cardId, labelId: label.id })
+      .onConflictDoNothing();
+  }
+
+  revalidatePath(`/boards/${input.boardId}`);
+  return label;
+}
+
+export async function updateLabelAction(input: {
+  boardId: number;
+  labelId: number;
+  name: string;
+  color: string;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  const name = input.name.trim();
+  if (!name) throw new Error("El nombre de la etiqueta es obligatorio");
+
+  const color = input.color.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+    throw new Error("Color de etiqueta no válido");
+  }
+
+  const label = await db.query.labels.findFirst({
+    where: and(eq(labels.id, input.labelId), eq(labels.boardId, input.boardId)),
+  });
+  if (!label) throw new Error("Etiqueta no encontrada");
+
+  await db
+    .update(labels)
+    .set({ name, color })
+    .where(eq(labels.id, input.labelId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function deleteLabelAction(input: {
+  boardId: number;
+  labelId: number;
+}) {
+  await requireBoardAccess(input.boardId);
+
+  const label = await db.query.labels.findFirst({
+    where: and(eq(labels.id, input.labelId), eq(labels.boardId, input.boardId)),
+  });
+  if (!label) throw new Error("Etiqueta no encontrada");
+
+  await db.delete(labels).where(eq(labels.id, input.labelId));
 
   revalidatePath(`/boards/${input.boardId}`);
 }

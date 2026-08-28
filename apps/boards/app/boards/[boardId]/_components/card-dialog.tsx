@@ -34,21 +34,25 @@ import {
   addCardCommentAction,
   addChecklistAction,
   addChecklistItemAction,
+  createLabelAction,
   deleteCardCommentAction,
+  deleteLabelAction,
   moveCardAction,
   removeAttachmentAction,
   toggleCardLabelAction,
   toggleCardMemberAction,
   toggleChecklistItemAction,
   updateCardAction,
+  updateLabelAction,
 } from "../_actions/board-actions";
 import { dueDateInputValue, formatDueDate } from "../_lib/card-format";
 import type { BoardCard, BoardDetail } from "../_lib/types";
+import { CardLabelsBar } from "./card-dialog/card-labels-bar";
+import { CardLabelsPopover } from "./card-dialog/card-labels-popover";
 import { CardAttachmentsSection } from "./card-dialog/card-attachments-section";
 import { CardChecklistsSection } from "./card-dialog/card-checklists-section";
 import { CardCommentsSection } from "./card-dialog/card-comments-section";
 import { CardDescriptionSection } from "./card-dialog/card-description-section";
-import { CardLabelsSection } from "./card-dialog/card-labels-section";
 import {
   CardMembersSection,
   type TeamPerson,
@@ -79,6 +83,8 @@ export function CardDialog({
   const [checklistTitle, setChecklistTitle] = React.useState("");
   const [commentBody, setCommentBody] = React.useState("");
   const [showDates, setShowDates] = React.useState(false);
+  const [labelsOpen, setLabelsOpen] = React.useState(false);
+  const [editLabelId, setEditLabelId] = React.useState<number | null>(null);
   const [showChecklistForm, setShowChecklistForm] = React.useState(false);
   const [showMembers, setShowMembers] = React.useState(false);
   const [showAttachmentForm, setShowAttachmentForm] = React.useState(false);
@@ -102,6 +108,8 @@ export function CardDialog({
     setChecklistTitle("");
     setCommentBody("");
     setShowDates(false);
+    setLabelsOpen(false);
+    setEditLabelId(null);
     setShowChecklistForm(false);
     setShowMembers(false);
     setShowAttachmentForm(false);
@@ -181,6 +189,21 @@ export function CardDialog({
         orderedCardIdsInTargetList: ordered,
       }),
     );
+  }
+
+  function openLabelsList() {
+    setEditLabelId(null);
+    setLabelsOpen(true);
+  }
+
+  function openLabelEdit(labelId: number) {
+    setEditLabelId(labelId);
+    setLabelsOpen(true);
+  }
+
+  function handleLabelsOpenChange(open: boolean) {
+    setLabelsOpen(open);
+    if (!open) setEditLabelId(null);
   }
 
   return (
@@ -287,11 +310,14 @@ export function CardDialog({
               )}
             </div>
 
-            <CardLabelsSection
+            <CardLabelsPopover
               board={board}
               labelIds={labelIds}
               readOnly={readOnly}
               pending={pending}
+              open={labelsOpen}
+              editLabelId={editLabelId}
+              onOpenChange={handleLabelsOpenChange}
               onToggle={(labelId, checked) =>
                 run("No se pudo actualizar la etiqueta", () =>
                   toggleCardLabelAction({
@@ -302,7 +328,42 @@ export function CardDialog({
                   }),
                 )
               }
-            />
+              onCreate={(name, color) =>
+                run("No se pudo crear la etiqueta", () =>
+                  createLabelAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    name,
+                    color,
+                  }),
+                )
+              }
+              onUpdate={(labelId, name, color) =>
+                run("No se pudo actualizar la etiqueta", () =>
+                  updateLabelAction({
+                    boardId: board.id,
+                    labelId,
+                    name,
+                    color,
+                  }),
+                )
+              }
+              onDelete={(labelId) =>
+                run("No se pudo eliminar la etiqueta", () =>
+                  deleteLabelAction({
+                    boardId: board.id,
+                    labelId,
+                  }),
+                )
+              }
+            >
+              <CardLabelsBar
+                card={card}
+                readOnly={readOnly}
+                onOpenList={openLabelsList}
+                onOpenEdit={openLabelEdit}
+              />
+            </CardLabelsPopover>
 
             {(showDates || card.dueDate) && (
               <div className="space-y-2">
