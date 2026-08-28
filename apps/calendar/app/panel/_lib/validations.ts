@@ -83,6 +83,7 @@ export const createCompetitionSchema = z
       .string()
       .min(1, "Selecciona un organizador principal"),
     notes: z.string().optional().or(z.literal("")),
+    assignBoard: z.boolean().optional().default(false),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date must be after start date",

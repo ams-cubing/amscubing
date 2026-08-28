@@ -20,6 +20,8 @@ import { z } from "zod";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
+import { isBoardsEnabled } from "@/lib/boards";
+import { assignBoardToCompetitionById } from "./assign-board";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -185,9 +187,20 @@ export async function createCompetition(
     revalidatePath("/panel");
     revalidatePath("/");
 
+    let message = "Competencia creada exitosamente";
+
+    if (validatedData.assignBoard && isBoardsEnabled() && newCompetitionId) {
+      const assignResult = await assignBoardToCompetitionById(newCompetitionId);
+      if (assignResult.error) {
+        message = `Competencia creada, pero no se pudo asignar el tablero: ${assignResult.error}`;
+      } else {
+        message = "Competencia y tablero creados exitosamente";
+      }
+    }
+
     return {
       success: true,
-      message: "Competencia creada exitosamente",
+      message,
       competitionId: newCompetitionId,
     };
   } catch (error) {

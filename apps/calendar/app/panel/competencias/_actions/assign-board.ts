@@ -10,16 +10,7 @@ import { eq } from "drizzle-orm";
 import { isBoardsEnabled } from "@/lib/boards";
 import { requireDelegate } from "@/lib/session";
 
-export async function assignBoardToCompetition(competitionId: number) {
-  if (!isBoardsEnabled()) {
-    return { error: "Tableros AMS no están habilitados" };
-  }
-
-  const authResult = await requireDelegate();
-  if (!authResult.ok) {
-    return { error: authResult.message };
-  }
-
+export async function assignBoardToCompetitionById(competitionId: number) {
   const competition = await db.query.competitions.findFirst({
     where: eq(competitions.id, competitionId),
     columns: {
@@ -64,4 +55,17 @@ export async function assignBoardToCompetition(competitionId: number) {
         error instanceof Error ? error.message : "No se pudo crear el tablero",
     };
   }
+}
+
+export async function assignBoardToCompetition(competitionId: number) {
+  if (!isBoardsEnabled()) {
+    return { error: "Tableros AMS no están habilitados" };
+  }
+
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { error: authResult.message };
+  }
+
+  return assignBoardToCompetitionById(competitionId);
 }
