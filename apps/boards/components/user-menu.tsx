@@ -2,7 +2,7 @@
 
 import { LogOut } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 import type { User } from "@workspace/db/schema";
 import {
@@ -19,11 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 
-import { authClient } from "@/lib/auth-client";
+import { signOutAction } from "@/app/_actions/auth";
 import { getCalendarUrl } from "@/lib/urls";
 
 export function UserMenu({ user }: { user: User }) {
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const calendarUrl = getCalendarUrl();
 
   return (
@@ -43,13 +43,10 @@ export function UserMenu({ user }: { user: User }) {
           <Link href={calendarUrl}>Ir al calendario</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={async () => {
-            await authClient.signOut({
-              fetchOptions: {
-                onSuccess: () => {
-                  router.refresh();
-                },
-              },
+          disabled={pending}
+          onClick={() => {
+            startTransition(async () => {
+              await signOutAction();
             });
           }}
         >
