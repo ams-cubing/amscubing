@@ -12,7 +12,7 @@ function Mention({
     <MentionPrimitive.Root
       data-slot="mention"
       className={cn(
-        "**:data-tag:rounded **:data-tag:bg-primary/10 **:data-tag:px-1 **:data-tag:py-px **:data-tag:font-medium **:data-tag:text-primary",
+        "**:data-tag:rounded **:data-tag:bg-primary/10 **:data-tag:py-px **:data-tag:text-primary",
         className,
       )}
       {...props}
@@ -49,24 +49,28 @@ function MentionInput({
   );
 }
 
+function MentionPortal({
+  ...props
+}: React.ComponentProps<typeof MentionPrimitive.Portal>) {
+  return <MentionPrimitive.Portal data-slot="mention-portal" {...props} />;
+}
+
 function MentionContent({
   className,
   children,
   ...props
 }: React.ComponentProps<typeof MentionPrimitive.Content>) {
   return (
-    <MentionPrimitive.Portal>
-      <MentionPrimitive.Content
-        data-slot="mention-content"
-        className={cn(
-          "relative z-50 max-h-48 min-w-32 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </MentionPrimitive.Content>
-    </MentionPrimitive.Portal>
+    <MentionPrimitive.Content
+      data-slot="mention-content"
+      className={cn(
+        "relative z-50 min-w-(--dice-anchor-width) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </MentionPrimitive.Content>
   );
 }
 
@@ -79,7 +83,7 @@ function MentionItem({
     <MentionPrimitive.Item
       data-slot="mention-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+        "relative flex w-full cursor-default flex-col rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground",
         className,
       )}
       {...props}
@@ -89,4 +93,11 @@ function MentionItem({
   );
 }
 
-export { Mention, MentionContent, MentionInput, MentionItem, MentionLabel };
+export {
+  Mention,
+  MentionContent,
+  MentionInput,
+  MentionItem,
+  MentionLabel,
+  MentionPortal,
+};

@@ -7,8 +7,8 @@ import {
   MentionContent,
   MentionInput,
   MentionItem,
+  MentionPortal,
 } from "@workspace/ui/components/mention";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 import type { TeamPerson } from "../../_lib/team";
 
@@ -27,12 +27,22 @@ export function MentionTextarea({
   placeholder?: string;
   rows?: number;
 }) {
+  const [mentionValues, setMentionValues] = React.useState<string[]>([]);
+  const [resetKey, setResetKey] = React.useState(0);
+  const prevValueRef = React.useRef(value);
+
   const teamByWcaId = React.useMemo(
     () => new Map(team.map((person) => [person.wcaId, person])),
     [team],
   );
 
-  const options = React.useMemo(() => team.map((person) => person.wcaId), [team]);
+  React.useEffect(() => {
+    if (value === "" && prevValueRef.current !== "") {
+      setMentionValues([]);
+      setResetKey((key) => key + 1);
+    }
+    prevValueRef.current = value;
+  }, [value]);
 
   const onFilter = React.useCallback(
     (items: string[], term: string) => {
@@ -54,33 +64,39 @@ export function MentionTextarea({
 
   return (
     <Mention
+      key={resetKey}
       trigger="@"
       disabled={disabled}
+      value={mentionValues}
+      onValueChange={setMentionValues}
       inputValue={value}
       onInputValueChange={onChange}
       onFilter={onFilter}
       className="w-full"
     >
-      <MentionInput asChild>
-        <Textarea placeholder={placeholder} rows={rows} disabled={disabled} />
+      <MentionInput
+        placeholder={placeholder}
+        className="min-h-16 resize-y text-base md:text-sm"
+        asChild
+      >
+        <textarea rows={rows} />
       </MentionInput>
-      <MentionContent>
-        {options.map((wcaId) => {
-          const person = teamByWcaId.get(wcaId);
-          if (!person) return null;
-
-          return (
-            <MentionItem key={person.userId} value={wcaId} label={wcaId}>
-              <div className="flex min-w-0 flex-col">
-                <span className="font-medium">{person.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  @{person.wcaId}
-                </span>
-              </div>
+      <MentionPortal>
+        <MentionContent>
+          {team.map((person) => (
+            <MentionItem
+              key={person.userId}
+              value={person.wcaId}
+              label={person.wcaId}
+            >
+              <span className="text-sm font-medium">{person.name}</span>
+              <span className="text-xs text-muted-foreground">
+                @{person.wcaId}
+              </span>
             </MentionItem>
-          );
-        })}
-      </MentionContent>
+          ))}
+        </MentionContent>
+      </MentionPortal>
     </Mention>
   );
 }
