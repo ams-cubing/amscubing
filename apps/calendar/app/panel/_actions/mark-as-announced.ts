@@ -11,6 +11,7 @@ import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { notificationAppUrls } from "@/lib/notification-urls";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
 export async function markAsAnnounced(competitionId: number): Promise<{
@@ -98,9 +99,6 @@ export async function markAsAnnounced(competitionId: number): Promise<{
     return { success: true, message: "Competencia marcada como anunciada" };
   } catch (error) {
     console.error("Error marking competition as announced:", error);
-    if (error instanceof Error && error.message.includes("competencia")) {
-      return { success: false, message: error.message };
-    }
-    return { success: false, message: "Error al anunciar la competencia" };
+    return { success: false, message: getErrorMessage(error) };
   }
 }

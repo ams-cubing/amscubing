@@ -1,22 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getSession } = vi.hoisted(() => ({
-  getSession: vi.fn(),
-}));
+import type { Auth } from "./auth";
+import { createSessionHelpers } from "./session";
+
+const { getSession, unauthorized } = vi.hoisted(() => {
+  const unauthorizedFn = vi.fn(() => {
+    throw new Error("UNAUTHORIZED");
+  });
+
+  return {
+    getSession: vi.fn(),
+    unauthorized: unauthorizedFn,
+  };
+});
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => new Headers()),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession,
-    },
-  },
+vi.mock("next/navigation", () => ({
+  unauthorized,
 }));
 
-import { requireDelegate, requireSession } from "@/lib/session";
+const auth = {
+  api: {
+    getSession,
+  },
+} as unknown as Auth;
+
+const { requireDelegate, requireSession, requireSessionOrUnauthorized } =
+  createSessionHelpers(auth);
 
 function sessionFor(role: "delegate" | "user" | null) {
   if (!role) {
@@ -37,6 +50,7 @@ function sessionFor(role: "delegate" | "user" | null) {
 describe("requireSession", () => {
   beforeEach(() => {
     getSession.mockReset();
+    unauthorized.mockClear();
   });
 
   it("returns error when there is no session", async () => {
@@ -82,5 +96,24 @@ describe("requireDelegate", () => {
     if (result.ok) {
       expect(result.session.user.role).toBe("delegate");
     }
+  });
+});
+
+describe("requireSessionOrUnauthorized", () => {
+  beforeEach(() => {
+    getSession.mockReset();
+    unauthorized.mockClear();
+  });
+
+  it("calls unauthorized when there is no session", async () => {
+    sessionFor(null);
+    await expect(requireSessionOrUnauthorized()).rejects.toThrow("UNAUTHORIZED");
+    expect(unauthorized).toHaveBeenCalled();
+  });
+
+  it("returns session for authenticated users", async () => {
+    sessionFor("user");
+    const session = await requireSessionOrUnauthorized();
+    expect(session.user.role).toBe("user");
   });
 });

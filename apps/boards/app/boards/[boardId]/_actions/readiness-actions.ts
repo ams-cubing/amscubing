@@ -18,18 +18,18 @@ import {
 import { competitions, logs, type User } from "@workspace/db/schema";
 
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
-import { requireSession } from "@/lib/session";
+import { requireDelegate } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 async function requireDelegateBoardAccess(boardId: number) {
-  const session = await requireSession();
-  const currentUser = session.user as unknown as User;
+  const delegateResult = await requireDelegate();
+  if (!delegateResult.ok) {
+    throw new Error(delegateResult.message);
+  }
+  const currentUser = delegateResult.session.user as unknown as User;
   const allowed = await canAccessBoard(currentUser, boardId);
   if (!allowed) {
     throw new Error("No tienes acceso a este tablero");
-  }
-  if (currentUser.role !== "delegate") {
-    throw new Error("Solo los delegados pueden aplicar cambios de estatus");
   }
   if (await isBoardArchived(boardId)) {
     throw new Error("Este tablero está archivado");

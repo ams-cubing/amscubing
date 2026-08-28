@@ -15,15 +15,17 @@ import {
   logs,
   availability,
 } from "@workspace/db/schema";
-import { Resend } from "resend";
-import { z } from "zod";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { updateCompetitionSchema } from "../../_lib/validations";
+import { z } from "zod";
+import {
+  sendDelegateAssignedEmail,
+  sendDelegateRemovedEmail,
+} from "@/lib/calendar-emails";
+import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { updateCompetitionSchema } from "../../_lib/validations";
 
 export async function updateCompetition(
   competitionId: number,
@@ -259,17 +261,14 @@ export async function updateCompetition(
         });
 
         for (const a of addedUsers) {
-          if (!a.email) continue;
+          if (!a.email || !a.name) continue;
           try {
-            await resend.emails.send({
-              from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
+            await sendDelegateAssignedEmail({
               to: a.email,
-              subject: `Asignación como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-              html: `
-              <p>Hola ${a.name},</p>
-              <p>Has sido asignado como delegado para la competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
-              <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
-              `,
+              recipientName: a.name,
+              city: validatedData.city,
+              startDate: startDateStr!,
+              endDate: endDateStr!,
             });
           } catch (err) {
             console.error(
@@ -288,17 +287,14 @@ export async function updateCompetition(
         });
 
         for (const r of removedUsers) {
-          if (!r.email) continue;
+          if (!r.email || !r.name) continue;
           try {
-            await resend.emails.send({
-              from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
+            await sendDelegateRemovedEmail({
               to: r.email,
-              subject: `Remoción como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-              html: `
-              <p>Hola ${r.name},</p>
-              <p>Has sido removido como delegado de una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
-              <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
-              `,
+              recipientName: r.name,
+              city: validatedData.city,
+              startDate: startDateStr!,
+              endDate: endDateStr!,
             });
           } catch (err) {
             console.error(
@@ -330,7 +326,7 @@ export async function updateCompetition(
     console.error("Error updating competition:", error);
     return {
       success: false,
-      message: "Error al actualizar la competencia",
+      message: getErrorMessage(error),
     };
   }
 }

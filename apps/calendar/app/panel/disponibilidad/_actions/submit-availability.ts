@@ -5,6 +5,7 @@ import { availability, logs } from "@workspace/db/schema";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
+import { getErrorMessage } from "@/lib/handle-error";
 
 export async function submitAvailability(data: { dates: Date[] }) {
   try {
@@ -87,7 +88,7 @@ export async function submitAvailability(data: { dates: Date[] }) {
     console.error("Error submitting availability:", error);
     return {
       success: false,
-      message: "Error al actualizar la disponibilidad",
+      message: getErrorMessage(error),
     };
   }
 }

@@ -11,6 +11,7 @@ import { boards, competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { notificationAppUrls } from "@/lib/notification-urls";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
 export async function cancelCompetition(competitionId: number): Promise<{
@@ -88,6 +89,6 @@ export async function cancelCompetition(competitionId: number): Promise<{
     return { success: true, message: "Competencia cancelada exitosamente" };
   } catch (error) {
     console.error("Error cancelling competition:", error);
-    return { success: false, message: "Error al cancelar la competencia" };
+    return { success: false, message: getErrorMessage(error) };
   }
 }

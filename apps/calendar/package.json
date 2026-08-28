@@ -22,6 +22,7 @@
     "@vercel/speed-insights": "^1.3.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/email": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.4.10",
     "date-fns": "^4.1.0",
@@ -36,7 +37,6 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
     "react-leaflet": "^5.0.0",
-    "resend": "^6.8.0",
     "sonner": "^2.0.7",
     "zod": "^4.1.13"
   },

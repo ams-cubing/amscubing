@@ -9,8 +9,8 @@ import "@workspace/ui/globals.css";
 
 import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
 
-import { Providers } from "@/components/providers";
-import { PreviewBanner } from "@/components/preview-banner";
+import { AppProviders } from "@workspace/ui/components/app-providers";
+import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { SignInButton } from "@/components/sign-in-button";
 import { UserMenu } from "@/components/user-menu";
 import { auth } from "@/lib/auth";
@@ -92,7 +92,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
-        <Providers>
+        <AppProviders>
           <div className="flex h-svh flex-col overflow-hidden">
             <header className="z-40 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
               <Suspense fallback={null}>
@@ -121,7 +121,7 @@ export default function RootLayout({
           </div>
           <Analytics />
           <Toaster />
-        </Providers>
+        </AppProviders>
       </body>
     </html>
   );

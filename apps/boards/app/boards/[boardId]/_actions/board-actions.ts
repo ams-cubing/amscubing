@@ -42,11 +42,17 @@ import {
 } from "@/lib/board-notifications";
 import { sendBoardNotificationEmail } from "@/lib/board-emails";
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
-import { requireSession } from "@/lib/session";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
+import {
+  addCardCommentSchema,
+  createCardSchema,
+  createLabelSchema,
+  labelColorSchema,
+} from "@/app/_lib/validations";
 
 async function requireBoardAccess(boardId: number) {
-  const session = await requireSession();
+  const session = await requireSessionOrUnauthorized();
   const currentUser = session.user as unknown as User;
   const allowed = await canAccessBoard(currentUser, boardId);
   if (!allowed) {
@@ -228,31 +234,28 @@ export async function createLabelAction(input: {
   name: string;
   color: string;
 }) {
-  await requireBoardAccess(input.boardId);
-
-  const name = input.name.trim();
-  if (!name) throw new Error("El nombre de la etiqueta es obligatorio");
-
-  const color = input.color.trim();
-  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-    throw new Error("Color de etiqueta no válido");
-  }
+  const validated = createLabelSchema.parse(input);
+  await requireBoardAccess(validated.boardId);
 
   const [label] = await db
     .insert(labels)
-    .values({ boardId: input.boardId, name, color })
+    .values({
+      boardId: validated.boardId,
+      name: validated.name,
+      color: validated.color,
+    })
     .returning();
 
   if (!label) throw new Error("No se pudo crear la etiqueta");
 
-  if (input.cardId !== undefined) {
+  if (validated.cardId !== undefined) {
     await db
       .insert(cardLabels)
-      .values({ cardId: input.cardId, labelId: label.id })
+      .values({ cardId: validated.cardId, labelId: label.id })
       .onConflictDoNothing();
   }
 
-  revalidatePath(`/boards/${input.boardId}`);
+  revalidatePath(`/boards/${validated.boardId}`);
   return label;
 }
 
@@ -267,10 +270,7 @@ export async function updateLabelAction(input: {
   const name = input.name.trim();
   if (!name) throw new Error("El nombre de la etiqueta es obligatorio");
 
-  const color = input.color.trim();
-  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-    throw new Error("Color de etiqueta no válido");
-  }
+  const color = labelColorSchema.parse(input.color);
 
   const label = await db.query.labels.findFirst({
     where: and(eq(labels.id, input.labelId), eq(labels.boardId, input.boardId)),
@@ -402,13 +402,13 @@ export async function addCardCommentAction(input: {
   cardId: number;
   body: string;
 }) {
-  const user = await requireBoardAccess(input.boardId);
-  const body = input.body.trim();
-  if (!body) throw new Error("El comentario no puede estar vacío");
+  const validated = addCardCommentSchema.parse(input);
+  const user = await requireBoardAccess(validated.boardId);
+  const body = validated.body;
 
   const [team, roleGroups] = await Promise.all([
-    boardTeamUsers(db, input.boardId),
-    boardTeamByRole(db, input.boardId),
+    boardTeamUsers(db, validated.boardId),
+    boardTeamByRole(db, validated.boardId),
   ]);
   const parsedMentions = parseMentions(body);
   const mentioned = resolveAllMentionedUsers(parsedMentions, roleGroups);
@@ -666,30 +666,31 @@ export async function createCardAction(input: {
   listId: number;
   title: string;
 }) {
-  await requireBoardAccess(input.boardId);
+  const validated = createCardSchema.parse(input);
+  await requireBoardAccess(validated.boardId);
 
   const list = await db.query.boardLists.findFirst({
     where: and(
-      eq(boardLists.id, input.listId),
-      eq(boardLists.boardId, input.boardId),
+      eq(boardLists.id, validated.listId),
+      eq(boardLists.boardId, validated.boardId),
     ),
   });
   if (!list) throw new Error("Lista no encontrada");
 
   const existing = await db.query.cards.findMany({
-    where: eq(cards.listId, input.listId),
+    where: eq(cards.listId, validated.listId),
     columns: { position: true },
   });
   const nextPosition =
     existing.reduce((max, card) => Math.max(max, card.position), -1) + 1;
 
   await db.insert(cards).values({
-    listId: input.listId,
-    title: input.title.trim(),
+    listId: validated.listId,
+    title: validated.title,
     position: nextPosition,
   });
 
-  revalidatePath(`/boards/${input.boardId}`);
+  revalidatePath(`/boards/${validated.boardId}`);
 }
 
 export async function createListAction(input: {

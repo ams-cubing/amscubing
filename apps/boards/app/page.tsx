@@ -5,13 +5,13 @@ import {
   listArchivedBoards,
   listTemplates,
 } from "@/lib/boards";
-import { requireSession } from "@/lib/session";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 
 import { BoardList } from "./_components/board-list";
 import { CreateBoardDialog } from "./_components/create-board-dialog";
 
 export default async function BoardsHomePage() {
-  const session = await requireSession();
+  const session = await requireSessionOrUnauthorized();
   const user = session.user as unknown as User;
   const isDelegate = user.role === "delegate";
 

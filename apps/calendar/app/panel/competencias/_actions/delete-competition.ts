@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { boards, competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
 export async function deleteCompetition(competitionId: number): Promise<{
@@ -54,7 +55,7 @@ export async function deleteCompetition(competitionId: number): Promise<{
     console.error("Error deleting competition:", error);
     return {
       success: false,
-      message: "Error al eliminar la competencia",
+      message: getErrorMessage(error),
     };
   }
 }

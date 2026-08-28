@@ -107,13 +107,13 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 #### Paquetes compartidos y deduplicación
 
-- [ ] Helpers de sesión compartidos (`requireSession`, `requireDelegate`) — unificar el patrón Result del calendario vs `unauthorized()` de tableros.
-- [ ] `requireDelegate` centralizado (hoy reimplementado en `board-management.ts`).
-- [ ] `PreviewBanner` → paquete compartido (copia idéntica en calendario y tableros).
-- [ ] `Providers` compartido (ThemeProvider; Nuqs solo donde aplique).
-- [ ] Email: calendario usa `resend` directo en 4 archivos; unificar en `@workspace/email` como tableros.
-- [ ] Validación con Zod en server actions de tableros (dependencia declarada pero sin uso).
-- [ ] Manejo de errores consistente — adoptar `handle-error.ts` del calendario o un helper equivalente compartido.
+- [x] Helpers de sesión compartidos (`requireSession`, `requireDelegate`) — unificar el patrón Result del calendario vs `unauthorized()` de tableros.
+- [x] `requireDelegate` centralizado (hoy reimplementado en `board-management.ts`).
+- [x] `PreviewBanner` → paquete compartido (copia idéntica en calendario y tableros).
+- [x] `Providers` compartido (ThemeProvider; Nuqs solo donde aplique).
+- [x] Email: calendario usa `resend` directo en 4 archivos; unificar en `@workspace/email` como tableros.
+- [x] Validación con Zod en server actions de tableros (dependencia declarada pero sin uso).
+- [x] Manejo de errores consistente — adoptar `handle-error.ts` del calendario o un helper equivalente compartido.
 
 #### Tipos de auth
 

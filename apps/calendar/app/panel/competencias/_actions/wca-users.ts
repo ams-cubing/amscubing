@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
 import { eq, ilike, or } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
+import { getErrorMessage } from "@/lib/handle-error";
 
 type WCAPerson = {
   person: {
@@ -69,7 +70,7 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
     console.error("Error fetching WCA person:", error);
     return {
       success: false,
-      message: "Error al obtener datos del usuario",
+      message: getErrorMessage(error),
     };
   }
 }

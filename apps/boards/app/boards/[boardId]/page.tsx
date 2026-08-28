@@ -23,7 +23,7 @@ import {
   formatPublicStatus,
   getPublicStatusColor,
 } from "@/lib/competition-status";
-import { requireSession } from "@/lib/session";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 function initials(name: string) {
@@ -51,7 +51,7 @@ export default async function BoardPage({
   const parsedCardId = cardRaw ? Number(cardRaw) : NaN;
   const initialCardId = Number.isFinite(parsedCardId) ? parsedCardId : null;
 
-  const session = await requireSession();
+  const session = await requireSessionOrUnauthorized();
   const user = session.user as unknown as User;
   const board = await getBoardForUser(user, boardId);
 
