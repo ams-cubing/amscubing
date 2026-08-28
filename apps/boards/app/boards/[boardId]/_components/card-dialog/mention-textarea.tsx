@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { GROUP_MENTION_OPTIONS } from "@workspace/db/mentions";
 import {
   Mention,
   MentionContent,
@@ -47,8 +48,19 @@ export function MentionTextarea({
   const onFilter = React.useCallback(
     (items: string[], term: string) => {
       const query = term.trim().toLowerCase();
-      const filtered = items.filter((wcaId) => {
-        const person = teamByWcaId.get(wcaId);
+      const filtered = items.filter((itemValue) => {
+        const group = GROUP_MENTION_OPTIONS.find(
+          (option) => option.value === itemValue,
+        );
+        if (group) {
+          if (!query) return true;
+          return (
+            group.label.toLowerCase().includes(query) ||
+            group.value.toLowerCase().includes(query)
+          );
+        }
+
+        const person = teamByWcaId.get(itemValue);
         if (!person) return false;
         if (!query) return true;
         return (
@@ -57,7 +69,7 @@ export function MentionTextarea({
         );
       });
 
-      return filtered.slice(0, 8);
+      return filtered.slice(0, 10);
     },
     [teamByWcaId],
   );
@@ -83,6 +95,18 @@ export function MentionTextarea({
       </MentionInput>
       <MentionPortal>
         <MentionContent>
+          {GROUP_MENTION_OPTIONS.map((group) => (
+            <MentionItem
+              key={group.value}
+              value={group.value}
+              label={group.label}
+            >
+              <span className="text-sm font-medium">{group.label}</span>
+              <span className="text-xs text-muted-foreground">
+                @{group.value}
+              </span>
+            </MentionItem>
+          ))}
           {team.map((person) => (
             <MentionItem
               key={person.userId}

@@ -350,6 +350,56 @@ export async function competitionDelegatesOnly(
   return rows;
 }
 
+export async function competitionOrganizersOnly(
+  dbOrTx: DbOrTx,
+  competitionId: number,
+): Promise<BoardTeamUser[]> {
+  const rows = await dbOrTx
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(competitionOrganizers)
+    .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
+    .where(eq(competitionOrganizers.competitionId, competitionId));
+
+  return rows;
+}
+
+export async function boardTeamByRole(dbOrTx: DbOrTx, boardId: number) {
+  const all = await boardTeamUsers(dbOrTx, boardId);
+  const board = await dbOrTx.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+    columns: { competitionId: true },
+  });
+
+  let organizers: BoardTeamUser[] = [];
+  let delegates: BoardTeamUser[] = [];
+
+  if (board?.competitionId) {
+    [organizers, delegates] = await Promise.all([
+      competitionOrganizersOnly(dbOrTx, board.competitionId),
+      competitionDelegatesOnly(dbOrTx, board.competitionId),
+    ]);
+  }
+
+  const toMentionMember = (member: BoardTeamUser) => ({
+    userId: member.id,
+    wcaId: member.wcaId,
+    name: member.name,
+  });
+
+  return {
+    all: all.map(toMentionMember),
+    organizers: organizers.map(toMentionMember),
+    delegates: delegates.map(toMentionMember),
+  };
+}
+
 export async function isCompetitionOrganizer(
   dbOrTx: DbOrTx,
   competitionId: number,

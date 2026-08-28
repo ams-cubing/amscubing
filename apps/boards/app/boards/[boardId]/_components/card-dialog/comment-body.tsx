@@ -27,6 +27,18 @@ export function CommentBody({
           return <span key={index}>{segment.value}</span>;
         }
 
+        if (segment.type === "groupMention") {
+          return (
+            <span
+              key={index}
+              className="rounded bg-primary/10 px-1 font-medium text-primary"
+              title={segment.label}
+            >
+              @{segment.label}
+            </span>
+          );
+        }
+
         return (
           <span
             key={index}

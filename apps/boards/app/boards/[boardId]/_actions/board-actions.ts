@@ -5,8 +5,13 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
 import { HECHO_LIST_TITLE, isListTitle } from "@workspace/db/board-readiness";
-import { parseMentions, resolveMentionedUsers } from "@workspace/db/mentions";
 import {
+  parseMentions,
+  resolveAllMentionedUsers,
+  resolveMentionedUsers,
+} from "@workspace/db/mentions";
+import {
+  boardTeamByRole,
   boardTeamUsers,
   formatNotificationTitle,
   hrefForNotification,
@@ -321,18 +326,18 @@ export async function addCardCommentAction(input: {
   const body = input.body.trim();
   if (!body) throw new Error("El comentario no puede estar vacío");
 
-  const team = await boardTeamUsers(db, input.boardId);
-  const mentionWcaIds = parseMentions(body);
-  const mentioned = resolveMentionedUsers(
-    mentionWcaIds,
-    team.map((member) => ({
-      userId: member.id,
-      wcaId: member.wcaId,
-      name: member.name,
-    })),
-  );
+  const [team, roleGroups] = await Promise.all([
+    boardTeamUsers(db, input.boardId),
+    boardTeamByRole(db, input.boardId),
+  ]);
+  const parsedMentions = parseMentions(body);
+  const mentioned = resolveAllMentionedUsers(parsedMentions, roleGroups);
 
-  if (mentionWcaIds.length > mentioned.length) {
+  const resolvedUserMentions = resolveMentionedUsers(
+    parsedMentions.userWcaIds,
+    roleGroups.all,
+  );
+  if (parsedMentions.userWcaIds.length > resolvedUserMentions.length) {
     throw new Error("Una o más menciones no son válidas para este tablero");
   }
 
