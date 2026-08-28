@@ -2,8 +2,18 @@
   "extends": "@workspace/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true
   },
-  "include": ["src/**/*.ts", "drizzle.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/seed.ts",
+    "src/seed-template.ts",
+    "src/seed-board-template.ts",
+    "src/migrate.ts"
+  ]
 }

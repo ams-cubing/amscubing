@@ -37,6 +37,20 @@ vi.mock("@workspace/db/schema", () => ({
   logs: {},
 }));
 
+vi.mock("@workspace/db/notifications", () => ({
+  competitionTeamUsers: vi.fn().mockResolvedValue([]),
+  insertNotifications: vi.fn().mockResolvedValue(undefined),
+  formatPublicStatusLabel: vi.fn((status: string) => status),
+  competitionNotificationRow: vi.fn(() => ({})),
+}));
+
+vi.mock("@/lib/notification-urls", () => ({
+  notificationAppUrls: vi.fn(() => ({
+    calendarUrl: "http://localhost:3001",
+    boardsUrl: "http://localhost:3002",
+  })),
+}));
+
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
 
 describe("markAsAnnounced", () => {

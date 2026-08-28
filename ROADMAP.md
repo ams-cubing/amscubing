@@ -83,11 +83,11 @@ Mejoras de ingeniería del monorepo (auditoría 2026-08-28). Priorizar CI y test
 
 Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No hay CI para build, lint, typecheck ni tests.
 
-- [ ] Workflow de CI en PRs: `build`, `lint`, `check-types`, `test` en todas las apps y paquetes.
-- [ ] Scripts `lint` en **cada** app y paquete (hoy solo `@workspace/ui` lo define; `pnpm lint` en la raíz casi no hace nada).
-- [ ] Scripts `check-types` (`tsc --noEmit`) en cada workspace — la tarea existe en `turbo.json` pero ningún paquete la expone.
-- [ ] `pnpm test` debe ejecutar **calendar y `@workspace/db`** (hoy solo calendar).
-- [ ] Registrar tareas `test` y `check-types` en `turbo.json` para cache y paralelismo.
+- [x] Workflow de CI en PRs: `build`, `lint`, `check-types`, `test` en todas las apps y paquetes.
+- [x] Scripts `lint` en **cada** app y paquete (hoy solo `@workspace/ui` lo define; `pnpm lint` en la raíz casi no hace nada).
+- [x] Scripts `check-types` (`tsc --noEmit`) en cada workspace — la tarea existe en `turbo.json` pero ningún paquete la expone.
+- [x] `pnpm test` debe ejecutar **calendar y `@workspace/db`** (hoy solo calendar).
+- [x] Registrar tareas `test` y `check-types` en `turbo.json` para cache y paralelismo.
 - [ ] Migrar la BD en preview de Vercel si hace falta (además de staging/main).
 
 #### Testing

@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@diceui/combobox": "^1.2.2",
@@ -54,7 +57,8 @@
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9.32.0",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.7"
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",

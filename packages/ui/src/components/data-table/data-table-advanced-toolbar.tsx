@@ -3,7 +3,7 @@
 import type { Table } from "@tanstack/react-table";
 import type * as React from "react";
 
-import { DataTableViewOptions } from "@workspace/components/data-table/data-table-view-options";
+import { DataTableViewOptions } from "./data-table-view-options";
 import { cn } from "@workspace/ui/lib/utils";
 
 interface DataTableAdvancedToolbarProps<
