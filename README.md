@@ -83,6 +83,7 @@ pnpm --filter web dev
 | `pnpm db:reset`    | Resetear el volumen de Postgres y reiniciar          |
 | `pnpm db:migrate`  | Aplicar migraciones pendientes                       |
 | `pnpm db:seed`     | Sembrar regiones, estados y plantilla de tablero AMS |
+| `pnpm db:seed-template` | Reemplazar la plantilla AMS con los datos del seed (destructivo) |
 | `pnpm db:generate` | Generar migración a partir de cambios de esquema     |
 | `pnpm db:studio`   | Abrir Drizzle Studio                                 |
 

@@ -189,19 +189,12 @@ async function syncMissingTemplateCards(boardId: number) {
   }
 }
 
-export async function seedAmsBoardTemplate() {
-  const existing = await db.query.boards.findFirst({
-    where: and(
-      eq(boards.isTemplate, true),
-      eq(boards.name, TEMPLATE_BOARD_NAME),
-    ),
-  });
+const templateBoardWhere = and(
+  eq(boards.isTemplate, true),
+  eq(boards.name, TEMPLATE_BOARD_NAME),
+);
 
-  if (existing) {
-    await syncMissingTemplateCards(existing.id);
-    return existing.id;
-  }
-
+async function createFreshAmsBoardTemplate() {
   console.log("⏳ Seeding AMS board template...");
 
   const [boardRow] = await db
@@ -265,4 +258,33 @@ export async function seedAmsBoardTemplate() {
 
   console.log(`✅ Seeded AMS board template (id=${board.id})`);
   return board.id;
+}
+
+export async function seedAmsBoardTemplate() {
+  const existing = await db.query.boards.findFirst({
+    where: templateBoardWhere,
+  });
+
+  if (existing) {
+    await syncMissingTemplateCards(existing.id);
+    return existing.id;
+  }
+
+  return createFreshAmsBoardTemplate();
+}
+
+/** Deletes the AMS template board (if any) and recreates it from seed data. */
+export async function reseedAmsBoardTemplate() {
+  const removed = await db
+    .delete(boards)
+    .where(templateBoardWhere)
+    .returning({ id: boards.id });
+
+  if (removed.length > 0) {
+    console.log(
+      `🗑️  Removed existing AMS board template (id=${removed.map((row) => row.id).join(", ")})`,
+    );
+  }
+
+  return createFreshAmsBoardTemplate();
 }

@@ -96,7 +96,9 @@ export async function cloneBoardFromTemplate(input: {
 
   const template = await getTemplateBoard();
   if (!template) {
-    throw new Error("AMS board template not found. Run pnpm db:seed.");
+    throw new Error(
+      "AMS board template not found. Run pnpm db:seed or pnpm db:seed-template.",
+    );
   }
 
   return db.transaction(async (tx) => {
