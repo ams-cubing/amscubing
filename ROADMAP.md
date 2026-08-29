@@ -127,9 +127,9 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 #### Dependencias y toolchain
 
-- [ ] Alinear TypeScript (raíz 5.7 vs apps/paquetes 5.9).
-- [ ] Alinear versiones duplicadas (`lucide-react`, etc.) — considerar pnpm catalog u overrides en la raíz.
-- [ ] Revisar `--debug-prerender` en build de calendar (solo dev/debug o intencional en prod).
+- [x] Alinear TypeScript (raíz 5.7 vs apps/paquetes 5.9).
+- [x] Alinear versiones duplicadas (`lucide-react`, etc.) — considerar pnpm catalog u overrides en la raíz.
+- [x] Revisar `--debug-prerender` en build de calendar (solo dev/debug o intencional en prod).
 
 #### Observabilidad y ops
 

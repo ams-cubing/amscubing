@@ -17,20 +17,20 @@
     "./types": "./src/types.ts"
   },
   "peerDependencies": {
-    "next": "^16.1.4"
+    "next": "catalog:"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
-    "better-auth": "^1.4.10",
-    "drizzle-orm": "^0.44.7"
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^20.19.9",
+    "@types/node": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "eslint": "^9.32.0",
-    "next": "^16.1.4",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.7"
+    "eslint": "catalog:",
+    "next": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

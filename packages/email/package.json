@@ -16,11 +16,11 @@
     "resend": "^6.8.0"
   },
   "devDependencies": {
-    "@types/node": "^20.19.9",
+    "@types/node": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "eslint": "^9.32.0",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.7"
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
