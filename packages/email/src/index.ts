@@ -106,10 +106,7 @@ export function delegateRemovedSubject(input: {
   return `Remoción como delegado: ${input.city} (${input.startDate} - ${input.endDate})`;
 }
 
-export function ultimatumEmail(input: {
-  deadline: Date;
-  message?: string;
-}) {
+export function ultimatumEmail(input: { deadline: Date; message?: string }) {
   const body =
     input.message?.trim() ||
     "Por favor, asegúrate de cumplir con los requisitos antes de la fecha límite.";

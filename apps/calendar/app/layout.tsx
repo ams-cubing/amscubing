@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import "@workspace/ui/globals.css";
 import "leaflet/dist/leaflet.css";
+import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { Header } from "@/components/header";
@@ -54,17 +55,8 @@ async function AppSidebarWrapper() {
     headers: headersList,
   });
 
-  const user = session?.user;
-
-  const normalizedUser = user
-    ? {
-        ...user,
-        image: user.image ?? null,
-        regionId: user.regionId ?? null,
-        delegateTitle: user.delegateTitle ?? null,
-        delegateLocation: user.delegateLocation ?? null,
-        lastLogin: user.lastLogin ?? null,
-      }
+  const normalizedUser = session?.user
+    ? toSessionUser(session.user as RawSessionUser)
     : undefined;
 
   return <AppSidebar user={normalizedUser} />;

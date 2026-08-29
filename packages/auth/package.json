@@ -13,7 +13,8 @@
     ".": "./src/auth.ts",
     "./client": "./src/client.ts",
     "./urls": "./src/urls.ts",
-    "./session": "./src/session.ts"
+    "./session": "./src/session.ts",
+    "./types": "./src/types.ts"
   },
   "peerDependencies": {
     "next": "^16.1.4"

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 
-import type { User } from "@workspace/db/schema";
 import { db } from "@workspace/db";
 import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
 import { boardInvites } from "@workspace/db/schema";
@@ -52,7 +51,7 @@ export default async function BoardPage({
   const initialCardId = Number.isFinite(parsedCardId) ? parsedCardId : null;
 
   const session = await requireSessionOrUnauthorized();
-  const user = session.user as unknown as User;
+  const user = session.user;
   const board = await getBoardForUser(user, boardId);
 
   if (!board) notFound();

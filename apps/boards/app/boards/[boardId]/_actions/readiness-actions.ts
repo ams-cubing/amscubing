@@ -15,7 +15,7 @@ import {
   formatPublicStatusLabel,
   insertNotifications,
 } from "@workspace/db/notifications";
-import { competitions, logs, type User } from "@workspace/db/schema";
+import { competitions, logs } from "@workspace/db/schema";
 
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireDelegate } from "@/lib/session";
@@ -26,7 +26,7 @@ async function requireDelegateBoardAccess(boardId: number) {
   if (!delegateResult.ok) {
     throw new Error(delegateResult.message);
   }
-  const currentUser = delegateResult.session.user as unknown as User;
+  const currentUser = delegateResult.session.user;
   const allowed = await canAccessBoard(currentUser, boardId);
   if (!allowed) {
     throw new Error("No tienes acceso a este tablero");

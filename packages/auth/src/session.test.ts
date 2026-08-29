@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Auth } from "./auth";
 import { createSessionHelpers } from "./session";
+import { toSessionUser } from "./types";
 
 const { getSession, unauthorized } = vi.hoisted(() => {
   const unauthorizedFn = vi.fn(() => {
@@ -37,15 +38,57 @@ function sessionFor(role: "delegate" | "user" | null) {
     return;
   }
   getSession.mockResolvedValue({
+    session: {
+      id: "session-1",
+      userId: "user-1",
+      expiresAt: new Date("2030-01-01"),
+      token: "token",
+      createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
+    },
     user: {
       id: "user-1",
       role,
       wcaId: "2020TEST01",
       name: "Test User",
       email: "test@example.com",
+      // Intentionally omit nullable fields to exercise toSessionUser defaults.
     },
   });
 }
+
+describe("toSessionUser", () => {
+  it("normalizes role and null defaults", () => {
+    const user = toSessionUser({
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      wcaId: "2020TEST01",
+      role: "delegate",
+    });
+
+    expect(user.role).toBe("delegate");
+    expect(user.image).toBeNull();
+    expect(user.regionId).toBeNull();
+    expect(user.delegateTitle).toBeNull();
+    expect(user.delegateLocation).toBeNull();
+    expect(user.lastLogin).toBeNull();
+    expect(user.emailVerified).toBe(false);
+    expect(user.createdAt).toBeInstanceOf(Date);
+    expect(user.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("maps unknown roles to user", () => {
+    const user = toSessionUser({
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      wcaId: "2020TEST01",
+      role: "admin",
+    });
+    expect(user.role).toBe("user");
+  });
+});
 
 describe("requireSession", () => {
   beforeEach(() => {
@@ -65,6 +108,8 @@ describe("requireSession", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.session.user.role).toBe("user");
+      expect(result.session.user.image).toBeNull();
+      expect(result.session.user.wcaId).toBe("2020TEST01");
     }
   });
 });
@@ -107,7 +152,9 @@ describe("requireSessionOrUnauthorized", () => {
 
   it("calls unauthorized when there is no session", async () => {
     sessionFor(null);
-    await expect(requireSessionOrUnauthorized()).rejects.toThrow("UNAUTHORIZED");
+    await expect(requireSessionOrUnauthorized()).rejects.toThrow(
+      "UNAUTHORIZED",
+    );
     expect(unauthorized).toHaveBeenCalled();
   });
 

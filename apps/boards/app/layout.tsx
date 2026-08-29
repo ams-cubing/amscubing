@@ -9,6 +9,7 @@ import "@workspace/ui/globals.css";
 
 import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
 
+import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { SignInButton } from "@/components/sign-in-button";
@@ -43,21 +44,7 @@ async function HeaderAuth() {
   });
 
   const user = session?.user
-    ? {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        emailVerified: session.user.emailVerified,
-        image: session.user.image ?? null,
-        createdAt: session.user.createdAt,
-        updatedAt: session.user.updatedAt,
-        wcaId: session.user.wcaId,
-        role: session.user.role as "delegate" | "user",
-        regionId: session.user.regionId ?? null,
-        delegateTitle: session.user.delegateTitle ?? null,
-        delegateLocation: session.user.delegateLocation ?? null,
-        lastLogin: session.user.lastLogin ?? null,
-      }
+    ? toSessionUser(session.user as RawSessionUser)
     : null;
 
   if (!user) {

@@ -117,13 +117,13 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 #### Tipos de auth
 
-- [ ] Extender tipos de Better Auth en `@workspace/auth` para alinear `session.user` con el `User` de Drizzle.
-- [ ] Eliminar casts `as unknown as User` en tableros (y similares en formularios del calendario).
+- [x] Extender tipos de Better Auth en `@workspace/auth` para alinear `session.user` con el `User` de Drizzle.
+- [x] Eliminar casts `as unknown as User` en tableros (y similares en formularios del calendario).
 
 #### Organización del código
 
-- [ ] Partir `packages/db/src/schema.ts` (~780 líneas) por dominio (`auth`, `competitions`, `boards`, `notifications`, …).
-- [ ] Partir `apps/boards/.../board-actions.ts` en módulos (cards, comentarios, labels, notificaciones, permisos).
+- [x] Partir `packages/db/src/schema.ts` (~780 líneas) por dominio (`auth`, `competitions`, `boards`, `notifications`, …).
+- [x] Partir `apps/boards/.../board-actions.ts` en módulos (cards, comentarios, labels, notificaciones, permisos).
 
 #### Dependencias y toolchain
 
@@ -173,12 +173,12 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 ## Registro de decisiones
 
-| Fecha      | Decisión                      | Notas                                                                                                                        |
-| ---------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                    |
-| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                         |
-| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                  |
-| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                     |
-| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe) |
-| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                  |
+| Fecha      | Decisión                      | Notas                                                                                                                          |
+| ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                      |
+| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |
+| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                    |
+| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                       |
+| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe)   |
+| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                    |
 | 2026-08-28 | Auditoría de plataforma       | CI, tests, deduplicación y tipos de auth documentados en sección **Plataforma**; priorizar quality gates antes de más features |

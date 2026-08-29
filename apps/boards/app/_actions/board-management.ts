@@ -11,12 +11,7 @@ import {
   hrefForNotification,
   insertNotifications,
 } from "@workspace/db/notifications";
-import {
-  boardInvites,
-  boardMembers,
-  boards,
-  type User,
-} from "@workspace/db/schema";
+import { boardInvites, boardMembers, boards } from "@workspace/db/schema";
 
 import { requireDelegate, requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
@@ -30,7 +25,7 @@ async function requireDelegateUser() {
   if (!result.ok) {
     throw new Error(result.message);
   }
-  return result.session.user as unknown as User;
+  return result.session.user;
 }
 
 export async function createBlankBoard(formData: FormData) {
@@ -216,7 +211,7 @@ export async function removeBoardMember(input: {
 
 export async function acceptBoardInvite(token: string) {
   const session = await requireSessionOrUnauthorized();
-  const currentUser = session.user as unknown as User;
+  const currentUser = session.user;
 
   const invite = await db.query.boardInvites.findFirst({
     where: eq(boardInvites.token, token),

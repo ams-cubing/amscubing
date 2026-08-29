@@ -1,11 +1,17 @@
 import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 
-import type { Auth } from "./auth";
+import type { User } from "@workspace/db/schema";
 
-export type AuthSession = NonNullable<
-  Awaited<ReturnType<Auth["api"]["getSession"]>>
->;
+import type { Auth } from "./auth";
+import { toSessionUser, type RawSessionUser } from "./types";
+
+export type AuthSession = {
+  session: NonNullable<
+    Awaited<ReturnType<Auth["api"]["getSession"]>>
+  >["session"];
+  user: User;
+};
 
 export type SessionResult =
   | { ok: true; session: AuthSession }
@@ -21,7 +27,13 @@ export function createSessionHelpers(auth: Auth) {
       return { ok: false, message: "No autenticado" };
     }
 
-    return { ok: true, session };
+    return {
+      ok: true,
+      session: {
+        session: session.session,
+        user: toSessionUser(session.user as RawSessionUser),
+      },
+    };
   }
 
   async function requireDelegate(): Promise<SessionResult> {

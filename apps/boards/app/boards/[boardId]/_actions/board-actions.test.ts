@@ -83,9 +83,11 @@ describe("createLabelAction", () => {
     const { dbInsert, revalidatePath } = getBoardMocks();
     dbInsert.mockReturnValue({
       values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([
-          { id: 5, boardId, name: "Urgente", color: "#ff0000" },
-        ]),
+        returning: vi
+          .fn()
+          .mockResolvedValue([
+            { id: 5, boardId, name: "Urgente", color: "#ff0000" },
+          ]),
       }),
     });
 

@@ -1,5 +1,3 @@
-import type { User } from "@workspace/db/schema";
-
 import {
   listAccessibleBoards,
   listArchivedBoards,
@@ -12,7 +10,7 @@ import { CreateBoardDialog } from "./_components/create-board-dialog";
 
 export default async function BoardsHomePage() {
   const session = await requireSessionOrUnauthorized();
-  const user = session.user as unknown as User;
+  const user = session.user;
   const isDelegate = user.role === "delegate";
 
   const [boards, templates, archived] = await Promise.all([

@@ -88,10 +88,7 @@ describe("resolveAllMentionedUsers", () => {
 
   it("mentions everyone with @todos", () => {
     expect(
-      resolveAllMentionedUsers(
-        { userWcaIds: [], groups: ["all"] },
-        roleGroups,
-      ),
+      resolveAllMentionedUsers({ userWcaIds: [], groups: ["all"] }, roleGroups),
     ).toEqual(roleGroups.all);
   });
 });

@@ -84,10 +84,7 @@ describe("getTrustedOrigins", () => {
 
     const origins = getTrustedOrigins();
     expect(origins).toEqual(
-      expect.arrayContaining([
-        "https://cal.example",
-        "https://boards.example",
-      ]),
+      expect.arrayContaining(["https://cal.example", "https://boards.example"]),
     );
     expect(origins.length).toBe(2);
   });
