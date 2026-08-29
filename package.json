@@ -22,7 +22,7 @@
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "es-abstract": "1.23.9",
+    "es-abstract": "1.24.2",
     "prettier": "^3.6.2",
     "turbo": "^2.5.5",
     "typescript": "catalog:"
