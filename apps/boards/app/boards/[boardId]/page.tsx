@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 
-import type { User } from "@workspace/db/schema";
 import { db } from "@workspace/db";
 import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
 import { boardInvites } from "@workspace/db/schema";
@@ -23,7 +22,7 @@ import {
   formatPublicStatus,
   getPublicStatusColor,
 } from "@/lib/competition-status";
-import { requireSession } from "@/lib/session";
+import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 function initials(name: string) {
@@ -51,8 +50,8 @@ export default async function BoardPage({
   const parsedCardId = cardRaw ? Number(cardRaw) : NaN;
   const initialCardId = Number.isFinite(parsedCardId) ? parsedCardId : null;
 
-  const session = await requireSession();
-  const user = session.user as unknown as User;
+  const session = await requireSessionOrUnauthorized();
+  const user = session.user;
   const board = await getBoardForUser(user, boardId);
 
   if (!board) notFound();

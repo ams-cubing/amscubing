@@ -64,7 +64,10 @@ function ToolbarButton({
           type="button"
           size="icon"
           variant="ghost"
-          className={cn("size-8 shrink-0", active && "bg-accent text-accent-foreground")}
+          className={cn(
+            "size-8 shrink-0",
+            active && "bg-accent text-accent-foreground",
+          )}
           disabled={disabled}
           aria-label={label}
           onClick={onClick}
@@ -114,7 +117,9 @@ function LinkPopover({
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          const previous = editor.getAttributes("link").href as string | undefined;
+          const previous = editor.getAttributes("link").href as
+            | string
+            | undefined;
           setUrl(previous ?? "");
           setText("");
         }
@@ -172,7 +177,12 @@ function LinkPopover({
           />
         </div>
         <div className="flex gap-2">
-          <Button type="button" size="sm" onClick={applyLink} disabled={!url.trim()}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={applyLink}
+            disabled={!url.trim()}
+          >
             Aplicar
           </Button>
           {editor.isActive("link") && (
@@ -254,7 +264,9 @@ function ImagePopover({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="description-image-alt">Texto alternativo (opcional)</Label>
+          <Label htmlFor="description-image-alt">
+            Texto alternativo (opcional)
+          </Label>
           <Input
             id="description-image-alt"
             placeholder="Descripción"
@@ -268,7 +280,12 @@ function ImagePopover({
             }}
           />
         </div>
-        <Button type="button" size="sm" onClick={applyImage} disabled={!url.trim()}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={applyImage}
+          disabled={!url.trim()}
+        >
           Insertar
         </Button>
       </PopoverContent>

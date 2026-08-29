@@ -8,6 +8,7 @@ import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 import { isBoardsEnabled } from "@/lib/boards";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
 export async function assignBoardToCompetitionById(competitionId: number) {
@@ -51,8 +52,7 @@ export async function assignBoardToCompetitionById(competitionId: number) {
   } catch (error) {
     console.error(error);
     return {
-      error:
-        error instanceof Error ? error.message : "No se pudo crear el tablero",
+      error: getErrorMessage(error),
     };
   }
 }

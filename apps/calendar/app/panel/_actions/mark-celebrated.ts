@@ -11,6 +11,7 @@ import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { notificationAppUrls } from "@/lib/notification-urls";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
 export async function markAsCelebrated(competitionId: number): Promise<{
@@ -74,6 +75,6 @@ export async function markAsCelebrated(competitionId: number): Promise<{
     return { success: true, message: "Competencia marcada como celebrada" };
   } catch (error) {
     console.error("Error marking competition as celebrated:", error);
-    return { success: false, message: "Error al marcar la competencia" };
+    return { success: false, message: getErrorMessage(error) };
   }
 }

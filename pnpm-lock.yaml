@@ -4,6 +4,57 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@hookform/resolvers':
+      specifier: ^5.2.2
+      version: 5.2.2
+    '@types/node':
+      specifier: ^20.19.9
+      version: 20.19.33
+    '@types/react':
+      specifier: ^19.2.1
+      version: 19.2.14
+    '@types/react-dom':
+      specifier: ^19.2.1
+      version: 19.2.3
+    better-auth:
+      specifier: ^1.4.10
+      version: 1.4.18
+    date-fns:
+      specifier: ^4.1.0
+      version: 4.1.0
+    drizzle-orm:
+      specifier: ^0.44.7
+      version: 0.44.7
+    eslint:
+      specifier: ^9.32.0
+      version: 9.39.2
+    lucide-react:
+      specifier: ^0.548.0
+      version: 0.548.0
+    next:
+      specifier: ^16.1.4
+      version: 16.1.6
+    react:
+      specifier: ^19.2.1
+      version: 19.2.4
+    react-dom:
+      specifier: ^19.2.1
+      version: 19.2.4
+    react-hook-form:
+      specifier: ^7.68.0
+      version: 7.71.1
+    typescript:
+      specifier: ^5.9.2
+      version: 5.9.3
+    vitest:
+      specifier: ^3.2.7
+      version: 3.2.7
+    zod:
+      specifier: ^4.1.13
+      version: 4.3.6
+
 importers:
 
   .:
@@ -14,6 +65,9 @@ importers:
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
+      es-abstract:
+        specifier: 1.24.2
+        version: 1.24.2
       prettier:
         specifier: ^3.6.2
         version: 3.8.1
@@ -21,13 +75,13 @@ importers:
         specifier: ^2.5.5
         version: 2.8.9
       typescript:
-        specifier: 5.7.3
-        version: 5.7.3
+        specifier: 'catalog:'
+        version: 5.9.3
 
   apps/boards:
     dependencies:
       '@hookform/resolvers':
-        specifier: ^5.2.2
+        specifier: 'catalog:'
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
       '@tiptap/extension-image':
         specifier: ^3.10.6
@@ -66,31 +120,31 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       better-auth:
-        specifier: ^1.4.10
+        specifier: 'catalog:'
         version: 1.4.18(drizzle-kit@0.31.9)(drizzle-orm@0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8))(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.18.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       drizzle-orm:
-        specifier: ^0.44.7
+        specifier: 'catalog:'
         version: 0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)
       lucide-react:
-        specifier: ^0.548.0
+        specifier: 'catalog:'
         version: 0.548.0(react@19.2.4)
       next:
-        specifier: ^16.1.4
+        specifier: 'catalog:'
         version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4
       react-dom:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
       react-hook-form:
-        specifier: ^7.68.0
+        specifier: 'catalog:'
         version: 7.71.1(react@19.2.4)
       react-markdown:
         specifier: ^10.1.0
@@ -102,20 +156,20 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       zod:
-        specifier: ^4.1.13
+        specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.1.11
         version: 4.1.18
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
       '@types/react':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@workspace/eslint-config':
         specifier: workspace:^
@@ -124,16 +178,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/typescript-config
       eslint:
-        specifier: ^9.32.0
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   apps/calendar:
     dependencies:
       '@hookform/resolvers':
-        specifier: ^5.2.2
+        specifier: 'catalog:'
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
       '@radix-ui/react-slot':
         specifier: ^1.2.4
@@ -159,26 +216,29 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@workspace/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       better-auth:
-        specifier: ^1.4.10
+        specifier: 'catalog:'
         version: 1.4.18(drizzle-kit@0.31.9)(drizzle-orm@0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8))(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.18.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       drizzle-orm:
-        specifier: ^0.44.7
+        specifier: 'catalog:'
         version: 0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
       lucide-react:
-        specifier: ^0.548.0
+        specifier: 'catalog:'
         version: 0.548.0(react@19.2.4)
       next:
-        specifier: ^16.1.4
+        specifier: 'catalog:'
         version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-themes:
         specifier: ^0.4.6
@@ -187,41 +247,38 @@ importers:
         specifier: ^2.8.9
         version: 2.8.9(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
       react:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4
       react-day-picker:
         specifier: ^9.14.0
         version: 9.14.0(react@19.2.4)
       react-dom:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
       react-hook-form:
-        specifier: ^7.68.0
+        specifier: 'catalog:'
         version: 7.71.1(react@19.2.4)
       react-leaflet:
         specifier: ^5.0.0
         version: 5.0.0(leaflet@1.9.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      resend:
-        specifier: ^6.8.0
-        version: 6.9.2
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       zod:
-        specifier: ^4.1.13
+        specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.1.11
         version: 4.1.18
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
       '@types/react':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@workspace/eslint-config':
         specifier: workspace:^
@@ -230,13 +287,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/typescript-config
       eslint:
-        specifier: ^9.32.0
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
       vitest:
-        specifier: ^3.2.7
+        specifier: 'catalog:'
         version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   apps/web:
@@ -251,32 +308,32 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:
-        specifier: ^0.548.0
+        specifier: 'catalog:'
         version: 0.548.0(react@19.2.4)
       motion:
         specifier: ^12.35.2
         version: 12.35.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next:
-        specifier: ^16.1.4
+        specifier: 'catalog:'
         version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4
       react-dom:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.1.11
         version: 4.1.18
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
       '@types/react':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@workspace/eslint-config':
         specifier: workspace:^
@@ -285,11 +342,14 @@ importers:
         specifier: workspace:*
         version: link:../../packages/typescript-config
       eslint:
-        specifier: ^9.32.0
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/auth:
     dependencies:
@@ -297,21 +357,33 @@ importers:
         specifier: workspace:*
         version: link:../db
       better-auth:
-        specifier: ^1.4.10
+        specifier: 'catalog:'
         version: 1.4.18(drizzle-kit@0.31.9)(drizzle-orm@0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8))(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.18.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       drizzle-orm:
-        specifier: ^0.44.7
+        specifier: 'catalog:'
         version: 0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)
     devDependencies:
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      next:
+        specifier: 'catalog:'
+        version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/db:
     dependencies:
@@ -319,18 +391,24 @@ importers:
         specifier: ^16.4.7
         version: 16.6.1
       drizzle-orm:
-        specifier: ^0.44.7
+        specifier: 'catalog:'
         version: 0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)
       postgres:
         specifier: ^3.4.7
         version: 3.4.8
     devDependencies:
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       drizzle-kit:
         specifier: ^0.31.5
         version: 0.31.9
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
       pg:
         specifier: ^8.16.3
         version: 8.18.0
@@ -338,10 +416,10 @@ importers:
         specifier: ^4.20.6
         version: 4.21.0
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
       vitest:
-        specifier: ^3.2.7
+        specifier: 'catalog:'
         version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/email:
@@ -351,14 +429,23 @@ importers:
         version: 6.9.2
     devDependencies:
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/eslint-config:
     devDependencies:
@@ -375,7 +462,7 @@ importers:
         specifier: ^8.39.0
         version: 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       eslint:
-        specifier: ^9.32.0
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
       eslint-config-prettier:
         specifier: ^9.1.2
@@ -396,7 +483,7 @@ importers:
         specifier: ^15.15.0
         version: 15.15.0
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
       typescript-eslint:
         specifier: ^8.39.0
@@ -425,7 +512,7 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.4)
       '@hookform/resolvers':
-        specifier: ^5.2.2
+        specifier: 'catalog:'
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
@@ -473,11 +560,11 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       date-fns:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       lucide-react:
-        specifier: ^0.475.0
-        version: 0.475.0(react@19.2.4)
+        specifier: 'catalog:'
+        version: 0.548.0(react@19.2.4)
       motion:
         specifier: ^12.35.2
         version: 12.35.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -494,16 +581,16 @@ importers:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4
       react-day-picker:
         specifier: ^9.14.0
         version: 9.14.0(react@19.2.4)
       react-dom:
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
       react-hook-form:
-        specifier: ^7.68.0
+        specifier: 'catalog:'
         version: 7.71.1(react@19.2.4)
       tailwind-merge:
         specifier: ^3.3.1
@@ -512,7 +599,7 @@ importers:
         specifier: ^1.3.6
         version: 1.4.0
       zod:
-        specifier: ^4.1.13
+        specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
       '@tailwindcss/postcss':
@@ -522,13 +609,13 @@ importers:
         specifier: ^2.5.5
         version: 2.8.9(@types/node@20.19.33)
       '@types/node':
-        specifier: ^20.19.9
+        specifier: 'catalog:'
         version: 20.19.33
       '@types/react':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.1
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@workspace/eslint-config':
         specifier: workspace:*
@@ -537,14 +624,20 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
       eslint:
-        specifier: ^9.32.0
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
+      next:
+        specifier: 'catalog:'
+        version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.18
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
 packages:
 
@@ -2801,9 +2894,6 @@ packages:
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
 
-  '@types/estree@1.0.8':
-    resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
-
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
@@ -3420,8 +3510,8 @@ packages:
     resolution: {integrity: sha512-phv3E1Xl4tQOShqSte26C7Fl84EwUdZsyOuSSk9qtAGyyQs2s3jJzComh+Abf4g187lUUAvH+H26omrqia2aGg==}
     engines: {node: '>=10.13.0'}
 
-  es-abstract@1.24.1:
-    resolution: {integrity: sha512-zHXBLhP+QehSSbsS9Pt23Gg964240DPd6QCf8WpkqEXxQ7fhdZzYsocOr5u7apWonsS5EjZDmTF+/slGMyasvw==}
+  es-abstract@1.24.2:
+    resolution: {integrity: sha512-2FpH9Q5i2RRwyEP1AylXe6nYLR5OhaJTZwmlcP0dL/+JCbgg7yyEo/sEK6HeGZRf3dFpWwThaRHVApXSkW3xeg==}
     engines: {node: '>= 0.4'}
 
   es-define-property@1.0.1:
@@ -4027,11 +4117,6 @@ packages:
 
   loupe@3.2.1:
     resolution: {integrity: sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==}
-
-  lucide-react@0.475.0:
-    resolution: {integrity: sha512-NJzvVu1HwFVeZ+Gwq2q00KygM1aBhy/ZrhY9FsAgJtpB+E4R7uxRk9M2iKvHa6/vNxZydIB59htha4c2vvwvVg==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   lucide-react@0.548.0:
     resolution: {integrity: sha512-63b16z63jM9yc1MwxajHeuu0FRZFsDtljtDjYm26Kd86UQ5HQzu9ksEtoUUw4RBuewodw/tGFmvipePvRsKeDA==}
@@ -4943,11 +5028,6 @@ packages:
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0
       typescript: '>=4.8.4 <6.0.0'
-
-  typescript@5.7.3:
-    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -7085,8 +7165,6 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
-  '@types/estree@1.0.8': {}
-
   '@types/estree@1.0.9': {}
 
   '@types/geojson@7946.0.16': {}
@@ -7305,7 +7383,7 @@ snapshots:
       call-bind: 1.0.8
       call-bound: 1.0.4
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-object-atoms: 1.1.1
       get-intrinsic: 1.3.0
       is-string: 1.1.1
@@ -7315,7 +7393,7 @@ snapshots:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       es-object-atoms: 1.1.1
       es-shim-unscopables: 1.1.0
@@ -7324,21 +7402,21 @@ snapshots:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-shim-unscopables: 1.1.0
 
   array.prototype.flatmap@1.3.3:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-shim-unscopables: 1.1.0
 
   array.prototype.tosorted@1.1.4:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       es-shim-unscopables: 1.1.0
 
@@ -7347,7 +7425,7 @@ snapshots:
       array-buffer-byte-length: 1.0.2
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       is-array-buffer: 3.0.5
@@ -7597,7 +7675,7 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.3.0
 
-  es-abstract@1.24.1:
+  es-abstract@1.24.2:
     dependencies:
       array-buffer-byte-length: 1.0.2
       arraybuffer.prototype.slice: 1.0.4
@@ -7663,7 +7741,7 @@ snapshots:
       call-bind: 1.0.8
       call-bound: 1.0.4
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       es-set-tostringtag: 2.1.0
       function-bind: 1.1.2
@@ -7854,7 +7932,7 @@ snapshots:
       '@humanfs/node': 0.16.7
       '@humanwhocodes/module-importer': 1.0.1
       '@humanwhocodes/retry': 0.4.3
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.6
@@ -8348,10 +8426,6 @@ snapshots:
 
   loupe@3.2.1: {}
 
-  lucide-react@0.475.0(react@19.2.4):
-    dependencies:
-      react: 19.2.4
-
   lucide-react@0.548.0(react@19.2.4):
     dependencies:
       react: 19.2.4
@@ -8813,7 +8887,7 @@ snapshots:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-object-atoms: 1.1.1
 
   object.values@1.2.1:
@@ -9171,7 +9245,7 @@ snapshots:
     dependencies:
       call-bind: 1.0.8
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       es-object-atoms: 1.1.1
       get-intrinsic: 1.3.0
@@ -9442,7 +9516,7 @@ snapshots:
       call-bind: 1.0.8
       call-bound: 1.0.4
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-errors: 1.3.0
       es-object-atoms: 1.1.1
       get-intrinsic: 1.3.0
@@ -9456,7 +9530,7 @@ snapshots:
   string.prototype.repeat@1.0.0:
     dependencies:
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
 
   string.prototype.trim@1.2.10:
     dependencies:
@@ -9464,7 +9538,7 @@ snapshots:
       call-bound: 1.0.4
       define-data-property: 1.1.4
       define-properties: 1.2.1
-      es-abstract: 1.24.1
+      es-abstract: 1.24.2
       es-object-atoms: 1.1.1
       has-property-descriptors: 1.0.2
 
@@ -9640,8 +9714,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
-
-  typescript@5.7.3: {}
 
   typescript@5.9.3: {}
 

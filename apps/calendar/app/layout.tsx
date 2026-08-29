@@ -3,10 +3,11 @@ import { Suspense } from "react";
 
 import "@workspace/ui/globals.css";
 import "leaflet/dist/leaflet.css";
-import { Providers } from "@/components/providers";
+import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
+import { AppProviders } from "@workspace/ui/components/app-providers";
+import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { Header } from "@/components/header";
 import { HeaderNotifications } from "@/components/header-notifications";
-import { PreviewBanner } from "@/components/preview-banner";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -54,17 +55,8 @@ async function AppSidebarWrapper() {
     headers: headersList,
   });
 
-  const user = session?.user;
-
-  const normalizedUser = user
-    ? {
-        ...user,
-        image: user.image ?? null,
-        regionId: user.regionId ?? null,
-        delegateTitle: user.delegateTitle ?? null,
-        delegateLocation: user.delegateLocation ?? null,
-        lastLogin: user.lastLogin ?? null,
-      }
+  const normalizedUser = session?.user
+    ? toSessionUser(session.user as RawSessionUser)
     : undefined;
 
   return <AppSidebar user={normalizedUser} />;
@@ -80,7 +72,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
-        <Providers>
+        <AppProviders nuqs>
           <SidebarProvider>
             <Suspense fallback={<AppSidebar user={undefined} />}>
               <AppSidebarWrapper />
@@ -109,7 +101,7 @@ export default function RootLayout({
           <Analytics />
           <SpeedInsights />
           <Toaster />
-        </Providers>
+        </AppProviders>
       </body>
     </html>
   );

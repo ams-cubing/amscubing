@@ -3,19 +3,34 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "scripts": {
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "exports": {
     ".": "./src/auth.ts",
     "./client": "./src/client.ts",
-    "./urls": "./src/urls.ts"
+    "./urls": "./src/urls.ts",
+    "./session": "./src/session.ts",
+    "./types": "./src/types.ts"
+  },
+  "peerDependencies": {
+    "next": "catalog:"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
-    "better-auth": "^1.4.10",
-    "drizzle-orm": "^0.44.7"
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^20.19.9",
+    "@types/node": "catalog:",
+    "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "typescript": "^5.9.2"
+    "eslint": "catalog:",
+    "next": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -35,7 +35,10 @@ function PopoverScrollArea({
 }) {
   return (
     <div
-      className={cn("min-h-0 overflow-y-auto overscroll-contain touch-pan-y", className)}
+      className={cn(
+        "min-h-0 overflow-y-auto overscroll-contain touch-pan-y",
+        className,
+      )}
       onWheel={stopScrollPropagation}
     >
       {children}
@@ -67,7 +70,8 @@ function ColorSwatches({
             disabled={disabled}
             className={cn(
               "flex h-8 w-full items-center justify-center rounded-md transition hover:opacity-90",
-              selected && "ring-2 ring-primary ring-offset-2 ring-offset-popover",
+              selected &&
+                "ring-2 ring-primary ring-offset-2 ring-offset-popover",
             )}
             style={{ backgroundColor: swatch }}
             aria-label={`Color ${swatch}`}
@@ -75,7 +79,10 @@ function ColorSwatches({
             onClick={() => onChange(swatch)}
           >
             {selected && (
-              <Check className="size-4 text-white drop-shadow-sm" strokeWidth={3} />
+              <Check
+                className="size-4 text-white drop-shadow-sm"
+                strokeWidth={3}
+              />
             )}
           </button>
         );
@@ -337,148 +344,144 @@ export function CardLabelsPopover({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {view === "list" ? (
-          <div
-            className={cn(
-              "flex min-h-0 flex-1 flex-col overflow-hidden",
-            )}
-          >
-            <div className="shrink-0 p-3 pb-2">
-              <Input
-                ref={searchInputRef}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar etiquetas..."
-                className="h-9"
-                disabled={pending}
-              />
-            </div>
-
-            <PopoverScrollArea className="min-h-0 flex-1 px-3">
-              <div className="space-y-2 pb-2">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Etiquetas
-                </p>
-                {filteredLabels.length === 0 ? (
-                  <p className="py-2 text-center text-sm text-muted-foreground">
-                    {search.trim()
-                      ? "No hay etiquetas que coincidan"
-                      : "Sin etiquetas en el tablero"}
-                  </p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {filteredLabels.map((label) => {
-                      const checked = labelIds.has(label.id);
-                      return (
-                        <li
-                          key={label.id}
-                          className="flex items-center gap-2"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            disabled={readOnly || pending}
-                            onCheckedChange={(value) => {
-                              if (readOnly) return;
-                              onToggle(label.id, value === true);
-                            }}
-                            aria-label={`Etiqueta ${label.name}`}
-                          />
-                          <button
-                            type="button"
-                            disabled={readOnly || pending}
-                            className={cn(
-                              "flex h-8 min-w-0 flex-1 items-center justify-center rounded-md px-3",
-                              "text-sm font-semibold text-white transition hover:brightness-110",
-                              (readOnly || pending) && "cursor-default",
-                            )}
-                            style={{ backgroundColor: label.color }}
-                            onClick={() => {
-                              if (readOnly) return;
-                              onToggle(label.id, !checked);
-                            }}
-                          >
-                            <span className="truncate">{label.name}</span>
-                          </button>
-                          {!readOnly && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 shrink-0"
-                              disabled={pending}
-                              onClick={() => openEdit(label)}
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </PopoverScrollArea>
-
-            {!readOnly && (
-              <div className="shrink-0 border-t bg-popover p-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full"
+          {view === "list" ? (
+            <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden")}>
+              <div className="shrink-0 p-3 pb-2">
+                <Input
+                  ref={searchInputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar etiquetas..."
+                  className="h-9"
                   disabled={pending}
-                  onClick={openCreate}
-                >
-                  Crear etiqueta
-                </Button>
+                />
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <PopoverScrollArea className="min-h-0 flex-1 p-3">
-              <LabelEditor
-                name={name}
-                color={color}
-                pending={pending}
-                onNameChange={setName}
-                onColorChange={setColor}
-              />
-            </PopoverScrollArea>
-            <div className="shrink-0 border-t bg-popover p-3">
-              <LabelEditorFooter
-                mode={view === "create" ? "create" : "edit"}
-                pending={pending}
-                canSave={Boolean(name.trim())}
-                hasCustomColor={hasCustomColor}
-                onRemoveColor={() => setColor(DEFAULT_LABEL_COLOR)}
-                onSave={() => {
-                  const trimmed = name.trim();
-                  if (!trimmed) return;
-                  if (view === "create") {
-                    onCreate(trimmed, color);
-                    setView("list");
-                    setName("");
-                    setColor(DEFAULT_LABEL_COLOR);
-                    return;
-                  }
-                  if (!editingLabel) return;
-                  onUpdate(editingLabel.id, trimmed, color);
-                  setView("list");
-                  setEditingLabel(null);
-                }}
-                onDelete={
-                  editingLabel
-                    ? () => {
-                        onDelete(editingLabel.id);
-                        setView("list");
-                        setEditingLabel(null);
-                      }
-                    : undefined
-                }
-              />
+
+              <PopoverScrollArea className="min-h-0 flex-1 px-3">
+                <div className="space-y-2 pb-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Etiquetas
+                  </p>
+                  {filteredLabels.length === 0 ? (
+                    <p className="py-2 text-center text-sm text-muted-foreground">
+                      {search.trim()
+                        ? "No hay etiquetas que coincidan"
+                        : "Sin etiquetas en el tablero"}
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {filteredLabels.map((label) => {
+                        const checked = labelIds.has(label.id);
+                        return (
+                          <li
+                            key={label.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              disabled={readOnly || pending}
+                              onCheckedChange={(value) => {
+                                if (readOnly) return;
+                                onToggle(label.id, value === true);
+                              }}
+                              aria-label={`Etiqueta ${label.name}`}
+                            />
+                            <button
+                              type="button"
+                              disabled={readOnly || pending}
+                              className={cn(
+                                "flex h-8 min-w-0 flex-1 items-center justify-center rounded-md px-3",
+                                "text-sm font-semibold text-white transition hover:brightness-110",
+                                (readOnly || pending) && "cursor-default",
+                              )}
+                              style={{ backgroundColor: label.color }}
+                              onClick={() => {
+                                if (readOnly) return;
+                                onToggle(label.id, !checked);
+                              }}
+                            >
+                              <span className="truncate">{label.name}</span>
+                            </button>
+                            {!readOnly && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 shrink-0"
+                                disabled={pending}
+                                onClick={() => openEdit(label)}
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </PopoverScrollArea>
+
+              {!readOnly && (
+                <div className="shrink-0 border-t bg-popover p-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    disabled={pending}
+                    onClick={openCreate}
+                  >
+                    Crear etiqueta
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <PopoverScrollArea className="min-h-0 flex-1 p-3">
+                <LabelEditor
+                  name={name}
+                  color={color}
+                  pending={pending}
+                  onNameChange={setName}
+                  onColorChange={setColor}
+                />
+              </PopoverScrollArea>
+              <div className="shrink-0 border-t bg-popover p-3">
+                <LabelEditorFooter
+                  mode={view === "create" ? "create" : "edit"}
+                  pending={pending}
+                  canSave={Boolean(name.trim())}
+                  hasCustomColor={hasCustomColor}
+                  onRemoveColor={() => setColor(DEFAULT_LABEL_COLOR)}
+                  onSave={() => {
+                    const trimmed = name.trim();
+                    if (!trimmed) return;
+                    if (view === "create") {
+                      onCreate(trimmed, color);
+                      setView("list");
+                      setName("");
+                      setColor(DEFAULT_LABEL_COLOR);
+                      return;
+                    }
+                    if (!editingLabel) return;
+                    onUpdate(editingLabel.id, trimmed, color);
+                    setView("list");
+                    setEditingLabel(null);
+                  }}
+                  onDelete={
+                    editingLabel
+                      ? () => {
+                          onDelete(editingLabel.id);
+                          setView("list");
+                          setEditingLabel(null);
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

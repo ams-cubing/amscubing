@@ -77,8 +77,76 @@ Al usar **Marcar como celebrada** en el panel de delegados, publicar en las rede
 
 ### Plataforma
 
-- [ ] Helpers de sesión compartidos usados por todas las apps (patrón de `lib/session` del calendario).
-- [ ] CI: typecheck, lint, tests por app; migrar la BD en preview si hace falta.
+Mejoras de ingeniería del monorepo (auditoría 2026-08-28). Priorizar CI y tests antes de crecer más el producto.
+
+#### CI/CD y quality gates
+
+Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No hay CI para build, lint, typecheck ni tests.
+
+- [x] Workflow de CI en PRs: `build`, `lint`, `check-types`, `test` en todas las apps y paquetes.
+- [x] Scripts `lint` en **cada** app y paquete (hoy solo `@workspace/ui` lo define; `pnpm lint` en la raíz casi no hace nada).
+- [x] Scripts `check-types` (`tsc --noEmit`) en cada workspace — la tarea existe en `turbo.json` pero ningún paquete la expone.
+- [x] `pnpm test` debe ejecutar **calendar y `@workspace/db`** (hoy solo calendar).
+- [x] Registrar tareas `test` y `check-types` en `turbo.json` para cache y paralelismo.
+- [ ] Migrar la BD en preview de Vercel si hace falta (además de staging/main).
+
+#### Testing
+
+Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 0). No hay E2E.
+
+- [x] Tests unitarios en `@workspace/auth` (tipos, URLs, cookie domain).
+- [x] Tests en `apps/boards` — empezar por server actions (`board-actions.ts`, ~700 líneas sin cobertura).
+- [x] Tests en `apps/web` cuando tenga lógica de BD/auth.
+- [ ] E2E mínimo: login WCA, ciclo de vida de una competencia, operación básica en tablero.
+- [x] Reutilizar el patrón de mocks del calendario (`auth`, `db`, `revalidatePath`) en tableros.
+
+#### Lint, formato y hooks
+
+- [ ] Config de Prettier compartida (hoy solo hay script `format` en la raíz, sin `.prettierrc`).
+- [ ] Pre-commit hooks opcionales (Husky + lint-staged) para lint/format en archivos tocados.
+
+#### Paquetes compartidos y deduplicación
+
+- [x] Helpers de sesión compartidos (`requireSession`, `requireDelegate`) — unificar el patrón Result del calendario vs `unauthorized()` de tableros.
+- [x] `requireDelegate` centralizado (hoy reimplementado en `board-management.ts`).
+- [x] `PreviewBanner` → paquete compartido (copia idéntica en calendario y tableros).
+- [x] `Providers` compartido (ThemeProvider; Nuqs solo donde aplique).
+- [x] Email: calendario usa `resend` directo en 4 archivos; unificar en `@workspace/email` como tableros.
+- [x] Validación con Zod en server actions de tableros (dependencia declarada pero sin uso).
+- [x] Manejo de errores consistente — adoptar `handle-error.ts` del calendario o un helper equivalente compartido.
+
+#### Tipos de auth
+
+- [x] Extender tipos de Better Auth en `@workspace/auth` para alinear `session.user` con el `User` de Drizzle.
+- [x] Eliminar casts `as unknown as User` en tableros (y similares en formularios del calendario).
+
+#### Organización del código
+
+- [x] Partir `packages/db/src/schema.ts` (~780 líneas) por dominio (`auth`, `competitions`, `boards`, `notifications`, …).
+- [x] Partir `apps/boards/.../board-actions.ts` en módulos (cards, comentarios, labels, notificaciones, permisos).
+
+#### Dependencias y toolchain
+
+- [x] Alinear TypeScript (raíz 5.7 vs apps/paquetes 5.9).
+- [x] Alinear versiones duplicadas (`lucide-react`, etc.) — considerar pnpm catalog u overrides en la raíz.
+- [x] Revisar `--debug-prerender` en build de calendar (solo dev/debug o intencional en prod).
+
+#### Observabilidad y ops
+
+- [ ] Error tracking en producción (p. ej. Sentry) en las tres apps.
+- [ ] Logging estructurado en server actions críticas.
+- [ ] Rate limiting en formularios públicos y envíos de email (p. ej. solicitar fecha).
+
+#### Documentación de entorno
+
+- [ ] `.env.example` raíz más completo (hoy solo `DATABASE_URL`).
+- [ ] `apps/web/.env.local.example` antes de mover auth a web.
+- [ ] Referencia única de variables por app (`BETTER_AUTH_*`, `WCA_*`, `RESEND_*`, URLs públicas, cookie domain).
+
+#### Seguridad
+
+- [ ] Documentar que `apps/calendar/proxy.ts` no valida auth de forma segura (checks por ruta/página — intencional).
+- [ ] Respuestas tipadas forbidden/unauthorized en server actions en lugar de `throw new Error(...)` genérico donde aplique.
 
 ---
 
@@ -105,11 +173,12 @@ Al usar **Marcar como celebrada** en el panel de delegados, publicar en las rede
 
 ## Registro de decisiones
 
-| Fecha      | Decisión                      | Notas                                                                                                                        |
-| ---------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                    |
-| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                         |
-| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                  |
-| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                     |
-| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe) |
-| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                  |
+| Fecha      | Decisión                      | Notas                                                                                                                          |
+| ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                      |
+| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |
+| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                    |
+| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                       |
+| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe)   |
+| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                    |
+| 2026-08-28 | Auditoría de plataforma       | CI, tests, deduplicación y tipos de auth documentados en sección **Plataforma**; priorizar quality gates antes de más features |

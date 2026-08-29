@@ -4,7 +4,15 @@ import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function AppProviders({
+  children,
+  nuqs = false,
+}: {
+  children: React.ReactNode;
+  nuqs?: boolean;
+}) {
+  const content = nuqs ? <NuqsAdapter>{children}</NuqsAdapter> : children;
+
   return (
     <NextThemesProvider
       attribute="class"
@@ -13,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <NuqsAdapter>{children}</NuqsAdapter>
+      {content}
     </NextThemesProvider>
   );
 }

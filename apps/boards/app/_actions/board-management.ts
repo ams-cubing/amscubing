@@ -11,36 +11,28 @@ import {
   hrefForNotification,
   insertNotifications,
 } from "@workspace/db/notifications";
-import {
-  boardInvites,
-  boardMembers,
-  boards,
-  type User,
-} from "@workspace/db/schema";
+import { boardInvites, boardMembers, boards } from "@workspace/db/schema";
 
-import { requireSession } from "@/lib/session";
+import { requireDelegate, requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
+import {
+  createBlankBoardSchema,
+  createTemplateSchema,
+} from "@/app/_lib/validations";
 
-async function requireDelegate() {
-  const session = await requireSession();
-  const currentUser = session.user as unknown as User;
-  if (currentUser.role !== "delegate") {
-    throw new Error("Solo delegados pueden realizar esta acción");
+async function requireDelegateUser() {
+  const result = await requireDelegate();
+  if (!result.ok) {
+    throw new Error(result.message);
   }
-  return currentUser;
-}
-
-function normalizeName(name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) {
-    throw new Error("El nombre es obligatorio");
-  }
-  return trimmed;
+  return result.session.user;
 }
 
 export async function createBlankBoard(formData: FormData) {
-  await requireDelegate();
-  const name = normalizeName(String(formData.get("name") ?? ""));
+  await requireDelegateUser();
+  const { name } = createBlankBoardSchema.parse({
+    name: String(formData.get("name") ?? ""),
+  });
 
   const [board] = await db
     .insert(boards)
@@ -60,8 +52,10 @@ export async function createBlankBoard(formData: FormData) {
 }
 
 export async function createTemplate(formData: FormData) {
-  await requireDelegate();
-  const name = normalizeName(String(formData.get("name") ?? ""));
+  await requireDelegateUser();
+  const { name } = createTemplateSchema.parse({
+    name: String(formData.get("name") ?? ""),
+  });
 
   const [board] = await db
     .insert(boards)
@@ -81,8 +75,8 @@ export async function createTemplate(formData: FormData) {
 }
 
 export async function renameBoard(input: { boardId: number; name: string }) {
-  await requireDelegate();
-  const name = normalizeName(input.name);
+  await requireDelegateUser();
+  const { name } = createBlankBoardSchema.parse({ name: input.name });
 
   await db
     .update(boards)
@@ -94,7 +88,7 @@ export async function renameBoard(input: { boardId: number; name: string }) {
 }
 
 export async function deleteBoard(input: { boardId: number }) {
-  await requireDelegate();
+  await requireDelegateUser();
 
   await db.delete(boards).where(eq(boards.id, input.boardId));
 
@@ -103,7 +97,7 @@ export async function deleteBoard(input: { boardId: number }) {
 }
 
 export async function unarchiveBoard(input: { boardId: number }) {
-  await requireDelegate();
+  await requireDelegateUser();
 
   await db
     .update(boards)
@@ -118,7 +112,7 @@ export async function createBoardInvite(input: {
   boardId: number;
   rotate?: boolean;
 }) {
-  const currentUser = await requireDelegate();
+  const currentUser = await requireDelegateUser();
 
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, input.boardId),
@@ -179,7 +173,7 @@ export async function createBoardInvite(input: {
 }
 
 export async function revokeBoardInvite(input: { inviteId: number }) {
-  await requireDelegate();
+  await requireDelegateUser();
 
   const invite = await db.query.boardInvites.findFirst({
     where: eq(boardInvites.id, input.inviteId),
@@ -201,7 +195,7 @@ export async function removeBoardMember(input: {
   boardId: number;
   userId: string;
 }) {
-  await requireDelegate();
+  await requireDelegateUser();
 
   await db
     .delete(boardMembers)
@@ -216,8 +210,8 @@ export async function removeBoardMember(input: {
 }
 
 export async function acceptBoardInvite(token: string) {
-  const session = await requireSession();
-  const currentUser = session.user as unknown as User;
+  const session = await requireSessionOrUnauthorized();
+  const currentUser = session.user;
 
   const invite = await db.query.boardInvites.findFirst({
     where: eq(boardInvites.token, token),

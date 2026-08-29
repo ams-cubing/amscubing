@@ -9,8 +9,9 @@ import "@workspace/ui/globals.css";
 
 import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
 
-import { Providers } from "@/components/providers";
-import { PreviewBanner } from "@/components/preview-banner";
+import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
+import { AppProviders } from "@workspace/ui/components/app-providers";
+import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { SignInButton } from "@/components/sign-in-button";
 import { UserMenu } from "@/components/user-menu";
 import { auth } from "@/lib/auth";
@@ -43,21 +44,7 @@ async function HeaderAuth() {
   });
 
   const user = session?.user
-    ? {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        emailVerified: session.user.emailVerified,
-        image: session.user.image ?? null,
-        createdAt: session.user.createdAt,
-        updatedAt: session.user.updatedAt,
-        wcaId: session.user.wcaId,
-        role: session.user.role as "delegate" | "user",
-        regionId: session.user.regionId ?? null,
-        delegateTitle: session.user.delegateTitle ?? null,
-        delegateLocation: session.user.delegateLocation ?? null,
-        lastLogin: session.user.lastLogin ?? null,
-      }
+    ? toSessionUser(session.user as RawSessionUser)
     : null;
 
   if (!user) {
@@ -92,7 +79,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
-        <Providers>
+        <AppProviders>
           <div className="flex h-svh flex-col overflow-hidden">
             <header className="z-40 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
               <Suspense fallback={null}>
@@ -121,7 +108,7 @@ export default function RootLayout({
           </div>
           <Analytics />
           <Toaster />
-        </Providers>
+        </AppProviders>
       </body>
     </html>
   );

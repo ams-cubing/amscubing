@@ -35,21 +35,13 @@ export function MarkdownContent({
 }) {
   return (
     <div
-      className={cn(
-        "markdown-content",
-        descriptionProseClassName,
-        className,
-      )}
+      className={cn("markdown-content", descriptionProseClassName, className)}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={href} target="_blank" rel="noopener noreferrer">
               {children}
             </a>
           ),

@@ -1,16 +1,8 @@
-import { headers } from "next/headers";
-import { unauthorized } from "next/navigation";
+import { createSessionHelpers } from "@workspace/auth/session";
 
-import { auth } from "@/lib/auth";
+import { auth } from "./auth";
 
-export async function requireSession() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export const { requireSession, requireDelegate, requireSessionOrUnauthorized } =
+  createSessionHelpers(auth);
 
-  if (!session?.user) {
-    unauthorized();
-  }
-
-  return session;
-}
+export type { AuthSession, SessionResult } from "@workspace/auth/session";

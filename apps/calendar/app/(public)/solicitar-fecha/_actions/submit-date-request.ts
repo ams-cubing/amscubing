@@ -17,11 +17,13 @@ import {
 import { z } from "zod";
 import { eq, and, lte, gte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import {
+  sendDateRequestDelegateEmail,
+  sendDateRequestOrganizerEmail,
+} from "@/lib/calendar-emails";
+import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { headers } from "next/headers";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const dateRequestSchema = z
   .object({
@@ -216,15 +218,12 @@ export async function submitDateRequest(
 
     try {
       if (delegateInRegion) {
-        await resend.emails.send({
-          from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
-          to: delegateInRegion?.email,
-          subject: `Nueva asignación: ${newCompetition?.city} (${startDateStr} - ${endDateStr})`,
-          html: `
-          <p>Hola ${delegateInRegion?.name},</p>
-          <p>Se te ha asignado como delegado para la competencia en ${newCompetition?.city} (${startDateStr} - ${endDateStr}).</p>
-          <p><a href="${process.env.BETTER_AUTH_URL}/panel">Mira los detalles en el panel de competencias</a></p>
-        `,
+        await sendDateRequestDelegateEmail({
+          to: delegateInRegion.email,
+          delegateName: delegateInRegion.name,
+          city: newCompetition?.city ?? validatedData.city,
+          startDate: startDateStr!,
+          endDate: endDateStr!,
         });
       }
     } catch (err) {
@@ -232,18 +231,17 @@ export async function submitDateRequest(
     }
 
     try {
-      await resend.emails.send({
-        from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
-        to: session?.user?.email,
-        subject: `Fecha solicitada en ${newCompetition?.city} (${startDateStr} - ${endDateStr})`,
-        html: `
-          <p>Hola ${session?.user?.name},</p>
-          <p>Tu solicitud de fecha para una competencia en ${newCompetition?.city} (${startDateStr} - ${endDateStr}) ha sido creada exitosamente.</p>
-          <p>El delegado asignado es: ${delegateInRegion ? delegateInRegion?.name : "Aún no se ha asignado un delegado"}</p>
-          <p>Puedes contactarlo en: ${delegateInRegion ? delegateInRegion?.email : "Pendiente"}</p>
-          <p><a href="${process.env.BETTER_AUTH_URL}/mis-competencias">Revisa los detalles aquí</a></p>
-        `,
-      });
+      if (session?.user?.email && session.user.name) {
+        await sendDateRequestOrganizerEmail({
+          to: session.user.email,
+          organizerName: session.user.name,
+          city: newCompetition?.city ?? validatedData.city,
+          startDate: startDateStr!,
+          endDate: endDateStr!,
+          delegateName: delegateInRegion?.name ?? null,
+          delegateEmail: delegateInRegion?.email ?? null,
+        });
+      }
     } catch (err) {
       console.error("Error sending organizer email via Resend:", err);
     }
@@ -256,7 +254,7 @@ export async function submitDateRequest(
     console.error("Error submitting date request:", error);
     return {
       success: false,
-      message: "Error al procesar la solicitud",
+      message: getErrorMessage(error),
     };
   }
 }

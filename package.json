@@ -6,6 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
+    "check-types": "turbo check-types",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
@@ -15,15 +16,16 @@
     "db:seed-template": "pnpm --filter @workspace/db db:seed-template",
     "db:generate": "pnpm --filter @workspace/db db:generate",
     "db:studio": "pnpm --filter @workspace/db db:studio",
-    "test": "pnpm --filter calendar test",
+    "test": "turbo test",
     "clean": "rm -rf .turbo node_modules coverage apps/*/.next apps/*/.turbo apps/*/node_modules packages/*/dist packages/*/node_modules"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "es-abstract": "1.24.2",
     "prettier": "^3.6.2",
     "turbo": "^2.5.5",
-    "typescript": "5.7.3"
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.4.1",
   "engines": {

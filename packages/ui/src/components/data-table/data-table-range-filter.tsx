@@ -3,9 +3,9 @@
 import type { Column } from "@tanstack/react-table";
 import * as React from "react";
 
-import { Input } from "@workspace/components/ui/input";
+import { Input } from "../input";
 import { cn } from "@workspace/ui/lib/utils";
-import type { ExtendedColumnFilter } from "@workspace/types/data-table";
+import type { ExtendedColumnFilter } from "../../types/data-table";
 
 interface DataTableRangeFilterProps<TData> extends React.ComponentProps<"div"> {
   filter: ExtendedColumnFilter<TData>;
@@ -99,7 +99,9 @@ export function DataTableRangeFilter<TData>({
         max={max}
         className="h-8 w-full rounded"
         defaultValue={value[0]}
-        onChange={(event) => onRangeValueChange(event.target.value, true)}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          onRangeValueChange(event.target.value, true)
+        }
       />
       <span className="sr-only shrink-0 text-muted-foreground">to</span>
       <Input
@@ -115,7 +117,9 @@ export function DataTableRangeFilter<TData>({
         max={max}
         className="h-8 w-full rounded"
         defaultValue={value[1]}
-        onChange={(event) => onRangeValueChange(event.target.value)}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          onRangeValueChange(event.target.value)
+        }
       />
     </div>
   );

@@ -14,12 +14,11 @@ import {
   user,
 } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { Resend } from "resend";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { sendUltimatumEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
+import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const createUltimatumSchema = z.object({
   competitionId: z.number(),
@@ -103,29 +102,19 @@ export async function sendUltimatum(
 
     for (const organizer of organizers) {
       const email = organizer?.email;
-      if (!email || email.includes("@ams.placeholder")) {
-        continue;
-      }
+      if (!email) continue;
 
-      await resend.emails.send({
-        from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
+      await sendUltimatumEmail({
         to: email,
-        subject: "Ultimátum enviado para tu competencia",
-        html: `
-          <p>Hola,</p>
-          <p>Se ha enviado un ultimátum para una de tus competencias.</p>
-          <p>Fecha límite: ${validatedData.deadline.toLocaleDateString()}</p>
-          <p>${validatedData.message || "Por favor, asegúrate de cumplir con los requisitos antes de la fecha límite."}</p>
-          <p>Saludos,</p>
-          <p>Equipo de la Asociación Mexicana de Speedcubing</p>
-        `,
+        deadline: validatedData.deadline,
+        message: validatedData.message,
       });
     }
 
     revalidateTag("competitions", "days");
     revalidatePath("/panel");
-  } catch {
-    return { success: false, message: "Error de base de datos" };
+  } catch (error) {
+    return { success: false, message: getErrorMessage(error) };
   }
 
   return { success: true };

@@ -20,7 +20,10 @@ export function DescriptionMarkdownHelp() {
       <p className="font-medium">Atajos de Markdown</p>
       <ul className="space-y-1.5">
         {shortcuts.map((item) => (
-          <li key={item.syntax} className="flex items-baseline justify-between gap-3">
+          <li
+            key={item.syntax}
+            className="flex items-baseline justify-between gap-3"
+          >
             <span className="text-muted-foreground">{item.label}</span>
             <code className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               {item.syntax}

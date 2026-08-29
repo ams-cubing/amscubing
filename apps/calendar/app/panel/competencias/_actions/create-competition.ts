@@ -15,15 +15,14 @@ import {
 } from "@workspace/db/schema";
 import { and, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { Resend } from "resend";
 import { z } from "zod";
+import { sendDelegateAssignedEmail } from "@/lib/calendar-emails";
+import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 import { isBoardsEnabled } from "@/lib/boards";
 import { assignBoardToCompetitionById } from "./assign-board";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function createCompetition(
   data: z.infer<typeof createCompetitionSchema>,
@@ -159,17 +158,14 @@ export async function createCompetition(
       });
 
       for (const d of delegates) {
-        if (!d.email) continue;
+        if (!d.email || !d.name) continue;
         try {
-          await resend.emails.send({
-            from: "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>",
+          await sendDelegateAssignedEmail({
             to: d.email,
-            subject: `Asignación como delegado: ${validatedData.city} (${startDateStr} - ${endDateStr})`,
-            html: `
-            <p>Hola ${d.name},</p>
-            <p>Has sido asignado como delegado para una competencia en ${validatedData.city} (${startDateStr} - ${endDateStr}).</p>
-            <p><a href="${process.env.BETTER_AUTH_URL}/panel">Revisa el panel de competencias para más detalles</a></p>
-            `,
+            recipientName: d.name,
+            city: validatedData.city,
+            startDate: startDateStr!,
+            endDate: endDateStr!,
           });
         } catch (err) {
           console.error("Error sending delegate email via Resend:", err);
@@ -207,7 +203,7 @@ export async function createCompetition(
     console.error("Error creating competition:", error);
     return {
       success: false,
-      message: "Error al crear la competencia",
+      message: getErrorMessage(error),
     };
   }
 }
