@@ -7,6 +7,7 @@ import {
   getCalendarUrl,
   getCrossAppSignInUrl,
   getTrustedOrigins,
+  getWebUrl,
   isAllowedReturnTo,
   stripTrailingSlash,
 } from "./urls";
@@ -46,11 +47,26 @@ describe("URL helpers from env", () => {
 
   it("getCalendarUrl falls back to BETTER_AUTH_URL", () => {
     vi.stubEnv("BETTER_AUTH_URL", "https://auth.example/");
-    expect(getCalendarUrl()).toBe("https://auth.example");
+    expect(getCalendarUrl()).toBe("http://localhost:3001");
   });
 
   it("getCalendarUrl defaults to localhost:3001", () => {
     expect(getCalendarUrl()).toBe("http://localhost:3001");
+  });
+
+  it("getWebUrl prefers NEXT_PUBLIC_WEB_URL", () => {
+    vi.stubEnv("NEXT_PUBLIC_WEB_URL", "https://web.example/");
+    vi.stubEnv("BETTER_AUTH_URL", "https://auth.example");
+    expect(getWebUrl()).toBe("https://web.example");
+  });
+
+  it("getWebUrl falls back to BETTER_AUTH_URL", () => {
+    vi.stubEnv("BETTER_AUTH_URL", "https://auth.example/");
+    expect(getWebUrl()).toBe("https://auth.example");
+  });
+
+  it("getWebUrl defaults to localhost:3000", () => {
+    expect(getWebUrl()).toBe("http://localhost:3000");
   });
 
   it("getBoardsUrl uses NEXT_PUBLIC_BOARDS_URL", () => {
@@ -62,9 +78,15 @@ describe("URL helpers from env", () => {
     expect(getBoardsUrl()).toBe("http://localhost:3002");
   });
 
-  it("getAuthBaseUrl matches calendar URL resolution", () => {
-    vi.stubEnv("NEXT_PUBLIC_CALENDAR_URL", "https://cal.example");
-    expect(getAuthBaseUrl()).toBe("https://cal.example");
+  it("getAuthBaseUrl prefers BETTER_AUTH_URL", () => {
+    vi.stubEnv("NEXT_PUBLIC_WEB_URL", "https://web.example");
+    vi.stubEnv("BETTER_AUTH_URL", "https://auth.example");
+    expect(getAuthBaseUrl()).toBe("https://auth.example");
+  });
+
+  it("getAuthBaseUrl falls back to web URL resolution", () => {
+    vi.stubEnv("NEXT_PUBLIC_WEB_URL", "https://web.example");
+    expect(getAuthBaseUrl()).toBe("https://web.example");
   });
 });
 
@@ -78,20 +100,26 @@ describe("getTrustedOrigins", () => {
   });
 
   it("deduplicates calendar, boards, and auth origins", () => {
+    vi.stubEnv("NEXT_PUBLIC_WEB_URL", "https://web.example");
     vi.stubEnv("NEXT_PUBLIC_CALENDAR_URL", "https://cal.example");
     vi.stubEnv("NEXT_PUBLIC_BOARDS_URL", "https://boards.example");
     vi.stubEnv("NODE_ENV", "production");
 
     const origins = getTrustedOrigins();
     expect(origins).toEqual(
-      expect.arrayContaining(["https://cal.example", "https://boards.example"]),
+      expect.arrayContaining([
+        "https://web.example",
+        "https://cal.example",
+        "https://boards.example",
+      ]),
     );
-    expect(origins.length).toBe(2);
+    expect(origins.length).toBe(3);
   });
 
   it("includes localhost ports in non-production", () => {
     vi.stubEnv("NODE_ENV", "development");
     const origins = getTrustedOrigins();
+    expect(origins).toContain("http://localhost:3000");
     expect(origins).toContain("http://localhost:3001");
     expect(origins).toContain("http://localhost:3002");
   });
@@ -119,6 +147,7 @@ describe("getAuthCookieDomain", () => {
 describe("isAllowedReturnTo", () => {
   beforeEach(() => {
     resetEnv();
+    vi.stubEnv("NEXT_PUBLIC_WEB_URL", "https://web.example");
     vi.stubEnv("NEXT_PUBLIC_CALENDAR_URL", "https://cal.example");
     vi.stubEnv("NEXT_PUBLIC_BOARDS_URL", "https://boards.example");
     vi.stubEnv("NODE_ENV", "production");
@@ -160,9 +189,11 @@ describe("getCrossAppSignInUrl", () => {
     resetEnv();
   });
 
-  it("builds calendar login URL with returnTo", () => {
+  it("builds auth-host login URL with returnTo", () => {
+    vi.stubEnv("BETTER_AUTH_URL", "https://web.example");
+
     expect(getCrossAppSignInUrl("https://boards.example/boards/1")).toBe(
-      "https://cal.example/iniciar-sesion?returnTo=https%3A%2F%2Fboards.example%2Fboards%2F1",
+      "https://web.example/iniciar-sesion?returnTo=https%3A%2F%2Fboards.example%2Fboards%2F1",
     );
   });
 });

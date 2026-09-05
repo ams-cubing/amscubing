@@ -22,7 +22,7 @@ Ver [ROADMAP.md](ROADMAP.md) para el trabajo planeado (auth en web, paridad de C
 | `@workspace/ui`   | `packages/ui`   | Componentes de UI compartidos                                |
 | `@workspace/auth` | `packages/auth` | Better Auth compartido (WCA) + cookies de sesión entre apps  |
 
-El inicio de sesión lo emite la app de **calendario**. Calendario y tableros comparten la cookie de sesión `ams.*` (el mismo `BETTER_AUTH_SECRET`). En producción hay que definir `AUTH_COOKIE_DOMAIN=.amscubing.org` en ambas apps.
+El inicio de sesión lo emite la app **web** desde `/iniciar-sesion` y `/api/auth/[...all]`. Web, calendario y tableros comparten la cookie de sesión `ams.*` (el mismo `BETTER_AUTH_SECRET`). En producción hay que definir `AUTH_COOKIE_DOMAIN=.amscubing.org` en las apps que compartan sesión.
 
 ## Requisitos
 

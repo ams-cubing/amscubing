@@ -1,5 +1,6 @@
 export const CALENDAR_URL = "https://calendario.amscubing.org";
-export const PRIVACY_URL = "https://amscubing.org/privacidad/";
+export const COURSES_URL = "https://cursos.amscubing.org";
+export const PRIVACY_URL = "/aviso-de-privacidad";
 export const CONTACT_EMAIL = "contacto@amscubing.org";
 
 export const mission = `Promover y desarrollar el speedcubing en México, fomentando los valores de competencia justa, inclusividad y voluntariado. Trabajar para estandarizar y profesionalizar el speedcubing en apego a los objetivos establecidos en los reglamentos, estatutos y mociones de la WCA (World Cube Association). Crear oportunidades para que speedcubers de todas las edades y regiones se involucren, compartan conocimientos y compitan a nivel nacional e internacional a través del voluntariado y la colaboración.`;
@@ -15,6 +16,7 @@ export const blogPosts = [
     excerpt:
       "Participar en tu primer competencia oficial es algo muy emocionante, pero también puede ser intimidante si no sabes cómo funciona...",
     href: "https://amscubing.org/preparandome-para-mi-primera-competencia-oficial/",
+    image: "/source/photos/ponny-1.jpg",
   },
   {
     title: "50 años del cubo Rubik",
@@ -22,6 +24,7 @@ export const blogPosts = [
     excerpt:
       "Este 2024 se celebra medio siglo desde que el cubo de Rubik vio la luz por primera vez, revolucionando el mundo de los rompecabezas...",
     href: "https://amscubing.org/50-anos-del-cubo-rubik/",
+    image: "/source/photos/mexchamp-3.jpg",
   },
   {
     title: "¿Qué es el speedcubing?",
@@ -29,5 +32,6 @@ export const blogPosts = [
     excerpt:
       "El speedcubing es una disciplina que implica resolver el cubo de Rubik y otras variantes similares a alta velocidad. Sus...",
     href: "https://amscubing.org/speedcubingmexico/",
+    image: "/source/photos/chalco-3.jpg",
   },
 ] as const;
