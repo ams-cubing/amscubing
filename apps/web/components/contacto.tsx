@@ -1,118 +1,30 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
-import { motion } from "motion/react";
-import { Button } from "@workspace/ui/components/button";
+import { Mail, Send } from "lucide-react";
 import { CONTACT_EMAIL } from "@/lib/content";
 
 export function Contacto() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const body = [
-      `Nombre: ${name}`,
-      `Correo: ${email}`,
-      "",
-      message || "(Sin mensaje adicional)",
-    ].join("\n");
-    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject || "Contacto AMS")}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-  }
-
-  const fieldClassName =
-    "w-full border-0 border-b border-black/20 bg-transparent px-0 py-3 text-sm outline-none transition-colors placeholder:text-black/35 focus:border-[var(--ams-green)]";
-
   return (
-    <section
-      id="contacto"
-      className="scroll-mt-8 border-t border-black/5 bg-white py-20 md:py-28"
-    >
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-16 md:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.55 }}
-        >
-          <p className="text-sm font-semibold tracking-wide text-[var(--ams-red)] uppercase">
+    <section id="contacto" className="bg-white py-20">
+      <div className="ams-container flex flex-col items-start justify-between gap-8 border-l-4 border-[var(--ams-green)] bg-[var(--ams-soft)] p-7 md:flex-row md:items-center md:p-10">
+        <div>
+          <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
             Contacto
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance md:text-4xl">
+          <h2 className="ams-display text-[clamp(2rem,5vw,3.5rem)] leading-none">
             ¿Te interesa saber más?
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-black/70 md:text-lg">
-            Escríbenos. Abriremos tu cliente de correo con el mensaje listo para
-            enviar a la AMS.
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-black/68">
+            Escríbenos para temas de comunidad, voluntariado, comunicación o
+            apoyo general de AMS.
           </p>
-        </motion.div>
-
-        <motion.form
-          onSubmit={handleSubmit}
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.55, delay: 0.08 }}
-          className="space-y-6"
+        </div>
+        <a
+          href={`mailto:${CONTACT_EMAIL}`}
+          className="ams-glass inline-flex items-center gap-3 rounded-full border border-white/35 bg-[linear-gradient(135deg,rgba(186,12,47,0.94),rgba(254,80,0,0.68))] px-6 py-4 font-bold text-white shadow-[0_10px_24px_rgba(186,12,47,0.25)]"
         >
-          <label className="block">
-            <span className="sr-only">Tu nombre</span>
-            <input
-              required
-              name="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Tu nombre"
-              className={fieldClassName}
-              autoComplete="name"
-            />
-          </label>
-          <label className="block">
-            <span className="sr-only">Tu correo electrónico</span>
-            <input
-              required
-              type="email"
-              name="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="Tu correo electrónico"
-              className={fieldClassName}
-              autoComplete="email"
-            />
-          </label>
-          <label className="block">
-            <span className="sr-only">Asunto</span>
-            <input
-              required
-              name="subject"
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-              placeholder="Asunto"
-              className={fieldClassName}
-            />
-          </label>
-          <label className="block">
-            <span className="sr-only">Tu mensaje (opcional)</span>
-            <textarea
-              name="message"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Tu mensaje (opcional)"
-              rows={4}
-              className={`${fieldClassName} resize-y`}
-            />
-          </label>
-          <Button
-            type="submit"
-            size="lg"
-            className="bg-[var(--ams-green)] text-white hover:bg-[var(--ams-green)]/90"
-          >
-            Enviar mensaje
-          </Button>
-        </motion.form>
+          <Mail className="size-5" />
+          contacto@amscubing.org
+          <Send className="size-4" />
+        </a>
       </div>
     </section>
   );

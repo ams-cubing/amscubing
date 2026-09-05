@@ -27,6 +27,7 @@ describe("getPublicDelegates", () => {
     findMany.mockResolvedValue([
       {
         name: "Ana Delegada",
+        image: null,
         wcaId: "2010DEL01",
         delegateTitle: null,
         delegateLocation: null,
@@ -42,6 +43,8 @@ describe("getPublicDelegates", () => {
         wcaId: "2010DEL01",
         title: "Delegado",
         location: "Jalisco",
+        avatarUrl: null,
+        wcaProfileUrl: "https://www.worldcubeassociation.org/persons/2010DEL01",
       },
     ]);
     expect(findMany).toHaveBeenCalledOnce();
@@ -51,6 +54,7 @@ describe("getPublicDelegates", () => {
     findMany.mockResolvedValue([
       {
         name: "Leo",
+        image: null,
         wcaId: "2016TORO03",
         delegateTitle: "Delegado Senior",
         delegateLocation: "CDMX",
@@ -65,6 +69,9 @@ describe("getPublicDelegates", () => {
       wcaId: "2016TORO03",
       title: "Delegado Senior",
       location: "CDMX",
+      avatarUrl:
+        "https://avatars.worldcubeassociation.org/mlypawxraj938ea8ktwxscvli3ue",
+      wcaProfileUrl: "https://www.worldcubeassociation.org/persons/2016TORO03",
     });
   });
 
@@ -72,6 +79,7 @@ describe("getPublicDelegates", () => {
     findMany.mockResolvedValue([
       {
         name: "Luis",
+        image: null,
         wcaId: "2018WXYZ01",
         delegateTitle: null,
         delegateLocation: null,
@@ -82,5 +90,18 @@ describe("getPublicDelegates", () => {
     const delegates = await getPublicDelegates();
 
     expect(delegates[0]?.location).toBe("México");
+  });
+
+  it("returns the public WordPress fallback when the database is unavailable", async () => {
+    findMany.mockRejectedValue(new Error("missing database"));
+
+    const delegates = await getPublicDelegates();
+
+    expect(delegates[0]).toMatchObject({
+      name: "Areli Rubí Gordillo Martínez",
+      wcaId: "2014MART08",
+      avatarUrl:
+        "https://avatars.worldcubeassociation.org/uploads/user/avatar/2014MART08/1496807672_thumb.JPG",
+    });
   });
 });

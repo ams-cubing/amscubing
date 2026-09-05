@@ -1,25 +1,35 @@
 import { SiteNav } from "@/components/site-nav";
 import { Hero } from "@/components/hero";
-import { QuienesSomos } from "@/components/quienes-somos";
 import { ProximasCompetencias } from "@/components/proximas-competencias";
-import { Delegados } from "@/components/delegados";
-import { BlogTeaser } from "@/components/blog-teaser";
-import { Contacto } from "@/components/contacto";
+import { RankingNacional } from "@/components/ranking-nacional";
+import { HomeSobreNosotros } from "@/components/home-sobre-nosotros";
+import { Comunidad } from "@/components/comunidad";
+import { SiteCta } from "@/components/site-cta";
 import { SiteFooter } from "@/components/site-footer";
-import { getPublicDelegates } from "@/lib/delegates";
+import {
+  getCompetitionSpotlights,
+  getPublicCompetitions,
+} from "@/lib/competitions";
+import { getNationalRankings } from "@/lib/rankings";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const delegates = await getPublicDelegates();
+  const [competitions, rankings] = await Promise.all([
+    getPublicCompetitions(),
+    getNationalRankings(),
+  ]);
+  const spotlights = getCompetitionSpotlights(competitions);
 
   return (
     <main>
       <SiteNav />
-      <Hero />
-      <QuienesSomos />
-      <ProximasCompetencias />
-      <Delegados delegates={delegates} />
-      <BlogTeaser />
-      <Contacto />
+      <Hero spotlights={spotlights} />
+      <ProximasCompetencias competitions={competitions} />
+      <RankingNacional rankings={rankings} />
+      <HomeSobreNosotros />
+      <Comunidad />
+      <SiteCta />
       <SiteFooter />
     </main>
   );

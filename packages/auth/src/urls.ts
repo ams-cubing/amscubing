@@ -6,9 +6,15 @@ export function stripTrailingSlash(url: string) {
 
 export function getCalendarUrl() {
   return stripTrailingSlash(
-    process.env.NEXT_PUBLIC_CALENDAR_URL ??
+    process.env.NEXT_PUBLIC_CALENDAR_URL ?? "http://localhost:3001",
+  );
+}
+
+export function getWebUrl() {
+  return stripTrailingSlash(
+    process.env.NEXT_PUBLIC_WEB_URL ??
       process.env.BETTER_AUTH_URL ??
-      "http://localhost:3001",
+      "http://localhost:3000",
   );
 }
 
@@ -18,21 +24,30 @@ export function getBoardsUrl() {
   );
 }
 
-/** Canonical auth host (OAuth callbacks + auth API). Always the calendar app. */
+/** Canonical auth host (OAuth callbacks + auth API). Defaults to the public web app. */
 export function getAuthBaseUrl() {
   return stripTrailingSlash(
-    process.env.NEXT_PUBLIC_CALENDAR_URL ??
-      process.env.BETTER_AUTH_URL ??
-      "http://localhost:3001",
+    process.env.BETTER_AUTH_URL ??
+      process.env.NEXT_PUBLIC_WEB_URL ??
+      "http://localhost:3000",
   );
 }
 
 export function getTrustedOrigins() {
-  const origins = [getCalendarUrl(), getBoardsUrl(), getAuthBaseUrl()];
+  const origins = [
+    getWebUrl(),
+    getCalendarUrl(),
+    getBoardsUrl(),
+    getAuthBaseUrl(),
+  ];
 
   // Always allow local app ports in development (avoids stale BETTER_AUTH_URL mismatches)
   if (process.env.NODE_ENV !== "production") {
-    origins.push("http://localhost:3001", "http://localhost:3002");
+    origins.push(
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+    );
   }
 
   return Array.from(
@@ -65,11 +80,11 @@ export function isAllowedReturnTo(returnTo: string) {
 }
 
 /**
- * Calendar-hosted login page for cross-app sign-in (e.g. from boards).
+ * Auth-hosted login page for cross-app sign-in.
  * OAuth must start same-origin on the auth host; fetch from another app is blocked by CORS.
  */
 export function getCrossAppSignInUrl(returnTo: string) {
-  const url = new URL(`${getCalendarUrl()}/iniciar-sesion`);
+  const url = new URL(`${getAuthBaseUrl()}/iniciar-sesion`);
   url.searchParams.set("returnTo", returnTo);
   return url.toString();
 }
