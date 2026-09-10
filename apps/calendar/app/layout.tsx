@@ -1,4 +1,4 @@
-import { Rubik, Geist_Mono } from "next/font/google";
+import { Unbounded, Saira, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 
 import "@workspace/ui/globals.css";
@@ -16,13 +16,21 @@ import {
 } from "@workspace/ui/components/sidebar";
 import { Footer } from "@/components/footer";
 import { auth } from "@/lib/auth";
+import { canSeeBoardsNav } from "@/lib/boards";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const fontSans = Rubik({
+const fontSans = Unbounded({
   subsets: ["latin"],
   variable: "--font-sans",
+  weight: ["400", "500", "700", "900"],
+});
+
+const fontCopy = Saira({
+  subsets: ["latin"],
+  variable: "--font-copy",
+  weight: ["400", "500", "600", "700"],
 });
 
 const fontMono = Geist_Mono({
@@ -59,7 +67,12 @@ async function AppSidebarWrapper() {
     ? toSessionUser(session.user as RawSessionUser)
     : undefined;
 
-  return <AppSidebar user={normalizedUser} />;
+  return (
+    <AppSidebar
+      user={normalizedUser}
+      showBoardsNav={canSeeBoardsNav(normalizedUser)}
+    />
+  );
 }
 
 export default function RootLayout({
@@ -70,7 +83,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
+        className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <AppProviders nuqs>
           <SidebarProvider>

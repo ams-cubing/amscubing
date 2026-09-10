@@ -11,6 +11,7 @@
   },
   "exports": {
     ".": "./src/auth.ts",
+    "./boards-access": "./src/boards-access.ts",
     "./client": "./src/client.ts",
     "./urls": "./src/urls.ts",
     "./session": "./src/session.ts",

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, LogIn, LogOut, Moon, Sun } from "lucide-react";
+import { useTransition } from "react";
 
 import {
   Avatar,
@@ -24,13 +25,12 @@ import {
 import { useTheme } from "next-themes";
 import type { User } from "@workspace/db/schema";
 import { SignInButton } from "./sign-in-button";
-import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { signOutAction } from "@/app/_actions/auth";
 
 export function NavUser({ user }: { user: User | undefined }) {
   const { isMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   if (!user) {
     return (
@@ -121,13 +121,10 @@ export function NavUser({ user }: { user: User | undefined }) {
               {theme === "dark" ? "Modo claro" : "Modo oscuro"}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={async () => {
-                await authClient.signOut({
-                  fetchOptions: {
-                    onSuccess: () => {
-                      router.refresh();
-                    },
-                  },
+              disabled={pending}
+              onClick={() => {
+                startTransition(async () => {
+                  await signOutAction();
                 });
               }}
             >

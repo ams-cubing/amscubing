@@ -44,8 +44,6 @@ import { searchUsers } from "../_actions/wca-users";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
 import { Competition } from "@workspace/db/schema";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { isBoardsEnabled } from "@/lib/boards";
-
 function getPublicStatusColor(status: Competition["statusPublic"]): string {
   switch (status) {
     case "open":
@@ -183,8 +181,6 @@ export function CompetitionForm({
     { wcaId: string; name: string }[]
   >([]);
   const isEditing = !!competition;
-  const boardsEnabled = isBoardsEnabled();
-
   const minDate = addWeeks(new Date(), 5);
 
   const router = useRouter();
@@ -231,7 +227,7 @@ export function CompetitionForm({
           primaryDelegateWcaId: "",
           organizerWcaIds: [],
           primaryOrganizerWcaId: "",
-          assignBoard: boardsEnabled,
+          assignBoard: true,
         },
   });
 
@@ -452,7 +448,7 @@ export function CompetitionForm({
           />
         )}
 
-        {!isEditing && boardsEnabled && (
+        {!isEditing && (
           <FormField
             control={form.control}
             name="assignBoard"
@@ -478,15 +474,13 @@ export function CompetitionForm({
           />
         )}
 
-        {(isEditing || !boardsEnabled || !form.watch("assignBoard")) && (
+        {(isEditing || !form.watch("assignBoard")) && (
           <FormField
             control={form.control}
             name="trelloUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  {boardsEnabled ? "URL de Trello (legado)" : "URL de Trello"}
-                </FormLabel>
+                <FormLabel>URL de Trello (legado)</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="https://trello.com/b/..."
@@ -496,11 +490,9 @@ export function CompetitionForm({
                 </FormControl>
                 <FormDescription>
                   Opcional
-                  {boardsEnabled
-                    ? isEditing
-                      ? ". Usa el tablero AMS arriba cuando sea posible."
-                      : ". Solo si no usas tablero AMS."
-                    : "."}
+                  {isEditing
+                    ? ". Usa el tablero AMS arriba cuando sea posible."
+                    : ". Solo si no usas tablero AMS."}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

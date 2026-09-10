@@ -35,10 +35,13 @@ export function createAuth() {
   const authBaseUrl = getAuthBaseUrl();
   const cookieDomain = getAuthCookieDomain();
   const isProd = process.env.NODE_ENV === "production";
+  const secret =
+    process.env.BETTER_AUTH_SECRET ??
+    (isProd ? undefined : "dev-secret-change-me-at-least-32-chars");
 
   return betterAuth({
     baseURL: authBaseUrl,
-    secret: process.env.BETTER_AUTH_SECRET,
+    secret,
     trustedOrigins: getTrustedOrigins,
     advanced: {
       cookiePrefix: "ams",

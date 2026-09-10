@@ -1,4 +1,4 @@
-import { Rubik, Geist_Mono } from "next/font/google";
+import { Unbounded, Saira, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { Suspense } from "react";
@@ -22,9 +22,16 @@ import {
   markNotificationReadAction,
 } from "@/app/_actions/notifications";
 
-const fontSans = Rubik({
+const fontSans = Unbounded({
   subsets: ["latin"],
   variable: "--font-sans",
+  weight: ["400", "500", "700", "900"],
+});
+
+const fontCopy = Saira({
+  subsets: ["latin"],
+  variable: "--font-copy",
+  weight: ["400", "500", "600", "700"],
 });
 
 const fontMono = Geist_Mono({
@@ -77,7 +84,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
+        className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <AppProviders>
           <div className="flex h-svh flex-col overflow-hidden">

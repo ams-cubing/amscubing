@@ -13,9 +13,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@cubing/icons": "^3.0.5",
     "@vercel/analytics": "^1.6.1",
+    "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
     "lucide-react": "catalog:",
     "motion": "^12.35.2",
     "next": "catalog:",

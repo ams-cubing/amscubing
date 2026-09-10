@@ -27,7 +27,7 @@ import {
 import Image from "next/image";
 import { NavDelegate } from "./nav-delegate";
 import type { User } from "@workspace/db/schema";
-import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/boards";
 
 const data = {
   calendar: [
@@ -78,11 +78,14 @@ const data = {
 
 export function AppSidebar({
   user,
+  showBoardsNav = false,
   ...props
 }: {
   user: User | undefined;
+  /** Server-computed via canAccessBoardsApp (allowlist is server-only). */
+  showBoardsNav?: boolean;
 } & React.ComponentProps<typeof Sidebar>) {
-  const calendarNav = isBoardsEnabled()
+  const calendarNav = showBoardsNav
     ? [
         ...data.calendar,
         {

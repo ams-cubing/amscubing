@@ -3,4 +3,6 @@ export type PublicDelegate = {
   wcaId: string;
   title: string;
   location: string;
+  avatarUrl: string | null;
+  wcaProfileUrl: string;
 };

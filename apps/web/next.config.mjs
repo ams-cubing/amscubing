@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@workspace/ui", "@workspace/db"],
+  transpilePackages: ["@workspace/ui", "@workspace/db", "@workspace/auth"],
+  async redirects() {
+    return [
+      {
+        source: "/torneos",
+        destination: "/competencias",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -9,8 +18,18 @@ const nextConfig = {
         hostname: "amscubing.org",
         pathname: "/wp-content/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "amscubing.org",
+        pathname: "/utils/comps-logos/**",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.worldcubeassociation.org",
+        pathname: "/**",
+      },
     ],
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;
