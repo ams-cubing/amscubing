@@ -10,6 +10,7 @@ import {
   KanbanColumn,
   KanbanColumnHandle,
   KanbanItem,
+  KanbanItemHandle,
 } from "@workspace/ui/components/kanban";
 import { cn } from "@workspace/ui/lib/utils";
 
@@ -83,12 +84,7 @@ export function BoardKanbanColumn({
           const card = cardsById.get(id);
           if (!card) return null;
           return (
-            <KanbanItem
-              key={id}
-              value={cardKey(card.id)}
-              asHandle={!readOnly}
-              asChild
-            >
+            <KanbanItem key={id} value={cardKey(card.id)} asChild>
               <KanbanCardFace
                 card={card}
                 relevant={isCardRelevantNow(
@@ -97,6 +93,21 @@ export function BoardKanbanColumn({
                   board.competition?.statusInternal,
                 )}
                 onOpen={() => onOpenCard(id)}
+                dragHandle={
+                  !readOnly ? (
+                    <KanbanItemHandle asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 shrink-0 touch-none"
+                        aria-label={`Mover tarjeta ${card.title}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <GripVertical className="size-4" />
+                      </Button>
+                    </KanbanItemHandle>
+                  ) : undefined
+                }
               />
             </KanbanItem>
           );
