@@ -53,6 +53,24 @@ export function createSessionHelpers(auth: Auth) {
     return result;
   }
 
+  async function requireEditorOrDelegate(): Promise<SessionResult> {
+    const result = await requireSession();
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const role = result.session.user.role;
+    if (role !== "delegate" && role !== "editor") {
+      return {
+        ok: false,
+        message: "Solo editores o delegados pueden realizar esta acción",
+      };
+    }
+
+    return result;
+  }
+
   async function requireSessionOrUnauthorized(): Promise<AuthSession> {
     const result = await requireSession();
     if (!result.ok) {
@@ -65,6 +83,7 @@ export function createSessionHelpers(auth: Auth) {
   return {
     requireSession,
     requireDelegate,
+    requireEditorOrDelegate,
     requireSessionOrUnauthorized,
   };
 }

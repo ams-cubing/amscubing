@@ -30,6 +30,24 @@ describe("resolveWcaRole", () => {
     ).toBe("delegate");
   });
 
+  it("preserves an existing AMS editor when WCA status is null", () => {
+    expect(
+      resolveWcaRole({
+        delegateStatus: null,
+        existingRole: "editor",
+      }),
+    ).toBe("editor");
+  });
+
+  it("promotes an editor to delegate when WCA reports a delegate status", () => {
+    expect(
+      resolveWcaRole({
+        delegateStatus: "delegate",
+        existingRole: "editor",
+      }),
+    ).toBe("delegate");
+  });
+
   it("keeps a regular user when WCA status is null", () => {
     expect(
       resolveWcaRole({

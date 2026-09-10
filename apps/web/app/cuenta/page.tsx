@@ -51,6 +51,13 @@ const publicActions = [
 
 const delegateActions = [
   {
+    title: "Panel de administración",
+    description:
+      "Edita delegados públicos, ubicaciones y otorga el rol editor para el blog.",
+    href: "/admin",
+    icon: Newspaper,
+  },
+  {
     title: "Crear competencias",
     description:
       "Abre el calendario de AMS para solicitar fechas, revisar procesos y administrar competencias.",
@@ -65,18 +72,21 @@ const delegateActions = [
     icon: LayoutDashboard,
   },
   {
-    title: "Crear o responder blog",
-    description:
-      "Acceso editorial inicial para preparar publicaciones y moderar conversación pública.",
-    href: "/blog",
-    icon: Newspaper,
-  },
-  {
     title: "Crear cursos",
     description:
       "Entrada al LMS dedicado para administrar material de capacitación y rutas de aprendizaje.",
     href: COURSES_URL,
     icon: BookOpen,
+  },
+];
+
+const editorActions = [
+  {
+    title: "Blog (próximamente)",
+    description:
+      "Cuando el CMS esté listo, podrás publicar y editar entradas del blog AMS desde aquí.",
+    href: "/blog",
+    icon: Newspaper,
   },
 ];
 
@@ -112,6 +122,12 @@ async function CuentaBody() {
     : null;
   const user = session?.user;
   const isDelegate = user?.role === "delegate";
+  const isEditor = user?.role === "editor";
+  const roleLabel = isDelegate
+    ? "Delegado WCA"
+    : isEditor
+      ? "Editor de contenido"
+      : "Competidor";
 
   return (
     <>
@@ -132,7 +148,7 @@ async function CuentaBody() {
             )}
             <div>
               <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-red)]">
-                {isDelegate ? "Delegado WCA" : "Competidor"}
+                {roleLabel}
               </p>
               <h2 className="ams-display text-3xl leading-none text-[var(--ams-navy)]">
                 {user.name}
@@ -179,13 +195,19 @@ async function CuentaBody() {
               <ActionCard key={action.title} action={action} compact />
             ))}
           </div>
+        ) : isEditor ? (
+          <div className="grid gap-6 lg:grid-cols-3">
+            {editorActions.map((action) => (
+              <ActionCard key={action.title} action={action} compact />
+            ))}
+          </div>
         ) : (
           <div className="rounded-[22px] border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
             <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
               Estas acciones aparecen cuando tu WCA ID tiene permisos de
-              delegado. Más adelante se puede separar un rol editorial específico
-              para blog y cursos; por ahora el repositorio solo distingue entre
-              usuario y delegado.
+              delegado o de editor de contenido. Los delegados administran el
+              panel; los editores podrán publicar en el blog cuando el CMS esté
+              listo.
             </p>
           </div>
         )}

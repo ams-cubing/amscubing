@@ -15,7 +15,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   wcaId: text("wca_id").notNull().unique(),
-  role: text("role", { enum: ["delegate", "user"] })
+  role: text("role", { enum: ["delegate", "user", "editor"] })
     .default("user")
     .notNull(),
   regionId: text("region_id").references(() => regions.id),

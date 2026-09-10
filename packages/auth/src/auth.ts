@@ -69,7 +69,7 @@ export function createAuth() {
           unique: true,
         },
         role: {
-          type: ["delegate", "user"],
+          type: ["delegate", "user", "editor"],
           required: true,
           defaultValue: "user",
           input: false,
@@ -155,7 +155,7 @@ export function createAuth() {
                 email: profile.email as string,
                 image: profile.image as string | undefined,
                 wcaId: profile.wcaId as string,
-                role: profile.role as "delegate" | "user",
+                role: profile.role as "delegate" | "user" | "editor",
                 regionId: profile.regionId as string | null,
                 delegateTitle: profile.delegateTitle as string | null,
                 delegateLocation: profile.delegateLocation as string | null,

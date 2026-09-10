@@ -29,10 +29,10 @@ const auth = {
   },
 } as unknown as Auth;
 
-const { requireDelegate, requireSession, requireSessionOrUnauthorized } =
+const { requireDelegate, requireEditorOrDelegate, requireSession, requireSessionOrUnauthorized } =
   createSessionHelpers(auth);
 
-function sessionFor(role: "delegate" | "user" | null) {
+function sessionFor(role: "delegate" | "user" | "editor" | null) {
   if (!role) {
     getSession.mockResolvedValue(null);
     return;
@@ -88,6 +88,17 @@ describe("toSessionUser", () => {
     });
     expect(user.role).toBe("user");
   });
+
+  it("preserves the editor role", () => {
+    const user = toSessionUser({
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      wcaId: "2020TEST01",
+      role: "editor",
+    });
+    expect(user.role).toBe("editor");
+  });
 });
 
 describe("requireSession", () => {
@@ -137,6 +148,54 @@ describe("requireDelegate", () => {
   it("allows delegates", async () => {
     sessionFor("delegate");
     const result = await requireDelegate();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.session.user.role).toBe("delegate");
+    }
+  });
+
+  it("rejects editors", async () => {
+    sessionFor("editor");
+    const result = await requireDelegate();
+    expect(result).toEqual({
+      ok: false,
+      message: "Solo delegados pueden realizar esta acción",
+    });
+  });
+});
+
+describe("requireEditorOrDelegate", () => {
+  beforeEach(() => {
+    getSession.mockReset();
+  });
+
+  it("rejects unauthenticated callers", async () => {
+    sessionFor(null);
+    const result = await requireEditorOrDelegate();
+    expect(result).toEqual({ ok: false, message: "No autenticado" });
+  });
+
+  it("rejects regular users", async () => {
+    sessionFor("user");
+    const result = await requireEditorOrDelegate();
+    expect(result).toEqual({
+      ok: false,
+      message: "Solo editores o delegados pueden realizar esta acción",
+    });
+  });
+
+  it("allows editors", async () => {
+    sessionFor("editor");
+    const result = await requireEditorOrDelegate();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.session.user.role).toBe("editor");
+    }
+  });
+
+  it("allows delegates", async () => {
+    sessionFor("delegate");
+    const result = await requireEditorOrDelegate();
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.session.user.role).toBe("delegate");
