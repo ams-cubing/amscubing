@@ -59,7 +59,7 @@ async function IniciarSesionContent({
       />
       <section className="bg-white py-16 md:py-20">
         <div className="ams-container max-w-3xl">
-          <div className="rounded-[24px] bg-ams-soft p-8 md:p-10">
+          <div className="rounded-3xl bg-ams-soft p-8 md:p-10">
             <h2 className="ams-display text-3xl leading-none text-ams-navy">
               {hasWcaConfig
                 ? "Base local no disponible"
@@ -92,7 +92,7 @@ function IniciarSesionFallback() {
       />
       <section className="bg-white py-16 md:py-20">
         <div className="ams-container max-w-3xl">
-          <div className="h-56 animate-pulse rounded-[24px] bg-ams-soft" />
+          <div className="h-56 animate-pulse rounded-3xl bg-ams-soft" />
         </div>
       </section>
       <SiteFooter />

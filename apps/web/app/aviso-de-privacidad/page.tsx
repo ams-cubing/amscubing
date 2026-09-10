@@ -92,11 +92,11 @@ export default function AvisoDePrivacidadPage() {
         description="Aviso de Privacidad Integral de la Asociación Mexicana de Speedcubing, A.C., adaptado al nuevo estilo visual del sitio."
       />
       <section className="bg-white py-16 md:py-20">
-        <div className="ams-container flex max-w-[1100px] flex-col gap-6">
+        <div className="ams-container flex max-w-275 flex-col gap-6">
           {sections.map((section) => (
             <article
               key={section.title}
-              className={`rounded-[20px] p-8 md:p-10 ${getSectionClassName(
+              className={`rounded-5 p-8 md:p-10 ${getSectionClassName(
                 section.tone,
               )}`}
             >

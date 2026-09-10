@@ -62,7 +62,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
     <section id="quienes-somos" className="bg-white">
       <div className="relative overflow-hidden bg-ams-navy px-0 py-20 text-white md:py-24">
         <div className="ams-texture absolute inset-0 opacity-25" />
-        <div className="absolute -right-28 -top-36 h-[26rem] w-[26rem] rotate-[10deg] bg-ams-red opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)]" />
+        <div className="absolute -right-28 -top-36 h-104 w-104 rotate-10 bg-ams-red opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)]" />
         <div className="ams-container relative">
           <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
             Gente, no solo cubos
@@ -93,14 +93,14 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
       </div>
 
       <div className="ams-container grid gap-6 pb-20 md:grid-cols-2 md:pb-24">
-        <article className="relative overflow-hidden rounded-[20px] bg-ams-soft p-8 md:p-11">
+        <article className="relative overflow-hidden rounded-5 bg-ams-soft p-8 md:p-11">
           <div className="ams-texture absolute inset-0 opacity-[0.03]" />
           <div className="relative">
             <h3 className="ams-display mb-4 text-3xl text-ams-red">Misión</h3>
             <p className="text-base leading-8 text-black/70">{mission}</p>
           </div>
         </article>
-        <article className="ams-texture relative overflow-hidden rounded-[20px] bg-ams-navy p-8 text-white md:p-11">
+        <article className="ams-texture relative overflow-hidden rounded-5 bg-ams-navy p-8 text-white md:p-11">
           <div className="absolute inset-0 bg-ams-navy/90" />
           <div className="relative">
             <h3 className="ams-display mb-4 text-3xl text-ams-orange">
@@ -190,7 +190,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
                   rel="noopener noreferrer"
                   className="group text-center"
                 >
-                  <div className="relative mx-auto mb-4 flex size-[140px] items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/8 transition-transform duration-300 group-hover:-translate-y-2 group-hover:scale-105">
+                  <div className="relative mx-auto mb-4 flex size-35 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/8 transition-transform duration-300 group-hover:-translate-y-2 group-hover:scale-105">
                     {delegate.avatarUrl ? (
                       <Image
                         src={delegate.avatarUrl}
@@ -205,7 +205,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
                       </span>
                     )}
                   </div>
-                  <h4 className="ams-heading mx-auto max-w-[15rem] text-sm font-bold leading-6 text-white">
+                  <h4 className="ams-heading mx-auto max-w-60 text-sm font-bold leading-6 text-white">
                     {delegate.name}
                   </h4>
                   <p className="ams-heading mt-2 text-xs text-ams-orange">
@@ -227,7 +227,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
           <span className="text-ams-green">u</span>nidad
         </h3>
         <div className="-my-4 overflow-x-hidden overflow-y-visible py-4">
-          <div className="flex w-max animate-[ams-marquee_30s_linear_infinite] gap-4 hover:[animation-play-state:paused]">
+          <div className="flex w-max animate-[ams-marquee_30s_linear_infinite] gap-4 hover:paused">
             {[...communityPhotos, ...communityPhotos].map((photo, index) => (
               <Image
                 key={`${photo}-${index}`}
@@ -235,7 +235,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
                 alt="Momento de la comunidad AMS"
                 width={320}
                 height={220}
-                className="h-[220px] w-[320px] flex-none rounded-[14px] object-cover shadow-[0_12px_28px_rgba(1,11,25,0.14)] transition-transform duration-300 hover:-translate-y-1.5 hover:scale-[1.03]"
+                className="h-55 w-80 flex-none rounded-3.5 object-cover shadow-[0_12px_28px_rgba(1,11,25,0.14)] transition-transform duration-300 hover:-translate-y-1.5 hover:scale-[1.03]"
               />
             ))}
           </div>

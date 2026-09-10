@@ -100,7 +100,7 @@ export default function CuentaPage() {
         description="Inicia sesión con tu WCA ID para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
       />
       <section className="bg-white py-16 md:py-20">
-        <div className="ams-container max-w-[1120px]">
+        <div className="ams-container max-w-280">
           <Suspense fallback={<CuentaBodyFallback />}>
             <CuentaBody />
           </Suspense>
@@ -132,7 +132,7 @@ async function CuentaBody() {
   return (
     <>
       {user ? (
-        <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-[22px] bg-ams-soft p-6 md:p-8">
+        <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-5.5 bg-ams-soft p-6 md:p-8">
           <div className="flex items-center gap-4">
             {user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -161,7 +161,7 @@ async function CuentaBody() {
           <AccountSignOut />
         </div>
       ) : (
-        <div className="ams-texture mb-10 overflow-hidden rounded-[24px] bg-ams-navy p-8 text-white md:p-10">
+        <div className="ams-texture mb-10 overflow-hidden rounded-3xl bg-ams-navy p-8 text-white md:p-10">
           <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
             Acceso único
           </p>
@@ -202,7 +202,7 @@ async function CuentaBody() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[22px] border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
+          <div className="rounded-5.5 border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
             <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
               Estas acciones aparecen cuando tu WCA ID tiene permisos de
               delegado o de editor de contenido. Los delegados administran el
@@ -219,11 +219,11 @@ async function CuentaBody() {
 function CuentaBodyFallback() {
   return (
     <div className="space-y-10" aria-hidden>
-      <div className="h-40 animate-pulse rounded-[22px] bg-ams-soft" />
+      <div className="h-40 animate-pulse rounded-5.5 bg-ams-soft" />
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="h-48 animate-pulse rounded-[22px] bg-ams-soft" />
-        <div className="h-48 animate-pulse rounded-[22px] bg-ams-soft" />
-        <div className="h-48 animate-pulse rounded-[22px] bg-ams-soft" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
       </div>
     </div>
   );
@@ -249,7 +249,7 @@ function ActionCard({
       href={action.href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="group block rounded-[22px] bg-ams-soft p-7 transition-transform hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(1,11,25,0.12)]"
+      className="group block rounded-5.5 bg-ams-soft p-7 transition-transform hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(1,11,25,0.12)]"
     >
       <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-ams-red text-white transition-colors group-hover:bg-ams-green">
         <Icon className="size-5" />

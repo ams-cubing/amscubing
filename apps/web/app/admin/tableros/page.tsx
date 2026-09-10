@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { inArray } from "drizzle-orm";
 
 import { db } from "@workspace/db";
-import { boardsOrganizerAllowlist, user } from "@workspace/db/schema";
+import { user } from "@workspace/db/schema";
 
 import {
   AddBoardsOrganizerForm,
@@ -55,7 +55,7 @@ export default async function AdminTablerosPage() {
         </p>
       </header>
 
-      <section className="rounded-[22px] border border-black/10 bg-white p-6 md:p-8">
+      <section className="rounded-5.5 border border-black/10 bg-white p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Agregar organizador
         </h3>
@@ -66,7 +66,7 @@ export default async function AdminTablerosPage() {
         <AddBoardsOrganizerForm />
       </section>
 
-      <section className="space-y-6 rounded-[22px] bg-ams-soft p-6 md:p-8">
+      <section className="space-y-6 rounded-5.5 bg-ams-soft p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Allowlist ({entries.length})
         </h3>
@@ -82,7 +82,7 @@ export default async function AdminTablerosPage() {
               return (
                 <li
                   key={entry.wcaId}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-[18px] bg-white p-5 shadow-[0_10px_24px_rgba(1,11,25,0.06)]"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-4.5 bg-white p-5 shadow-[0_10px_24px_rgba(1,11,25,0.06)]"
                 >
                   <div className="flex items-center gap-3">
                     {linked?.image ? (

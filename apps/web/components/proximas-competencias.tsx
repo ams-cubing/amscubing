@@ -112,7 +112,7 @@ export function ProximasCompetencias({
                 rel="noopener noreferrer"
                 className="ams-slash-card ams-glass group relative block w-[min(84vw,380px)] flex-none overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.13)] hover:scale-[1.04] hover:shadow-[0_24px_40px_rgba(1,11,25,0.24)]"
               >
-                <div className="relative h-[200px] bg-ams-soft">
+                <div className="relative h-50 bg-ams-soft">
                   <Image
                     src={competition.image}
                     alt=""
@@ -128,7 +128,7 @@ export function ProximasCompetencias({
                   </Badge>
                 </div>
 
-                <div className="p-[22px]">
+                <div className="p-5.5">
                   <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">
                     {formatCompetitionDate(
                       competition.startDate,

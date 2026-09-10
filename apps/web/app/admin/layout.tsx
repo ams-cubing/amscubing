@@ -20,7 +20,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
     <>
       <SiteNav />
       <section className="border-b border-black/10 bg-ams-navy py-10 text-white">
-        <div className="ams-container max-w-[1120px]">
+        <div className="ams-container max-w-280">
           <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
             Administración
           </p>
@@ -59,7 +59,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </section>
-      <div className="ams-container max-w-[1120px] py-12 md:py-16">
+      <div className="ams-container max-w-280 py-12 md:py-16">
         {children}
       </div>
       <SiteFooter />
@@ -69,10 +69,10 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
 
 function AdminShellFallback() {
   return (
-    <div className="ams-container max-w-[1120px] space-y-4 py-16" aria-hidden>
+    <div className="ams-container max-w-280 space-y-4 py-16" aria-hidden>
       <div className="h-8 w-64 animate-pulse rounded bg-ams-soft" />
       <div className="h-4 w-96 animate-pulse rounded bg-ams-soft" />
-      <div className="h-64 w-full animate-pulse rounded-[22px] bg-ams-soft" />
+      <div className="h-64 w-full animate-pulse rounded-5.5 bg-ams-soft" />
     </div>
   );
 }

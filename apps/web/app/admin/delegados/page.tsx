@@ -49,7 +49,7 @@ export default async function AdminDelegadosPage() {
         </p>
       </header>
 
-      <section className="space-y-6 rounded-[22px] bg-ams-soft p-6 md:p-8">
+      <section className="space-y-6 rounded-5.5 bg-ams-soft p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Actuales ({delegates.length})
         </h3>
@@ -62,7 +62,7 @@ export default async function AdminDelegadosPage() {
             {delegates.map((delegate) => (
               <li
                 key={delegate.wcaId}
-                className="rounded-[18px] bg-white p-5 shadow-[0_10px_24px_rgba(1,11,25,0.06)]"
+                className="rounded-4.5 bg-white p-5 shadow-[0_10px_24px_rgba(1,11,25,0.06)]"
               >
                 <DelegateEditForm
                   delegate={{
@@ -81,7 +81,7 @@ export default async function AdminDelegadosPage() {
         )}
       </section>
 
-      <section className="rounded-[22px] border border-black/10 bg-white p-6 md:p-8">
+      <section className="rounded-5.5 border border-black/10 bg-white p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Agregar delegado
         </h3>

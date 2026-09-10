@@ -29,7 +29,7 @@ export function Hero({
   stats: CommunityStats;
 }) {
   return (
-    <section className="relative isolate bg-ams-navy px-0 pb-0 pt-[110px] text-white">
+    <section className="relative isolate bg-ams-navy px-0 pb-0 pt-27.5 text-white">
       <div className="absolute inset-0 overflow-hidden">
         <Image
           src="/source/photos/mexchamp-2.jpg"
@@ -44,14 +44,14 @@ export function Hero({
 
       <div className="ams-container relative">
         {spotlights.length > 0 ? (
-          <div className="mb-7 flex max-w-[760px] flex-wrap gap-3">
+          <div className="mb-7 flex max-w-190 flex-wrap gap-3">
             {spotlights.map((competition) => (
               <a
                 key={`${competition.status}-${competition.id}`}
                 href={competition.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ams-badge inline-flex max-w-full items-center gap-2 rounded-full bg-white px-[18px] py-2 text-xs font-bold uppercase tracking-[0.06em] text-ams-navy transition-transform hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)]"
+                className="ams-badge inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4.5 py-2 text-xs font-bold uppercase tracking-[0.06em] text-ams-navy transition-transform hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)]"
                 aria-label={`${competition.status}: ${competition.name}`}
               >
                 <span className="ams-badge-dot size-2 rounded-full" />
@@ -67,7 +67,7 @@ export function Hero({
           </div>
         ) : null}
 
-        <h1 className="ams-display max-w-[720px] text-[clamp(44px,6.5vw,96px)] leading-[0.94]">
+        <h1 className="ams-display max-w-180 text-[clamp(44px,6.5vw,96px)] leading-[0.94]">
           <span className="ams-title-line">Resuelve.</span>
           <span
             className="ams-title-line text-ams-orange"
@@ -84,7 +84,7 @@ export function Hero({
         </h1>
 
         <p
-          className="ams-copy ams-fade-up mt-7 max-w-[520px] text-xl leading-8 text-white/85"
+          className="ams-copy ams-fade-up mt-7 max-w-130 text-xl leading-8 text-white/85"
           style={{ animationDelay: "550ms" }}
         >
           La comunidad oficial WCA de speedcubing en México. Competencias,
