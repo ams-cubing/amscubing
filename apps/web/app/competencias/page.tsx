@@ -7,8 +7,6 @@ import { SiteFooter } from "@/components/site-footer";
 import { getPublicCompetitions } from "@/lib/competitions";
 import { CALENDAR_URL } from "@/lib/content";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Competencias | Asociación Mexicana de Speedcubing",
   description:

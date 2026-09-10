@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 export type RankingType = "single" | "average";
 
 export type RankingEvent = {
@@ -67,6 +69,10 @@ export const rankingEvents: RankingEvent[] = [
 ];
 
 export async function getNationalRankings(): Promise<EventRanking[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("national-rankings");
+
   const stateNames = await getStateNameMap();
 
   const rankings = await Promise.all(

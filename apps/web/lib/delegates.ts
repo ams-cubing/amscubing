@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { db } from "@workspace/db";
 import type { PublicDelegate } from "./delegate-types";
 
@@ -35,6 +37,10 @@ function withWcaMetadata(
 }
 
 export async function getPublicDelegates(): Promise<PublicDelegate[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-delegates");
+
   try {
     const rows = await db.query.user.findMany({
       orderBy: (t, { asc }) => [asc(t.name)],

@@ -7,19 +7,17 @@ import { Comunidad } from "@/components/comunidad";
 import { SiteCta } from "@/components/site-cta";
 import { SiteFooter } from "@/components/site-footer";
 import {
-  getCompetitionSpotlights,
+  getPublicCompetitionSpotlights,
   getPublicCompetitions,
 } from "@/lib/competitions";
 import { getNationalRankings } from "@/lib/rankings";
 
-export const dynamic = "force-dynamic";
-
 export default async function HomePage() {
-  const [competitions, rankings] = await Promise.all([
+  const [competitions, rankings, spotlights] = await Promise.all([
     getPublicCompetitions(),
     getNationalRankings(),
+    getPublicCompetitionSpotlights(),
   ]);
-  const spotlights = getCompetitionSpotlights(competitions);
 
   return (
     <main>

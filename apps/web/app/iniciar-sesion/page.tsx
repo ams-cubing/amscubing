@@ -1,6 +1,7 @@
 import { isAllowedReturnTo } from "@workspace/auth/urls";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@workspace/ui/components/button";
 
 import { PageHero } from "@/components/page-hero";
@@ -15,7 +16,19 @@ export const metadata: Metadata = {
   description: "Acceso con WCA ID para la cuenta AMS.",
 };
 
-export default async function IniciarSesionPage({
+export default function IniciarSesionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>;
+}) {
+  return (
+    <Suspense fallback={<IniciarSesionFallback />}>
+      <IniciarSesionContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function IniciarSesionContent({
   searchParams,
 }: {
   searchParams: Promise<{ returnTo?: string }>;
@@ -61,6 +74,25 @@ export default async function IniciarSesionPage({
               <Link href="/cuenta">Volver a cuenta</Link>
             </Button>
           </div>
+        </div>
+      </section>
+      <SiteFooter />
+    </main>
+  );
+}
+
+function IniciarSesionFallback() {
+  return (
+    <main>
+      <SiteNav />
+      <PageHero
+        eyebrow="WCA ID"
+        title="Iniciar sesión"
+        description="Preparando el acceso con WCA ID…"
+      />
+      <section className="bg-white py-16 md:py-20">
+        <div className="ams-container max-w-3xl">
+          <div className="h-56 animate-pulse rounded-[24px] bg-[var(--ams-soft)]" />
         </div>
       </section>
       <SiteFooter />

@@ -6,6 +6,11 @@ const { findMany } = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 
+vi.mock("next/cache", () => ({
+  cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
+}));
+
 vi.mock("@workspace/db", () => ({
   db: {
     query: {

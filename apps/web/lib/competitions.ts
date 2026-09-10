@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { db } from "@workspace/db";
 import { extractFirstImageUrl } from "@/lib/competition-logo";
 
@@ -60,8 +62,8 @@ function todayMexicoIsoDate() {
 
 export function getCompetitionSpotlights(
   competitions: PublicCompetition[],
+  today = todayMexicoIsoDate(),
 ): CompetitionSpotlight[] {
-  const today = todayMexicoIsoDate();
   const sortedCompetitions = [...competitions].sort((a, b) =>
     a.startDate.localeCompare(b.startDate),
   );
@@ -91,7 +93,22 @@ export function getCompetitionSpotlights(
     .map((competition) => formatCompetitionSpotlight(competition, "Próximo"));
 }
 
+export async function getPublicCompetitionSpotlights(): Promise<
+  CompetitionSpotlight[]
+> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("public-competitions");
+
+  const competitions = await getPublicCompetitions();
+  return getCompetitionSpotlights(competitions, todayMexicoIsoDate());
+}
+
 export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("public-competitions");
+
   try {
     const rows = await db.query.competitions.findMany({
       columns: {
@@ -241,7 +258,7 @@ async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
     const response = await fetch(
       `https://www.worldcubeassociation.org/api/v0/competitions/${id}`,
       {
-        cache: "no-store",
+        next: { revalidate: 900 },
         headers: {
           accept: "application/json",
         },
@@ -258,7 +275,7 @@ async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
   }
 }
 
-function deriveRegistrationLabel(
+export function deriveRegistrationLabel(
   registrationOpen: string | null,
   registrationClose: string | null,
   spotsLeft?: number | null,
