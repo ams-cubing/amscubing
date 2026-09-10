@@ -15,11 +15,11 @@ Plan vivo del monorepo de AMS Cubing. Los ítems cambian de fase conforme se van
 
 ### Auth en la app web
 
-- [ ] Mover el host canónico de Better Auth del calendario → **web** (`amscubing.org` / puerto 3000).
-- [ ] Actualizar `@workspace/auth` (`getAuthBaseUrl`, orígenes de confianza, dominio de cookies) para que web, calendario y tableros compartan sesión.
-- [ ] Apuntar las URIs de redirección de OAuth de la WCA a la app web; dejar calendario/tableros solo como consumidores de cookies.
-- [ ] UX de iniciar / cerrar sesión en web; deep-links de vuelta a calendario y tableros después del login.
-- [ ] Documentar variables de entorno (`BETTER_AUTH_URL`, `NEXT_PUBLIC_*`, `AUTH_COOKIE_DOMAIN`) para las tres apps.
+- [x] Mover el host canónico de Better Auth del calendario → **web** (`amscubing.org` / puerto 3000).
+- [x] Actualizar `@workspace/auth` (`getAuthBaseUrl`, orígenes de confianza, dominio de cookies) para que web, calendario y tableros compartan sesión.
+- [x] Apuntar las URIs de redirección de OAuth de la WCA a la app web; dejar calendario/tableros solo como consumidores de cookies.
+- [x] UX de iniciar / cerrar sesión en web; deep-links de vuelta a calendario y tableros después del login.
+- [x] Documentar variables de entorno (`BETTER_AUTH_URL`, `NEXT_PUBLIC_*`, `AUTH_COOKIE_DOMAIN`) para las tres apps.
 
 ### Web como reemplazo de amscubing.org
 
@@ -30,8 +30,8 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 - [x] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`). Enrichment WCA para nombre/registro/cupo.
 - [ ] Blog: listado, detalle de post, categorías/etiquetas, SEO (títulos, OG, sitemap).
 - [ ] Comentarios en posts (auth obligatorio o invitado moderado — por decidir).
-- [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta.
-- [ ] Enlace en nav / teaser a `cursos.amscubing.org` (no reconstruir el LMS en la web).
+- [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta. (parcial: `/nosotros` + delegados desde BD; misión/visión/contacto aún en `content.ts`)
+- [x] Enlace en nav / teaser a `cursos.amscubing.org` (no reconstruir el LMS en la web).
 - [ ] Redirecciones de URLs viejas de WordPress → rutas nuevas de Next.js (y `/detalle-cursos/` → `cursos.*`).
 
 **Admin / gestión (panel en web)**
@@ -140,7 +140,7 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 #### Documentación de entorno
 
 - [ ] `.env.example` raíz más completo (hoy solo `DATABASE_URL`).
-- [ ] `apps/web/.env.local.example` antes de mover auth a web.
+- [x] `apps/web/.env.local.example` antes de mover auth a web.
 - [ ] Referencia única de variables por app (`BETTER_AUTH_*`, `WCA_*`, `RESEND_*`, URLs públicas, cookie domain).
 
 #### Seguridad
@@ -175,7 +175,7 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 | Fecha      | Decisión                      | Notas                                                                                                                          |
 | ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| TBD        | Host de auth = web            | El calendario deja de ser dueño de los callbacks de OAuth                                                                      |
+| 2026-09-10 | Host de auth = web            | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`             |
 | TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |
 | 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                    |
 | 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                       |
