@@ -1,38 +1,36 @@
 "use client";
 
-import { LoaderCircle, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import { DropdownMenuItem } from "@workspace/ui/components/dropdown-menu";
-import { useTransition } from "react";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import z from "zod";
+
+import { getCrossAppSignInUrl, getCalendarUrl } from "@/lib/urls";
+
+function getSignInHref() {
+  return getCrossAppSignInUrl(window.location.href);
+}
+
+function subscribe() {
+  return () => {};
+}
+
+function getServerSnapshot() {
+  return getCrossAppSignInUrl(getCalendarUrl());
+}
 
 export function SignInButton() {
-  const [pending, startTransition] = useTransition();
+  const href = useSyncExternalStore(
+    subscribe,
+    getSignInHref,
+    getServerSnapshot,
+  );
 
   return (
-    <DropdownMenuItem
-      disabled={pending}
-      onClick={() => {
-        startTransition(async () => {
-          try {
-            await authClient.signIn.oauth2({
-              providerId: "wca",
-              callbackURL: "/",
-            });
-          } catch (error) {
-            if (error instanceof z.ZodError) {
-              console.error(error);
-              toast.error("No se pudo iniciar sesión con WCA", {
-                description: "Inténtalo de nuevo",
-              });
-            }
-          }
-        });
-      }}
-    >
-      {pending ? <LoaderCircle className="animate-spin" /> : <LogIn />}
-      <span>Iniciar sesión</span>
+    <DropdownMenuItem asChild>
+      <a href={href}>
+        <LogIn />
+        <span>Iniciar sesión</span>
+      </a>
     </DropdownMenuItem>
   );
 }

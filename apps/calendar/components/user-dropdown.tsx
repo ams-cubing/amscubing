@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOut, UserCheck } from "lucide-react";
+import { useTransition } from "react";
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import {
   Avatar,
@@ -15,14 +16,13 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Badge } from "@workspace/ui/components/badge";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 import type { User } from "@workspace/db/schema";
+
+import { signOutAction } from "@/app/_actions/auth";
 
 export function UserDropdown({ user }: { user: User }) {
   const isMobile = useIsMobile();
-
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   return (
     <DropdownMenu>
@@ -42,13 +42,10 @@ export function UserDropdown({ user }: { user: User }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={async () => {
-            await authClient.signOut({
-              fetchOptions: {
-                onSuccess: () => {
-                  router.refresh();
-                },
-              },
+          disabled={pending}
+          onClick={() => {
+            startTransition(async () => {
+              await signOutAction();
             });
           }}
         >

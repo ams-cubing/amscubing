@@ -1,6 +1,10 @@
-import { isAllowedReturnTo } from "@workspace/auth/urls";
+import { redirect } from "next/navigation";
 
-import { SignInRedirect } from "./_components/sign-in-redirect";
+import {
+  getCalendarUrl,
+  getCrossAppSignInUrl,
+  isAllowedReturnTo,
+} from "@/lib/urls";
 
 export default async function IniciarSesionPage({
   searchParams,
@@ -8,7 +12,8 @@ export default async function IniciarSesionPage({
   searchParams: Promise<{ returnTo?: string }>;
 }) {
   const { returnTo } = await searchParams;
-  const callbackURL = returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/";
+  const callbackURL =
+    returnTo && isAllowedReturnTo(returnTo) ? returnTo : getCalendarUrl();
 
-  return <SignInRedirect callbackURL={callbackURL} />;
+  redirect(getCrossAppSignInUrl(callbackURL));
 }

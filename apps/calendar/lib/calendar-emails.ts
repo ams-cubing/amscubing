@@ -13,12 +13,14 @@ import {
   ultimatumSubject,
 } from "@workspace/email";
 
+import { getCalendarUrl } from "@/lib/urls";
+
 function panelUrl() {
-  return `${process.env.BETTER_AUTH_URL}/panel`;
+  return `${getCalendarUrl()}/panel`;
 }
 
 function misCompetenciasUrl() {
-  return `${process.env.BETTER_AUTH_URL}/mis-competencias`;
+  return `${getCalendarUrl()}/mis-competencias`;
 }
 
 export async function sendDelegateAssignedEmail(input: {
