@@ -103,7 +103,7 @@ function NavLink({
         "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
         active
           ? "bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground",
       )}
     >
       {label}
@@ -122,7 +122,7 @@ export function CalendarAppNav({
 }) {
   const pathname = usePathname() ?? "/";
   const delegateActive = DELEGATE_LINKS.some((item) =>
-    isActivePath(pathname, item.href)
+    isActivePath(pathname, item.href),
   );
 
   return (
@@ -156,7 +156,7 @@ export function CalendarAppNav({
                     "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
                     delegateActive
                       ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                      : "text-muted-foreground hover:bg-accent/70 hover:text-foreground",
                   )}
                 >
                   Delegado
