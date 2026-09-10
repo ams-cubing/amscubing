@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, LogIn, LogOut, Moon, Sun } from "lucide-react";
-import { useTransition } from "react";
+import { ChevronsUpDown, Moon, Sun } from "lucide-react";
 
 import {
   Avatar,
@@ -24,46 +23,35 @@ import {
 } from "@workspace/ui/components/sidebar";
 import { useTheme } from "next-themes";
 import type { User } from "@workspace/db/schema";
-import { SignInButton } from "./sign-in-button";
-import { signOutAction } from "@/app/_actions/auth";
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+/** Theme + identity in the sidebar; sign-in / cross-app links live in the top AMS nav. */
 export function NavUser({ user }: { user: User | undefined }) {
   const { isMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
-  const [pending, startTransition] = useTransition();
 
   if (!user) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton size="lg">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg">
-                  <LogIn className="size-4" />
-                </div>
-                <span className="group-data-[collapsible=icon]:hidden">
-                  Iniciar sesión
-                </span>
-                <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              side={isMobile ? "bottom" : "right"}
-              align="end"
-              sideOffset={4}
-            >
-              <SignInButton />
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? <Sun /> : <Moon />}
-                {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SidebarMenuButton
+            size="lg"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun /> : <Moon />}
+            <span className="group-data-[collapsible=icon]:hidden">
+              {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+            </span>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     );
@@ -83,7 +71,9 @@ export function NavUser({ user }: { user: User | undefined }) {
                   src={user.image ?? undefined}
                   alt={user.name ?? "User Avatar"}
                 />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {getInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-medium">{user.name}</span>
@@ -105,7 +95,9 @@ export function NavUser({ user }: { user: User | undefined }) {
                     src={user.image ?? undefined}
                     alt={user.name ?? "User Avatar"}
                   />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -119,17 +111,6 @@ export function NavUser({ user }: { user: User | undefined }) {
             >
               {theme === "dark" ? <Sun /> : <Moon />}
               {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={pending}
-              onClick={() => {
-                startTransition(async () => {
-                  await signOutAction();
-                });
-              }}
-            >
-              <LogOut />
-              Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

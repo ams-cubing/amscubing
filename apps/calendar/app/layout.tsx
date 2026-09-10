@@ -8,6 +8,7 @@ import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { Header } from "@/components/header";
 import { HeaderNotifications } from "@/components/header-notifications";
+import { CalendarAmsNav } from "@/components/ams-site-nav";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -17,6 +18,12 @@ import {
 import { Footer } from "@/components/footer";
 import { auth } from "@/lib/auth";
 import { canSeeBoardsNav } from "@/lib/boards";
+import {
+  getBoardsUrl,
+  getCalendarUrl,
+  getCrossAppSignInUrl,
+  getWebUrl,
+} from "@/lib/urls";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -71,6 +78,41 @@ async function AppSidebarWrapper() {
     <AppSidebar
       user={normalizedUser}
       showBoardsNav={canSeeBoardsNav(normalizedUser)}
+      webUrl={getWebUrl()}
+    />
+  );
+}
+
+async function CalendarAmsNavWrapper() {
+  const headersList = await headers();
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
+
+  const normalizedUser = session?.user
+    ? toSessionUser(session.user as RawSessionUser)
+    : null;
+
+  const webUrl = getWebUrl();
+  const calendarUrl = getCalendarUrl();
+  const boardsUrl = getBoardsUrl();
+
+  return (
+    <CalendarAmsNav
+      user={
+        normalizedUser
+          ? {
+              name: normalizedUser.name,
+              image: normalizedUser.image,
+              email: normalizedUser.email,
+            }
+          : null
+      }
+      showBoardsLink={canSeeBoardsNav(normalizedUser)}
+      signInHref={getCrossAppSignInUrl(calendarUrl)}
+      webUrl={webUrl}
+      calendarUrl={calendarUrl}
+      boardsUrl={boardsUrl}
     />
   );
 }
@@ -86,15 +128,30 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <AppProviders nuqs>
+          <Suspense fallback={null}>
+            <PreviewBanner productionHost="calendario.amscubing.org" />
+          </Suspense>
+          <Suspense
+            fallback={
+              <CalendarAmsNav
+                user={null}
+                signInHref={getCrossAppSignInUrl(getCalendarUrl())}
+                webUrl={getWebUrl()}
+                calendarUrl={getCalendarUrl()}
+                boardsUrl={getBoardsUrl()}
+              />
+            }
+          >
+            <CalendarAmsNavWrapper />
+          </Suspense>
           <SidebarProvider>
-            <Suspense fallback={<AppSidebar user={undefined} />}>
+            <Suspense
+              fallback={<AppSidebar user={undefined} webUrl={getWebUrl()} />}
+            >
               <AppSidebarWrapper />
             </Suspense>
             <SidebarInset>
-              <div className="sticky top-0 z-50">
-                <Suspense fallback={<div className="h-0" aria-hidden />}>
-                  <PreviewBanner productionHost="calendario.amscubing.org" />
-                </Suspense>
+              <div className="sticky top-0 z-40">
                 <Header>
                   <Suspense fallback={null}>
                     <HeaderNotifications />

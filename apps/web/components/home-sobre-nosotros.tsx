@@ -12,9 +12,8 @@ export function HomeSobreNosotros() {
             Sobre nosotros
           </p>
           <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.75rem)] leading-none">
-            Somos la comunidad oficial{" "}
-            <span className="text-ams-red">WCA</span> en{" "}
-            <span className="text-ams-green">México</span>
+            Somos la comunidad oficial <span className="text-ams-red">WCA</span>{" "}
+            en <span className="text-ams-green">México</span>
           </h2>
           <p className="text-base leading-8 text-black/70">{aboutIntro}</p>
           <p className="mt-3 text-base leading-8 text-black/70">

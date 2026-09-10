@@ -64,7 +64,7 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 ### Profundidad de producto en calendario y tableros
 
 - [ ] Feriados / pulido del calendario (ya en curso).
-- [ ] Nav entre apps: menú de cuenta consistente que enlace web ↔ calendario ↔ tableros (y cursos).
+- [x] Nav entre apps: menú de cuenta consistente que enlace web ↔ calendario ↔ tableros (y cursos).
 
 ### Publicar en redes al marcar como celebrada
 

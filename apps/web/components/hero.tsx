@@ -128,7 +128,9 @@ export function Hero({
             </p>
           </div>
           <div className="bg-ams-orange p-8">
-            <p className="ams-display text-4xl">{stats.statesWithCompetitions}</p>
+            <p className="ams-display text-4xl">
+              {stats.statesWithCompetitions}
+            </p>
             <p className="mt-2 text-sm font-semibold leading-5">
               Estados con competencias.
             </p>

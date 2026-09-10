@@ -4,14 +4,14 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 
 export function Header({ children }: { children?: ReactNode }) {
   return (
-    <header className="bg-card border-b">
-      <div className="mx-auto flex items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
-        <SidebarTrigger />
+    <header className="border-b border-ams-navy/10 bg-card">
+      <div className="mx-auto flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5">
+        <SidebarTrigger className="text-ams-navy" />
         <Link
           href="/"
-          className="text-base md:text-lg font-semibold hover:text-primary transition-colors"
+          className="text-sm font-semibold tracking-tight text-ams-navy transition-colors hover:text-ams-orange md:text-base"
         >
-          Calendario Público de Competencias en México
+          Calendario
         </Link>
         {children ? (
           <div className="ml-auto flex items-center">{children}</div>

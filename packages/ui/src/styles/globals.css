@@ -163,4 +163,15 @@
   .ams-glass:hover {
     transform: translateY(-2px);
   }
+
+  .ams-container {
+    margin-inline: auto;
+    width: min(100% - 2rem, 1400px);
+  }
+
+  .ams-display {
+    font-family: var(--ams-display, var(--font-sans), sans-serif);
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
 }

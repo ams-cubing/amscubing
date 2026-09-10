@@ -96,9 +96,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
         <article className="relative overflow-hidden rounded-[20px] bg-ams-soft p-8 md:p-11">
           <div className="ams-texture absolute inset-0 opacity-[0.03]" />
           <div className="relative">
-            <h3 className="ams-display mb-4 text-3xl text-ams-red">
-              Misión
-            </h3>
+            <h3 className="ams-display mb-4 text-3xl text-ams-red">Misión</h3>
             <p className="text-base leading-8 text-black/70">{mission}</p>
           </div>
         </article>
@@ -154,8 +152,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
             Planes
           </p>
           <h3 className="ams-display mb-11 text-[clamp(1.9rem,4vw,2.75rem)] leading-none">
-            Có<span className="text-ams-green">m</span>o lo vamos a
-            lograr
+            Có<span className="text-ams-green">m</span>o lo vamos a lograr
           </h3>
           <div className="grid gap-6 lg:grid-cols-3">
             {plans.map((plan) => (
@@ -182,8 +179,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
               Equipo
             </p>
             <h3 className="ams-display mb-11 text-[clamp(1.9rem,4vw,2.75rem)] leading-none">
-              Delegados <span className="text-ams-red">WCA</span> en
-              México
+              Delegados <span className="text-ams-red">WCA</span> en México
             </h3>
             <div className="grid gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
               {delegates.map((delegate) => (

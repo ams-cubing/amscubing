@@ -79,11 +79,13 @@ const data = {
 export function AppSidebar({
   user,
   showBoardsNav = false,
+  webUrl,
   ...props
 }: {
   user: User | undefined;
   /** Server-computed via canAccessBoardsApp (allowlist is server-only). */
   showBoardsNav?: boolean;
+  webUrl: string;
 } & React.ComponentProps<typeof Sidebar>) {
   const calendarNav = showBoardsNav
     ? [
@@ -101,16 +103,26 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="https://amscubing.org/">
-                <div className="bg-primary flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Image src="/icon.png" alt="Logo" width={24} height={24} />
+            <SidebarMenuButton
+              size="lg"
+              asChild
+              className="data-[slot=sidebar-menu-button]:hover:bg-sidebar-accent"
+            >
+              <a href={webUrl}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-ams-red">
+                  <Image
+                    src="/source/isotipo-color-sm.png"
+                    alt="AMS"
+                    width={24}
+                    height={14}
+                    className="h-auto w-5"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
-                    Asociación Mexicana de Speedcubing
+                  <span className="truncate font-medium">AMS</span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">
+                    Calendario
                   </span>
-                  <span className="truncate text-xs">Calendario público</span>
                 </div>
               </a>
             </SidebarMenuButton>

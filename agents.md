@@ -28,14 +28,14 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
   - `apps/boards`: tableros de organización.
 - Paquetes:
   - `@workspace/db`: Drizzle, schema y datos compartidos.
-- `@workspace/auth`: Better Auth y helpers de sesión.
-  - `@workspace/ui`: componentes UI compartidos.
+  - `@workspace/auth`: Better Auth y helpers de sesión.
+  - `@workspace/ui`: componentes UI compartidos. Chrome global AMS (`AmsSiteNav` + `AmsAccountMenu`) vive aquí; Competencias es ruta de `apps/web` (`/competencias`) con enlace al calendario.
 
 ## Web actual
 
 - Página principal: `apps/web/app/page.tsx`.
 - Página Nosotros: `apps/web/app/nosotros/page.tsx`.
-- Página Torneos: `apps/web/app/torneos/page.tsx`, lee competencias anunciadas desde `@workspace/db` y enriquece datos faltantes con la API WCA mediante `apps/web/lib/competitions.ts`.
+- Página Torneos: `apps/web/app/competencias/page.tsx`, lee competencias anunciadas desde `@workspace/db` y enriquece datos faltantes con la API WCA mediante `apps/web/lib/competitions.ts`. Incluye CTA a `getCalendarUrl()` para el calendario completo.
 - Página Blog: `apps/web/app/blog/page.tsx`, muestra entradas editoriales enlazadas desde `apps/web/lib/content.ts`.
 - Página Cursos: `apps/web/app/cursos/page.tsx`, conserva la funcionalidad como entrada al sitio externo `cursos.amscubing.org`.
 - Página Cuenta: `apps/web/app/cuenta/page.tsx`, usa la sesión compartida de `@workspace/auth` con WCA ID y funciona como hub de acciones. Usuarios generales ven mis competencias, blog y cursos; delegados ven además crear competencias, tableros, blog editorial y cursos. El schema actual solo distingue `user` y `delegate`; RBAC editorial fino queda pendiente.

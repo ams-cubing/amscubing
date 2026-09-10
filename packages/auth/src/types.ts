@@ -57,8 +57,7 @@ export function toSessionUser(raw: RawSessionUser): SessionUser {
     createdAt: asDate(raw.createdAt, now),
     updatedAt: asDate(raw.updatedAt, now),
     wcaId: raw.wcaId,
-    role:
-      raw.role === "delegate" || raw.role === "editor" ? raw.role : "user",
+    role: raw.role === "delegate" || raw.role === "editor" ? raw.role : "user",
     regionId: raw.regionId ?? null,
     delegateTitle: raw.delegateTitle ?? null,
     delegateLocation: raw.delegateLocation ?? null,

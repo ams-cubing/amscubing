@@ -29,8 +29,12 @@ const auth = {
   },
 } as unknown as Auth;
 
-const { requireDelegate, requireEditorOrDelegate, requireSession, requireSessionOrUnauthorized } =
-  createSessionHelpers(auth);
+const {
+  requireDelegate,
+  requireEditorOrDelegate,
+  requireSession,
+  requireSessionOrUnauthorized,
+} = createSessionHelpers(auth);
 
 function sessionFor(role: "delegate" | "user" | "editor" | null) {
   if (!role) {

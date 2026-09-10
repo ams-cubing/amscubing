@@ -173,12 +173,7 @@ export function AddDelegateForm({ regions }: { regions: RegionOption[] }) {
     >
       <div className="space-y-1.5">
         <Label htmlFor="add-wcaId">WCA ID</Label>
-        <Input
-          id="add-wcaId"
-          name="wcaId"
-          placeholder="2016TORO03"
-          required
-        />
+        <Input id="add-wcaId" name="wcaId" placeholder="2016TORO03" required />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="add-name">Nombre</Label>

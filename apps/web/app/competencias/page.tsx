@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ExternalLink, Users } from "lucide-react";
+import { CalendarDays, ExternalLink, Users } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+
 import { SiteNav } from "@/components/site-nav";
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { getPublicCompetitions } from "@/lib/competitions";
 import { CALENDAR_URL } from "@/lib/content";
+import { getCalendarUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Competencias | Asociación Mexicana de Speedcubing",
@@ -46,6 +49,7 @@ function statusClassName(label: string) {
 
 export default async function CompetenciasPage() {
   const competitions = await getPublicCompetitions();
+  const calendarUrl = getCalendarUrl();
 
   return (
     <main>
@@ -66,6 +70,12 @@ export default async function CompetenciasPage() {
                 Competencias abiertas y anunciadas
               </h2>
             </div>
+            <Button asChild variant="brand" className="shrink-0">
+              <a href={calendarUrl}>
+                <CalendarDays className="size-4" />
+                Ver calendario completo
+              </a>
+            </Button>
           </div>
 
           {competitions.length === 0 ? (

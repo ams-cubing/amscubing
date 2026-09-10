@@ -230,10 +230,7 @@ export async function grantEditor(input: {
     return { ok: false, message: "Esa persona ya es editora" };
   }
 
-  await db
-    .update(user)
-    .set({ role: "editor" })
-    .where(eq(user.wcaId, wcaId));
+  await db.update(user).set({ role: "editor" }).where(eq(user.wcaId, wcaId));
 
   revalidateAdminAndDelegates();
   return {
@@ -264,10 +261,7 @@ export async function revokeEditor(input: {
     return { ok: false, message: "No hay un editor con ese WCA ID" };
   }
 
-  await db
-    .update(user)
-    .set({ role: "user" })
-    .where(eq(user.wcaId, wcaId));
+  await db.update(user).set({ role: "user" }).where(eq(user.wcaId, wcaId));
 
   revalidateAdminAndDelegates();
   return { ok: true, message: "Rol editor revocado" };
