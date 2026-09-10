@@ -2,16 +2,7 @@
 
 :root {
   --ams-heading: var(--font-sans), sans-serif;
-  --ams-display: "Gaming Sporty", var(--font-sans), sans-serif;
   --ams-ink: var(--ams-navy);
-}
-
-@font-face {
-  font-family: "Gaming Sporty";
-  src: url("/fonts/GamingSporty.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
 }
 
 html {
@@ -27,12 +18,6 @@ body {
 .ams-heading {
   font-family: var(--ams-heading);
   letter-spacing: 0;
-}
-
-.ams-display {
-  font-family: var(--ams-display);
-  letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .ams-copy {

@@ -6,15 +6,10 @@ import "leaflet/dist/leaflet.css";
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
-import { Header } from "@/components/header";
+import { CalendarAppNav } from "@/components/calendar-app-nav";
 import { HeaderNotifications } from "@/components/header-notifications";
 import { CalendarAmsNav } from "@/components/ams-site-nav";
 import { Toaster } from "sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarProvider,
-  SidebarInset,
-} from "@workspace/ui/components/sidebar";
 import { Footer } from "@/components/footer";
 import { auth } from "@/lib/auth";
 import { canSeeBoardsNav } from "@/lib/boards";
@@ -63,22 +58,25 @@ export const metadata = {
   },
 };
 
-async function AppSidebarWrapper() {
+async function CalendarAppNavWrapper() {
   const headersList = await headers();
-
   const session = await auth.api.getSession({
     headers: headersList,
   });
 
   const normalizedUser = session?.user
     ? toSessionUser(session.user as RawSessionUser)
-    : undefined;
+    : null;
 
   return (
-    <AppSidebar
-      user={normalizedUser}
-      showBoardsNav={await canSeeBoardsNav(normalizedUser)}
-      webUrl={getWebUrl()}
+    <CalendarAppNav
+      isSignedIn={normalizedUser != null}
+      isDelegate={normalizedUser?.role === "delegate"}
+      notifications={
+        <Suspense fallback={null}>
+          <HeaderNotifications />
+        </Suspense>
+      }
     />
   );
 }
@@ -144,30 +142,23 @@ export default function RootLayout({
           >
             <CalendarAmsNavWrapper />
           </Suspense>
-          <SidebarProvider>
+          <div className="sticky top-0 z-40">
             <Suspense
-              fallback={<AppSidebar user={undefined} webUrl={getWebUrl()} />}
+              fallback={
+                <CalendarAppNav isSignedIn={false} isDelegate={false} />
+              }
             >
-              <AppSidebarWrapper />
+              <CalendarAppNavWrapper />
             </Suspense>
-            <SidebarInset>
-              <div className="sticky top-0 z-40">
-                <Header>
-                  <Suspense fallback={null}>
-                    <HeaderNotifications />
-                  </Suspense>
-                </Header>
-              </div>
-              <div className="flex flex-1 flex-col">
-                <div className="@container/main flex flex-1 flex-col gap-2">
-                  {children}
-                </div>
-              </div>
-              <Suspense fallback={null}>
-                <Footer />
-              </Suspense>
-            </SidebarInset>
-          </SidebarProvider>
+          </div>
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              {children}
+            </div>
+          </div>
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
           <Analytics />
           <SpeedInsights />
           <Toaster />
