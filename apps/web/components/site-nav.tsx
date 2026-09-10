@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import {
   AmsSiteNav,
   type AmsNavItemLabel,
@@ -9,10 +10,48 @@ import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { SiteNavAccount } from "@/components/site-nav-account";
 import { getBoardsUrl, getCalendarUrl, getWebUrl } from "@/lib/urls";
 
-export async function SiteNav({
+export function SiteNav({
   active = "Inicio",
 }: {
   active?: AmsNavItemLabel;
+}) {
+  const webUrl = getWebUrl();
+  const calendarUrl = getCalendarUrl();
+  const boardsUrl = getBoardsUrl();
+
+  return (
+    <AmsSiteNav
+      active={active}
+      webUrl={webUrl}
+      account={
+        <Suspense
+          fallback={
+            <SiteNavAccount
+              webUrl={webUrl}
+              calendarUrl={calendarUrl}
+              boardsUrl={boardsUrl}
+            />
+          }
+        >
+          <SiteNavAccountFromSession
+            webUrl={webUrl}
+            calendarUrl={calendarUrl}
+            boardsUrl={boardsUrl}
+          />
+        </Suspense>
+      }
+    />
+  );
+}
+
+async function SiteNavAccountFromSession({
+  webUrl,
+  calendarUrl,
+  boardsUrl,
+}: {
+  webUrl: string;
+  calendarUrl: string;
+  boardsUrl: string;
 }) {
   let showBoardsLink = false;
   let initialUser: {
@@ -41,23 +80,13 @@ export async function SiteNav({
     }
   }
 
-  const webUrl = getWebUrl();
-  const calendarUrl = getCalendarUrl();
-  const boardsUrl = getBoardsUrl();
-
   return (
-    <AmsSiteNav
-      active={active}
+    <SiteNavAccount
+      showBoardsLink={showBoardsLink}
+      initialUser={initialUser}
       webUrl={webUrl}
-      account={
-        <SiteNavAccount
-          showBoardsLink={showBoardsLink}
-          initialUser={initialUser}
-          webUrl={webUrl}
-          calendarUrl={calendarUrl}
-          boardsUrl={boardsUrl}
-        />
-      }
+      calendarUrl={calendarUrl}
+      boardsUrl={boardsUrl}
     />
   );
 }
