@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/sidebar";
 import { Footer } from "@/components/footer";
 import { auth } from "@/lib/auth";
+import { canSeeBoardsNav } from "@/lib/boards";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -59,7 +60,12 @@ async function AppSidebarWrapper() {
     ? toSessionUser(session.user as RawSessionUser)
     : undefined;
 
-  return <AppSidebar user={normalizedUser} />;
+  return (
+    <AppSidebar
+      user={normalizedUser}
+      showBoardsNav={canSeeBoardsNav(normalizedUser)}
+    />
+  );
 }
 
 export default function RootLayout({
