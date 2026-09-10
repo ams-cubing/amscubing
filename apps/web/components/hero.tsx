@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CALENDAR_URL } from "@/lib/content";
 import type { CompetitionSpotlight } from "@/lib/competitions";
+import type { CommunityStats } from "@/lib/community-stats";
 
 const monthNames = [
   "ENE",
@@ -20,7 +21,13 @@ const monthNames = [
   "DIC",
 ];
 
-export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
+export function Hero({
+  spotlights,
+  stats,
+}: {
+  spotlights: CompetitionSpotlight[];
+  stats: CommunityStats;
+}) {
   return (
     <section className="relative isolate bg-[var(--ams-navy)] px-0 pb-0 pt-[110px] text-white">
       <div className="absolute inset-0 overflow-hidden">
@@ -114,22 +121,24 @@ export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
 
       <div className="ams-container relative mt-16 translate-y-1/2">
         <div className="grid overflow-hidden shadow-[0_40px_70px_rgba(0,0,0,0.25)] [clip-path:polygon(0_0,100%_0,100%_82%,97%_100%,0_100%)] md:grid-cols-3">
-          <div className="bg-white p-8 text-[var(--ams-navy)]">
-            <p className="ams-display text-4xl text-[var(--ams-red)]">WCA</p>
+          <div className="bg-white p-8 text-ams-navy">
+            <p className="ams-display text-4xl text-ams-red">WCA</p>
             <p className="mt-2 text-sm font-semibold leading-5">
               Competencias oficiales certificadas en México.
             </p>
           </div>
           <div className="bg-[var(--ams-orange)] p-8">
-            <p className="ams-display text-4xl">18</p>
+            <p className="ams-display text-4xl">{stats.statesWithCompetitions}</p>
             <p className="mt-2 text-sm font-semibold leading-5">
-              Estados con sede de competencia en la maqueta nueva.
+              Estados con competencias.
             </p>
           </div>
           <div className="bg-[var(--ams-navy)] p-8">
-            <p className="ams-display text-4xl text-[var(--ams-green)]">17+</p>
+            <p className="ams-display text-4xl text-[var(--ams-green)]">
+              {stats.officialEvents}
+            </p>
             <p className="mt-2 text-sm font-semibold leading-5">
-              Categorías oficiales para competir y mejorar.
+              Eventos oficiales para competir y mejorar.
             </p>
           </div>
         </div>

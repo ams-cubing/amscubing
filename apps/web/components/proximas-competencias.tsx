@@ -26,7 +26,9 @@ function formatDate(dateString: string | null) {
     return "-";
   }
 
-  const cleanDate = dateString.split(" ")[0] ?? dateString;
+  // WCA returns ISO datetimes (`2026-07-27T02:00:00.000Z`); competition
+  // dates from the DB are `YYYY-MM-DD`. Take the calendar date either way.
+  const cleanDate = dateString.split(/[T\s]/)[0] ?? dateString;
   const [year, month, day] = cleanDate.split("-").map(Number);
 
   if (!year || !month || !day) {
