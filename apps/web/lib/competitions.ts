@@ -1,6 +1,9 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { db } from "@workspace/db";
+import { extractFirstImageUrl } from "@/lib/competition-logo";
 
 export type PublicCompetition = {
   id: number | string;
@@ -31,9 +34,12 @@ export type CompetitionSpotlight = {
 type WcaCompetition = {
   name?: string;
   short_name?: string;
+  information?: string | null;
   registration_open?: string | null;
   registration_close?: string | null;
   competitor_limit?: number | null;
+  spots_left?: number | null;
+  "registration_full?"?: boolean | null;
   url?: string;
 };
 
@@ -56,8 +62,8 @@ function todayMexicoIsoDate() {
 
 export function getCompetitionSpotlights(
   competitions: PublicCompetition[],
+  today = todayMexicoIsoDate(),
 ): CompetitionSpotlight[] {
-  const today = todayMexicoIsoDate();
   const sortedCompetitions = [...competitions].sort((a, b) =>
     a.startDate.localeCompare(b.startDate),
   );
@@ -87,7 +93,22 @@ export function getCompetitionSpotlights(
     .map((competition) => formatCompetitionSpotlight(competition, "Próximo"));
 }
 
+export async function getPublicCompetitionSpotlights(): Promise<
+  CompetitionSpotlight[]
+> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("public-competitions");
+
+  const competitions = await getPublicCompetitions();
+  return getCompetitionSpotlights(competitions, todayMexicoIsoDate());
+}
+
 export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("public-competitions");
+
   try {
     const rows = await db.query.competitions.findMany({
       columns: {
@@ -130,11 +151,15 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
           typeof wca?.competitor_limit === "number" && wca.competitor_limit > 0
             ? wca.competitor_limit
             : row.capacity;
-        const wcaCompetitionUrl =
-          row.wcaCompetitionUrl ??
-          (wcaId
-            ? `https://www.worldcubeassociation.org/competitions/${wcaId}`
-            : null);
+        const registered =
+          typeof wca?.competitor_limit === "number" &&
+          typeof wca?.spots_left === "number"
+            ? Math.max(0, wca.competitor_limit - wca.spots_left)
+            : null;
+        const logoUrl = extractFirstImageUrl(wca?.information);
+        const wcaCompetitionUrl = wcaId
+          ? `https://www.worldcubeassociation.org/competitions/${wcaId}`
+          : row.wcaCompetitionUrl;
 
         return {
           id: wcaId ?? row.id,
@@ -148,14 +173,20 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
           startDate: row.startDate,
           endDate: row.endDate,
           capacity,
-          registered: null,
+          registered,
           registrationOpen,
           registrationClose,
           wcaCompetitionUrl,
           image:
+            logoUrl ??
             competitionImages[index % competitionImages.length] ??
             competitionImages[0],
-          label: deriveRegistrationLabel(registrationOpen, registrationClose),
+          label: deriveRegistrationLabel(
+            registrationOpen,
+            registrationClose,
+            wca?.spots_left,
+            wca?.["registration_full?"],
+          ),
         };
       }),
     );
@@ -227,7 +258,7 @@ async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
     const response = await fetch(
       `https://www.worldcubeassociation.org/api/v0/competitions/${id}`,
       {
-        cache: "no-store",
+        next: { revalidate: 900 },
         headers: {
           accept: "application/json",
         },
@@ -244,10 +275,16 @@ async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
   }
 }
 
-function deriveRegistrationLabel(
+export function deriveRegistrationLabel(
   registrationOpen: string | null,
   registrationClose: string | null,
+  spotsLeft?: number | null,
+  registrationFull?: boolean | null,
 ): string {
+  if (registrationFull === true || spotsLeft === 0) {
+    return "Lleno";
+  }
+
   if (!registrationOpen || !registrationClose) {
     return "Próximamente";
   }

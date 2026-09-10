@@ -21,6 +21,8 @@ import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 import { createCardSchema } from "@/app/_lib/validations";
 
 import {
+  assertCardOnBoard,
+  assertListOnBoard,
   assertUserAssignableToBoard,
   requireBoardAccess,
 } from "../_lib/board-access";
@@ -34,22 +36,13 @@ export async function moveCardAction(input: {
 }) {
   const actor = await requireBoardAccess(input.boardId);
 
-  const card = await db.query.cards.findFirst({
-    where: eq(cards.id, input.cardId),
-    columns: { id: true, title: true, listId: true },
-    with: {
-      list: { columns: { title: true } },
-    },
-  });
-  if (!card) throw new Error("Tarjeta no encontrada");
+  const card = await assertCardOnBoard(input.boardId, input.cardId);
+  const list = await assertListOnBoard(input.boardId, input.toListId);
 
-  const list = await db.query.boardLists.findFirst({
-    where: and(
-      eq(boardLists.id, input.toListId),
-      eq(boardLists.boardId, input.boardId),
-    ),
-  });
-  if (!list) throw new Error("Lista no encontrada");
+  for (const orderedCardId of input.orderedCardIdsInTargetList) {
+    if (orderedCardId === input.cardId) continue;
+    await assertCardOnBoard(input.boardId, orderedCardId);
+  }
 
   const fromListTitle = card.list?.title ?? "";
   const toListTitle = list.title;
@@ -118,6 +111,7 @@ export async function updateCardAction(input: {
   dueDate?: string | null;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
 
   await db
     .update(cards)
@@ -147,6 +141,7 @@ export async function toggleCardMemberAction(input: {
   checked: boolean;
 }) {
   const actor = await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
 
   if (input.checked) {
     await assertUserAssignableToBoard(input.boardId, input.userId);
@@ -216,14 +211,7 @@ export async function createCardAction(input: {
 }) {
   const validated = createCardSchema.parse(input);
   await requireBoardAccess(validated.boardId);
-
-  const list = await db.query.boardLists.findFirst({
-    where: and(
-      eq(boardLists.id, validated.listId),
-      eq(boardLists.boardId, validated.boardId),
-    ),
-  });
-  if (!list) throw new Error("Lista no encontrada");
+  await assertListOnBoard(validated.boardId, validated.listId);
 
   const existing = await db.query.cards.findMany({
     where: eq(cards.listId, validated.listId),

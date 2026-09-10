@@ -2,10 +2,17 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@workspace/db";
 import {
+  boardLists,
   boardMembers,
   boards,
+  cardAttachments,
+  cardComments,
+  cards,
+  checklistItems,
+  checklists,
   competitionDelegates,
   competitionOrganizers,
+  labels,
   user,
 } from "@workspace/db/schema";
 
@@ -23,6 +30,131 @@ export async function requireBoardAccess(boardId: number) {
     throw new Error("Este tablero está archivado y no se puede editar");
   }
   return currentUser;
+}
+
+export async function assertListOnBoard(boardId: number, listId: number) {
+  const list = await db.query.boardLists.findFirst({
+    where: and(eq(boardLists.id, listId), eq(boardLists.boardId, boardId)),
+  });
+  if (!list) throw new Error("Lista no encontrada");
+  return list;
+}
+
+export async function assertCardOnBoard(boardId: number, cardId: number) {
+  const card = await db.query.cards.findFirst({
+    where: eq(cards.id, cardId),
+    columns: { id: true, title: true, listId: true },
+    with: {
+      list: { columns: { title: true, boardId: true } },
+    },
+  });
+  if (!card || card.list?.boardId !== boardId) {
+    throw new Error("Tarjeta no encontrada");
+  }
+  return card;
+}
+
+export async function assertLabelOnBoard(boardId: number, labelId: number) {
+  const label = await db.query.labels.findFirst({
+    where: and(eq(labels.id, labelId), eq(labels.boardId, boardId)),
+  });
+  if (!label) throw new Error("Etiqueta no encontrada");
+  return label;
+}
+
+export async function assertAttachmentOnBoard(
+  boardId: number,
+  attachmentId: number,
+) {
+  const attachment = await db.query.cardAttachments.findFirst({
+    where: eq(cardAttachments.id, attachmentId),
+    columns: { id: true, cardId: true, name: true, url: true },
+    with: {
+      card: {
+        columns: { id: true },
+        with: {
+          list: { columns: { boardId: true } },
+        },
+      },
+    },
+  });
+  if (!attachment || attachment.card?.list?.boardId !== boardId) {
+    throw new Error("Adjunto no encontrado");
+  }
+  return attachment;
+}
+
+export async function assertChecklistOnBoard(
+  boardId: number,
+  checklistId: number,
+) {
+  const checklist = await db.query.checklists.findFirst({
+    where: eq(checklists.id, checklistId),
+    columns: { id: true, cardId: true, title: true },
+    with: {
+      card: {
+        columns: { id: true },
+        with: {
+          list: { columns: { boardId: true } },
+        },
+      },
+    },
+  });
+  if (!checklist || checklist.card?.list?.boardId !== boardId) {
+    throw new Error("Checklist no encontrado");
+  }
+  return checklist;
+}
+
+export async function assertChecklistItemOnBoard(
+  boardId: number,
+  itemId: number,
+) {
+  const item = await db.query.checklistItems.findFirst({
+    where: eq(checklistItems.id, itemId),
+    columns: { id: true, checklistId: true, title: true, done: true },
+    with: {
+      checklist: {
+        columns: { id: true },
+        with: {
+          card: {
+            columns: { id: true },
+            with: {
+              list: { columns: { boardId: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!item || item.checklist?.card?.list?.boardId !== boardId) {
+    throw new Error("Elemento de checklist no encontrado");
+  }
+  return item;
+}
+
+export async function assertCommentOnBoard(boardId: number, commentId: number) {
+  const comment = await db.query.cardComments.findFirst({
+    where: eq(cardComments.id, commentId),
+    columns: {
+      id: true,
+      cardId: true,
+      authorId: true,
+      body: true,
+    },
+    with: {
+      card: {
+        columns: { id: true },
+        with: {
+          list: { columns: { boardId: true } },
+        },
+      },
+    },
+  });
+  if (!comment || comment.card?.list?.boardId !== boardId) {
+    throw new Error("Comentario no encontrado");
+  }
+  return comment;
 }
 
 export async function assertUserAssignableToBoard(

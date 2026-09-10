@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -17,8 +18,6 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { CALENDAR_URL, COURSES_URL } from "@/lib/content";
 import { getBoardsUrl } from "@/lib/urls";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Cuenta | Asociación Mexicana de Speedcubing",
@@ -81,7 +80,28 @@ const delegateActions = [
   },
 ];
 
-export default async function CuentaPage() {
+export default function CuentaPage() {
+  return (
+    <main>
+      <SiteNav />
+      <PageHero
+        eyebrow="WCA ID"
+        title="Cuenta AMS"
+        description="Inicia sesión con tu WCA ID para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
+      />
+      <section className="bg-white py-16 md:py-20">
+        <div className="ams-container max-w-[1120px]">
+          <Suspense fallback={<CuentaBodyFallback />}>
+            <CuentaBody />
+          </Suspense>
+        </div>
+      </section>
+      <SiteFooter />
+    </main>
+  );
+}
+
+async function CuentaBody() {
   const requestHeaders = await headers();
   const session = process.env.BETTER_AUTH_SECRET
     ? await import("@/lib/auth").then(({ auth }) =>
@@ -94,94 +114,96 @@ export default async function CuentaPage() {
   const isDelegate = user?.role === "delegate";
 
   return (
-    <main>
-      <SiteNav />
-      <PageHero
-        eyebrow="WCA ID"
-        title="Cuenta AMS"
-        description="Inicia sesión con tu WCA ID para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
-      />
-      <section className="bg-white py-16 md:py-20">
-        <div className="ams-container max-w-[1120px]">
-          {user ? (
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-[22px] bg-[var(--ams-soft)] p-6 md:p-8">
-              <div className="flex items-center gap-4">
-                {user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.image}
-                    alt=""
-                    className="size-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="ams-display flex size-16 items-center justify-center rounded-full bg-[var(--ams-navy)] text-xl text-white">
-                    {getInitials(user.name)}
-                  </div>
-                )}
-                <div>
-                  <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-red)]">
-                    {isDelegate ? "Delegado WCA" : "Competidor"}
-                  </p>
-                  <h2 className="ams-display text-3xl leading-none text-[var(--ams-navy)]">
-                    {user.name}
-                  </h2>
-                  <p className="ams-heading mt-1 text-sm text-black/55">
-                    {user.wcaId}
-                  </p>
-                </div>
-              </div>
-              <AccountSignOut />
-            </div>
-          ) : (
-            <div className="ams-texture mb-10 overflow-hidden rounded-[24px] bg-[var(--ams-navy)] p-8 text-white md:p-10">
-              <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
-                Acceso único
-              </p>
-              <h2 className="ams-display max-w-2xl text-[clamp(2rem,5vw,3.5rem)] leading-none">
-                Entra con tu WCA ID
-              </h2>
-              <p className="ams-copy my-6 max-w-2xl text-base leading-7 text-white/75">
-                La sesión se comparte con calendario y tableros para que AMS
-                pueda mostrarte acciones según tu rol.
-              </p>
-              <AccountSignIn />
-            </div>
-          )}
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {publicActions.map((action) => (
-              <ActionCard key={action.title} action={action} />
-            ))}
-          </div>
-
-          <div className="mt-14">
-            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
-              Permisos de organización
-            </p>
-            <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.25rem)] leading-none">
-              Herramientas para delegados y editores
-            </h2>
-            {isDelegate ? (
-              <div className="grid gap-6 lg:grid-cols-4">
-                {delegateActions.map((action) => (
-                  <ActionCard key={action.title} action={action} compact />
-                ))}
-              </div>
+    <>
+      {user ? (
+        <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-[22px] bg-[var(--ams-soft)] p-6 md:p-8">
+          <div className="flex items-center gap-4">
+            {user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.image}
+                alt=""
+                className="size-16 rounded-full object-cover"
+              />
             ) : (
-              <div className="rounded-[22px] border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
-                <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
-                  Estas acciones aparecen cuando tu WCA ID tiene permisos de
-                  delegado. Más adelante se puede separar un rol editorial
-                  específico para blog y cursos; por ahora el repositorio solo
-                  distingue entre usuario y delegado.
-                </p>
+              <div className="ams-display flex size-16 items-center justify-center rounded-full bg-[var(--ams-navy)] text-xl text-white">
+                {getInitials(user.name)}
               </div>
             )}
+            <div>
+              <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-red)]">
+                {isDelegate ? "Delegado WCA" : "Competidor"}
+              </p>
+              <h2 className="ams-display text-3xl leading-none text-[var(--ams-navy)]">
+                {user.name}
+              </h2>
+              <p className="ams-heading mt-1 text-sm text-black/55">
+                {user.wcaId}
+              </p>
+            </div>
           </div>
+          <AccountSignOut />
         </div>
-      </section>
-      <SiteFooter />
-    </main>
+      ) : (
+        <div className="ams-texture mb-10 overflow-hidden rounded-[24px] bg-[var(--ams-navy)] p-8 text-white md:p-10">
+          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
+            Acceso único
+          </p>
+          <h2 className="ams-display max-w-2xl text-[clamp(2rem,5vw,3.5rem)] leading-none">
+            Entra con tu WCA ID
+          </h2>
+          <p className="ams-copy my-6 max-w-2xl text-base leading-7 text-white/75">
+            La sesión se comparte con calendario y tableros para que AMS pueda
+            mostrarte acciones según tu rol.
+          </p>
+          <AccountSignIn />
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {publicActions.map((action) => (
+          <ActionCard key={action.title} action={action} />
+        ))}
+      </div>
+
+      <div className="mt-14">
+        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+          Permisos de organización
+        </p>
+        <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.25rem)] leading-none">
+          Herramientas para delegados y editores
+        </h2>
+        {isDelegate ? (
+          <div className="grid gap-6 lg:grid-cols-4">
+            {delegateActions.map((action) => (
+              <ActionCard key={action.title} action={action} compact />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[22px] border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
+            <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
+              Estas acciones aparecen cuando tu WCA ID tiene permisos de
+              delegado. Más adelante se puede separar un rol editorial específico
+              para blog y cursos; por ahora el repositorio solo distingue entre
+              usuario y delegado.
+            </p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function CuentaBodyFallback() {
+  return (
+    <div className="space-y-10" aria-hidden>
+      <div className="h-40 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+      </div>
+    </div>
   );
 }
 

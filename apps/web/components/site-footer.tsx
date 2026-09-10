@@ -1,7 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { Button } from "@workspace/ui/components/button";
 import { CALENDAR_URL, CONTACT_EMAIL, PRIVACY_URL } from "@/lib/content";
+
+async function CopyrightYear() {
+  "use cache";
+  cacheLife("days");
+  return <>{new Date().getFullYear()}</>;
+}
 
 const siteLinks = [
   { label: "Inicio", href: "/" },
@@ -106,7 +114,11 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4 pt-7 text-sm text-white/50">
           <p>
-            © {new Date().getFullYear()} Asociación Mexicana de Speedcubing.
+            ©{" "}
+            <Suspense fallback="2026">
+              <CopyrightYear />
+            </Suspense>{" "}
+            Asociación Mexicana de Speedcubing.
           </p>
           <Button
             asChild

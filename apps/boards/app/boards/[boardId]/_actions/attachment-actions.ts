@@ -6,7 +6,11 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import { cardAttachments } from "@workspace/db/schema";
 
-import { requireBoardAccess } from "../_lib/board-access";
+import {
+  assertAttachmentOnBoard,
+  assertCardOnBoard,
+  requireBoardAccess,
+} from "../_lib/board-access";
 
 export async function addAttachmentAction(input: {
   boardId: number;
@@ -15,6 +19,7 @@ export async function addAttachmentAction(input: {
   url: string;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
 
   await db.insert(cardAttachments).values({
     cardId: input.cardId,
@@ -32,6 +37,7 @@ export async function updateAttachmentAction(input: {
   url: string;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertAttachmentOnBoard(input.boardId, input.attachmentId);
 
   const name = input.name.trim();
   const url = input.url.trim();
@@ -53,6 +59,7 @@ export async function removeAttachmentAction(input: {
   attachmentId: number;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertAttachmentOnBoard(input.boardId, input.attachmentId);
 
   await db
     .delete(cardAttachments)

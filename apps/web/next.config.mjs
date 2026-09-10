@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  cacheComponents: true,
   transpilePackages: ["@workspace/ui", "@workspace/db", "@workspace/auth"],
   async redirects() {
     return [
@@ -27,6 +28,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "avatars.worldcubeassociation.org",
         pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.worldcubeassociation.org",
+        pathname: "/rails/active_storage/**",
       },
     ],
   },
