@@ -28,6 +28,11 @@ const nextConfig = {
         hostname: "avatars.worldcubeassociation.org",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.worldcubeassociation.org",
+        pathname: "/rails/active_storage/**",
+      },
     ],
   },
 };
