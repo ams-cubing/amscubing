@@ -4,7 +4,8 @@ Plan vivo del monorepo de AMS Cubing. Los ítems cambian de fase conforme se van
 
 ## Principios
 
-- Una sola identidad: inicio de sesión con WCA vía Better Auth y cookies `ams.*` compartidas en `*.amscubing.org`.
+- Una sola cuenta AMS vía Better Auth y cookies `ams.*` compartidas en `*.amscubing.org`. Hoy el único método de entrada es OAuth WCA; a futuro la cuenta puede existir sin WCA ID (email/password u otro método) solo para interacción en la web (blog, comentarios, etc.).
+- Calendario y tableros siguen exigiendo **WCA ID vinculado**: ahí la identidad de competidor/delegado/organizador es necesaria. Sin `wcaId`, la sesión no desbloquea esas apps.
 - Apps por dominio: web es la casa pública; el calendario es dueño de las competencias; los tableros son dueños del trabajo de organización; los cursos siguen siendo un producto aparte (WordPress ahora, una app después).
 - Preferir paquetes compartidos (`@workspace/db`, `@workspace/auth`, `@workspace/ui`) en lugar de duplicar lógica.
 - La web **lee** datos compartidos (delegados, competencias anunciadas). No es dueña de esos ciclos de vida.
@@ -29,7 +30,7 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 
 - [x] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`). Enrichment WCA para nombre/registro/cupo.
 - [ ] Blog: listado, detalle de post, categorías/etiquetas, SEO (títulos, OG, sitemap).
-- [ ] Comentarios en posts (auth obligatorio o invitado moderado — por decidir).
+- [ ] Comentarios en posts: auth obligatorio con cuenta AMS (WCA o, cuando exista, cuenta sin WCA). Identidad de comentario por `user.id`; badge/WCA ID opcional si está vinculado.
 - [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta. (parcial: `/nosotros` + delegados desde BD; misión/visión/contacto aún en `content.ts`)
 - [x] Enlace en nav / teaser a `cursos.amscubing.org` (no reconstruir el LMS en la web).
 - [ ] Redirecciones de URLs viejas de WordPress → rutas nuevas de Next.js (y `/detalle-cursos/` → `cursos.*`).
@@ -160,11 +161,22 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 - [ ] API pública o RSS del blog.
 - [ ] RBAC más fuerte (editor de contenido vs delegado vs admin).
 
+### Cuentas AMS sin WCA (solo web)
+
+Permitir login/registro sin OAuth WCA para gente que solo quiere participar en la web pública (blog, comentarios y similares). No sustituye a la WCA como identidad de competidor; la complementa.
+
+- [ ] Hacer `user.wcaId` nullable en schema + Better Auth (`additionalFields`); FKs de calendario/tableros que apuntan a `wcaId` se quedan (solo aplican a usuarios ya vinculados).
+- [ ] Habilitar método(s) Better Auth sin WCA (p. ej. email/password y/o magic link) junto al OAuth WCA existente.
+- [ ] Helpers de sesión: `requireSession` para web; `requireWcaUser` (o equivalente) en calendario/tableros; `requireDelegate` sigue implicando cuenta con WCA.
+- [ ] UX en `/cuenta` e `/iniciar-sesion`: flujo email vs “Entrar con WCA”; sin WCA, ocultar o bloquear mis competencias / panel / tableros con CTA “Conectar WCA”.
+- [ ] Vincular WCA después (`account linking`): rellenar `wcaId` / rol / avatar sin duplicar usuarios; resolver colisiones si el WCA ID ya existe.
+- [ ] E2E: cuenta solo-web puede comentar en blog; misma sesión sin `wcaId` no entra a calendario/tableros; tras vincular WCA, sí.
+
 ---
 
 ## Fuera de alcance (por ahora)
 
-- Reemplazar a la WCA como proveedor de identidad.
+- Sustituir OAuth WCA como identidad para calendario, tableros, delegados y organizadores (sigue siendo el vínculo canónico de competidor).
 - Fusionar calendario + tableros en un solo deployable.
 - Reconstruir el LMS dentro de `apps/web`.
 - Auto-publicar en Facebook/Instagram solo por guardar una competencia como **anunciada** (la publicación automática va ligada a **celebrada**).
@@ -176,6 +188,7 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 | Fecha      | Decisión                      | Notas                                                                                                                          |
 | ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-09-10 | Host de auth = web            | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`             |
+| 2026-09-10 | Cuentas sin WCA (futuro)      | Better Auth puede tener usuarios sin `wcaId` solo para web (blog/comentarios); calendario/tableros exigen WCA vinculado        |
 | TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |
 | 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                    |
 | 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                       |
