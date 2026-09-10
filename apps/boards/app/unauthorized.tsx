@@ -6,6 +6,7 @@ import { Button } from "@workspace/ui/components/button";
 
 import { SignInButton } from "@/components/sign-in-button";
 import { auth } from "@/lib/auth";
+import Link from "next/link";
 
 export default async function UnauthorizedPage() {
   const session = await auth.api.getSession({
@@ -24,7 +25,7 @@ export default async function UnauthorizedPage() {
     >
       <SignInButton />
       <Button variant="outline" size="lg" asChild>
-        <a href="/">Volver al inicio</a>
+        <Link href="/">Volver al inicio</Link>
       </Button>
     </AmsStatusPage>
   );
