@@ -12,7 +12,7 @@ export function SiteCta() {
           ¿Listo para resolver más rápido?
         </h2>
         <p className="ams-copy mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/85">
-          Encuentra tu próximo torneo oficial o súmate como voluntario a la
+          Encuentra tu próxima competencia oficial o súmate como voluntario a la
           comunidad de speedcubing en México.
         </p>
         <div className="mt-9 flex flex-wrap justify-center gap-4">
@@ -21,8 +21,8 @@ export function SiteCta() {
             size="lg"
             className="ams-glass border border-white/35"
           >
-            <Link href="/torneos">
-              Ver torneos
+            <Link href="/competencias">
+              Ver competencias
               <ArrowRight className="size-4" />
             </Link>
           </Button>

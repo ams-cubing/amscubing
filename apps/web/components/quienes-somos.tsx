@@ -85,7 +85,7 @@ export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
         <p className="mx-auto mt-7 max-w-5xl text-lg leading-8 text-black/70">
           {aboutIntro} Organizamos{" "}
           <span className="font-bold text-[var(--ams-green)]">
-            torneos oficiales
+            competencias oficiales
           </span>
           , facilitamos la llegada de nuevos competidores y respaldamos a
           organizadores y voluntarios en todo el país.

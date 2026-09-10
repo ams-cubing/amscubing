@@ -4,9 +4,9 @@ import { Button } from "@workspace/ui/components/button";
 import { CALENDAR_URL, CONTACT_EMAIL, PRIVACY_URL } from "@/lib/content";
 
 const siteLinks = [
-  { label: "Home", href: "/" },
+  { label: "Inicio", href: "/" },
   { label: "Nosotros", href: "/nosotros" },
-  { label: "Torneos", href: "/torneos" },
+  { label: "Competencias", href: "/competencias" },
   { label: "Blog", href: "/blog" },
   { label: "Cursos", href: "/cursos" },
 ] as const;
@@ -70,8 +70,11 @@ export function SiteFooter() {
               <a href={CALENDAR_URL} className="text-white/70 hover:text-white">
                 Ser voluntario
               </a>
-              <Link href="/torneos" className="text-white/70 hover:text-white">
-                Organizar un torneo
+              <Link
+                href="/competencias"
+                className="text-white/70 hover:text-white"
+              >
+                Organizar una competencia
               </Link>
               <a
                 href="https://www.worldcubeassociation.org/regulations/"

@@ -13,16 +13,18 @@ import {
   SheetTrigger,
 } from "@workspace/ui/components/sheet";
 
+import { SiteNavAccount } from "@/components/site-nav-account";
+
 const navItems = [
-  { label: "Home", href: "/" },
+  { label: "Inicio", href: "/" },
   { label: "Nosotros", href: "/nosotros" },
-  { label: "Torneos", href: "/torneos" },
+  { label: "Competencias", href: "/competencias" },
   { label: "Blog", href: "/blog" },
   { label: "Cursos", href: "/cursos" },
 ] as const;
 
 export function SiteNav({
-  active = "Home",
+  active = "Inicio",
 }: {
   active?: (typeof navItems)[number]["label"];
 }) {
@@ -50,65 +52,57 @@ export function SiteNav({
           ))}
         </div>
 
-        <div className="ml-auto hidden items-center gap-3 md:flex">
-          <Button asChild className="ams-glass border border-white/25">
-            <Link href="/torneos">Regístrate a un torneo</Link>
-          </Button>
+        <div className="ml-auto flex items-center gap-3">
           <Button
             asChild
-            variant="destructive"
-            className="ams-glass border border-white/25"
+            className="ams-glass hidden border border-white/25 md:inline-flex"
           >
-            <Link href="/cuenta">Iniciar sesión</Link>
+            <Link href="/competencias">Regístrate a una competencia</Link>
           </Button>
-        </div>
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="glass"
-              size="icon"
-              aria-label="Abrir menú"
-              className="ml-auto size-11 md:hidden"
+          <SiteNavAccount />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="glass"
+                size="icon"
+                aria-label="Abrir menú"
+                className="size-11 md:hidden"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="border-white/10 bg-ams-navy text-white sm:max-w-sm [&_button]:text-white"
+              style={{ fontFamily: "var(--font-sans), sans-serif" }}
             >
-              <Menu className="size-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent
-            side="right"
-            className="border-white/10 bg-ams-navy text-white sm:max-w-sm [&_button]:text-white"
-            style={{ fontFamily: "var(--font-sans), sans-serif" }}
-          >
-            <SheetHeader>
-              <SheetTitle className="ams-display text-left text-white">
-                Menú
-              </SheetTitle>
-            </SheetHeader>
-            <div className="grid gap-2 px-4">
-              {navItems.map((item) => (
-                <SheetClose asChild key={item.href}>
-                  <NavLink item={item} active={active} mobile />
-                </SheetClose>
-              ))}
-              <div className="mt-3 grid gap-3">
-                <SheetClose asChild>
-                  <Button asChild className="ams-glass border border-white/25">
-                    <Link href="/torneos">Regístrate a un torneo</Link>
-                  </Button>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Button
-                    asChild
-                    variant="destructive"
-                    className="ams-glass border border-white/25"
-                  >
-                    <Link href="/cuenta">Iniciar sesión</Link>
-                  </Button>
-                </SheetClose>
+              <SheetHeader>
+                <SheetTitle className="ams-display text-left text-white">
+                  Menú
+                </SheetTitle>
+              </SheetHeader>
+              <div className="grid gap-2 px-4">
+                {navItems.map((item) => (
+                  <SheetClose asChild key={item.href}>
+                    <NavLink item={item} active={active} mobile />
+                  </SheetClose>
+                ))}
+                <div className="mt-3 grid gap-3">
+                  <SheetClose asChild>
+                    <Button
+                      asChild
+                      className="ams-glass border border-white/25"
+                    >
+                      <Link href="/competencias">
+                        Regístrate a una competencia
+                      </Link>
+                    </Button>
+                  </SheetClose>
+                </div>
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </nav>
     </header>
   );

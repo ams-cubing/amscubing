@@ -92,16 +92,11 @@ describe("getPublicDelegates", () => {
     expect(delegates[0]?.location).toBe("México");
   });
 
-  it("returns the public WordPress fallback when the database is unavailable", async () => {
+  it("returns an empty list when the database is unavailable", async () => {
     findMany.mockRejectedValue(new Error("missing database"));
 
     const delegates = await getPublicDelegates();
 
-    expect(delegates[0]).toMatchObject({
-      name: "Areli Rubí Gordillo Martínez",
-      wcaId: "2014MART08",
-      avatarUrl:
-        "https://avatars.worldcubeassociation.org/uploads/user/avatar/2014MART08/1496807672_thumb.JPG",
-    });
+    expect(delegates).toEqual([]);
   });
 });

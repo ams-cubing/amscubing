@@ -95,7 +95,7 @@ export default function CursosPage() {
       <section className="relative h-[24rem] overflow-hidden bg-[var(--ams-navy)]">
         <Image
           src="/source/photos/ponny-1.jpg"
-          alt="Competidores y staff en torneo AMS"
+          alt="Competidores y staff en competencia AMS"
           fill
           className="object-cover opacity-70"
           sizes="100vw"

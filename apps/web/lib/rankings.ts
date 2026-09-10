@@ -66,39 +66,6 @@ export const rankingEvents: RankingEvent[] = [
   { id: "333mbf", name: "3x3x3 Multi-Blind", supportsAverage: false },
 ];
 
-const fallbackRanking: EventRanking[] = [
-  {
-    event: rankingEvents[0]!,
-    single: [
-      {
-        countryRank: 1,
-        personId: "2018SANC03",
-        name: "Angel Armando Jaime Sánchez",
-        result: "4.46",
-        state: "Ciudad de México",
-        profileUrl: "https://www.cubingmexico.net/persons/2018SANC03",
-      },
-      {
-        countryRank: 2,
-        personId: "2023ATLA01",
-        name: "Saúl Méndez Atlatenco",
-        result: "4.68",
-        state: "Tlaxcala",
-        profileUrl: "https://www.cubingmexico.net/persons/2023ATLA01",
-      },
-      {
-        countryRank: 3,
-        personId: "2017HERN11",
-        name: "Joaquin Ruenes Hernández",
-        result: "4.83",
-        state: "Ciudad de México",
-        profileUrl: "https://www.cubingmexico.net/persons/2017HERN11",
-      },
-    ],
-    average: [],
-  },
-];
-
 export async function getNationalRankings(): Promise<EventRanking[]> {
   const stateNames = await getStateNameMap();
 
@@ -112,11 +79,9 @@ export async function getNationalRankings(): Promise<EventRanking[]> {
     })),
   );
 
-  const populated = rankings.filter(
+  return rankings.filter(
     (ranking) => ranking.single.length > 0 || ranking.average.length > 0,
   );
-
-  return populated.length > 0 ? populated : fallbackRanking;
 }
 
 async function getRanking(

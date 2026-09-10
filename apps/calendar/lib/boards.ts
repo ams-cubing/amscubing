@@ -2,7 +2,10 @@ import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { getBoardsUrl } from "@workspace/auth/urls";
 
 export { getBoardsUrl };
-export { canAccessBoardsApp, getBoardsOrganizerAllowlist } from "@workspace/auth/boards-access";
+export {
+  canAccessBoardsApp,
+  getBoardsOrganizerAllowlist,
+} from "@workspace/auth/boards-access";
 
 /**
  * Whether the calendar sidebar should show the Tableros AMS link.

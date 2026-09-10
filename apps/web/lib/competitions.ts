@@ -37,54 +37,6 @@ type WcaCompetition = {
   url?: string;
 };
 
-export const fallbackCompetitions: PublicCompetition[] = [
-  {
-    id: "fallback-ponny",
-    name: "Ponny Open 2026",
-    city: "Ciudad de México",
-    state: "CDMX",
-    startDate: "2026-03-28",
-    endDate: "2026-03-28",
-    capacity: 120,
-    registered: null,
-    registrationOpen: null,
-    registrationClose: null,
-    wcaCompetitionUrl: null,
-    image: "/source/photos/ponny-3.jpg",
-    label: "Inscripciones abiertas",
-  },
-  {
-    id: "fallback-mexchamp",
-    name: "Campeonato Mexicano 2026",
-    city: "Ciudad de México",
-    state: "CDMX",
-    startDate: "2026-08-14",
-    endDate: "2026-08-16",
-    capacity: 300,
-    registered: null,
-    registrationOpen: null,
-    registrationClose: null,
-    wcaCompetitionUrl: null,
-    image: "/source/photos/chalco-3.jpg",
-    label: "Evento principal",
-  },
-  {
-    id: "fallback-guelaguetza",
-    name: "Guelaguetza Cubing Open",
-    city: "Oaxaca de Juárez",
-    state: "Oaxaca",
-    startDate: "2026-09-12",
-    endDate: "2026-09-13",
-    capacity: 100,
-    registered: null,
-    registrationOpen: null,
-    registrationClose: null,
-    wcaCompetitionUrl: null,
-    image: "/source/photos/guelaguetza-2.jpg",
-    label: "Próximamente",
-  },
-];
-
 const competitionImages = [
   "/source/photos/ponny-3.jpg",
   "/source/photos/chalco-3.jpg",
@@ -164,7 +116,7 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
     });
 
     if (rows.length === 0) {
-      return fallbackCompetitions;
+      return [];
     }
 
     return Promise.all(
@@ -208,7 +160,7 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
       }),
     );
   } catch {
-    return fallbackCompetitions;
+    return [];
   }
 }
 
@@ -236,7 +188,7 @@ function formatCompetitionSpotlight(
 }
 
 function getWcaCompetitionId(competition: PublicCompetition) {
-  if (typeof competition.id === "string" && !competition.id.startsWith("fallback-")) {
+  if (typeof competition.id === "string" && competition.id.length > 0) {
     return competition.id;
   }
 
@@ -263,7 +215,7 @@ function extractWcaCompetitionId(
     }
   }
 
-  if (typeof id === "string" && id.length > 0 && !id.startsWith("fallback-")) {
+  if (typeof id === "string" && id.length > 0) {
     return id;
   }
 

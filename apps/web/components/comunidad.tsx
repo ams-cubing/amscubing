@@ -4,7 +4,7 @@ const testimonials = [
     name: "Renata Ibarra",
     meta: "@renata_cubes · Puebla",
     quote:
-      "Mi primer torneo fue con la AMS. Llegué sin conocer a nadie y salí con un grupo de amigos que compiten conmigo hasta hoy.",
+      "Mi primera competencia fue con la AMS. Llegué sin conocer a nadie y salí con un grupo de amigos que compiten conmigo hasta hoy.",
     color: "bg-[var(--ams-red)]",
   },
   {
@@ -12,7 +12,7 @@ const testimonials = [
     name: "Iker Domínguez",
     meta: "@iker_wca · CDMX",
     quote:
-      "Ser voluntario me enseñó a organizar torneos oficiales WCA desde cero. Hoy comparto eso con la siguiente generación.",
+      "Ser voluntario me enseñó a organizar competencias oficiales WCA desde cero. Hoy comparto eso con la siguiente generación.",
     color: "bg-[var(--ams-orange)]",
   },
   {

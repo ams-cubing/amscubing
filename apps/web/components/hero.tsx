@@ -80,8 +80,8 @@ export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
           className="ams-copy ams-fade-up mt-7 max-w-[520px] text-xl leading-8 text-white/85"
           style={{ animationDelay: "550ms" }}
         >
-          La comunidad oficial WCA de speedcubing en México. Torneos, ranking
-          nacional y una comunidad que crece cada mes.
+          La comunidad oficial WCA de speedcubing en México. Competencias,
+          ranking nacional y una comunidad que crece cada mes.
         </p>
 
         <div
@@ -94,8 +94,8 @@ export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
             variant="destructive"
             className="ams-glass border border-white/30"
           >
-            <Link href="/torneos">
-              Ver torneos
+            <Link href="/competencias">
+              Ver competencias
               <ArrowRight className="size-4" />
             </Link>
           </Button>
@@ -117,7 +117,7 @@ export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
           <div className="bg-white p-8 text-[var(--ams-navy)]">
             <p className="ams-display text-4xl text-[var(--ams-red)]">WCA</p>
             <p className="mt-2 text-sm font-semibold leading-5">
-              Torneos oficiales certificados en México.
+              Competencias oficiales certificadas en México.
             </p>
           </div>
           <div className="bg-[var(--ams-orange)] p-8">

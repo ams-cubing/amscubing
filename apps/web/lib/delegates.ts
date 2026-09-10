@@ -22,51 +22,6 @@ const wcaAvatarById: Record<string, string | null> = {
     "https://avatars.worldcubeassociation.org/wet43gev5c25h5bel5jmg79fklis",
 };
 
-export const fallbackDelegates: PublicDelegate[] = [
-  {
-    name: "Areli Rubí Gordillo Martínez",
-    wcaId: "2014MART08",
-    title: "Delegado Regional MCA",
-    location: "México y Centro América",
-  },
-  {
-    name: "Carlos Ricardo Chin Dzul",
-    wcaId: "2014DZUL02",
-    title: "Delegado Junior",
-    location: "Mérida - Suroeste",
-  },
-  {
-    name: "Christofer Alejandro Aguirre Robledo",
-    wcaId: "2016ROBL05",
-    title: "Delegado y Miembro del WCAT",
-    location: "Baja California - Noroeste",
-  },
-  {
-    name: "Jaime Tadeo Pérez Cardona",
-    wcaId: "2015CARD01",
-    title: "Delegado Junior",
-    location: "Ciudad de México - Centro",
-  },
-  {
-    name: "Leonardo Sánchez Del Toro",
-    wcaId: "2016TORO03",
-    title: "Delegado en Entrenamiento",
-    location: "Nayarit - Occidente",
-  },
-  {
-    name: "Rocío Rodríguez Rivera",
-    wcaId: "2016RIVE14",
-    title: "Delegado Junior",
-    location: "Ciudad de México - Centro",
-  },
-  {
-    name: "Saúl Emmanuel Ramírez González",
-    wcaId: "2018GONZ21",
-    title: "Delegado Junior",
-    location: "Jalisco - Occidente",
-  },
-].map(withWcaMetadata);
-
 function withWcaMetadata(
   delegate: Omit<PublicDelegate, "avatarUrl" | "wcaProfileUrl"> & {
     avatarUrl?: string | null;
@@ -100,10 +55,6 @@ export async function getPublicDelegates(): Promise<PublicDelegate[]> {
       },
     });
 
-    if (rows.length === 0) {
-      return fallbackDelegates;
-    }
-
     return rows.map((row) =>
       withWcaMetadata({
         name: row.name,
@@ -114,6 +65,6 @@ export async function getPublicDelegates(): Promise<PublicDelegate[]> {
       }),
     );
   } catch {
-    return fallbackDelegates;
+    return [];
   }
 }

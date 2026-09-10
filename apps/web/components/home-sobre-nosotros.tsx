@@ -18,7 +18,7 @@ export function HomeSobreNosotros() {
           </h2>
           <p className="text-base leading-8 text-black/70">{aboutIntro}</p>
           <p className="mt-3 text-base leading-8 text-black/70">
-            Organizamos torneos oficiales, facilitamos la llegada de nuevos
+            Organizamos competencias oficiales, facilitamos la llegada de nuevos
             competidores y respaldamos a organizadores y voluntarios en todo el
             país.
           </p>
@@ -47,7 +47,7 @@ export function HomeSobreNosotros() {
           <div className="relative -ml-8 overflow-hidden bg-[var(--ams-red)] [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
             <Image
               src="/source/photos/guelaguetza-1.jpg"
-              alt="Mesa de competencia durante un torneo AMS"
+              alt="Mesa de competencia durante una competencia AMS"
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 50vw, 350px"
