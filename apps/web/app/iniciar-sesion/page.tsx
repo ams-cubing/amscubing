@@ -1,6 +1,7 @@
 import { isAllowedReturnTo } from "@workspace/auth/urls";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Button } from "@workspace/ui/components/button";
 
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
@@ -56,12 +57,9 @@ export default async function IniciarSesionPage({
                 ? "Arranca PostgreSQL y corre las migraciones antes de intentar entrar con WCA. El proyecto espera una base en postgresql://ams:ams@localhost:5432/amscubing."
                 : "Para probar login en localhost, configura `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `WCA_CLIENT_ID` y `WCA_CLIENT_SECRET` en `apps/web/.env.local`. El redirect URI registrado en WCA debe ser `http://localhost:3000/api/auth/callback/wca`."}
             </p>
-            <Link
-              href="/cuenta"
-              className="ams-heading mt-7 inline-flex rounded-full bg-[var(--ams-red)] px-6 py-4 text-sm font-bold text-white"
-            >
-              Volver a cuenta
-            </Link>
+            <Button asChild size="lg" variant="destructive" className="mt-7">
+              <Link href="/cuenta">Volver a cuenta</Link>
+            </Button>
           </div>
         </div>
       </section>

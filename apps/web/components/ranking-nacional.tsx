@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Button } from "@workspace/ui/components/button";
 import type { EventRanking, RankingType } from "@/lib/rankings";
 
 export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
@@ -26,13 +27,13 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
   return (
     <section
       id="ranking"
-      className="ams-texture relative overflow-hidden bg-[var(--ams-navy)] py-24 text-white md:py-28"
+      className="ams-texture relative overflow-hidden bg-ams-navy py-24 text-white md:py-28"
     >
-      <div className="absolute inset-0 bg-[var(--ams-navy)]/95" />
+      <div className="absolute inset-0 bg-ams-navy/95" />
       <div className="ams-container relative">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
+            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
               Rankings WCA México
             </p>
             <h2 className="ams-display text-[clamp(2rem,5vw,3.75rem)] leading-none">
@@ -45,7 +46,7 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
             </p>
           </div>
           <div className="rounded-2xl border border-white/12 bg-white/5 px-5 py-4 text-right">
-            <p className="ams-display text-3xl text-[var(--ams-orange)]">
+            <p className="ams-display text-3xl text-ams-orange">
               {rankings.length}
             </p>
             <p className="ams-heading mt-1 text-xs font-bold uppercase tracking-[0.08em] text-white/55">
@@ -56,20 +57,26 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
 
         <div className="mb-6 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {rankings.map((ranking) => (
-            <button
+            <Button
               key={ranking.event.id}
               type="button"
               title={ranking.event.name}
               aria-label={ranking.event.name}
+              variant={
+                ranking.event.id === activeRanking?.event.id
+                  ? "secondary"
+                  : "glass"
+              }
+              size="icon"
               onClick={() => {
                 setEventId(ranking.event.id);
                 if (!ranking.event.supportsAverage) {
                   setType("single");
                 }
               }}
-              className={`flex size-12 flex-none items-center justify-center rounded-xl border transition-colors ${
+              className={`size-12 rounded-xl ${
                 ranking.event.id === activeRanking?.event.id
-                  ? "border-white bg-white text-[var(--ams-navy)] shadow-[0_10px_24px_rgba(255,255,255,0.16)]"
+                  ? "border-white bg-white text-ams-navy shadow-[0_10px_24px_rgba(255,255,255,0.16)]"
                   : "border-white/12 bg-white/5 text-white/35 hover:border-white/35 hover:text-white"
               }`}
             >
@@ -78,28 +85,30 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
                 className={`cubing-icon event-${ranking.event.id} ams-event-icon`}
               />
               <span className="sr-only">{ranking.event.name}</span>
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="mb-6 flex gap-2">
           {(["single", "average"] as const).map((rankingType) => (
-            <button
+            <Button
               key={rankingType}
               type="button"
+              size="sm"
               disabled={
                 rankingType === "average" &&
                 !activeRanking?.event.supportsAverage
               }
+              variant={activeType === rankingType ? "secondary" : "glass"}
               onClick={() => setType(rankingType)}
-              className={`ams-heading rounded-full px-5 py-2 text-sm font-bold uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+              className={`ams-heading uppercase ${
                 activeType === rankingType
-                  ? "bg-white text-[var(--ams-navy)]"
+                  ? "bg-white text-ams-navy hover:bg-white/90"
                   : "bg-white/10 text-white hover:bg-white/15"
               }`}
             >
               {rankingType === "single" ? "Single" : "Average"}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -122,7 +131,7 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
                   index === 0 ? "bg-[rgba(254,80,0,0.08)]" : ""
                 }`}
               >
-                <div className="ams-display text-xl text-[var(--ams-orange)]">
+                <div className="ams-display text-xl text-ams-orange">
                   {row.countryRank}
                 </div>
                 <div>
@@ -156,7 +165,7 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
             href={rankingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="ams-heading font-bold uppercase tracking-[0.08em] text-white/62 transition-colors hover:text-[var(--ams-orange)]"
+            className="ams-heading font-bold uppercase tracking-[0.08em] text-white/62 transition-colors hover:text-ams-orange"
           >
             Fuente completa
           </a>

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@workspace/ui/components/button";
 import { aboutIntro } from "@/lib/content";
 
 export function HomeSobreNosotros() {
@@ -22,12 +23,14 @@ export function HomeSobreNosotros() {
             país.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
-              href="/nosotros"
-              className="ams-glass inline-flex rounded-full border border-white/35 bg-[linear-gradient(135deg,rgba(254,80,0,0.92),rgba(254,80,0,0.62))] px-7 py-4 font-bold text-white shadow-[0_8px_20px_rgba(254,80,0,0.3)]"
+            <Button
+              asChild
+              size="lg"
+              variant="accent"
+              className="ams-glass border border-white/35"
             >
-              Conoce a la comunidad
-            </Link>
+              <Link href="/nosotros">Conoce a la comunidad</Link>
+            </Button>
           </div>
         </div>
 

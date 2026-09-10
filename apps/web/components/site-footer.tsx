@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@workspace/ui/components/button";
 import { CALENDAR_URL, CONTACT_EMAIL, PRIVACY_URL } from "@/lib/content";
 
 const siteLinks = [
@@ -104,12 +105,14 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} Asociación Mexicana de Speedcubing.
           </p>
-          <Link
-            href={PRIVACY_URL}
-            className="ams-glass rounded-full border border-white/25 bg-[var(--ams-orange)]/70 px-4 py-2 font-bold text-white"
+          <Button
+            asChild
+            size="sm"
+            variant="accent"
+            className="ams-glass border border-white/25 bg-ams-orange/70"
           >
-            Aviso de privacidad
-          </Link>
+            <Link href={PRIVACY_URL}>Aviso de privacidad</Link>
+          </Button>
         </div>
       </div>
     </footer>

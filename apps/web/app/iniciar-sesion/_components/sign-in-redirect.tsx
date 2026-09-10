@@ -1,8 +1,9 @@
 "use client";
 
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@workspace/ui/components/button";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -29,7 +30,7 @@ export function SignInRedirect({ callbackURL }: { callbackURL: string }) {
   if (error) {
     return (
       <div className="ams-container flex min-h-[52vh] flex-col items-center justify-center gap-4 text-center">
-        <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-red)]">
+        <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-ams-red">
           No se pudo iniciar sesión
         </p>
         <p className="ams-copy max-w-xl text-base leading-7 text-black/65">
@@ -37,20 +38,17 @@ export function SignInRedirect({ callbackURL }: { callbackURL: string }) {
           guardar el estado temporal del acceso. Revisa que PostgreSQL esté
           corriendo antes de intentar de nuevo.
         </p>
-        <a
-          href="/cuenta"
-          className="ams-heading rounded-full bg-[var(--ams-navy)] px-6 py-4 text-sm font-bold text-white"
-        >
-          Volver a cuenta
-        </a>
+        <Button asChild size="lg" variant="brand">
+          <Link href="/cuenta">Volver a cuenta</Link>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="ams-container flex min-h-[52vh] flex-col items-center justify-center gap-4 text-center">
-      <LoaderCircle className="size-9 animate-spin text-[var(--ams-red)]" />
-      <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-navy)]">
+      <LoaderCircle className="size-9 animate-spin text-ams-red" />
+      <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-ams-navy">
         Redirigiendo a WCA
       </p>
     </div>

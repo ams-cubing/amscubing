@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { ArrowRight, GraduationCap, ShieldCheck, Users } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import { SiteNav } from "@/components/site-nav";
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
@@ -56,15 +57,16 @@ export default function CursosPage() {
               página sirve como entrada desde el sitio principal y mantiene el
               estilo de la nueva web.
             </p>
-            <a
-              href={COURSES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ams-glass mt-8 inline-flex items-center gap-2 rounded-full border border-white/35 bg-[linear-gradient(135deg,rgba(0,154,68,0.92),rgba(0,154,68,0.62))] px-7 py-4 font-bold text-white shadow-[0_8px_22px_rgba(0,154,68,0.25)]"
+            <Button
+              asChild
+              size="lg"
+              className="ams-glass mt-8 border border-white/35"
             >
-              Ir a cursos
-              <ArrowRight className="size-4" />
-            </a>
+              <a href={COURSES_URL} target="_blank" rel="noopener noreferrer">
+                Ir a cursos
+                <ArrowRight className="size-4" />
+              </a>
+            </Button>
           </div>
           <div className="grid gap-5">
             {courseTracks.map((track, index) => {

@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import { CALENDAR_URL } from "@/lib/content";
 import type { CompetitionSpotlight } from "@/lib/competitions";
 
@@ -86,21 +88,27 @@ export function Hero({ spotlights }: { spotlights: CompetitionSpotlight[] }) {
           className="ams-fade-up mt-9 flex flex-wrap gap-4"
           style={{ animationDelay: "700ms" }}
         >
-          <a
-            href="/torneos"
-            className="ams-glass inline-flex items-center gap-2 rounded-full border border-white/30 bg-[linear-gradient(135deg,rgba(186,12,47,0.94),rgba(186,12,47,0.62))] px-6 py-4 font-bold text-white shadow-[0_8px_24px_rgba(186,12,47,0.35)]"
+          <Button
+            asChild
+            size="lg"
+            variant="destructive"
+            className="ams-glass border border-white/30"
           >
-            Ver torneos
-            <ArrowRight className="size-4" />
-          </a>
-          <a
-            href={CALENDAR_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ams-glass inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/10 px-6 py-4 font-bold text-white hover:bg-white hover:text-[var(--ams-navy)]"
+            <Link href="/torneos">
+              Ver torneos
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="glass"
+            className="border-white/50 hover:bg-white hover:text-ams-navy"
           >
-            Calendario completo
-          </a>
+            <a href={CALENDAR_URL} target="_blank" rel="noopener noreferrer">
+              Calendario completo
+            </a>
+          </Button>
         </div>
       </div>
 

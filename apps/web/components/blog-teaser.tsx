@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ArrowRight, BookOpen, GraduationCap } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import { blogPosts, COURSES_URL } from "@/lib/content";
 
 export function BlogTeaser() {
@@ -72,13 +73,16 @@ export function BlogTeaser() {
               Los cursos siguen como producto separado de WordPress mientras el
               sitio público migra al monorepo.
             </p>
-            <a
-              href={COURSES_URL}
-              className="ams-glass mt-8 inline-flex items-center gap-2 rounded-full border border-white/35 bg-[linear-gradient(135deg,rgba(0,154,68,0.95),rgba(0,154,68,0.62))] px-6 py-4 font-bold text-white"
+            <Button
+              asChild
+              size="lg"
+              className="ams-glass mt-8 border border-white/35"
             >
-              Ir a cursos
-              <ArrowRight className="size-4" />
-            </a>
+              <a href={COURSES_URL}>
+                Ir a cursos
+                <ArrowRight className="size-4" />
+              </a>
+            </Button>
           </div>
         </div>
       </div>

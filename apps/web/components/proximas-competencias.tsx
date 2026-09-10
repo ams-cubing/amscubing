@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Users } from "lucide-react";
+import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import type { PublicCompetition } from "@/lib/competitions";
 import { CALENDAR_URL } from "@/lib/content";
 
@@ -42,19 +44,21 @@ function formatCompetitionDate(startDate: string, endDate: string) {
   return `${formatDate(startDate)} - ${formatDate(endDate)}`;
 }
 
-function statusClassName(label: string) {
+function statusVariant(
+  label: string,
+): "default" | "destructive" | "accent" | "brand" | "outline" {
   switch (label) {
     case "Inscripciones abiertas":
-      return "bg-[var(--ams-green)] text-white";
+      return "default";
     case "Lleno":
-      return "bg-[var(--ams-red)] text-white";
+      return "destructive";
     case "Casi lleno":
-      return "bg-[var(--ams-orange)] text-white";
+      return "accent";
     case "Cerrado":
-      return "bg-[var(--ams-navy)] text-white";
+      return "brand";
     case "Próximamente":
     default:
-      return "border border-black/10 bg-white text-[var(--ams-navy)]";
+      return "outline";
   }
 }
 
@@ -70,20 +74,19 @@ export function ProximasCompetencias({
       <div className="ams-container">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
               Calendario
             </p>
             <h2 className="ams-display text-[clamp(2rem,5vw,3.75rem)] leading-none">
               Próximos torneos
             </h2>
           </div>
-          <Link
-            href="/torneos"
-            className="ams-heading inline-flex items-center gap-2 text-sm font-bold text-[var(--ams-navy)] transition-colors hover:text-[var(--ams-red)]"
-          >
-            Ver todos los torneos
-            <ArrowRight className="size-4" />
-          </Link>
+          <Button asChild variant="link" className="ams-heading px-0">
+            <Link href="/torneos">
+              Ver todos los torneos
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -97,7 +100,7 @@ export function ProximasCompetencias({
               rel="noopener noreferrer"
               className="ams-slash-card ams-glass group relative block w-[min(84vw,380px)] flex-none overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.13)] hover:scale-[1.04] hover:shadow-[0_24px_40px_rgba(1,11,25,0.24)]"
             >
-              <div className="relative h-[200px] bg-[var(--ams-soft)]">
+              <div className="relative h-[200px] bg-ams-soft">
                 <Image
                   src={competition.image}
                   alt=""
@@ -105,24 +108,23 @@ export function ProximasCompetencias({
                   className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
                   sizes="380px"
                 />
-                <span
-                  className={`ams-heading absolute left-0 top-0 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.04em] [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)] ${statusClassName(
-                    competition.label,
-                  )}`}
+                <Badge
+                  variant={statusVariant(competition.label)}
+                  className="ams-heading absolute left-0 top-0 rounded-none px-3 py-2 text-[11px] uppercase tracking-[0.04em] [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]"
                 >
                   {competition.label}
-                </span>
+                </Badge>
               </div>
 
               <div className="p-[22px]">
-                <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-[var(--ams-red)]">
+                <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">
                   {formatCompetitionDate(
                     competition.startDate,
                     competition.endDate,
                   )}{" "}
                   · {competition.state || "México"}
                 </p>
-                <h3 className="ams-display mt-2 text-[22px] leading-none text-[var(--ams-navy)]">
+                <h3 className="ams-display mt-2 text-[22px] leading-none text-ams-navy">
                   {competition.name}
                 </h3>
                 <p className="ams-heading mt-3 text-sm font-bold text-black/55">
@@ -134,7 +136,7 @@ export function ProximasCompetencias({
                     {formatDate(competition.registrationClose)}
                   </span>
                   <span className="inline-flex items-center gap-2">
-                    <Users className="size-4 text-[var(--ams-green)]" />
+                    <Users className="size-4 text-ams-green" />
                     {competition.registered ?? "-"} / {competition.capacity}
                   </span>
                 </div>
