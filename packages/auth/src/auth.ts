@@ -7,6 +7,7 @@ import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins";
 
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
+import { resolveWcaRole } from "./wca-role";
 
 interface WCAProfile {
   me: {
@@ -119,17 +120,17 @@ export function createAuth() {
 
               const data = (await response.json()) as WCAProfile;
 
-              let role = "user";
-              if (data.me.delegate_status) {
-                role = "delegate";
-              }
-
-              // Prefer a seeded row (matched by WCA ID) so region/title survive login.
+              // Prefer a seeded row (matched by WCA ID) so region/title/role survive login.
               const existing = data.me.wca_id
                 ? await db.query.user.findFirst({
                     where: eq(user.wcaId, data.me.wca_id),
                   })
                 : null;
+
+              const role = resolveWcaRole({
+                delegateStatus: data.me.delegate_status,
+                existingRole: existing?.role,
+              });
 
               return {
                 id: existing?.id ?? String(data.me.id),
