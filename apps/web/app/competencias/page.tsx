@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ExternalLink, Users } from "lucide-react";
+import { CalendarDays, ExternalLink, Users } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+
 import { SiteNav } from "@/components/site-nav";
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { getPublicCompetitions } from "@/lib/competitions";
 import { CALENDAR_URL } from "@/lib/content";
+import { getCalendarUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Competencias | Asociación Mexicana de Speedcubing",
@@ -31,21 +34,22 @@ const monthNames = [
 function statusClassName(label: string) {
   switch (label) {
     case "Inscripciones abiertas":
-      return "bg-[var(--ams-green)] text-white";
+      return "bg-ams-green text-white";
     case "Lleno":
-      return "bg-[var(--ams-red)] text-white";
+      return "bg-ams-red text-white";
     case "Casi lleno":
-      return "bg-[var(--ams-orange)] text-white";
+      return "bg-ams-orange text-white";
     case "Cerrado":
-      return "bg-[var(--ams-navy)] text-white";
+      return "bg-ams-navy text-white";
     case "Próximamente":
     default:
-      return "border border-black/10 bg-white text-[var(--ams-navy)]";
+      return "border border-black/10 bg-white text-ams-navy";
   }
 }
 
 export default async function CompetenciasPage() {
   const competitions = await getPublicCompetitions();
+  const calendarUrl = getCalendarUrl();
 
   return (
     <main>
@@ -59,13 +63,19 @@ export default async function CompetenciasPage() {
         <div className="ams-container">
           <div className="mb-10 flex flex-wrap items-center justify-between gap-5">
             <div>
-              <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+              <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
                 WCA México
               </p>
               <h2 className="ams-display text-[clamp(2rem,5vw,3.5rem)] leading-none">
                 Competencias abiertas y anunciadas
               </h2>
             </div>
+            <Button asChild variant="brand" className="shrink-0">
+              <a href={calendarUrl}>
+                <CalendarDays className="size-4" />
+                Ver calendario completo
+              </a>
+            </Button>
           </div>
 
           {competitions.length === 0 ? (
@@ -84,7 +94,7 @@ export default async function CompetenciasPage() {
                     index % 2 === 1 ? "ams-slash-card-right" : "ams-slash-card"
                   }`}
                 >
-                  <div className="relative h-52 bg-[var(--ams-soft)]">
+                  <div className="relative h-52 bg-ams-soft">
                     <Image
                       src={competition.image}
                       alt=""
@@ -101,14 +111,14 @@ export default async function CompetenciasPage() {
                     </span>
                   </div>
                   <div className="p-6">
-                    <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-[var(--ams-red)]">
+                    <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">
                       {formatCompetitionDate(
                         competition.startDate,
                         competition.endDate,
                       )}{" "}
                       · {competition.state || "México"}
                     </p>
-                    <h3 className="ams-display mt-2 text-2xl leading-none text-[var(--ams-navy)]">
+                    <h3 className="ams-display mt-2 text-2xl leading-none text-ams-navy">
                       {competition.name}
                     </h3>
                     <p className="mt-3 font-bold text-black/55">
@@ -120,11 +130,11 @@ export default async function CompetenciasPage() {
                         {formatDate(competition.registrationClose)}
                       </span>
                       <span className="inline-flex items-center gap-2">
-                        <Users className="size-4 text-[var(--ams-green)]" />
+                        <Users className="size-4 text-ams-green" />
                         {competition.registered ?? "-"} / {competition.capacity}
                       </span>
                     </div>
-                    <span className="mt-6 inline-flex items-center gap-2 font-bold text-[var(--ams-green)]">
+                    <span className="mt-6 inline-flex items-center gap-2 font-bold text-ams-green">
                       Ver en WCA
                       <ExternalLink className="size-4" />
                     </span>
@@ -145,7 +155,9 @@ function formatDate(dateString: string | null) {
     return "-";
   }
 
-  const cleanDate = dateString.split(" ")[0] ?? dateString;
+  // WCA returns ISO datetimes (`2026-07-27T02:00:00.000Z`); competition
+  // dates from the DB are `YYYY-MM-DD`. Take the calendar date either way.
+  const cleanDate = dateString.split(/[T\s]/)[0] ?? dateString;
   const [year, month, day] = cleanDate.split("-").map(Number);
 
   if (!year || !month || !day) {

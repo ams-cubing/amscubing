@@ -38,7 +38,7 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { cn } from "@workspace/ui/lib/utils";
-import { getBoardsUrl } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 import {
   formatInternalStatus,
   formatPublicStatus,

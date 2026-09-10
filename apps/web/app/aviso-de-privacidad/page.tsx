@@ -92,20 +92,20 @@ export default function AvisoDePrivacidadPage() {
         description="Aviso de Privacidad Integral de la Asociación Mexicana de Speedcubing, A.C., adaptado al nuevo estilo visual del sitio."
       />
       <section className="bg-white py-16 md:py-20">
-        <div className="ams-container flex max-w-[1100px] flex-col gap-6">
+        <div className="ams-container flex max-w-275 flex-col gap-6">
           {sections.map((section) => (
             <article
               key={section.title}
-              className={`rounded-[20px] p-8 md:p-10 ${getSectionClassName(
+              className={`rounded-5 p-8 md:p-10 ${getSectionClassName(
                 section.tone,
               )}`}
             >
               <h2
                 className={`ams-display mb-4 text-2xl ${
                   section.tone === "light"
-                    ? "text-[var(--ams-red)]"
+                    ? "text-ams-red"
                     : section.tone === "dark"
-                      ? "text-[var(--ams-orange)]"
+                      ? "text-ams-orange"
                       : "text-white"
                 }`}
               >
@@ -137,12 +137,12 @@ export default function AvisoDePrivacidadPage() {
 function getSectionClassName(tone: (typeof sections)[number]["tone"]) {
   switch (tone) {
     case "dark":
-      return "ams-texture bg-[var(--ams-navy)] text-white";
+      return "ams-texture bg-ams-navy text-white";
     case "orange":
-      return "bg-[var(--ams-orange)] text-white";
+      return "bg-ams-orange text-white";
     case "green":
-      return "bg-[var(--ams-green)] text-white";
+      return "bg-ams-green text-white";
     default:
-      return "bg-[var(--ams-soft)] text-[var(--ams-navy)]";
+      return "bg-ams-soft text-ams-navy";
   }
 }

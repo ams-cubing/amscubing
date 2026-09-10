@@ -10,19 +10,21 @@ import {
   getPublicCompetitionSpotlights,
   getPublicCompetitions,
 } from "@/lib/competitions";
+import { getCommunityStats } from "@/lib/community-stats";
 import { getNationalRankings } from "@/lib/rankings";
 
 export default async function HomePage() {
-  const [competitions, rankings, spotlights] = await Promise.all([
+  const [competitions, rankings, spotlights, stats] = await Promise.all([
     getPublicCompetitions(),
     getNationalRankings(),
     getPublicCompetitionSpotlights(),
+    getCommunityStats(),
   ]);
 
   return (
     <main>
       <SiteNav />
-      <Hero spotlights={spotlights} />
+      <Hero spotlights={spotlights} stats={stats} />
       <ProximasCompetencias competitions={competitions} />
       <RankingNacional rankings={rankings} />
       <HomeSobreNosotros />

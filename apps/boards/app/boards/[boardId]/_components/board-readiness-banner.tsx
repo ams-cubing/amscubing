@@ -57,7 +57,7 @@ export function BoardReadinessBanner({
   return (
     <>
       <div className="shrink-0 border-b bg-amber-50 px-4 py-3 text-sm dark:bg-amber-950/30">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex w-full max-w-400 flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-start gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
             <div className="min-w-0 space-y-1">

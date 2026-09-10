@@ -1,18 +1,17 @@
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
-import { getBoardsUrl } from "@workspace/auth/urls";
 
-export { getBoardsUrl };
 export {
   canAccessBoardsApp,
   getBoardsOrganizerAllowlist,
 } from "@workspace/auth/boards-access";
 
 /**
- * Whether the calendar sidebar should show the Tableros AMS link.
+ * Whether the calendar app nav should show the Tableros AMS link.
  * Compute on the server and pass into client components.
+ * Do not import this module from client components — use `@/lib/urls` for getBoardsUrl.
  */
-export function canSeeBoardsNav(
+export async function canSeeBoardsNav(
   user: { role: string; wcaId: string } | null | undefined,
-): boolean {
+): Promise<boolean> {
   return canAccessBoardsApp(user);
 }

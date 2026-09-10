@@ -51,6 +51,13 @@ const publicActions = [
 
 const delegateActions = [
   {
+    title: "Panel de administración",
+    description:
+      "Edita delegados públicos, ubicaciones y otorga el rol editor para el blog.",
+    href: "/admin",
+    icon: Newspaper,
+  },
+  {
     title: "Crear competencias",
     description:
       "Abre el calendario de AMS para solicitar fechas, revisar procesos y administrar competencias.",
@@ -65,18 +72,21 @@ const delegateActions = [
     icon: LayoutDashboard,
   },
   {
-    title: "Crear o responder blog",
-    description:
-      "Acceso editorial inicial para preparar publicaciones y moderar conversación pública.",
-    href: "/blog",
-    icon: Newspaper,
-  },
-  {
     title: "Crear cursos",
     description:
       "Entrada al LMS dedicado para administrar material de capacitación y rutas de aprendizaje.",
     href: COURSES_URL,
     icon: BookOpen,
+  },
+];
+
+const editorActions = [
+  {
+    title: "Blog (próximamente)",
+    description:
+      "Cuando el CMS esté listo, podrás publicar y editar entradas del blog AMS desde aquí.",
+    href: "/blog",
+    icon: Newspaper,
   },
 ];
 
@@ -90,7 +100,7 @@ export default function CuentaPage() {
         description="Inicia sesión con tu WCA ID para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
       />
       <section className="bg-white py-16 md:py-20">
-        <div className="ams-container max-w-[1120px]">
+        <div className="ams-container max-w-280">
           <Suspense fallback={<CuentaBodyFallback />}>
             <CuentaBody />
           </Suspense>
@@ -112,11 +122,17 @@ async function CuentaBody() {
     : null;
   const user = session?.user;
   const isDelegate = user?.role === "delegate";
+  const isEditor = user?.role === "editor";
+  const roleLabel = isDelegate
+    ? "Delegado WCA"
+    : isEditor
+      ? "Editor de contenido"
+      : "Competidor";
 
   return (
     <>
       {user ? (
-        <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-[22px] bg-[var(--ams-soft)] p-6 md:p-8">
+        <div className="mb-10 flex flex-wrap items-center justify-between gap-5 rounded-5.5 bg-ams-soft p-6 md:p-8">
           <div className="flex items-center gap-4">
             {user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -126,15 +142,15 @@ async function CuentaBody() {
                 className="size-16 rounded-full object-cover"
               />
             ) : (
-              <div className="ams-display flex size-16 items-center justify-center rounded-full bg-[var(--ams-navy)] text-xl text-white">
+              <div className="ams-display flex size-16 items-center justify-center rounded-full bg-ams-navy text-xl text-white">
                 {getInitials(user.name)}
               </div>
             )}
             <div>
-              <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-[var(--ams-red)]">
-                {isDelegate ? "Delegado WCA" : "Competidor"}
+              <p className="ams-heading text-sm font-bold uppercase tracking-[0.08em] text-ams-red">
+                {roleLabel}
               </p>
-              <h2 className="ams-display text-3xl leading-none text-[var(--ams-navy)]">
+              <h2 className="ams-display text-3xl leading-none text-ams-navy">
                 {user.name}
               </h2>
               <p className="ams-heading mt-1 text-sm text-black/55">
@@ -145,8 +161,8 @@ async function CuentaBody() {
           <AccountSignOut />
         </div>
       ) : (
-        <div className="ams-texture mb-10 overflow-hidden rounded-[24px] bg-[var(--ams-navy)] p-8 text-white md:p-10">
-          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
+        <div className="ams-texture mb-10 overflow-hidden rounded-3xl bg-ams-navy p-8 text-white md:p-10">
+          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
             Acceso único
           </p>
           <h2 className="ams-display max-w-2xl text-[clamp(2rem,5vw,3.5rem)] leading-none">
@@ -167,7 +183,7 @@ async function CuentaBody() {
       </div>
 
       <div className="mt-14">
-        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
           Permisos de organización
         </p>
         <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.25rem)] leading-none">
@@ -179,13 +195,19 @@ async function CuentaBody() {
               <ActionCard key={action.title} action={action} compact />
             ))}
           </div>
+        ) : isEditor ? (
+          <div className="grid gap-6 lg:grid-cols-3">
+            {editorActions.map((action) => (
+              <ActionCard key={action.title} action={action} compact />
+            ))}
+          </div>
         ) : (
-          <div className="rounded-[22px] border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
+          <div className="rounded-5.5 border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
             <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
               Estas acciones aparecen cuando tu WCA ID tiene permisos de
-              delegado. Más adelante se puede separar un rol editorial específico
-              para blog y cursos; por ahora el repositorio solo distingue entre
-              usuario y delegado.
+              delegado o de editor de contenido. Los delegados administran el
+              panel; los editores podrán publicar en el blog cuando el CMS esté
+              listo.
             </p>
           </div>
         )}
@@ -197,11 +219,11 @@ async function CuentaBody() {
 function CuentaBodyFallback() {
   return (
     <div className="space-y-10" aria-hidden>
-      <div className="h-40 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+      <div className="h-40 animate-pulse rounded-5.5 bg-ams-soft" />
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
-        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
-        <div className="h-48 animate-pulse rounded-[22px] bg-[var(--ams-soft)]" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
+        <div className="h-48 animate-pulse rounded-5.5 bg-ams-soft" />
       </div>
     </div>
   );
@@ -227,13 +249,13 @@ function ActionCard({
       href={action.href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="group block rounded-[22px] bg-[var(--ams-soft)] p-7 transition-transform hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(1,11,25,0.12)]"
+      className="group block rounded-5.5 bg-ams-soft p-7 transition-transform hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(1,11,25,0.12)]"
     >
-      <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-[var(--ams-red)] text-white transition-colors group-hover:bg-[var(--ams-green)]">
+      <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-ams-red text-white transition-colors group-hover:bg-ams-green">
         <Icon className="size-5" />
       </div>
       <h3
-        className={`ams-display leading-none text-[var(--ams-navy)] ${
+        className={`ams-display leading-none text-ams-navy ${
           compact ? "text-2xl" : "text-3xl"
         }`}
       >

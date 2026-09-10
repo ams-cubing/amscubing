@@ -15,7 +15,7 @@ export default async function BoardsHomePage() {
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
 
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return <BoardsAccessDenied />;
   }
 

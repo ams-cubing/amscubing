@@ -25,7 +25,13 @@ import {
   getInternalStatusColor,
   formatInternalStatus,
 } from "@/lib/utils";
-import type { Competition, Holiday, Region, State } from "@workspace/db/schema";
+import type {
+  Competition,
+  Holiday,
+  Region,
+  State,
+  User,
+} from "@workspace/db/schema";
 import { Badge } from "@workspace/ui/components/badge";
 import Link from "next/link";
 
@@ -39,7 +45,7 @@ interface CalendarViewProps {
   availability: {
     date: string;
   }[];
-  role: "delegate" | "user" | undefined;
+  role: User["role"] | undefined;
 }
 
 export function CalendarView({

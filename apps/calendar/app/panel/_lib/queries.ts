@@ -32,12 +32,6 @@ import type { GetCompetitionsSchema } from "./validations";
 
 const DELEGATES_UNASSIGNED_VALUE = "__unassigned__";
 
-function getTodayDateString() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString().split("T")[0] ?? "";
-}
-
 export async function getCompetitions(input: GetCompetitionsSchema) {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
   cacheTag("competitions");

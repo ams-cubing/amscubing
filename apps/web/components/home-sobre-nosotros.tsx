@@ -8,13 +8,12 @@ export function HomeSobreNosotros() {
     <section className="bg-white py-24 md:py-28">
       <div className="ams-container grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
-          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
             Sobre nosotros
           </p>
           <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.75rem)] leading-none">
-            Somos la comunidad oficial{" "}
-            <span className="text-[var(--ams-red)]">WCA</span> en{" "}
-            <span className="text-[var(--ams-green)]">México</span>
+            Somos la comunidad oficial <span className="text-ams-red">WCA</span>{" "}
+            en <span className="text-ams-green">México</span>
           </h2>
           <p className="text-base leading-8 text-black/70">{aboutIntro}</p>
           <p className="mt-3 text-base leading-8 text-black/70">
@@ -44,7 +43,7 @@ export function HomeSobreNosotros() {
               sizes="(max-width: 1024px) 50vw, 350px"
             />
           </div>
-          <div className="relative -ml-8 overflow-hidden bg-[var(--ams-red)] [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
+          <div className="relative -ml-8 overflow-hidden bg-ams-red [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
             <Image
               src="/source/photos/guelaguetza-1.jpg"
               alt="Mesa de competencia durante una competencia AMS"

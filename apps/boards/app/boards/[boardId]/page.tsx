@@ -55,7 +55,7 @@ export default async function BoardPage({
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
 
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return <BoardsAccessDenied />;
   }
 
@@ -142,7 +142,7 @@ export default async function BoardPage({
         </div>
       )}
       <div className="shrink-0 border-b px-4 py-3">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex w-full max-w-400 flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-lg font-semibold tracking-tight">

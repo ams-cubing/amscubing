@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { User } from "@workspace/db/schema";
 
 const RegionMap = dynamic(
   () =>
@@ -23,7 +24,7 @@ export function ClientMap({
   regionsWithDelegates: {
     delegates: {
       wcaId: string;
-      role: "delegate" | "user";
+      role: User["role"];
       regionId: string | null;
       lastLogin: Date | null;
       id: string;

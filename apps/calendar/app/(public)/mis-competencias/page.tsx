@@ -16,7 +16,8 @@ import {
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
-import { canAccessBoardsApp, getBoardsUrl } from "@/lib/boards";
+import { canAccessBoardsApp } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 async function PageContent() {
@@ -31,7 +32,7 @@ async function PageContent() {
   }
 
   const user = toSessionUser(session.user as RawSessionUser);
-  const canSeeBoards = canAccessBoardsApp(user);
+  const canSeeBoards = await canAccessBoardsApp(user);
 
   const competitionIds = await getUserOrganizerCompetitionIds(
     session.user.wcaId,

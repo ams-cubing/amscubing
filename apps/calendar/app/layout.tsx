@@ -6,17 +6,19 @@ import "leaflet/dist/leaflet.css";
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
-import { Header } from "@/components/header";
+import { CalendarAppNav } from "@/components/calendar-app-nav";
 import { HeaderNotifications } from "@/components/header-notifications";
+import { CalendarAmsNav } from "@/components/ams-site-nav";
 import { Toaster } from "sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarProvider,
-  SidebarInset,
-} from "@workspace/ui/components/sidebar";
 import { Footer } from "@/components/footer";
 import { auth } from "@/lib/auth";
 import { canSeeBoardsNav } from "@/lib/boards";
+import {
+  getBoardsUrl,
+  getCalendarUrl,
+  getCrossAppSignInUrl,
+  getWebUrl,
+} from "@/lib/urls";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -56,21 +58,59 @@ export const metadata = {
   },
 };
 
-async function AppSidebarWrapper() {
+async function CalendarAppNavWrapper() {
   const headersList = await headers();
-
   const session = await auth.api.getSession({
     headers: headersList,
   });
 
   const normalizedUser = session?.user
     ? toSessionUser(session.user as RawSessionUser)
-    : undefined;
+    : null;
 
   return (
-    <AppSidebar
-      user={normalizedUser}
-      showBoardsNav={canSeeBoardsNav(normalizedUser)}
+    <CalendarAppNav
+      isSignedIn={normalizedUser != null}
+      isDelegate={normalizedUser?.role === "delegate"}
+      notifications={
+        <Suspense fallback={null}>
+          <HeaderNotifications />
+        </Suspense>
+      }
+    />
+  );
+}
+
+async function CalendarAmsNavWrapper() {
+  const headersList = await headers();
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
+
+  const normalizedUser = session?.user
+    ? toSessionUser(session.user as RawSessionUser)
+    : null;
+
+  const webUrl = getWebUrl();
+  const calendarUrl = getCalendarUrl();
+  const boardsUrl = getBoardsUrl();
+
+  return (
+    <CalendarAmsNav
+      user={
+        normalizedUser
+          ? {
+              name: normalizedUser.name,
+              image: normalizedUser.image,
+              email: normalizedUser.email,
+            }
+          : null
+      }
+      showBoardsLink={await canSeeBoardsNav(normalizedUser)}
+      signInHref={getCrossAppSignInUrl(calendarUrl)}
+      webUrl={webUrl}
+      calendarUrl={calendarUrl}
+      boardsUrl={boardsUrl}
     />
   );
 }
@@ -86,31 +126,39 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <AppProviders nuqs>
-          <SidebarProvider>
-            <Suspense fallback={<AppSidebar user={undefined} />}>
-              <AppSidebarWrapper />
+          <Suspense fallback={null}>
+            <PreviewBanner productionHost="calendario.amscubing.org" />
+          </Suspense>
+          <Suspense
+            fallback={
+              <CalendarAmsNav
+                user={null}
+                signInHref={getCrossAppSignInUrl(getCalendarUrl())}
+                webUrl={getWebUrl()}
+                calendarUrl={getCalendarUrl()}
+                boardsUrl={getBoardsUrl()}
+              />
+            }
+          >
+            <CalendarAmsNavWrapper />
+          </Suspense>
+          <div className="sticky top-0 z-40">
+            <Suspense
+              fallback={
+                <CalendarAppNav isSignedIn={false} isDelegate={false} />
+              }
+            >
+              <CalendarAppNavWrapper />
             </Suspense>
-            <SidebarInset>
-              <div className="sticky top-0 z-50">
-                <Suspense fallback={<div className="h-0" aria-hidden />}>
-                  <PreviewBanner productionHost="calendario.amscubing.org" />
-                </Suspense>
-                <Header>
-                  <Suspense fallback={null}>
-                    <HeaderNotifications />
-                  </Suspense>
-                </Header>
-              </div>
-              <div className="flex flex-1 flex-col">
-                <div className="@container/main flex flex-1 flex-col gap-2">
-                  {children}
-                </div>
-              </div>
-              <Suspense fallback={null}>
-                <Footer />
-              </Suspense>
-            </SidebarInset>
-          </SidebarProvider>
+          </div>
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              {children}
+            </div>
+          </div>
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
           <Analytics />
           <SpeedInsights />
           <Toaster />

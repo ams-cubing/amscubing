@@ -1,6 +1,7 @@
 "use client";
 
 import { AlignLeft, CalendarClock, CheckSquare, Paperclip } from "lucide-react";
+import * as React from "react";
 
 import {
   Avatar,
@@ -26,12 +27,14 @@ export function KanbanCardFace({
   card,
   relevant,
   onOpen,
+  dragHandle,
   className,
   ...props
 }: {
   card: BoardCard;
   relevant: boolean;
   onOpen?: () => void;
+  dragHandle?: React.ReactNode;
   className?: string;
 } & React.ComponentProps<"div">) {
   const checklistTotal = card.checklists.reduce(
@@ -90,7 +93,12 @@ export function KanbanCardFace({
           ))}
         </div>
       )}
-      <div className="text-sm font-medium leading-snug">{card.title}</div>
+      <div className="flex items-start gap-1">
+        <div className="min-w-0 flex-1 text-sm font-medium leading-snug">
+          {card.title}
+        </div>
+        {dragHandle}
+      </div>
       {hasMeta && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {hasDescription && <AlignLeft className="size-3.5" />}

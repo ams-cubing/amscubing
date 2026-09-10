@@ -7,6 +7,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Gaming Sporty";
+  src: url("/fonts/GamingSporty.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   /* AMS brand palette */
   --ams-navy: #010b19;
@@ -16,6 +24,7 @@
   --ams-paper: #fffaf2;
   --ams-soft: #f4f4f4;
   --ams-ink: var(--ams-navy);
+  --ams-display: "Gaming Sporty", var(--font-sans), sans-serif;
 
   --background: #ffffff;
   --foreground: var(--ams-navy);
@@ -162,5 +171,16 @@
 
   .ams-glass:hover {
     transform: translateY(-2px);
+  }
+
+  .ams-container {
+    margin-inline: auto;
+    width: min(100% - 2rem, 1400px);
+  }
+
+  .ams-display {
+    font-family: var(--ams-display);
+    letter-spacing: 0;
+    text-transform: uppercase;
   }
 }

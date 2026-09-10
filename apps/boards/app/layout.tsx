@@ -1,5 +1,4 @@
 import { Unbounded, Saira, Geist_Mono } from "next/font/google";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
@@ -10,12 +9,17 @@ import "@workspace/ui/globals.css";
 import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
 
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
+import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
-import { SignInButton } from "@/components/sign-in-button";
-import { UserMenu } from "@/components/user-menu";
+import { BoardsAmsNav } from "@/components/ams-site-nav";
 import { auth } from "@/lib/auth";
-import { getCalendarUrl } from "@/lib/urls";
+import {
+  getBoardsUrl,
+  getCalendarUrl,
+  getCrossAppSignInUrl,
+  getWebUrl,
+} from "@/lib/urls";
 import {
   getNotificationInbox,
   markAllNotificationsReadAction,
@@ -45,7 +49,16 @@ export const metadata = {
     "Tableros de organización de competencias de la Asociación Mexicana de Speedcubing.",
 };
 
-async function HeaderAuth() {
+function boardsNavUrls() {
+  return {
+    webUrl: getWebUrl(),
+    calendarUrl: getCalendarUrl(),
+    boardsUrl: getBoardsUrl(),
+    signInHref: getCrossAppSignInUrl(getBoardsUrl()),
+  };
+}
+
+async function BoardsAmsNavWrapper() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -54,23 +67,44 @@ async function HeaderAuth() {
     ? toSessionUser(session.user as RawSessionUser)
     : null;
 
-  if (!user) {
-    return <SignInButton />;
-  }
+  const showBoardsLink = await canAccessBoardsApp(user);
+  const urls = boardsNavUrls();
+  const actions =
+    user != null ? (
+      <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
+        <BoardsNavNotifications />
+      </div>
+    ) : null;
 
+  return (
+    <BoardsAmsNav
+      user={
+        user
+          ? {
+              name: user.name,
+              image: user.image,
+              email: user.email,
+            }
+          : null
+      }
+      showBoardsLink={showBoardsLink}
+      actions={actions}
+      {...urls}
+    />
+  );
+}
+
+async function BoardsNavNotifications() {
   const inbox = await getNotificationInbox();
 
   return (
-    <div className="flex items-center gap-1">
-      <NotificationInbox
-        items={inbox.items}
-        unreadCount={inbox.unreadCount}
-        onMarkRead={markNotificationReadAction}
-        onMarkAllRead={markAllNotificationsReadAction}
-        onRefresh={getNotificationInbox}
-      />
-      <UserMenu user={user} />
-    </div>
+    <NotificationInbox
+      items={inbox.items}
+      unreadCount={inbox.unreadCount}
+      onMarkRead={markNotificationReadAction}
+      onMarkAllRead={markAllNotificationsReadAction}
+      onRefresh={getNotificationInbox}
+    />
   );
 }
 
@@ -79,7 +113,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const calendarUrl = getCalendarUrl();
+  const urls = boardsNavUrls();
 
   return (
     <html lang="es" suppressHydrationWarning>
@@ -88,27 +122,14 @@ export default function RootLayout({
       >
         <AppProviders>
           <div className="flex h-svh flex-col overflow-hidden">
-            <header className="z-40 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+            <div className="z-40 shrink-0">
               <Suspense fallback={null}>
                 <PreviewBanner productionHost="tablero.amscubing.org" />
               </Suspense>
-              <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-4">
-                <div className="flex items-center gap-4">
-                  <Link href="/" className="font-semibold tracking-tight">
-                    Tableros AMS
-                  </Link>
-                  <Link
-                    href={calendarUrl}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Calendario
-                  </Link>
-                </div>
-                <Suspense fallback={null}>
-                  <HeaderAuth />
-                </Suspense>
-              </div>
-            </header>
+              <Suspense fallback={<BoardsAmsNav user={null} {...urls} />}>
+                <BoardsAmsNavWrapper />
+              </Suspense>
+            </div>
             <main className="flex min-h-0 flex-1 flex-col overflow-auto">
               {children}
             </main>

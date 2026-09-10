@@ -19,7 +19,7 @@ export type AppUrls = {
 
 export type NotificationUser = {
   id: string;
-  role: "delegate" | "user";
+  role: "delegate" | "user" | "editor";
   wcaId: string;
 };
 
@@ -114,7 +114,7 @@ export function hrefForNotification(
   type: NotificationType,
   opts: {
     urls: AppUrls;
-    recipientRole: "delegate" | "user";
+    recipientRole: "delegate" | "user" | "editor";
     boardId?: number;
     cardId?: number;
     competitionId?: number;

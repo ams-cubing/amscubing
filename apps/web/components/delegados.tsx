@@ -16,13 +16,13 @@ export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
   return (
     <section
       id="delegados"
-      className="ams-texture relative overflow-hidden bg-[var(--ams-navy)] py-24 text-white md:py-32"
+      className="ams-texture relative overflow-hidden bg-ams-navy py-24 text-white md:py-32"
     >
       <div className="absolute inset-0 bg-[#010b19]/90" />
       <div className="ams-container relative">
         <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
+            <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
               WCA en México
             </p>
             <h2 className="ams-display text-[clamp(2rem,5vw,3.75rem)] leading-none">
@@ -44,9 +44,9 @@ export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
               rel="noopener noreferrer"
               className={`group ams-slash-card ${
                 index % 2 === 1 ? "ams-slash-card-right" : ""
-              } overflow-hidden border border-white/10 bg-white text-[var(--ams-navy)] shadow-[0_20px_42px_rgba(0,0,0,0.2)] transition-transform hover:-translate-y-1`}
+              } overflow-hidden border border-white/10 bg-white text-ams-navy shadow-[0_20px_42px_rgba(0,0,0,0.2)] transition-transform hover:-translate-y-1`}
             >
-              <div className="relative h-56 bg-[var(--ams-soft)]">
+              <div className="relative h-56 bg-ams-soft">
                 {delegate.avatarUrl ? (
                   <Image
                     src={delegate.avatarUrl}
@@ -62,7 +62,7 @@ export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
                     </span>
                   </div>
                 )}
-                <span className="absolute left-0 top-0 bg-[var(--ams-red)] px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
+                <span className="absolute left-0 top-0 bg-ams-red px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
                   {delegate.wcaId}
                 </span>
               </div>
@@ -70,14 +70,14 @@ export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
                 <h3 className="ams-heading text-lg font-bold leading-tight">
                   {delegate.name}
                 </h3>
-                <p className="text-sm font-semibold text-[var(--ams-red)]">
+                <p className="text-sm font-semibold text-ams-red">
                   {delegate.title}
                 </p>
                 <p className="inline-flex items-center gap-2 text-sm text-black/60">
-                  <MapPin className="size-4 text-[var(--ams-green)]" />
+                  <MapPin className="size-4 text-ams-green" />
                   {delegate.location}
                 </p>
-                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--ams-navy)] transition-colors group-hover:text-[var(--ams-orange)]">
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-ams-navy transition-colors group-hover:text-ams-orange">
                   Perfil WCA
                   <ExternalLink className="size-3.5" />
                 </span>

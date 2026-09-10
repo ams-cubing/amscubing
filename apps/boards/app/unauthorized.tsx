@@ -1,10 +1,12 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
 import { Button } from "@workspace/ui/components/button";
 
 import { SignInButton } from "@/components/sign-in-button";
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import Link from "next/link";
 
 export default async function UnauthorizedPage() {
   const session = await auth.api.getSession({
@@ -16,18 +18,15 @@ export default async function UnauthorizedPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Inicia sesión para ver tus tableros
-      </h1>
-      <p className="max-w-md text-muted-foreground">
-        Usa tu cuenta WCA para acceder a los tableros de organización de
-        competencias AMS.
-      </p>
+    <AmsStatusPage
+      code="401"
+      title="Inicia sesión"
+      description="Usa tu cuenta WCA para acceder a los tableros de organización de competencias AMS."
+    >
       <SignInButton />
-      <Button variant="ghost" asChild>
-        <a href="/">Volver al inicio</a>
+      <Button variant="outline" size="lg" asChild>
+        <Link href="/">Volver al inicio</Link>
       </Button>
-    </div>
+    </AmsStatusPage>
   );
 }
