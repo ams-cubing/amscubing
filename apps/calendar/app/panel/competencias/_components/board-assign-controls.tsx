@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
 
-import { getBoardsUrl } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 
 import { assignBoardToCompetition } from "../_actions/assign-board";
 

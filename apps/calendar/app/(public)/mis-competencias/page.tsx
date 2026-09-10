@@ -16,7 +16,8 @@ import {
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
-import { canAccessBoardsApp, getBoardsUrl } from "@/lib/boards";
+import { canAccessBoardsApp } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 async function PageContent() {

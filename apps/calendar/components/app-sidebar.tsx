@@ -27,7 +27,7 @@ import {
 import Image from "next/image";
 import { NavDelegate } from "./nav-delegate";
 import type { User } from "@workspace/db/schema";
-import { getBoardsUrl } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 
 const data = {
   calendar: [

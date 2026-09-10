@@ -24,7 +24,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
-import { getBoardsUrl } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/urls";
 
 import { BoardAssignControls } from "../../_components/board-assign-controls";
 
