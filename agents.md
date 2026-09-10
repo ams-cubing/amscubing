@@ -35,7 +35,7 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
 
 - Página principal: `apps/web/app/page.tsx`.
 - Página Nosotros: `apps/web/app/nosotros/page.tsx`.
-- Página Torneos: `apps/web/app/torneos/page.tsx`, lee competencias actuales desde el plugin/API de WordPress y WCA mediante `apps/web/lib/competitions.ts`.
+- Página Torneos: `apps/web/app/torneos/page.tsx`, lee competencias anunciadas desde `@workspace/db` y enriquece datos faltantes con la API WCA mediante `apps/web/lib/competitions.ts`.
 - Página Blog: `apps/web/app/blog/page.tsx`, muestra entradas editoriales enlazadas desde `apps/web/lib/content.ts`.
 - Página Cursos: `apps/web/app/cursos/page.tsx`, conserva la funcionalidad como entrada al sitio externo `cursos.amscubing.org`.
 - Página Cuenta: `apps/web/app/cuenta/page.tsx`, usa la sesión compartida de `@workspace/auth` con WCA ID y funciona como hub de acciones. Usuarios generales ven mis competencias, blog y cursos; delegados ven además crear competencias, tableros, blog editorial y cursos. El schema actual solo distingue `user` y `delegate`; RBAC editorial fino queda pendiente.
@@ -44,7 +44,7 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
 - Contenido editorial corto: `apps/web/lib/content.ts`.
 - Delegados públicos: `apps/web/lib/delegates.ts`, renderizados dentro de `apps/web/components/quienes-somos.tsx`.
 - Competencias públicas: `apps/web/lib/competitions.ts`.
-- Ranking nacional: `apps/web/lib/rankings.ts`, toma rankings públicos de `https://www.cubingmexico.net/rankings/{evento}/{single|average}` y parsea el payload RSC con `personId`, `countryRank`, `name`, `best` y `state`.
+- Ranking nacional: `apps/web/lib/rankings.ts`, toma rankings nacionales de `https://api.cubingmexico.net/rank/{single|average}/{evento}` (`personId`, `personName`, `best`, `rank.country`, `stateId`) y resuelve nombres de estado con `https://api.cubingmexico.net/states`.
 - Selector de categorías del ranking: usa `@cubing/icons` con clases `cubing-icon event-{eventId}` para mostrar iconos oficiales de eventos WCA en lugar de botones largos con texto.
 - Assets del rediseño copiados a `apps/web/public/source` y `apps/web/public/fonts`.
 
@@ -53,11 +53,11 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
 - WordPress actual: `https://amscubing.org/`.
   - Textos usados: quienes somos y blog destacado. Misión y visión existen como referencia editorial, pero no deben renderizarse en la portada actual.
   - Lista visible de delegados WCA.
-- Competencias WordPress legado:
-  - `https://amscubing.org/upcoming-comps/` usa un iframe hacia `https://amscubing.org/utils/upcoming/upcoming_comps.php`.
-  - El iframe carga JSON desde `https://amscubing.org/utils/upcoming/events_v2.php`.
-  - Ese JSON viene del plugin actual y debe ser la fuente preferida para torneos públicos mientras no se retire el plugin, porque trae datos WCA actualizados: ciudad, fechas, registro, cupo, inscritos, estado, logo y URL WCA.
-  - La BD compartida queda como fallback y como destino previsto del roadmap.
+- Competencias públicas en la web:
+  - Fuente preferida: tabla `competition` en `@workspace/db` con `statusPublic = "announced"` y `endDate >= hoy` (zona `America/Mexico_City`).
+  - Enrichment WCA: `https://www.worldcubeassociation.org/api/v0/competitions/{id}` para nombre, ventana de inscripción y cupo cuando haga falta.
+  - Si la BD está vacía o no responde, se usa el fallback estático en `apps/web/lib/competitions.ts`.
+  - WordPress legado (`events_v2.php`) ya no es la fuente de torneos de `apps/web`.
 - Avatares de delegados:
   - Se usan URLs públicas de `https://avatars.worldcubeassociation.org/...` cuando existen. Algunos perfiles nuevos ya no usan la ruta antigua `/uploads/user/avatar/...`; `next.config.mjs` permite cualquier path bajo ese host.
 

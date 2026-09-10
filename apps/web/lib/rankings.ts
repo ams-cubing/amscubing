@@ -23,18 +23,28 @@ export type EventRanking = {
   average: RankingResult[];
 };
 
-type CubingMexicoRow = {
-  personId: string;
-  countryRank: number;
-  name: string;
+type CubingMexicoRankRow = {
   best: number;
-  state: string | null;
+  eventId: string;
+  personId: string;
+  personName: string;
+  rank: {
+    world: number;
+    continent: number;
+    country: number;
+    state: number;
+  };
+  rankType: RankingType;
+  stateId: string | null;
 };
 
-type CubingMexicoPayload = {
-  data: CubingMexicoRow[];
-  pageCount: number;
+type CubingMexicoState = {
+  id: string;
+  name: string;
 };
+
+const CUBING_MEXICO_API = "https://api.cubingmexico.net";
+const RANKINGS_REVALIDATE_SECONDS = 60 * 60 * 12;
 
 export const rankingEvents: RankingEvent[] = [
   { id: "333", name: "Cubo 3x3x3", supportsAverage: true },
@@ -90,11 +100,15 @@ const fallbackRanking: EventRanking[] = [
 ];
 
 export async function getNationalRankings(): Promise<EventRanking[]> {
+  const stateNames = await getStateNameMap();
+
   const rankings = await Promise.all(
     rankingEvents.map(async (event) => ({
       event,
-      single: await getRanking(event, "single"),
-      average: event.supportsAverage ? await getRanking(event, "average") : [],
+      single: await getRanking(event, "single", stateNames),
+      average: event.supportsAverage
+        ? await getRanking(event, "average", stateNames)
+        : [],
     })),
   );
 
@@ -108,14 +122,15 @@ export async function getNationalRankings(): Promise<EventRanking[]> {
 async function getRanking(
   event: RankingEvent,
   type: RankingType,
+  stateNames: Map<string, string>,
 ): Promise<RankingResult[]> {
   try {
     const response = await fetch(
-      `https://www.cubingmexico.net/rankings/${event.id}/${type}`,
+      `${CUBING_MEXICO_API}/rank/${type}/${event.id}`,
       {
-        next: { revalidate: 60 * 60 * 12 },
+        next: { revalidate: RANKINGS_REVALIDATE_SECONDS },
         headers: {
-          accept: "text/html",
+          accept: "application/json",
         },
       },
     );
@@ -124,130 +139,52 @@ async function getRanking(
       return [];
     }
 
-    const payload = extractRankingPayload(await response.text());
+    const rows = (await response.json()) as CubingMexicoRankRow[];
 
-    if (!payload) {
+    if (!Array.isArray(rows) || rows.length === 0) {
       return [];
     }
 
-    return payload.data.slice(0, 5).map((row) => ({
-      countryRank: row.countryRank,
-      personId: row.personId,
-      name: row.name,
-      result: formatRankingResult(row.best, event.id, type),
-      state: row.state ?? "México",
-      profileUrl: `https://www.cubingmexico.net/persons/${row.personId}`,
-    }));
+    return rows
+      .slice()
+      .sort((a, b) => a.rank.country - b.rank.country)
+      .slice(0, 5)
+      .map((row) => ({
+        countryRank: row.rank.country,
+        personId: row.personId,
+        name: row.personName,
+        result: formatRankingResult(row.best, event.id, type),
+        state: (row.stateId && stateNames.get(row.stateId)) || "México",
+        profileUrl: `https://www.cubingmexico.net/persons/${row.personId}`,
+      }));
   } catch {
     return [];
   }
 }
 
-function extractRankingPayload(html: string): CubingMexicoPayload | null {
-  const marker = '{"data":[{"personId"';
-  const markerIndex = html.indexOf(marker);
-
-  if (markerIndex !== -1) {
-    return parseBalancedPayload(html, markerIndex);
-  }
-
-  const escapedMarker = '{\\"data\\":[{\\"personId\\"';
-  const escapedMarkerIndex = html.indexOf(escapedMarker);
-
-  if (escapedMarkerIndex === -1) {
-    return null;
-  }
-
-  const escapedPayload = parseBalancedEscapedPayload(html, escapedMarkerIndex);
-
-  if (!escapedPayload) {
-    return null;
-  }
-
+async function getStateNameMap(): Promise<Map<string, string>> {
   try {
-    return JSON.parse(
-      escapedPayload.replace(/\\"/g, '"'),
-    ) as CubingMexicoPayload;
+    const response = await fetch(`${CUBING_MEXICO_API}/states`, {
+      next: { revalidate: RANKINGS_REVALIDATE_SECONDS },
+      headers: {
+        accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return new Map();
+    }
+
+    const states = (await response.json()) as CubingMexicoState[];
+
+    if (!Array.isArray(states)) {
+      return new Map();
+    }
+
+    return new Map(states.map((state) => [state.id, state.name]));
   } catch {
-    return null;
+    return new Map();
   }
-}
-
-function parseBalancedPayload(
-  source: string,
-  startIndex: number,
-): CubingMexicoPayload | null {
-  const endIndex = findBalancedObjectEnd(source, startIndex, true);
-
-  if (endIndex === -1) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(
-      source.slice(startIndex, endIndex + 1),
-    ) as CubingMexicoPayload;
-  } catch {
-    return null;
-  }
-}
-
-function parseBalancedEscapedPayload(
-  source: string,
-  startIndex: number,
-): string | null {
-  const endIndex = findBalancedObjectEnd(source, startIndex, false);
-
-  return endIndex === -1 ? null : source.slice(startIndex, endIndex + 1);
-}
-
-function findBalancedObjectEnd(
-  source: string,
-  startIndex: number,
-  respectStrings: boolean,
-) {
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let index = startIndex; index < source.length; index += 1) {
-    const char = source[index];
-
-    if (respectStrings) {
-      if (escaped) {
-        escaped = false;
-        continue;
-      }
-
-      if (char === "\\") {
-        escaped = true;
-        continue;
-      }
-
-      if (char === '"') {
-        inString = !inString;
-        continue;
-      }
-
-      if (inString) {
-        continue;
-      }
-    }
-
-    if (char === "{") {
-      depth += 1;
-    }
-
-    if (char === "}") {
-      depth -= 1;
-
-      if (depth === 0) {
-        return index;
-      }
-    }
-  }
-
-  return -1;
 }
 
 function formatRankingResult(

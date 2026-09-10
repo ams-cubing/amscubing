@@ -28,29 +28,13 @@ export type CompetitionSpotlight = {
   url: string;
 };
 
-type WpCompetition = {
-  id: string;
-  city: string;
-  start_date: string;
-  end_date: string;
-  registration_open: string | null;
-  registration_close: string | null;
-  competitor_limit: number;
-  total_registrados?: number | null;
-  status:
-    | "abierto"
-    | "lleno"
-    | "casi_lleno"
-    | "cerrado"
-    | "no_abierto"
-    | string;
-  image: string;
-  url: string;
-};
-
 type WcaCompetition = {
   name?: string;
   short_name?: string;
+  registration_open?: string | null;
+  registration_close?: string | null;
+  competitor_limit?: number | null;
+  url?: string;
 };
 
 export const fallbackCompetitions: PublicCompetition[] = [
@@ -107,9 +91,7 @@ const competitionImages = [
   "/source/photos/guelaguetza-2.jpg",
 ] as const;
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
-}
+const PUBLIC_COMPETITIONS_LIMIT = 12;
 
 function todayMexicoIsoDate() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -154,12 +136,6 @@ export function getCompetitionSpotlights(
 }
 
 export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
-  const wpCompetitions = await getWordPressPluginCompetitions();
-
-  if (wpCompetitions.length > 0) {
-    return wpCompetitions;
-  }
-
   try {
     const rows = await db.query.competitions.findMany({
       columns: {
@@ -179,32 +155,58 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
         },
       },
       where: (t, { and, eq, gte }) =>
-        and(eq(t.statusPublic, "announced"), gte(t.endDate, todayIsoDate())),
+        and(
+          eq(t.statusPublic, "announced"),
+          gte(t.endDate, todayMexicoIsoDate()),
+        ),
       orderBy: (t, { asc }) => [asc(t.startDate)],
-      limit: 6,
+      limit: PUBLIC_COMPETITIONS_LIMIT,
     });
 
     if (rows.length === 0) {
       return fallbackCompetitions;
     }
 
-    return rows.map((row, index) => ({
-      id: row.id,
-      name: row.name ?? `Competencia en ${row.city}`,
-      city: row.city,
-      state: row.state.name,
-      startDate: row.startDate,
-      endDate: row.endDate,
-      capacity: row.capacity,
-      registered: null,
-      registrationOpen: null,
-      registrationClose: null,
-      wcaCompetitionUrl: row.wcaCompetitionUrl,
-      image:
-        competitionImages[index % competitionImages.length] ??
-        competitionImages[0],
-      label: index === 0 ? "Próximo torneo" : "Anunciada",
-    }));
+    return Promise.all(
+      rows.map(async (row, index) => {
+        const wcaId = extractWcaCompetitionId(row.wcaCompetitionUrl, row.id);
+        const wca = wcaId ? await getWcaCompetition(wcaId) : null;
+
+        const registrationOpen = wca?.registration_open ?? null;
+        const registrationClose = wca?.registration_close ?? null;
+        const capacity =
+          typeof wca?.competitor_limit === "number" && wca.competitor_limit > 0
+            ? wca.competitor_limit
+            : row.capacity;
+        const wcaCompetitionUrl =
+          row.wcaCompetitionUrl ??
+          (wcaId
+            ? `https://www.worldcubeassociation.org/competitions/${wcaId}`
+            : null);
+
+        return {
+          id: wcaId ?? row.id,
+          name:
+            wca?.short_name ??
+            wca?.name ??
+            row.name ??
+            `Competencia en ${row.city}`,
+          city: row.city,
+          state: row.state.name,
+          startDate: row.startDate,
+          endDate: row.endDate,
+          capacity,
+          registered: null,
+          registrationOpen,
+          registrationClose,
+          wcaCompetitionUrl,
+          image:
+            competitionImages[index % competitionImages.length] ??
+            competitionImages[0],
+          label: deriveRegistrationLabel(registrationOpen, registrationClose),
+        };
+      }),
+    );
   } catch {
     return fallbackCompetitions;
   }
@@ -234,7 +236,7 @@ function formatCompetitionSpotlight(
 }
 
 function getWcaCompetitionId(competition: PublicCompetition) {
-  if (typeof competition.id === "string" && competition.id.length > 0) {
+  if (typeof competition.id === "string" && !competition.id.startsWith("fallback-")) {
     return competition.id;
   }
 
@@ -250,55 +252,22 @@ function getWcaCompetitionId(competition: PublicCompetition) {
   return String(competition.id);
 }
 
-async function getWordPressPluginCompetitions(): Promise<PublicCompetition[]> {
-  try {
-    const response = await fetch(
-      "https://amscubing.org/utils/upcoming/events_v2.php",
-      {
-        cache: "no-store",
-        headers: {
-          accept: "application/json",
-        },
-      },
-    );
-
-    if (!response.ok) {
-      return [];
+function extractWcaCompetitionId(
+  wcaCompetitionUrl: string | null,
+  id: number | string,
+): string | null {
+  if (wcaCompetitionUrl) {
+    const match = wcaCompetitionUrl.match(/competitions\/([^/?#]+)/);
+    if (match?.[1]) {
+      return match[1];
     }
-
-    const events = (await response.json()) as WpCompetition[];
-
-    const hydratedEvents = await Promise.all(
-      events.map(async (event) => ({
-        event,
-        wca: await getWcaCompetition(event.id),
-      })),
-    );
-
-    return hydratedEvents.map(({ event, wca }) => {
-      const [city, state = ""] = event.city
-        .split(",")
-        .map((part) => part.trim());
-
-      return {
-        id: event.id,
-        name: wca?.short_name ?? wca?.name ?? formatCompetitionId(event.id),
-        city: city || event.city,
-        state,
-        startDate: event.start_date,
-        endDate: event.end_date,
-        capacity: event.competitor_limit,
-        registered: event.total_registrados ?? null,
-        registrationOpen: event.registration_open,
-        registrationClose: event.registration_close,
-        wcaCompetitionUrl: event.url,
-        image: normalizeWordPressCompetitionImage(event.image),
-        label: formatWordPressStatus(event.status),
-      };
-    });
-  } catch {
-    return [];
   }
+
+  if (typeof id === "string" && id.length > 0 && !id.startsWith("fallback-")) {
+    return id;
+  }
+
+  return null;
 }
 
 async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
@@ -323,35 +292,29 @@ async function getWcaCompetition(id: string): Promise<WcaCompetition | null> {
   }
 }
 
-function formatCompetitionId(id: string) {
-  return id
-    .replace(/(\d{4})$/, " $1")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z]{2,})([A-Z][a-z])/g, "$1 $2");
-}
-
-function normalizeWordPressCompetitionImage(image: string) {
-  if (image.startsWith("http")) {
-    return image;
+function deriveRegistrationLabel(
+  registrationOpen: string | null,
+  registrationClose: string | null,
+): string {
+  if (!registrationOpen || !registrationClose) {
+    return "Próximamente";
   }
 
-  const normalized = image.replace(/^\.\.\//, "");
-  return `https://amscubing.org/utils/${normalized}`;
-}
+  const now = Date.now();
+  const openAt = Date.parse(registrationOpen);
+  const closeAt = Date.parse(registrationClose);
 
-function formatWordPressStatus(status: WpCompetition["status"]) {
-  switch (status) {
-    case "abierto":
-      return "Inscripciones abiertas";
-    case "lleno":
-      return "Lleno";
-    case "casi_lleno":
-      return "Casi lleno";
-    case "cerrado":
-      return "Cerrado";
-    case "no_abierto":
-      return "Próximamente";
-    default:
-      return "Próximamente";
+  if (Number.isNaN(openAt) || Number.isNaN(closeAt)) {
+    return "Próximamente";
   }
+
+  if (now < openAt) {
+    return "Próximamente";
+  }
+
+  if (now > closeAt) {
+    return "Cerrado";
+  }
+
+  return "Inscripciones abiertas";
 }

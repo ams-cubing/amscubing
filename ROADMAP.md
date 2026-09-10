@@ -27,7 +27,7 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 
 **Público**
 
-- [ ] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`).
+- [x] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`). Enrichment WCA para nombre/registro/cupo.
 - [ ] Blog: listado, detalle de post, categorías/etiquetas, SEO (títulos, OG, sitemap).
 - [ ] Comentarios en posts (auth obligatorio o invitado moderado — por decidir).
 - [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta.
