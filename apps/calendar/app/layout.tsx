@@ -77,7 +77,7 @@ async function AppSidebarWrapper() {
   return (
     <AppSidebar
       user={normalizedUser}
-      showBoardsNav={canSeeBoardsNav(normalizedUser)}
+      showBoardsNav={await canSeeBoardsNav(normalizedUser)}
       webUrl={getWebUrl()}
     />
   );
@@ -108,7 +108,7 @@ async function CalendarAmsNavWrapper() {
             }
           : null
       }
-      showBoardsLink={canSeeBoardsNav(normalizedUser)}
+      showBoardsLink={await canSeeBoardsNav(normalizedUser)}
       signInHref={getCrossAppSignInUrl(calendarUrl)}
       webUrl={webUrl}
       calendarUrl={calendarUrl}

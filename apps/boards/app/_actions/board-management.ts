@@ -214,7 +214,7 @@ export async function acceptBoardInvite(token: string) {
   const session = await requireSessionOrUnauthorized();
   const currentUser = session.user;
 
-  if (!canAccessBoardsApp(currentUser)) {
+  if (!(await canAccessBoardsApp(currentUser))) {
     throw new Error(
       "Tableros AMS está en piloto. No tienes acceso para unirte a este tablero.",
     );

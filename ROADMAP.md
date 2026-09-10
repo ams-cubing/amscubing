@@ -41,6 +41,7 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 - [ ] Moderar comentarios.
 - [ ] Comprobación de roles (delegado / editor de contenido — ampliar roles si hace falta).
 - [ ] Biblioteca de medios / subidas.
+- [x] Allowlist piloto de Tableros en `/admin/tableros` (tabla `boards_organizer_allowlist` + override temporal `BOARDS_ORGANIZER_ALLOWLIST`). **Teardown cuando Tableros abra a todos:** borrar `/admin/tableros` + acciones/nav, abrir `canAccessBoardsApp` a cualquier usuario autenticado (o quitar el gate), dropear la tabla y la env var.
 
 **Datos**
 
@@ -187,6 +188,7 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 
 | Fecha      | Decisión                      | Notas                                                                                                                          |
 | ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-10 | Allowlist Tableros en admin   | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal |
 | 2026-09-10 | Host de auth = web            | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`             |
 | 2026-09-10 | Cuentas sin WCA (futuro)      | Better Auth puede tener usuarios sin `wcaId` solo para web (blog/comentarios); calendario/tableros exigen WCA vinculado        |
 | TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |

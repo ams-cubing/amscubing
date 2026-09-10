@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { db } from "@workspace/db";
-import { user } from "@workspace/db/schema";
+import { boardsOrganizerAllowlist, user } from "@workspace/db/schema";
 import { MEXICO_REGIONS } from "@workspace/db/data/mexico";
 
 import { requireDelegate } from "@/lib/session";
@@ -30,6 +30,7 @@ function revalidateAdminAndDelegates() {
   revalidateTag("public-delegates", "hours");
   revalidatePath("/admin/delegados");
   revalidatePath("/admin/editores");
+  revalidatePath("/admin/tableros");
   revalidatePath("/nosotros");
 }
 
@@ -265,4 +266,71 @@ export async function revokeEditor(input: {
 
   revalidateAdminAndDelegates();
   return { ok: true, message: "Rol editor revocado" };
+}
+
+export async function addBoardsOrganizer(input: {
+  wcaId: string;
+}): Promise<AdminActionResult> {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false, message: authResult.message };
+  }
+
+  const wcaId = normalizeWcaId(input.wcaId);
+  if (!wcaId) {
+    return { ok: false, message: "WCA ID inválido" };
+  }
+
+  const existing = await db.query.boardsOrganizerAllowlist.findFirst({
+    where: eq(boardsOrganizerAllowlist.wcaId, wcaId),
+    columns: { wcaId: true },
+  });
+
+  if (existing) {
+    return { ok: false, message: "Ese WCA ID ya está en la allowlist" };
+  }
+
+  await db.insert(boardsOrganizerAllowlist).values({
+    wcaId,
+    createdByUserId: authResult.session.user.id,
+  });
+
+  revalidateAdminAndDelegates();
+  return {
+    ok: true,
+    message: `${wcaId} agregado a la allowlist de Tableros`,
+  };
+}
+
+export async function removeBoardsOrganizer(input: {
+  wcaId: string;
+}): Promise<AdminActionResult> {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false, message: authResult.message };
+  }
+
+  const wcaId = normalizeWcaId(input.wcaId);
+  if (!wcaId) {
+    return { ok: false, message: "WCA ID inválido" };
+  }
+
+  const existing = await db.query.boardsOrganizerAllowlist.findFirst({
+    where: eq(boardsOrganizerAllowlist.wcaId, wcaId),
+    columns: { wcaId: true },
+  });
+
+  if (!existing) {
+    return { ok: false, message: "Ese WCA ID no está en la allowlist" };
+  }
+
+  await db
+    .delete(boardsOrganizerAllowlist)
+    .where(eq(boardsOrganizerAllowlist.wcaId, wcaId));
+
+  revalidateAdminAndDelegates();
+  return {
+    ok: true,
+    message: `${wcaId} removido de la allowlist de Tableros`,
+  };
 }

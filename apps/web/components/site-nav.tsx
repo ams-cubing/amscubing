@@ -29,7 +29,7 @@ export async function SiteNav({
       });
       if (session?.user) {
         const user = toSessionUser(session.user as RawSessionUser);
-        showBoardsLink = canAccessBoardsApp(user);
+        showBoardsLink = await canAccessBoardsApp(user);
         initialUser = {
           name: user.name,
           image: user.image,

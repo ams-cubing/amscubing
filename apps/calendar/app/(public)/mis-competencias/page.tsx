@@ -31,7 +31,7 @@ async function PageContent() {
   }
 
   const user = toSessionUser(session.user as RawSessionUser);
-  const canSeeBoards = canAccessBoardsApp(user);
+  const canSeeBoards = await canAccessBoardsApp(user);
 
   const competitionIds = await getUserOrganizerCompetitionIds(
     session.user.wcaId,

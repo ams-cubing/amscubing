@@ -26,7 +26,7 @@ const boardListWith = {
 } as const;
 
 export async function canAccessBoard(user: User, boardId: number) {
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return false;
   }
 
@@ -112,7 +112,7 @@ async function memberBoardIdsForUser(user: User) {
 }
 
 export async function listAccessibleBoards(user: User) {
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return [];
   }
 
@@ -166,7 +166,7 @@ export async function listAccessibleBoards(user: User) {
 }
 
 export async function listArchivedBoards(user: User) {
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return [];
   }
 

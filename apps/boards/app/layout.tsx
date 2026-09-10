@@ -67,7 +67,7 @@ async function BoardsAmsNavWrapper() {
     ? toSessionUser(session.user as RawSessionUser)
     : null;
 
-  const showBoardsLink = canAccessBoardsApp(user);
+  const showBoardsLink = await canAccessBoardsApp(user);
   const urls = boardsNavUrls();
   const actions =
     user != null ? (

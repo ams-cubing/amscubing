@@ -55,7 +55,7 @@ export default async function BoardPage({
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
 
-  if (!canAccessBoardsApp(user)) {
+  if (!(await canAccessBoardsApp(user))) {
     return <BoardsAccessDenied />;
   }
 

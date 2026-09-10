@@ -230,3 +230,27 @@ export const cardComments = pgTable(
 );
 
 export type CardComment = InferSelectModel<typeof cardComments>;
+
+/**
+ * Pilot organizers allowed into Tableros AMS (by WCA ID).
+ * Removable when boards opens to all signed-in organizers.
+ */
+export const boardsOrganizerAllowlist = pgTable(
+  "boards_organizer_allowlist",
+  {
+    wcaId: text("wca_id").primaryKey(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    index("boards_organizer_allowlist_created_by_idx").on(
+      table.createdByUserId,
+    ),
+  ],
+);
+
+export type BoardsOrganizerAllowlist = InferSelectModel<
+  typeof boardsOrganizerAllowlist
+>;
