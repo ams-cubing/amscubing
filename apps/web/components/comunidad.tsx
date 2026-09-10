@@ -5,7 +5,7 @@ const testimonials = [
     meta: "@renata_cubes · Puebla",
     quote:
       "Mi primera competencia fue con la AMS. Llegué sin conocer a nadie y salí con un grupo de amigos que compiten conmigo hasta hoy.",
-    color: "bg-[var(--ams-red)]",
+    color: "bg-ams-red",
   },
   {
     initials: "ID",
@@ -13,7 +13,7 @@ const testimonials = [
     meta: "@iker_wca · CDMX",
     quote:
       "Ser voluntario me enseñó a organizar competencias oficiales WCA desde cero. Hoy comparto eso con la siguiente generación.",
-    color: "bg-[var(--ams-orange)]",
+    color: "bg-ams-orange",
   },
   {
     initials: "LM",
@@ -21,15 +21,15 @@ const testimonials = [
     meta: "Mamá de competidor",
     quote:
       "Como mamá, lo que más valoro es la comunidad: siempre hay alguien cuidando a los más nuevos en cada competencia.",
-    color: "bg-[var(--ams-green)]",
+    color: "bg-ams-green",
   },
 ] as const;
 
 export function Comunidad() {
   return (
-    <section id="comunidad" className="bg-[var(--ams-soft)] py-24">
+    <section id="comunidad" className="bg-ams-soft py-24">
       <div className="ams-container">
-        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
           Comunidad
         </p>
         <h2 className="ams-display mb-10 text-[clamp(2rem,5vw,3.75rem)] leading-none">
@@ -51,7 +51,7 @@ export function Comunidad() {
                   {testimonial.initials}
                 </div>
                 <div>
-                  <h3 className="ams-heading text-sm font-bold text-[var(--ams-navy)]">
+                  <h3 className="ams-heading text-sm font-bold text-ams-navy">
                     {testimonial.name}
                   </h3>
                   <p className="mt-1 text-xs font-semibold text-black/50">
@@ -59,7 +59,7 @@ export function Comunidad() {
                   </p>
                 </div>
               </div>
-              <p className="text-[15px] font-medium leading-7 text-[var(--ams-navy)]">
+              <p className="text-[15px] font-medium leading-7 text-ams-navy">
                 {testimonial.quote}
               </p>
             </article>

@@ -18,7 +18,7 @@ function Feedback({ result }: { result: AdminActionResult | null }) {
   return (
     <p
       className={`ams-copy text-sm ${
-        result.ok ? "text-[var(--ams-green)]" : "text-[var(--ams-red)]"
+        result.ok ? "text-ams-green" : "text-ams-red"
       }`}
       role="status"
     >

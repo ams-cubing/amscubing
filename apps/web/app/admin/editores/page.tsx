@@ -29,10 +29,10 @@ export default async function AdminEditoresPage() {
   return (
     <div className="space-y-12">
       <header>
-        <p className="ams-heading text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+        <p className="ams-heading text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
           Blog (próximamente)
         </p>
-        <h2 className="ams-display mt-2 text-[clamp(1.8rem,4vw,2.75rem)] leading-none text-[var(--ams-navy)]">
+        <h2 className="ams-display mt-2 text-[clamp(1.8rem,4vw,2.75rem)] leading-none text-ams-navy">
           Editores
         </h2>
         <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-black/65">
@@ -43,7 +43,7 @@ export default async function AdminEditoresPage() {
       </header>
 
       <section className="rounded-[22px] border border-black/10 bg-white p-6 md:p-8">
-        <h3 className="ams-display text-2xl leading-none text-[var(--ams-navy)]">
+        <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Otorgar rol editor
         </h3>
         <p className="ams-copy mt-2 mb-6 text-sm leading-6 text-black/60">
@@ -53,8 +53,8 @@ export default async function AdminEditoresPage() {
         <GrantEditorForm />
       </section>
 
-      <section className="space-y-6 rounded-[22px] bg-[var(--ams-soft)] p-6 md:p-8">
-        <h3 className="ams-display text-2xl leading-none text-[var(--ams-navy)]">
+      <section className="space-y-6 rounded-[22px] bg-ams-soft p-6 md:p-8">
+        <h3 className="ams-display text-2xl leading-none text-ams-navy">
           Actuales ({editors.length})
         </h3>
         {editors.length === 0 ? (
@@ -77,7 +77,7 @@ export default async function AdminEditoresPage() {
                       className="size-12 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="ams-display flex size-12 items-center justify-center rounded-full bg-[var(--ams-navy)] text-sm text-white">
+                    <div className="ams-display flex size-12 items-center justify-center rounded-full bg-ams-navy text-sm text-white">
                       {editor.name
                         .split(" ")
                         .filter(Boolean)
@@ -88,7 +88,7 @@ export default async function AdminEditoresPage() {
                     </div>
                   )}
                   <div>
-                    <p className="ams-heading font-bold text-[var(--ams-navy)]">
+                    <p className="ams-heading font-bold text-ams-navy">
                       {editor.name}
                     </p>
                     <p className="ams-copy text-xs text-black/50">

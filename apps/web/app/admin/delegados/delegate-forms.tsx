@@ -33,7 +33,7 @@ function Feedback({ result }: { result: AdminActionResult | null }) {
   return (
     <p
       className={`ams-copy text-sm ${
-        result.ok ? "text-[var(--ams-green)]" : "text-[var(--ams-red)]"
+        result.ok ? "text-ams-green" : "text-ams-red"
       }`}
       role="status"
     >
@@ -72,7 +72,7 @@ export function DelegateEditForm({
       }}
     >
       <div className="space-y-1.5 md:col-span-2">
-        <p className="ams-heading text-sm font-bold text-[var(--ams-navy)]">
+        <p className="ams-heading text-sm font-bold text-ams-navy">
           {delegate.name}
         </p>
         <p className="ams-copy text-xs text-black/50">{delegate.wcaId}</p>

@@ -5,11 +5,11 @@ import { blogPosts, COURSES_URL } from "@/lib/content";
 
 export function BlogTeaser() {
   return (
-    <section id="blog" className="bg-[var(--ams-soft)] py-24 md:py-32">
+    <section id="blog" className="bg-ams-soft py-24 md:py-32">
       <div className="ams-container">
         <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+            <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
               Comunidad
             </p>
             <h2 className="ams-display text-[clamp(2rem,5vw,3.75rem)] leading-none">
@@ -41,19 +41,19 @@ export function BlogTeaser() {
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 1024px) 100vw, 33vw"
                 />
-                <span className="absolute left-0 top-0 bg-[var(--ams-orange)] px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
+                <span className="absolute left-0 top-0 bg-ams-orange px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
                   {post.date}
                 </span>
               </div>
               <div className="p-6">
-                <BookOpen className="mb-5 size-6 text-[var(--ams-red)]" />
-                <h3 className="ams-heading text-xl font-bold leading-tight transition-colors group-hover:text-[var(--ams-red)]">
+                <BookOpen className="mb-5 size-6 text-ams-red" />
+                <h3 className="ams-heading text-xl font-bold leading-tight transition-colors group-hover:text-ams-red">
                   {post.title}
                 </h3>
                 <p className="mt-4 text-base leading-7 text-black/65">
                   {post.excerpt}
                 </p>
-                <span className="mt-5 inline-flex items-center gap-2 font-bold text-[var(--ams-green)]">
+                <span className="mt-5 inline-flex items-center gap-2 font-bold text-ams-green">
                   Saber más
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </span>
@@ -62,7 +62,7 @@ export function BlogTeaser() {
           ))}
         </div>
 
-        <div className="relative mt-16 overflow-hidden bg-[var(--ams-red)] px-6 py-12 text-center text-white md:px-12">
+        <div className="relative mt-16 overflow-hidden bg-ams-red px-6 py-12 text-center text-white md:px-12">
           <div className="absolute inset-0 opacity-10 [background-image:url('/source/isotipo-color-sm.png')] [background-size:92px_auto]" />
           <div className="relative mx-auto max-w-3xl">
             <GraduationCap className="mx-auto mb-5 size-9" />

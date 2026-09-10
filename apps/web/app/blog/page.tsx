@@ -21,7 +21,7 @@ export default function BlogPage() {
         title="Blog AMS"
         description="Historias, guías y contenido para competidores, familias, voluntarios y organizadores."
       />
-      <section className="bg-[var(--ams-soft)] py-20 md:py-24">
+      <section className="bg-ams-soft py-20 md:py-24">
         <div className="ams-container">
           <div className="grid gap-6 lg:grid-cols-3">
             {blogPosts.map((post, index) => (
@@ -42,19 +42,19 @@ export default function BlogPage() {
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                     sizes="(max-width: 1024px) 100vw, 33vw"
                   />
-                  <span className="absolute left-0 top-0 bg-[var(--ams-orange)] px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
+                  <span className="absolute left-0 top-0 bg-ams-orange px-4 py-2 text-xs font-bold uppercase text-white [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
                     {post.date}
                   </span>
                 </div>
                 <div className="p-6">
-                  <BookOpen className="mb-5 size-6 text-[var(--ams-red)]" />
-                  <h2 className="ams-heading text-xl font-bold leading-tight transition-colors group-hover:text-[var(--ams-red)]">
+                  <BookOpen className="mb-5 size-6 text-ams-red" />
+                  <h2 className="ams-heading text-xl font-bold leading-tight transition-colors group-hover:text-ams-red">
                     {post.title}
                   </h2>
                   <p className="mt-4 text-base leading-7 text-black/65">
                     {post.excerpt}
                   </p>
-                  <span className="mt-5 inline-flex items-center gap-2 font-bold text-[var(--ams-green)]">
+                  <span className="mt-5 inline-flex items-center gap-2 font-bold text-ams-green">
                     Saber más
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                   </span>

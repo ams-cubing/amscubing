@@ -22,10 +22,10 @@ const siteLinks = [
 export function SiteFooter() {
   return (
     <footer
-      className="ams-texture relative overflow-hidden bg-[var(--ams-navy)] px-0 py-[70px] pb-10 text-white"
+      className="ams-texture relative overflow-hidden bg-ams-navy px-0 py-[70px] pb-10 text-white"
       style={{ fontFamily: "var(--font-sans), sans-serif" }}
     >
-      <div className="absolute inset-0 bg-[var(--ams-navy)]/78" />
+      <div className="absolute inset-0 bg-ams-navy/78" />
       <div className="ams-container relative">
         <div className="grid gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
@@ -45,7 +45,7 @@ export function SiteFooter() {
             </p>
           </div>
           <div>
-            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-[var(--ams-orange)]">
+            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-ams-orange">
               Sitio
             </h2>
             <div className="grid gap-3 text-sm">
@@ -71,7 +71,7 @@ export function SiteFooter() {
             </div>
           </div>
           <div>
-            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-[var(--ams-orange)]">
+            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-ams-orange">
               Comunidad
             </h2>
             <div className="grid gap-3 text-sm">
@@ -93,7 +93,7 @@ export function SiteFooter() {
             </div>
           </div>
           <div>
-            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-[var(--ams-orange)]">
+            <h2 className="ams-heading mb-4 text-xs font-bold uppercase tracking-[0.1em] text-ams-orange">
               Síguenos
             </h2>
             <div className="grid gap-3 text-sm">

@@ -8,11 +8,11 @@ export function PageHero({
   description: string;
 }) {
   return (
-    <section className="relative overflow-hidden bg-[var(--ams-navy)] py-20 text-white md:py-24">
+    <section className="relative overflow-hidden bg-ams-navy py-20 text-white md:py-24">
       <div className="ams-texture absolute inset-0 opacity-25" />
-      <div className="absolute -right-28 -top-36 h-[26rem] w-[26rem] rotate-[10deg] bg-[var(--ams-red)] opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)]" />
+      <div className="absolute -right-28 -top-36 h-[26rem] w-[26rem] rotate-[10deg] bg-ams-red opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)]" />
       <div className="ams-container relative">
-        <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-orange)]">
+        <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">
           {eyebrow}
         </p>
         <h1 className="ams-display max-w-5xl text-[clamp(2.6rem,7vw,5rem)] leading-none">

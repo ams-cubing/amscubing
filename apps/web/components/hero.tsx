@@ -29,7 +29,7 @@ export function Hero({
   stats: CommunityStats;
 }) {
   return (
-    <section className="relative isolate bg-[var(--ams-navy)] px-0 pb-0 pt-[110px] text-white">
+    <section className="relative isolate bg-ams-navy px-0 pb-0 pt-[110px] text-white">
       <div className="absolute inset-0 overflow-hidden">
         <Image
           src="/source/photos/mexchamp-2.jpg"
@@ -51,7 +51,7 @@ export function Hero({
                 href={competition.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ams-badge inline-flex max-w-full items-center gap-2 rounded-full bg-white px-[18px] py-2 text-xs font-bold uppercase tracking-[0.06em] text-[var(--ams-navy)] transition-transform hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)]"
+                className="ams-badge inline-flex max-w-full items-center gap-2 rounded-full bg-white px-[18px] py-2 text-xs font-bold uppercase tracking-[0.06em] text-ams-navy transition-transform hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)]"
                 aria-label={`${competition.status}: ${competition.name}`}
               >
                 <span className="ams-badge-dot size-2 rounded-full" />
@@ -70,13 +70,13 @@ export function Hero({
         <h1 className="ams-display max-w-[720px] text-[clamp(44px,6.5vw,96px)] leading-[0.94]">
           <span className="ams-title-line">Resuelve.</span>
           <span
-            className="ams-title-line text-[var(--ams-orange)]"
+            className="ams-title-line text-ams-orange"
             style={{ animationDelay: "200ms" }}
           >
             Compite.
           </span>
           <span
-            className="ams-title-line text-[var(--ams-green)]"
+            className="ams-title-line text-ams-green"
             style={{ animationDelay: "400ms" }}
           >
             Domina.
@@ -127,14 +127,14 @@ export function Hero({
               Competencias oficiales certificadas en México.
             </p>
           </div>
-          <div className="bg-[var(--ams-orange)] p-8">
+          <div className="bg-ams-orange p-8">
             <p className="ams-display text-4xl">{stats.statesWithCompetitions}</p>
             <p className="mt-2 text-sm font-semibold leading-5">
               Estados con competencias.
             </p>
           </div>
-          <div className="bg-[var(--ams-navy)] p-8">
-            <p className="ams-display text-4xl text-[var(--ams-green)]">
+          <div className="bg-ams-navy p-8">
+            <p className="ams-display text-4xl text-ams-green">
               {stats.officialEvents}
             </p>
             <p className="mt-2 text-sm font-semibold leading-5">

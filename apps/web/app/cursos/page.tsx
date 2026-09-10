@@ -46,7 +46,7 @@ export default function CursosPage() {
       <section className="bg-white py-20 md:py-24">
         <div className="ams-container grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
-            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--ams-red)]">
+            <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
               Aprende y participa
             </p>
             <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.5rem)] leading-none">
@@ -75,11 +75,11 @@ export default function CursosPage() {
               return (
                 <article
                   key={track.title}
-                  className={`bg-[var(--ams-soft)] p-7 ${
+                  className={`bg-ams-soft p-7 ${
                     index === 1 ? "ams-slash-card-right" : "ams-slash-card"
                   }`}
                 >
-                  <Icon className="mb-5 size-8 text-[var(--ams-red)]" />
+                  <Icon className="mb-5 size-8 text-ams-red" />
                   <h3 className="ams-heading mb-3 text-lg font-bold">
                     {track.title}
                   </h3>
@@ -92,7 +92,7 @@ export default function CursosPage() {
           </div>
         </div>
       </section>
-      <section className="relative h-[24rem] overflow-hidden bg-[var(--ams-navy)]">
+      <section className="relative h-[24rem] overflow-hidden bg-ams-navy">
         <Image
           src="/source/photos/ponny-1.jpg"
           alt="Competidores y staff en competencia AMS"

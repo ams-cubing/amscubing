@@ -103,9 +103,9 @@ export default function AvisoDePrivacidadPage() {
               <h2
                 className={`ams-display mb-4 text-2xl ${
                   section.tone === "light"
-                    ? "text-[var(--ams-red)]"
+                    ? "text-ams-red"
                     : section.tone === "dark"
-                      ? "text-[var(--ams-orange)]"
+                      ? "text-ams-orange"
                       : "text-white"
                 }`}
               >
@@ -137,12 +137,12 @@ export default function AvisoDePrivacidadPage() {
 function getSectionClassName(tone: (typeof sections)[number]["tone"]) {
   switch (tone) {
     case "dark":
-      return "ams-texture bg-[var(--ams-navy)] text-white";
+      return "ams-texture bg-ams-navy text-white";
     case "orange":
-      return "bg-[var(--ams-orange)] text-white";
+      return "bg-ams-orange text-white";
     case "green":
-      return "bg-[var(--ams-green)] text-white";
+      return "bg-ams-green text-white";
     default:
-      return "bg-[var(--ams-soft)] text-[var(--ams-navy)]";
+      return "bg-ams-soft text-ams-navy";
   }
 }
