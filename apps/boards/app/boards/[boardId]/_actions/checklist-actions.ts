@@ -6,7 +6,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import { checklistItems, checklists } from "@workspace/db/schema";
 
-import { requireBoardAccess } from "../_lib/board-access";
+import {
+  assertCardOnBoard,
+  assertChecklistItemOnBoard,
+  assertChecklistOnBoard,
+  requireBoardAccess,
+} from "../_lib/board-access";
 
 export async function toggleChecklistItemAction(input: {
   boardId: number;
@@ -14,6 +19,7 @@ export async function toggleChecklistItemAction(input: {
   done: boolean;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertChecklistItemOnBoard(input.boardId, input.itemId);
 
   await db
     .update(checklistItems)
@@ -29,6 +35,7 @@ export async function addChecklistItemAction(input: {
   title: string;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertChecklistOnBoard(input.boardId, input.checklistId);
 
   const existing = await db.query.checklistItems.findMany({
     where: eq(checklistItems.checklistId, input.checklistId),
@@ -53,6 +60,7 @@ export async function addChecklistAction(input: {
   title: string;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
 
   await db.insert(checklists).values({
     cardId: input.cardId,
@@ -68,6 +76,7 @@ export async function deleteChecklistAction(input: {
   checklistId: number;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertChecklistOnBoard(input.boardId, input.checklistId);
 
   await db.delete(checklists).where(eq(checklists.id, input.checklistId));
 

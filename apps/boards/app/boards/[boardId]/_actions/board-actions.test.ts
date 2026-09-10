@@ -9,13 +9,41 @@ import {
 } from "@/test/setup-server-mocks";
 
 import {
+  addCardCommentAction,
   createLabelAction,
+  deleteCardCommentAction,
+  deleteChecklistAction,
   deleteLabelAction,
   moveCardAction,
+  removeAttachmentAction,
+  toggleCardLabelAction,
+  toggleChecklistItemAction,
+  updateAttachmentAction,
   updateCardAction,
 } from "@/app/boards/[boardId]/_actions/board-actions";
 
 const boardId = 10;
+const foreignBoardId = 99;
+
+function cardOnBoard(
+  cardId: number,
+  overrides: {
+    title?: string;
+    listId?: number;
+    listTitle?: string;
+    boardId?: number;
+  } = {},
+) {
+  return {
+    id: cardId,
+    title: overrides.title ?? "Tarea",
+    listId: overrides.listId ?? 1,
+    list: {
+      title: overrides.listTitle ?? "Por hacer",
+      boardId: overrides.boardId ?? boardId,
+    },
+  };
+}
 
 beforeEach(() => {
   resetBoardMocks();
@@ -198,12 +226,7 @@ describe("moveCardAction", () => {
 
   it("throws when the target list is not on the board", async () => {
     const { findFirstCard, findFirstBoardList, dbUpdate } = getBoardMocks();
-    findFirstCard.mockResolvedValue({
-      id: cardId,
-      title: "Tarea",
-      listId: 1,
-      list: { title: "Por hacer" },
-    });
+    findFirstCard.mockResolvedValue(cardOnBoard(cardId));
     findFirstBoardList.mockResolvedValue(null);
 
     await expect(
@@ -227,12 +250,7 @@ describe("moveCardAction", () => {
       dbUpdate,
       revalidatePath,
     } = getBoardMocks();
-    findFirstCard.mockResolvedValue({
-      id: cardId,
-      title: "Tarea",
-      listId: 1,
-      list: { title: "Por hacer" },
-    });
+    findFirstCard.mockResolvedValue(cardOnBoard(cardId));
     findFirstBoardList.mockResolvedValue({
       id: toListId,
       boardId,
@@ -269,7 +287,8 @@ describe("updateCardAction", () => {
   });
 
   it("updates card fields and revalidates", async () => {
-    const { dbUpdate, revalidatePath } = getBoardMocks();
+    const { findFirstCard, dbUpdate, revalidatePath } = getBoardMocks();
+    findFirstCard.mockResolvedValue(cardOnBoard(7));
     dbUpdate.mockReturnValue({
       set: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
@@ -284,5 +303,226 @@ describe("updateCardAction", () => {
 
     expect(dbUpdate).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+  });
+});
+
+describe("cross-board resource ownership", () => {
+  beforeEach(() => {
+    mockAuthenticatedUser();
+    mockBoardAccessAllowed();
+  });
+
+  it("rejects updateCardAction for a card on another board", async () => {
+    const { findFirstCard, dbUpdate } = getBoardMocks();
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(7, { boardId: foreignBoardId }),
+    );
+
+    await expect(
+      updateCardAction({
+        boardId,
+        cardId: 7,
+        title: "Hacked",
+      }),
+    ).rejects.toThrow("Tarjeta no encontrada");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects moveCardAction when the source card is on another board", async () => {
+    const { findFirstCard, dbUpdate } = getBoardMocks();
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(20, { boardId: foreignBoardId }),
+    );
+
+    await expect(
+      moveCardAction({
+        boardId,
+        cardId: 20,
+        toListId: 30,
+        toPosition: 0,
+        orderedCardIdsInTargetList: [20],
+      }),
+    ).rejects.toThrow("Tarjeta no encontrada");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects moveCardAction when ordered ids include a foreign card", async () => {
+    const { findFirstCard, findFirstBoardList, dbUpdate } = getBoardMocks();
+    findFirstCard
+      .mockResolvedValueOnce(cardOnBoard(20))
+      .mockResolvedValueOnce(cardOnBoard(21, { boardId: foreignBoardId }));
+    findFirstBoardList.mockResolvedValue({
+      id: 30,
+      boardId,
+      title: "En progreso",
+    });
+
+    await expect(
+      moveCardAction({
+        boardId,
+        cardId: 20,
+        toListId: 30,
+        toPosition: 0,
+        orderedCardIdsInTargetList: [20, 21],
+      }),
+    ).rejects.toThrow("Tarjeta no encontrada");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects updateAttachmentAction for an attachment on another board", async () => {
+    const { findFirstAttachment, dbUpdate } = getBoardMocks();
+    findFirstAttachment.mockResolvedValue({
+      id: 5,
+      cardId: 1,
+      name: "file",
+      url: "https://example.com",
+      card: { id: 1, list: { boardId: foreignBoardId } },
+    });
+
+    await expect(
+      updateAttachmentAction({
+        boardId,
+        attachmentId: 5,
+        name: "file",
+        url: "https://evil.example",
+      }),
+    ).rejects.toThrow("Adjunto no encontrado");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects removeAttachmentAction for an attachment on another board", async () => {
+    const { findFirstAttachment, dbDelete } = getBoardMocks();
+    findFirstAttachment.mockResolvedValue({
+      id: 5,
+      cardId: 1,
+      name: "file",
+      url: "https://example.com",
+      card: { id: 1, list: { boardId: foreignBoardId } },
+    });
+
+    await expect(
+      removeAttachmentAction({ boardId, attachmentId: 5 }),
+    ).rejects.toThrow("Adjunto no encontrado");
+
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects toggleChecklistItemAction for an item on another board", async () => {
+    const { findFirstChecklistItem, dbUpdate } = getBoardMocks();
+    findFirstChecklistItem.mockResolvedValue({
+      id: 8,
+      checklistId: 2,
+      title: "Paso",
+      done: false,
+      checklist: {
+        id: 2,
+        card: { id: 1, list: { boardId: foreignBoardId } },
+      },
+    });
+
+    await expect(
+      toggleChecklistItemAction({ boardId, itemId: 8, done: true }),
+    ).rejects.toThrow("Elemento de checklist no encontrado");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects deleteChecklistAction for a checklist on another board", async () => {
+    const { findFirstChecklist, dbDelete } = getBoardMocks();
+    findFirstChecklist.mockResolvedValue({
+      id: 4,
+      cardId: 1,
+      title: "Checklist",
+      card: { id: 1, list: { boardId: foreignBoardId } },
+    });
+
+    await expect(
+      deleteChecklistAction({ boardId, checklistId: 4 }),
+    ).rejects.toThrow("Checklist no encontrado");
+
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects addCardCommentAction for a card on another board", async () => {
+    const { findFirstCard, dbInsert } = getBoardMocks();
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(7, { boardId: foreignBoardId }),
+    );
+
+    await expect(
+      addCardCommentAction({
+        boardId,
+        cardId: 7,
+        body: "comentario",
+      }),
+    ).rejects.toThrow("Tarjeta no encontrada");
+
+    expect(dbInsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects deleteCardCommentAction for a comment on another board", async () => {
+    const { findFirstComment, dbDelete } = getBoardMocks();
+    findFirstComment.mockResolvedValue({
+      id: 9,
+      cardId: 1,
+      authorId: "user-1",
+      body: "hola",
+      card: { id: 1, list: { boardId: foreignBoardId } },
+    });
+
+    await expect(
+      deleteCardCommentAction({ boardId, commentId: 9 }),
+    ).rejects.toThrow("Comentario no encontrado");
+
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects toggleCardLabelAction when the card is on another board", async () => {
+    const { findFirstCard, findFirstLabel, dbInsert, dbDelete } =
+      getBoardMocks();
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(7, { boardId: foreignBoardId }),
+    );
+    findFirstLabel.mockResolvedValue({
+      id: 3,
+      boardId,
+      name: "Urgente",
+      color: "#ff0000",
+    });
+
+    await expect(
+      toggleCardLabelAction({
+        boardId,
+        cardId: 7,
+        labelId: 3,
+        checked: true,
+      }),
+    ).rejects.toThrow("Tarjeta no encontrada");
+
+    expect(dbInsert).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects toggleCardLabelAction when the label is on another board", async () => {
+    const { findFirstCard, findFirstLabel, dbInsert, dbDelete } =
+      getBoardMocks();
+    findFirstCard.mockResolvedValue(cardOnBoard(7));
+    findFirstLabel.mockResolvedValue(null);
+
+    await expect(
+      toggleCardLabelAction({
+        boardId,
+        cardId: 7,
+        labelId: 3,
+        checked: true,
+      }),
+    ).rejects.toThrow("Etiqueta no encontrada");
+
+    expect(dbInsert).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
   });
 });

@@ -8,7 +8,11 @@ import { cardLabels, labels } from "@workspace/db/schema";
 
 import { createLabelSchema, labelColorSchema } from "@/app/_lib/validations";
 
-import { requireBoardAccess } from "../_lib/board-access";
+import {
+  assertCardOnBoard,
+  assertLabelOnBoard,
+  requireBoardAccess,
+} from "../_lib/board-access";
 
 export async function createLabelAction(input: {
   boardId: number;
@@ -18,6 +22,10 @@ export async function createLabelAction(input: {
 }) {
   const validated = createLabelSchema.parse(input);
   await requireBoardAccess(validated.boardId);
+
+  if (validated.cardId !== undefined) {
+    await assertCardOnBoard(validated.boardId, validated.cardId);
+  }
 
   const [label] = await db
     .insert(labels)
@@ -48,16 +56,12 @@ export async function updateLabelAction(input: {
   color: string;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertLabelOnBoard(input.boardId, input.labelId);
 
   const name = input.name.trim();
   if (!name) throw new Error("El nombre de la etiqueta es obligatorio");
 
   const color = labelColorSchema.parse(input.color);
-
-  const label = await db.query.labels.findFirst({
-    where: and(eq(labels.id, input.labelId), eq(labels.boardId, input.boardId)),
-  });
-  if (!label) throw new Error("Etiqueta no encontrada");
 
   await db
     .update(labels)
@@ -72,11 +76,7 @@ export async function deleteLabelAction(input: {
   labelId: number;
 }) {
   await requireBoardAccess(input.boardId);
-
-  const label = await db.query.labels.findFirst({
-    where: and(eq(labels.id, input.labelId), eq(labels.boardId, input.boardId)),
-  });
-  if (!label) throw new Error("Etiqueta no encontrada");
+  await assertLabelOnBoard(input.boardId, input.labelId);
 
   await db.delete(labels).where(eq(labels.id, input.labelId));
 
@@ -90,6 +90,8 @@ export async function toggleCardLabelAction(input: {
   checked: boolean;
 }) {
   await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
+  await assertLabelOnBoard(input.boardId, input.labelId);
 
   if (input.checked) {
     await db

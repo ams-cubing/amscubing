@@ -22,7 +22,11 @@ import { sendBoardNotificationEmail } from "@/lib/board-emails";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 import { addCardCommentSchema } from "@/app/_lib/validations";
 
-import { requireBoardAccess } from "../_lib/board-access";
+import {
+  assertCardOnBoard,
+  assertCommentOnBoard,
+  requireBoardAccess,
+} from "../_lib/board-access";
 
 export async function addCardCommentAction(input: {
   boardId: number;
@@ -31,6 +35,7 @@ export async function addCardCommentAction(input: {
 }) {
   const validated = addCardCommentSchema.parse(input);
   const user = await requireBoardAccess(validated.boardId);
+  await assertCardOnBoard(validated.boardId, validated.cardId);
   const body = validated.body;
 
   const [team, roleGroups] = await Promise.all([
@@ -154,11 +159,7 @@ export async function deleteCardCommentAction(input: {
   commentId: number;
 }) {
   const user = await requireBoardAccess(input.boardId);
-
-  const comment = await db.query.cardComments.findFirst({
-    where: eq(cardComments.id, input.commentId),
-  });
-  if (!comment) throw new Error("Comentario no encontrado");
+  const comment = await assertCommentOnBoard(input.boardId, input.commentId);
 
   if (comment.authorId !== user.id && user.role !== "delegate") {
     throw new Error("No puedes eliminar este comentario");

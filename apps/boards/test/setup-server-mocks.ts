@@ -20,6 +20,12 @@ const boardMocks = vi.hoisted(() => {
     findFirstBoardList: vi.fn(),
     findFirstBoard: vi.fn(),
     findFirstLabel: vi.fn(),
+    findFirstAttachment: vi.fn(),
+    findFirstChecklist: vi.fn(),
+    findFirstChecklistItem: vi.fn(),
+    findFirstComment: vi.fn(),
+    findManyCards: vi.fn(),
+    findManyChecklistItems: vi.fn(),
     dbUpdate: vi.fn(),
     dbInsert: vi.fn(),
     dbDelete: vi.fn(),
@@ -76,6 +82,7 @@ vi.mock("@workspace/db", () => ({
     query: {
       cards: {
         findFirst: boardMocks.findFirstCard,
+        findMany: boardMocks.findManyCards,
       },
       boardLists: {
         findFirst: boardMocks.findFirstBoardList,
@@ -85,6 +92,19 @@ vi.mock("@workspace/db", () => ({
       },
       labels: {
         findFirst: boardMocks.findFirstLabel,
+      },
+      cardAttachments: {
+        findFirst: boardMocks.findFirstAttachment,
+      },
+      checklists: {
+        findFirst: boardMocks.findFirstChecklist,
+      },
+      checklistItems: {
+        findFirst: boardMocks.findFirstChecklistItem,
+        findMany: boardMocks.findManyChecklistItems,
+      },
+      cardComments: {
+        findFirst: boardMocks.findFirstComment,
       },
       user: {
         findFirst: vi.fn(),
@@ -145,6 +165,12 @@ export function resetBoardMocks() {
   boardMocks.findFirstBoardList.mockReset();
   boardMocks.findFirstBoard.mockReset();
   boardMocks.findFirstLabel.mockReset();
+  boardMocks.findFirstAttachment.mockReset();
+  boardMocks.findFirstChecklist.mockReset();
+  boardMocks.findFirstChecklistItem.mockReset();
+  boardMocks.findFirstComment.mockReset();
+  boardMocks.findManyCards.mockReset();
+  boardMocks.findManyChecklistItems.mockReset();
   boardMocks.dbUpdate.mockReset();
   boardMocks.dbInsert.mockReset();
   boardMocks.dbDelete.mockReset();
