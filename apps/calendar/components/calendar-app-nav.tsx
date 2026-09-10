@@ -13,7 +13,7 @@ import {
   UserIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@workspace/ui/components/button";
@@ -111,19 +111,24 @@ function NavLink({
   );
 }
 
-export function CalendarAppNav({
-  isSignedIn = false,
-  isDelegate = false,
-  notifications,
-}: {
+type CalendarAppNavProps = {
   isSignedIn?: boolean;
   isDelegate?: boolean;
   notifications?: ReactNode;
+};
+
+function CalendarAppNavShell({
+  isSignedIn = false,
+  isDelegate = false,
+  notifications,
+  pathname,
+}: CalendarAppNavProps & {
+  pathname: string | null;
 }) {
-  const pathname = usePathname() ?? "/";
-  const delegateActive = DELEGATE_LINKS.some((item) =>
-    isActivePath(pathname, item.href),
-  );
+  const activePath = pathname ?? "";
+  const delegateActive =
+    pathname != null &&
+    DELEGATE_LINKS.some((item) => isActivePath(pathname, item.href));
 
   return (
     <div className="border-b border-border bg-card">
@@ -137,14 +142,19 @@ export function CalendarAppNav({
               key={item.href}
               href={item.href}
               label={item.name}
-              active={isActivePath(pathname, item.href)}
+              active={
+                pathname != null && isActivePath(activePath, item.href)
+              }
             />
           ))}
           {isSignedIn ? (
             <NavLink
               href="/mis-competencias"
               label="Mis competencias"
-              active={isActivePath(pathname, "/mis-competencias")}
+              active={
+                pathname != null &&
+                isActivePath(activePath, "/mis-competencias")
+              }
             />
           ) : null}
           {isDelegate ? (
@@ -182,5 +192,18 @@ export function CalendarAppNav({
         </div>
       </div>
     </div>
+  );
+}
+
+function CalendarAppNavWithPath(props: CalendarAppNavProps) {
+  const pathname = usePathname() ?? "/";
+  return <CalendarAppNavShell {...props} pathname={pathname} />;
+}
+
+export function CalendarAppNav(props: CalendarAppNavProps) {
+  return (
+    <Suspense fallback={<CalendarAppNavShell {...props} pathname={null} />}>
+      <CalendarAppNavWithPath {...props} />
+    </Suspense>
   );
 }
