@@ -1,3 +1,5 @@
+import { canAccessBoardsApp } from "@workspace/auth/boards-access";
+
 import {
   listAccessibleBoards,
   listArchivedBoards,
@@ -5,12 +7,18 @@ import {
 } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 
+import { BoardsAccessDenied } from "./_components/boards-access-denied";
 import { BoardList } from "./_components/board-list";
 import { CreateBoardDialog } from "./_components/create-board-dialog";
 
 export default async function BoardsHomePage() {
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
+
+  if (!canAccessBoardsApp(user)) {
+    return <BoardsAccessDenied />;
+  }
+
   const isDelegate = user.role === "delegate";
 
   const [boards, templates, archived] = await Promise.all([

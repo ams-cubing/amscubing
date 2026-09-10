@@ -24,7 +24,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
-import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
+import { getBoardsUrl } from "@/lib/boards";
 
 import { BoardAssignControls } from "../../_components/board-assign-controls";
 
@@ -45,7 +45,6 @@ export function CompetitionDetailView({
 }: {
   competition: CompetitionDetail;
 }) {
-  const boardsEnabled = isBoardsEnabled();
   const boardsUrl = getBoardsUrl();
   const location = [
     competition.city,
@@ -215,7 +214,7 @@ export function CompetitionDetailView({
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          {boardsEnabled && competition.boardId && (
+          {competition.boardId && (
             <Button asChild variant="outline" size="sm">
               <a
                 href={`${boardsUrl}/boards/${competition.boardId}`}
@@ -227,13 +226,13 @@ export function CompetitionDetailView({
               </a>
             </Button>
           )}
-          {boardsEnabled && !competition.boardId && (
+          {!competition.boardId && (
             <BoardAssignControls
               competitionId={competition.id}
               boardId={competition.boardId}
             />
           )}
-          {!(boardsEnabled && competition.boardId) && competition.trelloUrl && (
+          {!competition.boardId && competition.trelloUrl && (
             <Button asChild variant="outline" size="sm">
               <a
                 href={competition.trelloUrl}

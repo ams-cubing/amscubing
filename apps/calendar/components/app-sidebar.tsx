@@ -82,7 +82,7 @@ export function AppSidebar({
   ...props
 }: {
   user: User | undefined;
-  /** Server-computed; do not derive from NEXT_PUBLIC_ alone (allowlist is server-only). */
+  /** Server-computed via canAccessBoardsApp (allowlist is server-only). */
   showBoardsNav?: boolean;
 } & React.ComponentProps<typeof Sidebar>) {
   const calendarNav = showBoardsNav

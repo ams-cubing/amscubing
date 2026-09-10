@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 
+import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { db } from "@workspace/db";
 import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
 import { boardInvites } from "@workspace/db/schema";
@@ -14,6 +15,7 @@ import { AvatarGroup } from "@workspace/ui/components/avatar-group";
 import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
 
+import { BoardsAccessDenied } from "@/app/_components/boards-access-denied";
 import { BoardKanban } from "./_components/board-kanban";
 import { BoardReadinessBanner } from "./_components/board-readiness-banner";
 import { BoardDelegateControls } from "./_components/board-delegate-controls";
@@ -52,6 +54,11 @@ export default async function BoardPage({
 
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
+
+  if (!canAccessBoardsApp(user)) {
+    return <BoardsAccessDenied />;
+  }
+
   const board = await getBoardForUser(user, boardId);
 
   if (!board) notFound();

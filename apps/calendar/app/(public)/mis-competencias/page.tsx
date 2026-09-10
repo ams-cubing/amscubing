@@ -16,7 +16,8 @@ import {
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
-import { getBoardsUrl, isBoardsEnabled } from "@/lib/boards";
+import { canAccessBoardsApp, getBoardsUrl } from "@/lib/boards";
+import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 async function PageContent() {
   const headersList = await headers();
@@ -28,6 +29,9 @@ async function PageContent() {
   if (!session) {
     unauthorized();
   }
+
+  const user = toSessionUser(session.user as RawSessionUser);
+  const canSeeBoards = canAccessBoardsApp(user);
 
   const competitionIds = await getUserOrganizerCompetitionIds(
     session.user.wcaId,
@@ -179,7 +183,7 @@ async function PageContent() {
                     </span>
                   </div>
 
-                  {isBoardsEnabled() && comp.boardId ? (
+                  {canSeeBoards && comp.boardId ? (
                     <a
                       href={`${getBoardsUrl()}/boards/${comp.boardId}`}
                       target="_blank"

@@ -21,7 +21,6 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
-import { isBoardsEnabled } from "@/lib/boards";
 import { assignBoardToCompetitionById } from "./assign-board";
 
 export async function createCompetition(
@@ -185,7 +184,7 @@ export async function createCompetition(
 
     let message = "Competencia creada exitosamente";
 
-    if (validatedData.assignBoard && isBoardsEnabled() && newCompetitionId) {
+    if (validatedData.assignBoard && newCompetitionId) {
       const assignResult = await assignBoardToCompetitionById(newCompetitionId);
       if (assignResult.error) {
         message = `Competencia creada, pero no se pudo asignar el tablero: ${assignResult.error}`;
