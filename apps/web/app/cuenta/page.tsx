@@ -182,36 +182,38 @@ async function CuentaBody() {
         ))}
       </div>
 
-      <div className="mt-14">
-        <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
-          Permisos de organización
-        </p>
-        <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.25rem)] leading-none">
-          Herramientas para delegados y editores
-        </h2>
-        {isDelegate ? (
-          <div className="grid gap-6 lg:grid-cols-4">
-            {delegateActions.map((action) => (
-              <ActionCard key={action.title} action={action} compact />
-            ))}
-          </div>
-        ) : isEditor ? (
-          <div className="grid gap-6 lg:grid-cols-3">
-            {editorActions.map((action) => (
-              <ActionCard key={action.title} action={action} compact />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-5.5 border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
-            <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
-              Estas acciones aparecen cuando tu WCA ID tiene permisos de
-              delegado o de editor de contenido. Los delegados administran el
-              panel; los editores podrán publicar en el blog cuando el CMS esté
-              listo.
-            </p>
-          </div>
-        )}
-      </div>
+      {user ? (
+        <div className="mt-14">
+          <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
+            Permisos de organización
+          </p>
+          <h2 className="ams-display mb-6 text-[clamp(2rem,5vw,3.25rem)] leading-none">
+            Herramientas para delegados y editores
+          </h2>
+          {isDelegate ? (
+            <div className="grid gap-6 lg:grid-cols-4">
+              {delegateActions.map((action) => (
+                <ActionCard key={action.title} action={action} compact />
+              ))}
+            </div>
+          ) : isEditor ? (
+            <div className="grid gap-6 lg:grid-cols-3">
+              {editorActions.map((action) => (
+                <ActionCard key={action.title} action={action} compact />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-5.5 border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
+              <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
+                Estas acciones aparecen cuando tu WCA ID tiene permisos de
+                delegado o de editor de contenido. Los delegados administran el
+                panel; los editores podrán publicar en el blog cuando el CMS esté
+                listo.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : null}
     </>
   );
 }
