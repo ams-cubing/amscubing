@@ -54,7 +54,9 @@ export async function addCardCommentAction(input: {
   }
 
   const mentionedIds = new Set(mentioned.map((member) => member.userId));
-  const emailRecipients: { email: string; name: string }[] = [];
+  const mentionEmailRecipients: { email: string; name: string }[] = [];
+  const commentEmailRecipients: { email: string; name: string }[] = [];
+  let cardTitle = "una tarjeta";
 
   await db.transaction(async (tx) => {
     await tx.insert(cardComments).values({
@@ -75,6 +77,7 @@ export async function addCardCommentAction(input: {
       where: eq(boards.id, input.boardId),
       columns: { name: true },
     });
+    cardTitle = card?.title?.trim() || "una tarjeta";
     const urls = {
       calendarUrl: getCalendarUrl(),
       boardsUrl: getBoardsUrl(),
@@ -88,8 +91,11 @@ export async function addCardCommentAction(input: {
 
     const mentionRows = mentioned.map((member) => {
       const profile = team.find((person) => person.id === member.userId);
-      if (profile?.email) {
-        emailRecipients.push({ email: profile.email, name: profile.name });
+      if (profile?.email && member.userId !== user.id) {
+        mentionEmailRecipients.push({
+          email: profile.email,
+          name: profile.name,
+        });
       }
 
       return {
@@ -113,38 +119,60 @@ export async function addCardCommentAction(input: {
 
     const commentRows = members
       .filter((member) => !mentionedIds.has(member.userId))
-      .map((member) => ({
-        recipientId: member.userId,
-        actorId: user.id,
-        type: "card_comment" as const,
-        title: formatNotificationTitle("card_comment", {
-          cardTitle: card?.title,
-        }),
-        href: hrefForNotification("card_comment", {
-          urls,
-          recipientRole: "user",
-          boardId: input.boardId,
-          cardId: input.cardId,
-        }),
-        payload: {
-          boardId: input.boardId,
-          boardName: board?.name,
-          cardId: input.cardId,
-          cardTitle: card?.title,
-          actorName: user.name,
-        },
-      }));
+      .map((member) => {
+        const profile = team.find((person) => person.id === member.userId);
+        if (profile?.email && member.userId !== user.id) {
+          commentEmailRecipients.push({
+            email: profile.email,
+            name: profile.name,
+          });
+        }
+
+        return {
+          recipientId: member.userId,
+          actorId: user.id,
+          type: "card_comment" as const,
+          title: formatNotificationTitle("card_comment", {
+            cardTitle: card?.title,
+          }),
+          href: hrefForNotification("card_comment", {
+            urls,
+            recipientRole: "user",
+            boardId: input.boardId,
+            cardId: input.cardId,
+          }),
+          payload: {
+            boardId: input.boardId,
+            boardName: board?.name,
+            cardId: input.cardId,
+            cardTitle: card?.title,
+            actorName: user.name,
+          },
+        };
+      });
 
     await insertNotifications(tx, [...mentionRows, ...commentRows]);
   });
 
   const boardHref = `${getBoardsUrl().replace(/\/$/, "")}/boards/${input.boardId}?card=${input.cardId}`;
-  for (const recipient of emailRecipients) {
+  for (const recipient of mentionEmailRecipients) {
     await sendBoardNotificationEmail({
       to: recipient.email,
       recipientName: recipient.name,
       subject: `${user.name} te mencionó en un comentario`,
       title: `${user.name} te mencionó en un comentario`,
+      bodyHtml: `<p>${body.replaceAll("\n", "<br/>")}</p>`,
+      ctaLabel: "Ver comentario",
+      ctaHref: boardHref,
+    });
+  }
+
+  for (const recipient of commentEmailRecipients) {
+    await sendBoardNotificationEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      subject: `Nuevo comentario en «${cardTitle}»`,
+      title: `Nuevo comentario en «${cardTitle}»`,
       bodyHtml: `<p>${body.replaceAll("\n", "<br/>")}</p>`,
       ctaLabel: "Ver comentario",
       ctaHref: boardHref,

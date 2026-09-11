@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  competitionStatusChangedEmail,
   delegateAssignedEmail,
   delegateRemovedEmail,
   isDeliverableEmail,
+  organizerAssignedEmail,
+  organizerRemovedEmail,
   sendEmail,
   ultimatumEmail,
 } from "./index";
@@ -53,6 +56,44 @@ describe("email templates escape HTML", () => {
 
     expect(html).toContain("&quot;quotes&quot;");
     expect(html).toContain("&amp; symbols");
+  });
+
+  it("escapes organizer assigned template", () => {
+    const html = organizerAssignedEmail({
+      recipientName: "<script>",
+      city: "CDMX &",
+      startDate: "2026-01-01",
+      endDate: "2026-01-02",
+      misCompetenciasUrl: "https://example.com/?q=1",
+    });
+
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("CDMX &amp;");
+  });
+
+  it("escapes organizer removed template", () => {
+    const html = organizerRemovedEmail({
+      recipientName: "A<b>",
+      city: "City",
+      startDate: "2026-01-01",
+      endDate: "2026-01-02",
+      misCompetenciasUrl: "https://example.com",
+    });
+
+    expect(html).toContain("A&lt;b&gt;");
+  });
+
+  it("escapes competition status changed template", () => {
+    const html = competitionStatusChangedEmail({
+      recipientName: "Ana",
+      city: "León & Co",
+      statusLabel: 'Anunciada "ya"',
+      misCompetenciasUrl: "https://example.com",
+    });
+
+    expect(html).toContain("León &amp; Co");
+    expect(html).toContain("Anunciada &quot;ya&quot;");
   });
 });
 

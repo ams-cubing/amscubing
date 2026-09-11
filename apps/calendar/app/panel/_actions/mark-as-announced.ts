@@ -3,6 +3,7 @@
 import { db } from "@workspace/db";
 import {
   competitionNotificationRow,
+  competitionOrganizersOnly,
   competitionTeamUsers,
   formatPublicStatusLabel,
   insertNotifications,
@@ -10,6 +11,7 @@ import {
 import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
@@ -25,6 +27,7 @@ export async function markAsAnnounced(competitionId: number): Promise<{
   const { session } = authResult;
 
   try {
+    let city = "";
     await db.transaction(async (tx) => {
       const competition = await tx.query.competitions.findFirst({
         where: eq(competitions.id, competitionId),
@@ -49,6 +52,8 @@ export async function markAsAnnounced(competitionId: number): Promise<{
       ) {
         throw new Error("No se puede anunciar una competencia cancelada");
       }
+
+      city = competition.city ?? "";
 
       await tx
         .update(competitions)
@@ -81,7 +86,7 @@ export async function markAsAnnounced(competitionId: number): Promise<{
             type: "competition_status_changed",
             urls,
             competitionId,
-            city: competition.city ?? "",
+            city,
             statusLabel: formatPublicStatusLabel("announced"),
             statusPublic: "announced",
             statusInternal: "wca_approved",
@@ -89,6 +94,30 @@ export async function markAsAnnounced(competitionId: number): Promise<{
         ),
       );
     });
+
+    const statusLabel = formatPublicStatusLabel("announced");
+    try {
+      const organizers = await competitionOrganizersOnly(db, competitionId);
+      for (const organizer of organizers) {
+        if (!organizer.email || !organizer.name) continue;
+        if (organizer.id === session.user.id) continue;
+        try {
+          await sendCompetitionStatusChangedEmail({
+            to: organizer.email,
+            recipientName: organizer.name,
+            city,
+            statusLabel,
+          });
+        } catch (err) {
+          console.error(
+            "Error sending organizer status email via Resend:",
+            err,
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Error notifying organizers:", err);
+    }
 
     revalidateTag("competitions", "days");
     revalidateTag("competition-public-status-counts", "days");

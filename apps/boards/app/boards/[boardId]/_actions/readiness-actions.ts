@@ -10,6 +10,7 @@ import {
 } from "@workspace/db/board-readiness";
 import {
   competitionNotificationRow,
+  competitionOrganizersOnly,
   competitionTeamUsers,
   formatInternalStatusLabel,
   formatPublicStatusLabel,
@@ -18,6 +19,7 @@ import {
 import { competitions, logs } from "@workspace/db/schema";
 
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
+import { sendCompetitionStatusChangedEmail } from "@/lib/board-emails";
 import { requireDelegate } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
@@ -120,6 +122,29 @@ export async function applyReadinessSuggestionAction(input: {
       ),
     );
   });
+
+  try {
+    const organizers = await competitionOrganizersOnly(
+      db,
+      readiness.competitionId,
+    );
+    for (const organizer of organizers) {
+      if (!organizer.email || !organizer.name) continue;
+      if (organizer.id === actor.id) continue;
+      try {
+        await sendCompetitionStatusChangedEmail({
+          to: organizer.email,
+          recipientName: organizer.name,
+          city: readiness.city,
+          statusLabel,
+        });
+      } catch (err) {
+        console.error("Error sending organizer status email via Resend:", err);
+      }
+    }
+  } catch (err) {
+    console.error("Error notifying organizers:", err);
+  }
 
   revalidatePath(`/boards/${input.boardId}`);
   revalidateTag(`competition-${readiness.competitionId}`, "days");

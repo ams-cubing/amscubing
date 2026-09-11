@@ -1,4 +1,6 @@
 import {
+  competitionStatusChangedEmail,
+  competitionStatusChangedSubject,
   dateRequestDelegateEmail,
   dateRequestDelegateSubject,
   dateRequestOrganizerEmail,
@@ -8,6 +10,10 @@ import {
   delegateRemovedEmail,
   delegateRemovedSubject,
   isDeliverableEmail,
+  organizerAssignedEmail,
+  organizerAssignedSubject,
+  organizerRemovedEmail,
+  organizerRemovedSubject,
   sendEmail,
   ultimatumEmail,
   ultimatumSubject,
@@ -127,6 +133,70 @@ export async function sendDateRequestOrganizerEmail(input: {
       endDate: input.endDate,
       delegateName: input.delegateName,
       delegateEmail: input.delegateEmail,
+      misCompetenciasUrl: misCompetenciasUrl(),
+    }),
+  });
+}
+
+export async function sendOrganizerAssignedEmail(input: {
+  to: string;
+  recipientName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+}) {
+  if (!isDeliverableEmail(input.to)) return;
+
+  await sendEmail({
+    to: input.to,
+    subject: organizerAssignedSubject(input),
+    html: organizerAssignedEmail({
+      recipientName: input.recipientName,
+      city: input.city,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      misCompetenciasUrl: misCompetenciasUrl(),
+    }),
+  });
+}
+
+export async function sendOrganizerRemovedEmail(input: {
+  to: string;
+  recipientName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+}) {
+  if (!isDeliverableEmail(input.to)) return;
+
+  await sendEmail({
+    to: input.to,
+    subject: organizerRemovedSubject(input),
+    html: organizerRemovedEmail({
+      recipientName: input.recipientName,
+      city: input.city,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      misCompetenciasUrl: misCompetenciasUrl(),
+    }),
+  });
+}
+
+export async function sendCompetitionStatusChangedEmail(input: {
+  to: string;
+  recipientName: string;
+  city: string;
+  statusLabel: string;
+}) {
+  if (!isDeliverableEmail(input.to)) return;
+
+  await sendEmail({
+    to: input.to,
+    subject: competitionStatusChangedSubject(input),
+    html: competitionStatusChangedEmail({
+      recipientName: input.recipientName,
+      city: input.city,
+      statusLabel: input.statusLabel,
       misCompetenciasUrl: misCompetenciasUrl(),
     }),
   });

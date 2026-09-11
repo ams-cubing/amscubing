@@ -39,9 +39,14 @@ vi.mock("@workspace/db/schema", () => ({
 
 vi.mock("@workspace/db/notifications", () => ({
   competitionTeamUsers: vi.fn().mockResolvedValue([]),
+  competitionOrganizersOnly: vi.fn().mockResolvedValue([]),
   insertNotifications: vi.fn().mockResolvedValue(undefined),
   formatPublicStatusLabel: vi.fn((status: string) => status),
   competitionNotificationRow: vi.fn(() => ({})),
+}));
+
+vi.mock("@/lib/calendar-emails", () => ({
+  sendCompetitionStatusChangedEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/notification-urls", () => ({

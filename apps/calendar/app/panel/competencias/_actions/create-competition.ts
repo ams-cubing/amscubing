@@ -16,7 +16,10 @@ import {
 import { and, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
-import { sendDelegateAssignedEmail } from "@/lib/calendar-emails";
+import {
+  sendDelegateAssignedEmail,
+  sendOrganizerAssignedEmail,
+} from "@/lib/calendar-emails";
 import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -172,6 +175,31 @@ export async function createCompetition(
       }
     } catch (err) {
       console.error("Error fetching delegate emails:", err);
+    }
+
+    try {
+      const organizers = await db.query.user.findMany({
+        where: (u, { inArray }) =>
+          inArray(u.wcaId, validatedData.organizerWcaIds),
+        columns: { email: true, name: true },
+      });
+
+      for (const o of organizers) {
+        if (!o.email || !o.name) continue;
+        try {
+          await sendOrganizerAssignedEmail({
+            to: o.email,
+            recipientName: o.name,
+            city: validatedData.city,
+            startDate: startDateStr!,
+            endDate: endDateStr!,
+          });
+        } catch (err) {
+          console.error("Error sending organizer email via Resend:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching organizer emails:", err);
     }
 
     revalidateTag("competitions", "days");

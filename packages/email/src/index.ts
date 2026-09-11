@@ -170,6 +170,70 @@ export function dateRequestOrganizerSubject(input: {
   return `Fecha solicitada en ${input.city} (${input.startDate} - ${input.endDate})`;
 }
 
+export function organizerAssignedEmail(input: {
+  recipientName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  misCompetenciasUrl: string;
+}) {
+  return `
+    <p>Hola ${escapeHtml(input.recipientName)},</p>
+    <p>Has sido asignado como organizador para una competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).</p>
+    <p><a href="${escapeHtml(input.misCompetenciasUrl)}">Revisa tus competencias para más detalles</a></p>
+  `;
+}
+
+export function organizerAssignedSubject(input: {
+  city: string;
+  startDate: string;
+  endDate: string;
+}) {
+  return `Asignación como organizador: ${input.city} (${input.startDate} - ${input.endDate})`;
+}
+
+export function organizerRemovedEmail(input: {
+  recipientName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  misCompetenciasUrl: string;
+}) {
+  return `
+    <p>Hola ${escapeHtml(input.recipientName)},</p>
+    <p>Has sido removido como organizador de una competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).</p>
+    <p><a href="${escapeHtml(input.misCompetenciasUrl)}">Revisa tus competencias para más detalles</a></p>
+  `;
+}
+
+export function organizerRemovedSubject(input: {
+  city: string;
+  startDate: string;
+  endDate: string;
+}) {
+  return `Remoción como organizador: ${input.city} (${input.startDate} - ${input.endDate})`;
+}
+
+export function competitionStatusChangedEmail(input: {
+  recipientName: string;
+  city: string;
+  statusLabel: string;
+  misCompetenciasUrl: string;
+}) {
+  return `
+    <p>Hola ${escapeHtml(input.recipientName)},</p>
+    <p>El estatus de la competencia en ${escapeHtml(input.city)} cambió a <strong>${escapeHtml(input.statusLabel)}</strong>.</p>
+    <p><a href="${escapeHtml(input.misCompetenciasUrl)}">Revisa los detalles aquí</a></p>
+  `;
+}
+
+export function competitionStatusChangedSubject(input: {
+  city: string;
+  statusLabel: string;
+}) {
+  return `Estatus: ${input.statusLabel} — ${input.city}`;
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
