@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AMS_EMAIL,
+  boardNotificationEmail,
   competitionStatusChangedEmail,
   delegateAssignedEmail,
   delegateRemovedEmail,
@@ -18,6 +20,46 @@ describe("isDeliverableEmail", () => {
 
   it("accepts real addresses", () => {
     expect(isDeliverableEmail("user@example.com")).toBe(true);
+  });
+});
+
+describe("email brand layout", () => {
+  it("wraps calendar templates with AMS chrome and CTA button", () => {
+    const html = delegateAssignedEmail({
+      recipientName: "Ana",
+      city: "CDMX",
+      startDate: "2026-01-01",
+      endDate: "2026-01-02",
+      panelUrl: "https://example.com/panel",
+    });
+
+    expect(html).toContain(AMS_EMAIL.navy);
+    expect(html).toContain(AMS_EMAIL.red);
+    expect(html).toContain(AMS_EMAIL.green);
+    expect(html).toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain(">AMS</span>");
+    expect(html).toContain("Asociación Mexicana de Speedcubing");
+    expect(html).toContain('href="https://example.com/panel"');
+    expect(html).toContain(`background-color:${AMS_EMAIL.green}`);
+    expect(html).toContain("Revisa el panel de competencias para más detalles");
+  });
+
+  it("wraps board notifications with title and CTA", () => {
+    const html = boardNotificationEmail({
+      recipientName: "Leo",
+      title: "Nueva actividad",
+      bodyHtml: "<p>Hay un comentario nuevo.</p>",
+      ctaLabel: "Ver tablero",
+      ctaHref: "https://example.com/board",
+    });
+
+    expect(html).toContain(AMS_EMAIL.navy);
+    expect(html).toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain("Nueva actividad");
+    expect(html).toContain("Hay un comentario nuevo.");
+    expect(html).toContain('href="https://example.com/board"');
+    expect(html).toContain("Ver tablero");
+    expect(html).toContain(`background-color:${AMS_EMAIL.green}`);
   });
 });
 
