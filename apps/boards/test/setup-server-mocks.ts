@@ -65,6 +65,7 @@ vi.mock("@/lib/board-notifications", () => ({
 
 vi.mock("@/lib/board-emails", () => ({
   sendBoardNotificationEmail: boardMocks.sendBoardNotificationEmail,
+  sendCompetitionStatusChangedEmail: vi.fn(),
 }));
 
 vi.mock("@workspace/db/notifications", () => ({
@@ -75,6 +76,10 @@ vi.mock("@workspace/db/notifications", () => ({
   insertNotifications: vi.fn(),
   isCompetitionOrganizer: boardMocks.isCompetitionOrganizer,
   competitionNotificationRow: vi.fn(),
+  competitionOrganizersOnly: vi.fn().mockResolvedValue([]),
+  competitionTeamUsers: vi.fn().mockResolvedValue([]),
+  formatInternalStatusLabel: vi.fn((s: string) => s),
+  formatPublicStatusLabel: vi.fn((s: string) => s),
 }));
 
 vi.mock("@workspace/db", () => ({

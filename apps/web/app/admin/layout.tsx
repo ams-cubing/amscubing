@@ -59,9 +59,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </section>
-      <div className="ams-container max-w-280 py-12 md:py-16">
-        {children}
-      </div>
+      <div className="ams-container max-w-280 py-12 md:py-16">{children}</div>
       <SiteFooter />
     </>
   );

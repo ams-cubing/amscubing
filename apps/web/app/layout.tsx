@@ -25,11 +25,39 @@ export const metadata = {
   title: "Asociación Mexicana de Speedcubing",
   description:
     "Comunidad que promueve el speedcubing en México: competencias, compañerismo y crecimiento personal en apego a la WCA.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_WEB_URL ?? "https://amscubing.org",
+  ),
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_MX",
+    siteName: "Asociación Mexicana de Speedcubing",
+    title: "Asociación Mexicana de Speedcubing",
+    description:
+      "Comunidad que promueve el speedcubing en México: competencias, compañerismo y crecimiento personal en apego a la WCA.",
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "AMS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Asociación Mexicana de Speedcubing",
+    description:
+      "Comunidad que promueve el speedcubing en México: competencias, compañerismo y crecimiento personal en apego a la WCA.",
+    images: ["/icon-512.png"],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AMS",
   },
 };
 

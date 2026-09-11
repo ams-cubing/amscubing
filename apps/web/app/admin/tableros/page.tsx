@@ -89,7 +89,7 @@ export default async function AdminTablerosPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={linked.image}
-                        alt=""
+                        alt={label}
                         className="size-12 rounded-full object-cover"
                       />
                     ) : (

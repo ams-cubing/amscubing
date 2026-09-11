@@ -11,12 +11,19 @@ import {
   insertNotifications,
   isCompetitionOrganizer,
 } from "@workspace/db/notifications";
-import { boardLists, boards, cardMembers, cards } from "@workspace/db/schema";
+import {
+  boardLists,
+  boards,
+  cardMembers,
+  cards,
+  user,
+} from "@workspace/db/schema";
 
 import {
   maybeNotifyReadinessSuggestion,
   notifyHechoReview,
 } from "@/lib/board-notifications";
+import { sendBoardNotificationEmail } from "@/lib/board-emails";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 import { createCardSchema } from "@/app/_lib/validations";
 
@@ -145,6 +152,9 @@ export async function toggleCardMemberAction(input: {
 
   if (input.checked) {
     await assertUserAssignableToBoard(input.boardId, input.userId);
+    let assignedCardTitle: string | undefined;
+    let didAssign = false;
+
     await db.transaction(async (tx) => {
       const [inserted] = await tx
         .insert(cardMembers)
@@ -154,6 +164,7 @@ export async function toggleCardMemberAction(input: {
 
       if (!inserted) return;
 
+      didAssign = true;
       const card = await tx.query.cards.findFirst({
         where: eq(cards.id, input.cardId),
         columns: { title: true },
@@ -162,6 +173,7 @@ export async function toggleCardMemberAction(input: {
         where: eq(boards.id, input.boardId),
         columns: { name: true },
       });
+      assignedCardTitle = card?.title;
 
       await insertNotifications(tx, [
         {
@@ -190,6 +202,30 @@ export async function toggleCardMemberAction(input: {
         },
       ]);
     });
+
+    if (didAssign && input.userId !== actor.id) {
+      const assignee = await db.query.user.findFirst({
+        where: eq(user.id, input.userId),
+        columns: { email: true, name: true },
+      });
+      if (assignee?.email && assignee.name) {
+        const cardTitle = assignedCardTitle?.trim() || "una tarjeta";
+        const boardHref = `${getBoardsUrl().replace(/\/$/, "")}/boards/${input.boardId}?card=${input.cardId}`;
+        try {
+          await sendBoardNotificationEmail({
+            to: assignee.email,
+            recipientName: assignee.name,
+            subject: `Te asignaron a «${cardTitle}»`,
+            title: `Te asignaron a «${cardTitle}»`,
+            bodyHtml: `<p>${actor.name ?? "Alguien"} te asignó a esta tarjeta.</p>`,
+            ctaLabel: "Ver tarjeta",
+            ctaHref: boardHref,
+          });
+        } catch (err) {
+          console.error("Error sending card assignment email via Resend:", err);
+        }
+      }
+    }
   } else {
     await db
       .delete(cardMembers)

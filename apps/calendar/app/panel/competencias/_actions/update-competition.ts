@@ -19,8 +19,11 @@ import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import {
+  sendCompetitionStatusChangedEmail,
   sendDelegateAssignedEmail,
   sendDelegateRemovedEmail,
+  sendOrganizerAssignedEmail,
+  sendOrganizerRemovedEmail,
 } from "@/lib/calendar-emails";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -252,7 +255,7 @@ export async function updateCompetition(
       await insertNotifications(tx, [...assignmentRows, ...statusRows]);
     });
 
-    // Notify newly added delegates
+    // Notify newly added/removed delegates and organizers; status to remaining organizers
     try {
       if (addedDelegateWcaIds.length > 0) {
         const addedUsers = await db.query.user.findMany({
@@ -279,7 +282,6 @@ export async function updateCompetition(
         }
       }
 
-      // Notify removed delegates
       if (removedDelegateWcaIds.length > 0) {
         const removedUsers = await db.query.user.findMany({
           where: (u, { inArray }) => inArray(u.wcaId, removedDelegateWcaIds),
@@ -304,8 +306,91 @@ export async function updateCompetition(
           }
         }
       }
+
+      if (addedOrganizerWcaIds.length > 0) {
+        const addedUsers = await db.query.user.findMany({
+          where: (u, { inArray }) => inArray(u.wcaId, addedOrganizerWcaIds),
+          columns: { email: true, name: true },
+        });
+
+        for (const a of addedUsers) {
+          if (!a.email || !a.name) continue;
+          try {
+            await sendOrganizerAssignedEmail({
+              to: a.email,
+              recipientName: a.name,
+              city: validatedData.city,
+              startDate: startDateStr!,
+              endDate: endDateStr!,
+            });
+          } catch (err) {
+            console.error(
+              "Error sending added organizer email via Resend:",
+              err,
+            );
+          }
+        }
+      }
+
+      if (removedOrganizerWcaIds.length > 0) {
+        const removedUsers = await db.query.user.findMany({
+          where: (u, { inArray }) => inArray(u.wcaId, removedOrganizerWcaIds),
+          columns: { email: true, name: true },
+        });
+
+        for (const r of removedUsers) {
+          if (!r.email || !r.name) continue;
+          try {
+            await sendOrganizerRemovedEmail({
+              to: r.email,
+              recipientName: r.name,
+              city: validatedData.city,
+              startDate: startDateStr!,
+              endDate: endDateStr!,
+            });
+          } catch (err) {
+            console.error(
+              "Error sending removed organizer email via Resend:",
+              err,
+            );
+          }
+        }
+      }
+
+      if (publicChanged || internalChanged) {
+        const statusLabel = publicChanged
+          ? formatPublicStatusLabel(validatedData.statusPublic)
+          : formatInternalStatusLabel(validatedData.statusInternal);
+        const statusOrganizerWcaIds = newOrganizerWcaIds.filter(
+          (id) => !addedOrganizerWcaIds.includes(id),
+        );
+
+        if (statusOrganizerWcaIds.length > 0) {
+          const statusUsers = await db.query.user.findMany({
+            where: (u, { inArray }) => inArray(u.wcaId, statusOrganizerWcaIds),
+            columns: { email: true, name: true },
+          });
+
+          for (const u of statusUsers) {
+            if (!u.email || !u.name) continue;
+            try {
+              await sendCompetitionStatusChangedEmail({
+                to: u.email,
+                recipientName: u.name,
+                city: validatedData.city,
+                statusLabel,
+              });
+            } catch (err) {
+              console.error(
+                "Error sending organizer status email via Resend:",
+                err,
+              );
+            }
+          }
+        }
+      }
     } catch (err) {
-      console.error("Error notifying delegates:", err);
+      console.error("Error notifying competition team:", err);
     }
 
     revalidateTag(`competition-${competitionId}`, "days");

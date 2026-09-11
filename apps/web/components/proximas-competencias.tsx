@@ -4,7 +4,7 @@ import { ArrowRight, Users } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import type { PublicCompetition } from "@/lib/competitions";
-import { CALENDAR_URL } from "@/lib/content";
+import { getCalendarUrl } from "@/lib/urls";
 
 const monthNames = [
   "ENE",
@@ -107,7 +107,7 @@ export function ProximasCompetencias({
             {trackItems.map((competition, index) => (
               <a
                 key={`${competition.id}-${index}`}
-                href={competition.wcaCompetitionUrl ?? CALENDAR_URL}
+                href={competition.wcaCompetitionUrl ?? getCalendarUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ams-slash-card ams-glass group relative block w-[min(84vw,380px)] flex-none overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.13)] hover:scale-[1.04] hover:shadow-[0_24px_40px_rgba(1,11,25,0.24)]"
@@ -115,7 +115,7 @@ export function ProximasCompetencias({
                 <div className="relative h-50 bg-ams-soft">
                   <Image
                     src={competition.image}
-                    alt=""
+                    alt={competition.name}
                     fill
                     className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
                     sizes="380px"

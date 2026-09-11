@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
 import { Button } from "@workspace/ui/components/button";
-import { CALENDAR_URL, CONTACT_EMAIL, PRIVACY_URL } from "@/lib/content";
+import { CONTACT_EMAIL, PRIVACY_URL } from "@/lib/content";
+import { getCalendarUrl } from "@/lib/urls";
 
 async function CopyrightYear() {
   "use cache";
@@ -20,6 +21,8 @@ const siteLinks = [
 ] as const;
 
 export function SiteFooter() {
+  const calendarUrl = getCalendarUrl();
+
   return (
     <footer
       className="ams-texture relative overflow-hidden bg-ams-navy px-0 py-17.5 pb-10 text-white"
@@ -32,7 +35,7 @@ export function SiteFooter() {
             <div className="mb-5 flex items-center gap-3">
               <Image
                 src="/source/isotipo-color-sm.png"
-                alt=""
+                alt="AMS"
                 width={42}
                 height={24}
                 className="h-8 w-auto"
@@ -75,7 +78,7 @@ export function SiteFooter() {
               Comunidad
             </h2>
             <div className="grid gap-3 text-sm">
-              <a href={CALENDAR_URL} className="text-white/70 hover:text-white">
+              <a href={calendarUrl} className="text-white/70 hover:text-white">
                 Ser voluntario
               </a>
               <Link
