@@ -10,11 +10,7 @@ import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { SiteNavAccount } from "@/components/site-nav-account";
 import { getBoardsUrl, getCalendarUrl, getWebUrl } from "@/lib/urls";
 
-export function SiteNav({
-  active = "Inicio",
-}: {
-  active?: AmsNavItemLabel;
-}) {
+export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
   const webUrl = getWebUrl();
   const calendarUrl = getCalendarUrl();
   const boardsUrl = getBoardsUrl();

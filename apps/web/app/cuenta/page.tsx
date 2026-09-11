@@ -207,8 +207,8 @@ async function CuentaBody() {
               <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
                 Estas acciones aparecen cuando tu WCA ID tiene permisos de
                 delegado o de editor de contenido. Los delegados administran el
-                panel; los editores podrán publicar en el blog cuando el CMS esté
-                listo.
+                panel; los editores podrán publicar en el blog cuando el CMS
+                esté listo.
               </p>
             </div>
           )}

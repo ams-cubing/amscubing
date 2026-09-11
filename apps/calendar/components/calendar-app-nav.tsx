@@ -142,9 +142,7 @@ function CalendarAppNavShell({
               key={item.href}
               href={item.href}
               label={item.name}
-              active={
-                pathname != null && isActivePath(activePath, item.href)
-              }
+              active={pathname != null && isActivePath(activePath, item.href)}
             />
           ))}
           {isSignedIn ? (

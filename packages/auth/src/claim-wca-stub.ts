@@ -68,8 +68,7 @@ export async function claimWcaStubUser(
   }
 
   const regionId = profile.regionId ?? existing.regionId ?? null;
-  const delegateTitle =
-    profile.delegateTitle ?? existing.delegateTitle ?? null;
+  const delegateTitle = profile.delegateTitle ?? existing.delegateTitle ?? null;
   const delegateLocation =
     profile.delegateLocation ?? existing.delegateLocation ?? null;
   const image =

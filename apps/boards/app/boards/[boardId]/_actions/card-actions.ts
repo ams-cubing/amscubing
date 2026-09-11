@@ -11,7 +11,13 @@ import {
   insertNotifications,
   isCompetitionOrganizer,
 } from "@workspace/db/notifications";
-import { boardLists, boards, cardMembers, cards, user } from "@workspace/db/schema";
+import {
+  boardLists,
+  boards,
+  cardMembers,
+  cards,
+  user,
+} from "@workspace/db/schema";
 
 import {
   maybeNotifyReadinessSuggestion,
