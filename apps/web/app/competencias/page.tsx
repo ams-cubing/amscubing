@@ -7,7 +7,6 @@ import { SiteNav } from "@/components/site-nav";
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { getPublicCompetitions } from "@/lib/competitions";
-import { CALENDAR_URL } from "@/lib/content";
 import { getCalendarUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
@@ -87,7 +86,7 @@ export default async function CompetenciasPage() {
               {competitions.map((competition, index) => (
                 <a
                   key={competition.id}
-                  href={competition.wcaCompetitionUrl ?? CALENDAR_URL}
+                  href={competition.wcaCompetitionUrl ?? calendarUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`group overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.12)] transition-transform hover:-translate-y-1 ${
@@ -97,7 +96,7 @@ export default async function CompetenciasPage() {
                   <div className="relative h-52 bg-ams-soft">
                     <Image
                       src={competition.image}
-                      alt=""
+                      alt={competition.name}
                       fill
                       className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 33vw"

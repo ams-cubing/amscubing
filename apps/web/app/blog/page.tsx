@@ -37,7 +37,7 @@ export default function BlogPage() {
                 <div className="relative h-52">
                   <Image
                     src={post.image}
-                    alt=""
+                    alt={post.title}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                     sizes="(max-width: 1024px) 100vw, 33vw"

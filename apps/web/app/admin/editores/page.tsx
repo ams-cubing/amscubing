@@ -73,7 +73,7 @@ export default async function AdminEditoresPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={editor.image}
-                      alt=""
+                      alt={editor.name}
                       className="size-12 rounded-full object-cover"
                     />
                   ) : (

@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import { CALENDAR_URL } from "@/lib/content";
 import type { CompetitionSpotlight } from "@/lib/competitions";
 import type { CommunityStats } from "@/lib/community-stats";
+import { getCalendarUrl } from "@/lib/urls";
 
 const monthNames = [
   "ENE",
@@ -112,7 +112,11 @@ export function Hero({
             variant="glass"
             className="border-white/50 hover:bg-white hover:text-ams-navy"
           >
-            <a href={CALENDAR_URL} target="_blank" rel="noopener noreferrer">
+            <a
+              href={getCalendarUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Calendario completo
             </a>
           </Button>

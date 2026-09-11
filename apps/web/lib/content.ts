@@ -1,4 +1,3 @@
-export const CALENDAR_URL = "https://calendario.amscubing.org";
 export const COURSES_URL = "https://cursos.amscubing.org";
 export const PRIVACY_URL = "/aviso-de-privacidad";
 export const CONTACT_EMAIL = "contacto@amscubing.org";

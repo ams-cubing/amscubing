@@ -16,27 +16,36 @@ export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
   const boardsUrl = getBoardsUrl();
 
   return (
-    <AmsSiteNav
-      active={active}
-      webUrl={webUrl}
-      account={
-        <Suspense
-          fallback={
-            <SiteNavAccount
+    <>
+      <a
+        href="#contenido-principal"
+        className="absolute left-4 top-4 z-100 -translate-y-[200%] rounded-md bg-ams-navy px-4 py-2 text-sm font-semibold text-white opacity-0 shadow-lg transition focus:translate-y-0 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Saltar al contenido
+      </a>
+      <AmsSiteNav
+        active={active}
+        webUrl={webUrl}
+        account={
+          <Suspense
+            fallback={
+              <SiteNavAccount
+                webUrl={webUrl}
+                calendarUrl={calendarUrl}
+                boardsUrl={boardsUrl}
+              />
+            }
+          >
+            <SiteNavAccountFromSession
               webUrl={webUrl}
               calendarUrl={calendarUrl}
               boardsUrl={boardsUrl}
             />
-          }
-        >
-          <SiteNavAccountFromSession
-            webUrl={webUrl}
-            calendarUrl={calendarUrl}
-            boardsUrl={boardsUrl}
-          />
-        </Suspense>
-      }
-    />
+          </Suspense>
+        }
+      />
+      <span id="contenido-principal" tabIndex={-1} className="sr-only" />
+    </>
   );
 }
 

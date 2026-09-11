@@ -16,8 +16,8 @@ import { AccountSignOut } from "@/components/account-sign-out";
 import { PageHero } from "@/components/page-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
-import { CALENDAR_URL, COURSES_URL } from "@/lib/content";
-import { getBoardsUrl } from "@/lib/urls";
+import { COURSES_URL } from "@/lib/content";
+import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
   title: "Cuenta | Asociación Mexicana de Speedcubing",
@@ -30,7 +30,7 @@ const publicActions = [
     title: "Mis competencias",
     description:
       "Revisa solicitudes, registros y seguimiento de competencias vinculadas a tu WCA ID.",
-    href: `${CALENDAR_URL}/mis-competencias`,
+    href: `${getCalendarUrl()}/mis-competencias`,
     icon: CalendarDays,
   },
   {
@@ -61,7 +61,7 @@ const delegateActions = [
     title: "Crear competencias",
     description:
       "Abre el calendario de AMS para solicitar fechas, revisar procesos y administrar competencias.",
-    href: `${CALENDAR_URL}/panel/competencias/nueva`,
+    href: `${getCalendarUrl()}/panel/competencias/nueva`,
     icon: ShieldCheck,
   },
   {
@@ -138,7 +138,7 @@ async function CuentaBody() {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.image}
-                alt=""
+                alt={user.name}
                 className="size-16 rounded-full object-cover"
               />
             ) : (

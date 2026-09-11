@@ -47,6 +47,21 @@ export const metadata = {
   title: "Tableros AMS — Asociación Mexicana de Speedcubing",
   description:
     "Tableros de organización de competencias de la Asociación Mexicana de Speedcubing.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tableros AMS",
+  },
 };
 
 function boardsNavUrls() {

@@ -69,7 +69,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://ams:ams@localhost:5432/amscubing
           BETTER_AUTH_SECRET: ci-secret-at-least-32-characters-long
-          BETTER_AUTH_URL: http://localhost:3001
+          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_WEB_URL: http://localhost:3000
+          NEXT_PUBLIC_CALENDAR_URL: http://localhost:3001
+          NEXT_PUBLIC_BOARDS_URL: http://localhost:3002
           WCA_CLIENT_ID: ci
           WCA_CLIENT_SECRET: ci
           RESEND_API_KEY: ci
