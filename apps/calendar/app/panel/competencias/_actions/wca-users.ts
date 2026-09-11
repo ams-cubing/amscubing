@@ -49,6 +49,9 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
 
     const data: WCAPerson = await response.json();
 
+    // Stub row so competition_organizer/delegate FKs can reference user.wcaId
+    // before the person has logged in. First WCA OAuth login claims this row
+    // (replaces the placeholder email) via claimWcaStubUser in @workspace/auth.
     const [newUser] = await db
       .insert(user)
       .values({

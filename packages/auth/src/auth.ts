@@ -6,6 +6,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins";
 
+import { claimWcaStubUser } from "./claim-wca-stub";
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
 import { resolveWcaRole } from "./wca-role";
 
@@ -120,7 +121,9 @@ export function createAuth() {
 
               const data = (await response.json()) as WCAProfile;
 
-              // Prefer a seeded row (matched by WCA ID) so region/title/role survive login.
+              // Prefer a seeded/stub row (matched by WCA ID) so region/title/role
+              // survive login. Claim placeholders to the real email so Better Auth
+              // finds the user by email and links instead of inserting a duplicate.
               const existing = data.me.wca_id
                 ? await db.query.user.findFirst({
                     where: eq(user.wcaId, data.me.wca_id),
@@ -132,17 +135,29 @@ export function createAuth() {
                 existingRole: existing?.role,
               });
 
+              const claimed = existing
+                ? await claimWcaStubUser(existing, {
+                    email: data.me.email,
+                    name: data.me.name,
+                    image: data.me.avatar?.thumb_url,
+                    role,
+                    regionId: existing.regionId,
+                    delegateTitle: existing.delegateTitle,
+                    delegateLocation: existing.delegateLocation,
+                  })
+                : null;
+
               return {
-                id: existing?.id ?? String(data.me.id),
-                name: data.me.name,
-                email: data.me.email,
-                image: data.me.avatar?.thumb_url,
+                id: claimed?.id ?? String(data.me.id),
+                name: claimed?.name ?? data.me.name,
+                email: claimed?.email ?? data.me.email,
+                image: claimed?.image ?? data.me.avatar?.thumb_url,
                 emailVerified: true,
                 wcaId: data.me.wca_id,
                 role,
-                regionId: existing?.regionId ?? null,
-                delegateTitle: existing?.delegateTitle ?? null,
-                delegateLocation: existing?.delegateLocation ?? null,
+                regionId: claimed?.regionId ?? null,
+                delegateTitle: claimed?.delegateTitle ?? null,
+                delegateLocation: claimed?.delegateLocation ?? null,
               };
             },
             mapProfileToUser: (profile: Record<string, unknown>) => {
