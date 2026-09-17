@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { extractFirstImageUrl } from "@/lib/competition-logo";
+import { extractFirstImageUrl } from "./competition-logo";
 import {
   extractWcaCompetitionId,
   normalizeWcaCompetitionUrl,
-} from "@/lib/wca-competition";
-import { buildAnnouncementCaption } from "@/lib/meta-publish";
+} from "./wca-competition";
+import { buildAnnouncementCaption, facebookPostUrl } from "./meta-publish";
 
 describe("extractFirstImageUrl", () => {
   it("extracts the first markdown image URL", () => {
@@ -64,5 +64,11 @@ describe("buildAnnouncementCaption", () => {
       "https://www.worldcubeassociation.org/competitions/TestOpen2026",
     );
     expect(caption).toContain("#TorneoDeRubik");
+  });
+});
+
+describe("facebookPostUrl", () => {
+  it("builds a facebook.com URL from a post id", () => {
+    expect(facebookPostUrl("123_456")).toBe("https://www.facebook.com/123_456");
   });
 });

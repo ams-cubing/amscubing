@@ -20,7 +20,7 @@ import {
   sendDelegateAssignedEmail,
   sendOrganizerAssignedEmail,
 } from "@/lib/calendar-emails";
-import { publishCompetitionSocialAnnouncement } from "@/lib/announce-and-publish";
+import { publishCompetitionSocialAnnouncement } from "@workspace/social";
 import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";

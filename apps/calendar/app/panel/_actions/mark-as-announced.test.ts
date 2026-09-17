@@ -72,7 +72,7 @@ vi.mock("@/lib/notification-urls", () => ({
   })),
 }));
 
-vi.mock("@/lib/announce-and-publish", () => ({
+vi.mock("@workspace/social", () => ({
   publishCompetitionSocialAnnouncement,
 }));
 

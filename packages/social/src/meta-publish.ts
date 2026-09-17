@@ -70,6 +70,10 @@ export function buildAnnouncementCaption(input: {
   ].join("\n");
 }
 
+export function facebookPostUrl(facebookPostId: string): string {
+  return `https://www.facebook.com/${facebookPostId}`;
+}
+
 function formatDateEs(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
   if (!year || !month || !day) return isoDate;
@@ -349,5 +353,63 @@ export async function publishToTorneoDeRubik(
           ? `Instagram: ${error.message}`
           : "Instagram: error al publicar.",
     };
+  }
+}
+
+/** Publish Instagram only (e.g. complete a prior FB-only announce when a logo appears). */
+export async function publishInstagramOnly(input: {
+  caption: string;
+  imageUrl: string;
+}): Promise<{ ok: true; mediaId: string } | { ok: false; message: string }> {
+  const meta = getMetaConfig();
+  if (!meta.ok) {
+    return { ok: false, message: meta.message };
+  }
+
+  const imageUrl = input.imageUrl.trim();
+  if (!imageUrl) {
+    return {
+      ok: false,
+      message: "Se necesita un logo de la competencia para publicar en Instagram.",
+    };
+  }
+
+  try {
+    return await publishInstagramPhoto(meta.config, input.caption, imageUrl);
+  } catch (error) {
+    console.error("Instagram-only publish failed:", error);
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? `Instagram: ${error.message}`
+          : "Instagram: error al publicar.",
+    };
+  }
+}
+
+/** Resolve a public Instagram permalink for a media id when Meta tokens are set. */
+export async function fetchInstagramPermalink(
+  instagramMediaId: string,
+): Promise<string | null> {
+  const token = process.env.META_PAGE_ACCESS_TOKEN?.trim();
+  if (!token || !instagramMediaId.trim()) return null;
+
+  try {
+    const url = new URL(`${GRAPH_BASE}/${instagramMediaId.trim()}`);
+    url.searchParams.set("fields", "permalink");
+    url.searchParams.set("access_token", token);
+
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    const json = (await response.json()) as {
+      permalink?: string;
+      error?: { message?: string };
+    };
+    if (!response.ok || json.error || !json.permalink) {
+      return null;
+    }
+    return json.permalink;
+  } catch {
+    return null;
   }
 }

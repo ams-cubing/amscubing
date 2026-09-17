@@ -76,7 +76,8 @@ Al confirmar **Marcar como anunciada** (dialog previo) o al pasar `statusPublic`
 - [x] Integración Meta Graph: FB photo + IG media publish; rollback FB si falla IG.
 - [x] Columnas `announcedPostedAt`, `facebookPostId`, `instagramMediaId`.
 - [x] Tarjeta del tablero “Publicación FB Torneo de Rubik” eliminada del template y borrada en seed.
-- [ ] Configurar en producción `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`, `META_IG_USER_ID` (Torneo de Rubik).
+- [x] Admin web `/admin/redes`: listado, preview, reintento y completar Instagram.
+- [ ] Configurar en producción `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`, `META_IG_USER_ID` (Torneo de Rubik) en calendar y web.
 
 ### Plataforma
 

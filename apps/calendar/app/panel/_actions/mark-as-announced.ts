@@ -11,7 +11,7 @@ import {
 import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { publishCompetitionSocialAnnouncement } from "@/lib/announce-and-publish";
+import { publishCompetitionSocialAnnouncement } from "@workspace/social";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";

@@ -1,4 +1,4 @@
-import { extractFirstImageUrl } from "@/lib/competition-logo";
+import { extractFirstImageUrl } from "./competition-logo";
 
 export type WcaCompetitionDetails = {
   id: string;
@@ -47,7 +47,7 @@ export async function fetchWcaCompetition(
       `https://www.worldcubeassociation.org/api/v0/competitions/${id}`,
       {
         headers: { Accept: "application/json" },
-        next: { revalidate: 0 },
+        cache: "no-store",
       },
     );
 
@@ -74,7 +74,8 @@ export async function fetchWcaCompetition(
         shortName: data.short_name ?? null,
         information: data.information ?? null,
         url:
-          data.url ?? `https://www.worldcubeassociation.org/competitions/${id}`,
+          data.url ??
+          `https://www.worldcubeassociation.org/competitions/${id}`,
         logoUrl: extractFirstImageUrl(data.information),
       },
     };
@@ -86,6 +87,3 @@ export async function fetchWcaCompetition(
     };
   }
 }
-
-/** @deprecated Use fetchWcaCompetition */
-export const fetchWcaCompetitionWithLogo = fetchWcaCompetition;

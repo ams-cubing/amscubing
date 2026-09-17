@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
-  transpilePackages: ["@workspace/ui", "@workspace/db", "@workspace/auth"],
+  transpilePackages: [
+    "@workspace/ui",
+    "@workspace/db",
+    "@workspace/auth",
+    "@workspace/social",
+  ],
   experimental: {
     authInterrupts: true,
   },

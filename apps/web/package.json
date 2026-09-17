@@ -17,6 +17,7 @@
     "@vercel/analytics": "^1.6.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/social": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",

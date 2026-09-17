@@ -1,7 +1,6 @@
 /**
  * Extract the first Markdown image URL from competition information text.
  * Handles filenames that contain parentheses (e.g. `logo-08 (1).png`).
- * Ported from apps/web/lib/competition-logo.ts.
  */
 export function extractFirstImageUrl(
   information: string | null | undefined,
