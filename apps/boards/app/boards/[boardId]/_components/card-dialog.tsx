@@ -516,6 +516,7 @@ export function CardDialog({
             ) : null}
 
             <CardAttachmentsSection
+              boardId={board.id}
               card={card}
               showAttachmentForm={showAttachmentForm}
               attachmentName={attachmentName}
