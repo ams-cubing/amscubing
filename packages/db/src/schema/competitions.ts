@@ -83,6 +83,10 @@ export const competitions = pgTable("competition", {
   facebookPostId: text("facebook_post_id"),
   instagramMediaId: text("instagram_media_id"),
 
+  socialCustomText: text("social_custom_text"),
+  socialTags: text("social_tags"),
+  socialFlyerUrl: text("social_flyer_url"),
+
   boardId: integer("board_id").references((): AnyPgColumn => boards.id, {
     onDelete: "set null",
   }),

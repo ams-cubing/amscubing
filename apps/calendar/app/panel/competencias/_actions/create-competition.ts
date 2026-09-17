@@ -65,6 +65,8 @@ export async function createCompetition(
         name: validatedData.name || null,
         startDate: startDateStr!,
         endDate: endDateStr!,
+        capacity: validatedData.capacity || 0,
+        socialCustomText: "",
       });
       if (!published.ok) {
         return { success: false, message: published.message };

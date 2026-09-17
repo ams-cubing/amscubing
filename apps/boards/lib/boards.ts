@@ -248,10 +248,18 @@ export async function getBoardForUser(user: User, boardId: number) {
           city: true,
           startDate: true,
           endDate: true,
+          capacity: true,
           statusPublic: true,
           statusInternal: true,
+          wcaCompetitionUrl: true,
+          socialCustomText: true,
+          socialTags: true,
+          socialFlyerUrl: true,
         },
         with: {
+          state: {
+            columns: { name: true },
+          },
           delegates: {
             with: {
               delegate: true,

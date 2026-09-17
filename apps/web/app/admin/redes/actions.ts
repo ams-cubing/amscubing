@@ -18,6 +18,30 @@ function revalidateSocial() {
   revalidateTag("competitions", "days");
 }
 
+async function loadAnnouncedCompetition(competitionId: number) {
+  return db.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: {
+      id: true,
+      name: true,
+      city: true,
+      startDate: true,
+      endDate: true,
+      capacity: true,
+      statusPublic: true,
+      wcaCompetitionUrl: true,
+      facebookPostId: true,
+      instagramMediaId: true,
+      socialCustomText: true,
+      socialTags: true,
+      socialFlyerUrl: true,
+    },
+    with: {
+      state: { columns: { name: true } },
+    },
+  });
+}
+
 export async function retrySocialPublish(
   competitionId: number,
 ): Promise<AdminActionResult> {
@@ -26,19 +50,7 @@ export async function retrySocialPublish(
     return { ok: false, message: authResult.message };
   }
 
-  const competition = await db.query.competitions.findFirst({
-    where: eq(competitions.id, competitionId),
-    columns: {
-      id: true,
-      name: true,
-      city: true,
-      startDate: true,
-      endDate: true,
-      statusPublic: true,
-      wcaCompetitionUrl: true,
-      facebookPostId: true,
-    },
-  });
+  const competition = await loadAnnouncedCompetition(competitionId);
 
   if (!competition || competition.statusPublic !== "announced") {
     return {
@@ -65,9 +77,14 @@ export async function retrySocialPublish(
   const published = await publishCompetitionSocialAnnouncement({
     wcaCompetitionUrl: competition.wcaCompetitionUrl,
     city: competition.city,
+    stateName: competition.state?.name ?? null,
     name: competition.name,
     startDate: competition.startDate,
     endDate: competition.endDate,
+    capacity: competition.capacity,
+    socialCustomText: competition.socialCustomText ?? "",
+    socialTags: competition.socialTags,
+    socialFlyerUrl: competition.socialFlyerUrl,
   });
 
   if (!published.ok) {
@@ -90,7 +107,7 @@ export async function retrySocialPublish(
     ok: true,
     message: published.instagramMediaId
       ? "Publicado en Facebook e Instagram"
-      : "Publicado en Facebook (sin logo: Instagram omitido)",
+      : "Publicado en Facebook (sin imagen: Instagram omitido)",
   };
 }
 
@@ -102,20 +119,7 @@ export async function completeInstagramPublish(
     return { ok: false, message: authResult.message };
   }
 
-  const competition = await db.query.competitions.findFirst({
-    where: eq(competitions.id, competitionId),
-    columns: {
-      id: true,
-      name: true,
-      city: true,
-      startDate: true,
-      endDate: true,
-      statusPublic: true,
-      wcaCompetitionUrl: true,
-      facebookPostId: true,
-      instagramMediaId: true,
-    },
-  });
+  const competition = await loadAnnouncedCompetition(competitionId);
 
   if (!competition || competition.statusPublic !== "announced") {
     return {
@@ -145,9 +149,14 @@ export async function completeInstagramPublish(
   const published = await completeInstagramAnnouncement({
     wcaCompetitionUrl: competition.wcaCompetitionUrl,
     city: competition.city,
+    stateName: competition.state?.name ?? null,
     name: competition.name,
     startDate: competition.startDate,
     endDate: competition.endDate,
+    capacity: competition.capacity,
+    socialCustomText: competition.socialCustomText ?? "",
+    socialTags: competition.socialTags,
+    socialFlyerUrl: competition.socialFlyerUrl,
   });
 
   if (!published.ok) {

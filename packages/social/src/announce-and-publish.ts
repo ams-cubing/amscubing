@@ -11,9 +11,15 @@ import {
 export type AnnounceSocialPublishInput = {
   wcaCompetitionUrl: string;
   city: string;
+  stateName?: string | null;
   name: string | null;
   startDate: string;
   endDate: string;
+  capacity?: number | null;
+  /** Required before announce. */
+  socialCustomText: string;
+  socialTags?: string | null;
+  socialFlyerUrl?: string | null;
 };
 
 export type AnnounceSocialPublishResult =
@@ -31,18 +37,45 @@ export type AnnouncementPreviewResult =
       ok: true;
       displayName: string;
       wcaUrl: string;
+      /** Prefer flyer, else WCA logo. */
+      imageUrl: string | null;
       logoUrl: string | null;
+      flyerUrl: string | null;
       caption: string;
     }
   | { ok: false; message: string };
 
+function requireCustomText(
+  customText: string | null | undefined,
+): { ok: true; text: string } | { ok: false; message: string } {
+  const text = customText?.trim() ?? "";
+  if (!text) {
+    return {
+      ok: false,
+      message:
+        "Falta el texto personalizado del post. Complétalo en la tarjeta «Publicación redes Torneo de Rubik» del tablero.",
+    };
+  }
+  return { ok: true, text };
+}
+
+function resolveImageUrl(flyerUrl: string | null | undefined, logoUrl: string | null) {
+  const flyer = flyerUrl?.trim() || null;
+  return flyer || logoUrl || null;
+}
+
 /**
- * Validates that the WCA URL is a real competition, then publishes to
- * Torneo de Rubik FB (and IG when a logo exists). Does not touch the DB.
+ * Validates WCA URL + required custom text, then publishes to Torneo de Rubik.
+ * Image: flyer → WCA logo → FB link-only.
  */
 export async function publishCompetitionSocialAnnouncement(
   input: AnnounceSocialPublishInput,
 ): Promise<AnnounceSocialPublishResult> {
+  const custom = requireCustomText(input.socialCustomText);
+  if (!custom.ok) {
+    return { ok: false, message: custom.message };
+  }
+
   const rawUrl = input.wcaCompetitionUrl?.trim() ?? "";
   if (!rawUrl) {
     return {
@@ -68,15 +101,24 @@ export async function publishCompetitionSocialAnnouncement(
   const caption = buildAnnouncementCaption({
     name: displayName,
     city: input.city,
+    stateName: input.stateName,
     startDate: input.startDate,
     endDate: input.endDate,
     wcaUrl: wca.competition.url,
+    customText: custom.text,
+    tags: input.socialTags,
+    venueName: wca.competition.venueName,
+    venueAddress: wca.competition.venueAddress,
+    venueDetails: wca.competition.venueDetails,
+    eventIds: wca.competition.eventIds,
+    competitorLimit: wca.competition.competitorLimit,
+    capacityFallback: input.capacity,
   });
 
   const published = await publishToTorneoDeRubik({
     caption,
     linkUrl: wca.competition.url,
-    imageUrl: wca.competition.logoUrl,
+    imageUrl: resolveImageUrl(input.socialFlyerUrl, wca.competition.logoUrl),
   });
 
   if (!published.ok) {
@@ -92,10 +134,15 @@ export async function publishCompetitionSocialAnnouncement(
   };
 }
 
-/** Build caption + logo preview from live WCA data (no Meta publish). */
+/** Build caption + image preview from live WCA data (no Meta publish). */
 export async function buildAnnouncementPreview(
   input: AnnounceSocialPublishInput,
 ): Promise<AnnouncementPreviewResult> {
+  const custom = requireCustomText(input.socialCustomText);
+  if (!custom.ok) {
+    return { ok: false, message: custom.message };
+  }
+
   const rawUrl = input.wcaCompetitionUrl?.trim() ?? "";
   if (!rawUrl) {
     return {
@@ -115,24 +162,37 @@ export async function buildAnnouncementPreview(
     input.name ??
     `Competencia en ${input.city}`;
 
+  const flyerUrl = input.socialFlyerUrl?.trim() || null;
+  const logoUrl = wca.competition.logoUrl;
+
   return {
     ok: true,
     displayName,
     wcaUrl: wca.competition.url,
-    logoUrl: wca.competition.logoUrl,
+    imageUrl: resolveImageUrl(flyerUrl, logoUrl),
+    logoUrl,
+    flyerUrl,
     caption: buildAnnouncementCaption({
       name: displayName,
       city: input.city,
+      stateName: input.stateName,
       startDate: input.startDate,
       endDate: input.endDate,
       wcaUrl: wca.competition.url,
+      customText: custom.text,
+      tags: input.socialTags,
+      venueName: wca.competition.venueName,
+      venueAddress: wca.competition.venueAddress,
+      venueDetails: wca.competition.venueDetails,
+      eventIds: wca.competition.eventIds,
+      competitorLimit: wca.competition.competitorLimit,
+      capacityFallback: input.capacity,
     }),
   };
 }
 
 /**
- * Complete Instagram for a competition that already has a Facebook post,
- * when a WCA logo is now available.
+ * Complete Instagram when FB already exists and an image (flyer or logo) is available.
  */
 export async function completeInstagramAnnouncement(
   input: AnnounceSocialPublishInput,
@@ -145,17 +205,17 @@ export async function completeInstagramAnnouncement(
     return { ok: false, message: preview.message };
   }
 
-  if (!preview.logoUrl) {
+  if (!preview.imageUrl) {
     return {
       ok: false,
       message:
-        "La competencia en la WCA aún no tiene logo. Agrégalo en la información WCA e inténtalo de nuevo.",
+        "Se necesita un flyer o logo de la competencia para publicar en Instagram.",
     };
   }
 
   const published = await publishInstagramOnly({
     caption: preview.caption,
-    imageUrl: preview.logoUrl,
+    imageUrl: preview.imageUrl,
   });
 
   if (!published.ok) {

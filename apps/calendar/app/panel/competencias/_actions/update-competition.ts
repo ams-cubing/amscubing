@@ -61,9 +61,16 @@ export async function updateCompetition(
         statusPublic: true,
         statusInternal: true,
         city: true,
+        capacity: true,
         announcedPostedAt: true,
         facebookPostId: true,
         instagramMediaId: true,
+        socialCustomText: true,
+        socialTags: true,
+        socialFlyerUrl: true,
+      },
+      with: {
+        state: { columns: { name: true } },
       },
     });
 
@@ -122,9 +129,14 @@ export async function updateCompetition(
       const published = await publishCompetitionSocialAnnouncement({
         wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
         city: validatedData.city,
+        stateName: existingCompetition?.state?.name ?? null,
         name: validatedData.name || null,
         startDate: startDateStr!,
         endDate: endDateStr!,
+        capacity: validatedData.capacity ?? existingCompetition?.capacity ?? 0,
+        socialCustomText: existingCompetition?.socialCustomText ?? "",
+        socialTags: existingCompetition?.socialTags,
+        socialFlyerUrl: existingCompetition?.socialFlyerUrl,
       });
       if (!published.ok) {
         return { success: false, message: published.message };

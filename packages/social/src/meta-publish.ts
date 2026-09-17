@@ -45,45 +45,63 @@ export function getMetaConfig():
   };
 }
 
-export function buildAnnouncementCaption(input: {
+import { formatDateRangeEs, formatEventLabels } from "./format";
+
+export type BuildAnnouncementCaptionInput = {
   name: string;
   city: string;
+  stateName?: string | null;
   startDate: string;
   endDate: string;
   wcaUrl: string;
-}): string {
-  const dateLabel =
-    input.startDate === input.endDate
-      ? formatDateEs(input.startDate)
-      : `${formatDateEs(input.startDate)} – ${formatDateEs(input.endDate)}`;
+  customText: string;
+  tags?: string | null;
+  venueName?: string | null;
+  venueAddress?: string | null;
+  venueDetails?: string | null;
+  eventIds?: string[];
+  competitorLimit?: number | null;
+  capacityFallback?: number | null;
+};
 
-  return [
-    `¡Nueva competencia anunciada!`,
-    ``,
-    input.name,
-    `${input.city} · ${dateLabel}`,
-    ``,
-    `Más información e inscripción:`,
-    input.wcaUrl,
-    ``,
-    `#TorneoDeRubik #WCA #Speedcubing`,
-  ].join("\n");
+export function buildAnnouncementCaption(
+  input: BuildAnnouncementCaptionInput,
+): string {
+  const customText = input.customText.trim();
+  const dateLabel = formatDateRangeEs(input.startDate, input.endDate);
+  const venueLine =
+    input.venueName?.trim() ||
+    input.venueDetails?.trim() ||
+    input.venueAddress?.trim() ||
+    null;
+  const cityLine = [input.city, input.stateName?.trim()].filter(Boolean).join(", ");
+  const events = formatEventLabels(input.eventIds ?? []);
+  const limit =
+    input.competitorLimit && input.competitorLimit > 0
+      ? input.competitorLimit
+      : input.capacityFallback && input.capacityFallback > 0
+        ? input.capacityFallback
+        : null;
+  const tags = input.tags?.trim() || null;
+
+  const lines: string[] = [];
+  if (customText) {
+    lines.push(customText, ``);
+  }
+  lines.push(`¡BIENVENIDOS A ${input.name.toUpperCase()}!`);
+  lines.push(`📅: ${dateLabel}`);
+  if (venueLine) lines.push(`📍: ${venueLine}`);
+  if (cityLine) lines.push(`🏙️: ${cityLine}`);
+  if (events) lines.push(`🔻: ${events}`);
+  if (limit) lines.push(`🎟️: ${limit} competidores`);
+  if (tags) lines.push(`ℹ️: ${tags}`);
+  lines.push(input.wcaUrl);
+
+  return lines.join("\n");
 }
 
 export function facebookPostUrl(facebookPostId: string): string {
   return `https://www.facebook.com/${facebookPostId}`;
-}
-
-function formatDateEs(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (!year || !month || !day) return isoDate;
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return new Intl.DateTimeFormat("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
 }
 
 async function graphPost(

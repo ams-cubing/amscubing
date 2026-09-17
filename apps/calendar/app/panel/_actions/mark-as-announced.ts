@@ -38,10 +38,17 @@ export async function markAsAnnounced(
         name: true,
         startDate: true,
         endDate: true,
+        capacity: true,
         statusPublic: true,
         statusInternal: true,
         wcaCompetitionUrl: true,
         announcedPostedAt: true,
+        socialCustomText: true,
+        socialTags: true,
+        socialFlyerUrl: true,
+      },
+      with: {
+        state: { columns: { name: true } },
       },
     });
 
@@ -71,9 +78,14 @@ export async function markAsAnnounced(
     const published = await publishCompetitionSocialAnnouncement({
       wcaCompetitionUrl,
       city: competition.city,
+      stateName: competition.state?.name ?? null,
       name: competition.name,
       startDate: competition.startDate,
       endDate: competition.endDate,
+      capacity: competition.capacity,
+      socialCustomText: competition.socialCustomText ?? "",
+      socialTags: competition.socialTags,
+      socialFlyerUrl: competition.socialFlyerUrl,
     });
 
     if (!published.ok) {

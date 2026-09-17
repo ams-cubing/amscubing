@@ -30,6 +30,8 @@ export type SocialPostRow = {
         displayName: string;
         wcaUrl: string;
         logoUrl: string | null;
+        imageUrl: string | null;
+        flyerUrl: string | null;
         caption: string;
       }
     | { ok: false; message: string }
@@ -220,19 +222,24 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
           ) : (
             <>
               <div className="flex flex-wrap items-start gap-4">
-                {row.preview.logoUrl ? (
-                  <div className="relative h-24 w-24 overflow-hidden rounded-2.5 bg-white">
-                    <Image
-                      src={row.preview.logoUrl}
-                      alt={`Logo ${row.preview.displayName}`}
-                      fill
-                      className="object-contain p-1"
-                      unoptimized
-                    />
+                {row.preview.imageUrl ? (
+                  <div className="space-y-1">
+                    <div className="relative h-24 w-24 overflow-hidden rounded-2.5 bg-white">
+                      <Image
+                        src={row.preview.imageUrl}
+                        alt={`Imagen ${row.preview.displayName}`}
+                        fill
+                        className="object-contain p-1"
+                        unoptimized
+                      />
+                    </div>
+                    <p className="text-center text-[11px] text-black/45">
+                      {row.preview.flyerUrl ? "Flyer" : "Logo WCA"}
+                    </p>
                   </div>
                 ) : (
                   <div className="flex h-24 w-24 items-center justify-center rounded-2.5 bg-white text-center text-xs text-black/45">
-                    Sin logo
+                    Sin imagen
                   </div>
                 )}
                 <pre className="ams-copy max-w-xl flex-1 whitespace-pre-wrap text-sm leading-6 text-black/75">

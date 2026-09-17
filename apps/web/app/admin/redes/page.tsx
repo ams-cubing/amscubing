@@ -44,25 +44,47 @@ export default async function AdminRedesPage() {
       city: true,
       startDate: true,
       endDate: true,
+      capacity: true,
       wcaCompetitionUrl: true,
       announcedPostedAt: true,
       facebookPostId: true,
       instagramMediaId: true,
+      socialCustomText: true,
+      socialTags: true,
+      socialFlyerUrl: true,
+    },
+    with: {
+      state: { columns: { name: true } },
     },
     limit: 100,
   });
 
   const list: SocialPostRow[] = await Promise.all(
     rows.map(async (row) => {
-      const preview = row.wcaCompetitionUrl
-        ? await buildAnnouncementPreview({
-            wcaCompetitionUrl: row.wcaCompetitionUrl,
-            city: row.city,
-            name: row.name,
-            startDate: row.startDate,
-            endDate: row.endDate,
-          })
-        : null;
+      const preview =
+        row.wcaCompetitionUrl && row.socialCustomText?.trim()
+          ? await buildAnnouncementPreview({
+              wcaCompetitionUrl: row.wcaCompetitionUrl,
+              city: row.city,
+              stateName: row.state?.name ?? null,
+              name: row.name,
+              startDate: row.startDate,
+              endDate: row.endDate,
+              capacity: row.capacity,
+              socialCustomText: row.socialCustomText,
+              socialTags: row.socialTags,
+              socialFlyerUrl: row.socialFlyerUrl,
+            })
+          : row.socialCustomText?.trim()
+            ? {
+                ok: false as const,
+                message: "Falta la URL de la competencia en la WCA.",
+              }
+            : {
+                ok: false as const,
+                message:
+                  "Falta el texto personalizado (tarjeta Publicación redes Torneo de Rubik).",
+              };
 
       const instagramUrl = row.instagramMediaId
         ? await fetchInstagramPermalink(row.instagramMediaId)
@@ -98,10 +120,9 @@ export default async function AdminRedesPage() {
           Publicaciones en redes
         </h2>
         <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-black/65">
-          Competencias anunciadas con estado de Facebook e Instagram. Puedes
-          ver el preview del post (logo + caption), reintentar si faltó la
-          publicación, o completar Instagram cuando ya hay FB y aparece un logo
-          en la WCA.
+          Competencias anunciadas con estado de Facebook e Instagram. El copy
+          creativo, etiquetas y flyer viven en la tarjeta del tablero; aquí
+          puedes ver el preview, reintentar o completar Instagram.
         </p>
       </header>
 

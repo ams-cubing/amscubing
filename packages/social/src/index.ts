@@ -5,6 +5,7 @@ export {
   fetchWcaCompetition,
   type WcaCompetitionDetails,
 } from "./wca-competition";
+export { formatDateRangeEs, formatEventLabels } from "./format";
 export {
   getMetaConfig,
   buildAnnouncementCaption,
@@ -15,6 +16,7 @@ export {
   type MetaConfig,
   type PublishAnnouncementInput,
   type PublishAnnouncementResult,
+  type BuildAnnouncementCaptionInput,
 } from "./meta-publish";
 export {
   publishCompetitionSocialAnnouncement,

@@ -5,6 +5,7 @@ import {
   normalizeWcaCompetitionUrl,
 } from "./wca-competition";
 import { buildAnnouncementCaption, facebookPostUrl } from "./meta-publish";
+import { formatEventLabels } from "./format";
 
 describe("extractFirstImageUrl", () => {
   it("extracts the first markdown image URL", () => {
@@ -49,21 +50,40 @@ describe("wca competition URL helpers", () => {
 });
 
 describe("buildAnnouncementCaption", () => {
-  it("includes name, city, dates and WCA URL", () => {
+  it("builds a Torneo de Rubik style caption with custom body and events", () => {
     const caption = buildAnnouncementCaption({
-      name: "Test Open 2026",
-      city: "CDMX",
-      startDate: "2026-10-01",
-      endDate: "2026-10-02",
-      wcaUrl: "https://www.worldcubeassociation.org/competitions/TestOpen2026",
+      name: "Mega-Mente Puebla 2026",
+      city: "Puebla",
+      stateName: "Puebla",
+      startDate: "2026-09-26",
+      endDate: "2026-09-27",
+      wcaUrl:
+        "https://www.worldcubeassociation.org/competitions/MegaMentePuebla2026",
+      customText:
+        "Hay desafíos que no se vencen solo con velocidad.\n¡BIENVENIDOS prep!",
+      tags: "@rubik_teampuebla Puebla Rubik's Team",
+      venueName: "Comité Directivo Estatal del PRI de Puebla",
+      eventIds: ["333", "222", "777", "333bf", "minx", "sq1"],
+      competitorLimit: 70,
     });
 
-    expect(caption).toContain("Test Open 2026");
-    expect(caption).toContain("CDMX");
+    expect(caption).toContain("Hay desafíos que no se vencen solo con velocidad.");
+    expect(caption).toContain("¡BIENVENIDOS A MEGA-MENTE PUEBLA 2026!");
+    expect(caption).toContain("📅:");
+    expect(caption).toContain("📍: Comité Directivo Estatal del PRI de Puebla");
+    expect(caption).toContain("🏙️: Puebla, Puebla");
+    expect(caption).toContain("🔻: 3x3, 2x2, 7x7, 3BLD, Megaminx, Square-1");
+    expect(caption).toContain("🎟️: 70 competidores");
+    expect(caption).toContain("ℹ️: @rubik_teampuebla Puebla Rubik's Team");
     expect(caption).toContain(
-      "https://www.worldcubeassociation.org/competitions/TestOpen2026",
+      "https://www.worldcubeassociation.org/competitions/MegaMentePuebla2026",
     );
-    expect(caption).toContain("#TorneoDeRubik");
+  });
+});
+
+describe("formatEventLabels", () => {
+  it("maps known event ids", () => {
+    expect(formatEventLabels(["333", "minx"])).toBe("3x3, Megaminx");
   });
 });
 

@@ -77,7 +77,8 @@ Al confirmar **Marcar como anunciada** (dialog previo) o al pasar `statusPublic`
 - [x] Columnas `announcedPostedAt`, `facebookPostId`, `instagramMediaId`.
 - [x] Tarjeta del tablero “Publicación FB Torneo de Rubik” eliminada del template y borrada en seed.
 - [x] Admin web `/admin/redes`: listado, preview, reintento y completar Instagram.
-- [ ] Configurar en producción `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`, `META_IG_USER_ID` (Torneo de Rubik) en calendar y web.
+- [x] Tarjeta de tablero «Publicación redes Torneo de Rubik» con texto, tags y flyer (UploadThing); caption rico desde WCA.
+- [ ] Configurar en producción `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`, `META_IG_USER_ID` (Torneo de Rubik) en calendar y web; `UPLOADTHING_TOKEN` en boards.
 
 ### Plataforma
 

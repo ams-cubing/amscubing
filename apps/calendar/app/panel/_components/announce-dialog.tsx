@@ -88,7 +88,8 @@ export function AnnounceDialog({
           </p>
           <p>
             La publicación solo continúa si la URL apunta a una competencia real
-            en la WCA.
+            en la WCA y el tablero tiene el texto personalizado guardado en
+            «Publicación redes Torneo de Rubik».
           </p>
 
           <div className="space-y-2 pt-1">

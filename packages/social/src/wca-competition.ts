@@ -8,6 +8,12 @@ export type WcaCompetitionDetails = {
   url: string;
   /** First image from WCA information, if any. */
   logoUrl: string | null;
+  city: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+  venueDetails: string | null;
+  eventIds: string[];
+  competitorLimit: number | null;
 };
 
 export function extractWcaCompetitionId(
@@ -64,7 +70,24 @@ export async function fetchWcaCompetition(
       short_name?: string | null;
       information?: string | null;
       url?: string;
+      city?: string | null;
+      venue?: string | null;
+      venue_address?: string | null;
+      venue_details?: string | null;
+      event_ids?: string[] | null;
+      competitor_limit?: number | null;
     };
+
+    const venueFromHtml = stripHtml(data.venue);
+    const venueName = venueFromHtml || null;
+    const venueAddress =
+      typeof data.venue_address === "string" && data.venue_address.trim()
+        ? data.venue_address.trim()
+        : null;
+    const venueDetails =
+      typeof data.venue_details === "string" && data.venue_details.trim()
+        ? data.venue_details.trim()
+        : null;
 
     return {
       ok: true,
@@ -77,6 +100,15 @@ export async function fetchWcaCompetition(
           data.url ??
           `https://www.worldcubeassociation.org/competitions/${id}`,
         logoUrl: extractFirstImageUrl(data.information),
+        city: data.city?.trim() || null,
+        venueName,
+        venueAddress,
+        venueDetails,
+        eventIds: Array.isArray(data.event_ids) ? data.event_ids : [],
+        competitorLimit:
+          typeof data.competitor_limit === "number" && data.competitor_limit > 0
+            ? data.competitor_limit
+            : null,
       },
     };
   } catch (error) {
@@ -86,4 +118,14 @@ export async function fetchWcaCompetition(
       message: "Error al consultar la API de la WCA. Inténtalo de nuevo.",
     };
   }
+}
+
+function stripHtml(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const text = value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 0 ? text : null;
 }

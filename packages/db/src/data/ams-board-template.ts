@@ -61,6 +61,9 @@ export const REMOVED_TEMPLATE_CARD_TITLES = [
   "Publicación FB Torneo de Rubik",
 ] as const;
 
+/** Card that collects custom copy / tags / flyer for Torneo de Rubik posts. */
+export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
+
 export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     title: "Responsabilidades del Organizador",
@@ -149,6 +152,13 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     phases: ["pre_announce"],
     description:
       "Objetivo: Tener lista la competencia en el sitio web de la WCA para su anuncio:\n\n**Paso 1.-** Solicita a tu delegado la creación del sitio de la competencia. Entra a tu perfil de la WCA y en la sección **Competitions → My Competitions**, encontrarás la web de la competencia.\n\n**Paso 2.-** Coloca toda la información de la competencia. Puedes usar de referencia la siguiente competencia: *Competencia de ejemplo*, y rellenar todos los datos. Revisa que todo esté correcto.\n\n- El **ID**, **Name** y **Nickname** deben ser idénticos (excepto si son más de 30 caracteres).\n- Revisa que la dirección, mapa y coordenadas estén exactamente correctos.\n- Los campos **Razón de nombre** y **Comentarios finales** deben ser llenados en **inglés**.\n- Todas las secciones de texto deben estar en **Español e Inglés**.\n\n**Paso 3.-** Edita la información de eventos y horarios.  \nEn **Edit → Manage Events → Manage Schedule**, debes agregar las categorías, rondas y horarios según lo aceptado en la tarjeta de Horario y Categorías.\n\n**Paso 4.-** Añade pestañas con información adicional.  \nEn **Manage Tab** puedes agregar pestañas con información adicional (Cómo llegar, recomendaciones de hospedaje, patrocinadores). Recuerda que todo debe ir en **inglés y español**.\n\n**Paso 5.-** Revisa a detalle que todo esté correcto y mueve esta tarjeta a **Hecho** cuando esté lista para su revisión.\n\n**Nota:** Si tu competencia tiene alguna condición especial como:\n\n- Registro por depósito\n- Donaciones activadas\n- Políticas de Check-In obligatorias (Regla 2k1)\n- Políticas de acompañantes\n\nDeberás colocarlas en la sección de **Extra Registration Requirements**; de lo contrario, puedes dejar esa sección vacía.",
+  },
+  {
+    title: "Publicación redes Torneo de Rubik",
+    list: "Por Hacer",
+    phases: ["pre_announce"],
+    description:
+      "**Objetivo:** Preparar el post de anuncio en Facebook e Instagram de Torneo de Rubik.\n\nLa mayoría de los datos (fechas, sede, ciudad, categorías, cupo y enlace WCA) se toman automáticamente de la página WCA de la competencia. En esta tarjeta solo debes completar:\n\n1. **Texto personalizado** del post (historia / copy creativo) — **obligatorio** antes de anunciar.\n2. **Equipos o cuentas a etiquetar** (opcional), p. ej. `@rubik_teampuebla Puebla Rubik's Team`.\n3. **Flyer** (opcional): súbelo con el formulario de esta tarjeta. Si no hay flyer, se usa el logo de la WCA; si tampoco hay logo, solo se publica texto en Facebook.\n\nUsa la sección **Publicación redes** de esta tarjeta para guardar los campos. Cuando esté listo, mueve la tarjeta a **Hecho** / **Aprobado**.\n\n**Nota:** Sin texto personalizado guardado, el delegado no podrá marcar la competencia como anunciada.",
   },
   {
     title: "Diseños",

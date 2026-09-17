@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@hookform/resolvers": "catalog:",
     "@tiptap/extension-image": "^3.10.6",
     "@tiptap/extension-link": "^3.10.6",
     "@tiptap/extension-placeholder": "^3.10.6",
@@ -20,11 +21,13 @@
     "@tiptap/markdown": "^3.10.6",
     "@tiptap/react": "^3.10.6",
     "@tiptap/starter-kit": "^3.10.6",
-    "@hookform/resolvers": "catalog:",
+    "@uploadthing/react": "^7.3.3",
+    "@uploadthing/shared": "^7.1.10",
     "@vercel/analytics": "^1.6.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/email": "workspace:*",
+    "@workspace/social": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "catalog:",
     "date-fns": "catalog:",
@@ -38,6 +41,7 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "uploadthing": "^7.7.4",
     "zod": "catalog:"
   },
   "devDependencies": {

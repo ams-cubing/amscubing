@@ -152,6 +152,24 @@ describe("markAsAnnounced", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
+  it("rejects when custom social text is missing", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: false,
+      message:
+        "Falta el texto personalizado del post. Complétalo en la tarjeta «Publicación redes Torneo de Rubik» del tablero.",
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("texto personalizado");
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
   it("rejects when the WCA URL is not a real competition", async () => {
     getSession.mockResolvedValue({
       user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
