@@ -67,14 +67,14 @@ El calendario sigue siendo la fuente de verdad de las competencias. Marcar **Anu
 - [ ] Feriados / pulido del calendario (ya en curso).
 - [x] Nav entre apps: menú de cuenta consistente que enlace web ↔ calendario ↔ tableros (y cursos).
 
-### Publicar en redes al marcar como celebrada
+### Publicar en redes al marcar como anunciada
 
-Al usar **Marcar como celebrada** en el panel de delegados, publicar en las redes de AMS (p. ej. Facebook/Instagram) un post con los datos de la competencia (nombre, ciudad, fechas, URL WCA, etc.).
+Al usar **Marcar como anunciada** (o al pasar `statusPublic` a `announced`) en el panel de delegados, publicar en las redes de AMS (p. ej. Facebook/Instagram) un post con los datos de la competencia (nombre, ciudad, fechas, URL WCA, etc.).
 
-- [ ] Campo `logo` (o similar) en `competition`: URL/Blob. La mayoría ya tienen logo; algunas no — el flujo debe permitir publicarlo sin logo o pedir uno opcional al marcar celebrada.
-- [ ] UI para subir / editar el logo de la competencia (formulario y/o prompt al celebrar si falta).
-- [ ] Integración de APIs de redes AMS: al confirmar **Marcar como celebrada**, redactar y publicar el post con los datos + logo si existe.
-- [ ] Guardar ids de posts / `celebratedPostedAt` (o similar) para evitar duplicados si se reintenta.
+- [ ] Campo `logo` (o similar) en `competition`: URL/Blob. La mayoría ya tienen logo; algunas no — el flujo debe permitir publicarlo sin logo o pedir uno opcional al anunciar.
+- [ ] UI para subir / editar el logo de la competencia (formulario y/o prompt al anunciar si falta).
+- [ ] Integración de APIs de redes AMS: al confirmar **Marcar como anunciada**, redactar y publicar el post con los datos + logo si existe.
+- [ ] Guardar ids de posts / `announcedPostedAt` (o similar) para evitar duplicados si se reintenta.
 - [ ] La tarjeta del tablero “Publicación FB Torneo de Rubik” puede quedar como checklist humana o alinearse con este flujo automático.
 
 ### Plataforma
@@ -157,7 +157,7 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 - [ ] Dar de baja WordPress de **blog/portada** cuando las redirecciones y la paridad de contenido estén verificadas. Conservar `cursos.*` hasta reemplazar el LMS.
 - [ ] App de cursos en el monorepo (`apps/courses` o similar): catálogo, módulos, inscripción, cookies `ams.*` compartidas. El esquema (`course`, `course_module`, `enrollment`) llega entonces.
 - [ ] Certificados de curso / insignias de finalización.
-- [ ] Opcional: acción dedicada **Anunciar** que redacte (o más adelante publique) el texto previo al evento. Distinto de la publicación post-celebración. No auto-publicar solo por guardar estatus como anunciada.
+- [ ] Pulir copy/plantilla del post de anuncio (hashtags, tono AMS) una vez exista la integración Meta.
 - [ ] Newsletter o resúmenes de anuncios.
 - [ ] API pública o RSS del blog.
 - [ ] RBAC más fuerte (editor de contenido vs delegado vs admin).
@@ -180,7 +180,7 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 - Sustituir OAuth WCA como identidad para calendario, tableros, delegados y organizadores (sigue siendo el vínculo canónico de competidor).
 - Fusionar calendario + tableros en un solo deployable.
 - Reconstruir el LMS dentro de `apps/web`.
-- Auto-publicar en Facebook/Instagram solo por guardar una competencia como **anunciada** (la publicación automática va ligada a **celebrada**).
+- Auto-publicar en Facebook/Instagram al marcar como **celebrada** (la publicación automática va ligada a **anunciada**).
 
 ---
 
@@ -188,12 +188,13 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 
 | Fecha      | Decisión                      | Notas                                                                                                                          |
 | ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-17 | Redes al marcar **anunciada** | Revierte 2026-08-20/18: publicar en FB/IG AMS al anunciar (no al celebrar); logo opcional; hook en `markAsAnnounced` / `statusPublic = announced` |
 | 2026-09-10 | Allowlist Tableros en admin   | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal |
 | 2026-09-10 | Host de auth = web            | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`             |
 | 2026-09-10 | Cuentas sin WCA (futuro)      | Better Auth puede tener usuarios sin `wcaId` solo para web (blog/comentarios); calendario/tableros exigen WCA vinculado        |
 | TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                           |
 | 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                    |
 | 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                       |
-| 2026-08-20 | Redes al marcar **celebrada** | Publicar en redes AMS desde **Marcar como celebrada** con datos de la comp; el dato extra es el logo (opcional si no existe)   |
-| 2026-08-18 | Anunciada ≠ post en redes     | Aparecer en el sitio = `announced`; post social del evento terminado = acción de celebrada (no al anunciar)                    |
+| 2026-08-20 | ~~Redes al marcar celebrada~~ | Superado el 2026-09-17: el post social va al anunciar, no al celebrar                                                          |
+| 2026-08-18 | ~~Anunciada ≠ post en redes~~ | Superado el 2026-09-17: anunciar en sitio y en redes es el mismo disparador (`announced`)                                      |
 | 2026-08-28 | Auditoría de plataforma       | CI, tests, deduplicación y tipos de auth documentados en sección **Plataforma**; priorizar quality gates antes de más features |
