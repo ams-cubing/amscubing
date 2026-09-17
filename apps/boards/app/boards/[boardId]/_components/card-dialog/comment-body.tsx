@@ -1,8 +1,37 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { segmentCommentBody } from "@workspace/db/mentions";
 
 import type { TeamPerson } from "../../_lib/team";
+
+function CommentText({ value }: { value: string }) {
+  // Preserve single newlines that whitespace-pre-wrap used to keep.
+  const withHardBreaks = value.replace(/\n/g, "  \n");
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => <span>{children}</span>,
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2 hover:text-primary/80"
+          >
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {withHardBreaks}
+    </ReactMarkdown>
+  );
+}
 
 export function CommentBody({
   body,
@@ -21,10 +50,10 @@ export function CommentBody({
   );
 
   return (
-    <p className="whitespace-pre-wrap rounded-md border bg-background px-3 py-2 text-sm">
+    <div className="whitespace-pre-wrap rounded-md border bg-background px-3 py-2 text-sm">
       {segments.map((segment, index) => {
         if (segment.type === "text") {
-          return <span key={index}>{segment.value}</span>;
+          return <CommentText key={index} value={segment.value} />;
         }
 
         if (segment.type === "groupMention") {
@@ -49,6 +78,6 @@ export function CommentBody({
           </span>
         );
       })}
-    </p>
+    </div>
   );
 }
