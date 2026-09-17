@@ -25,6 +25,7 @@ import {
   sendOrganizerAssignedEmail,
   sendOrganizerRemovedEmail,
 } from "@/lib/calendar-emails";
+import { publishCompetitionSocialAnnouncement } from "@/lib/announce-and-publish";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
@@ -60,6 +61,9 @@ export async function updateCompetition(
         statusPublic: true,
         statusInternal: true,
         city: true,
+        announcedPostedAt: true,
+        facebookPostId: true,
+        instagramMediaId: true,
       },
     });
 
@@ -105,6 +109,33 @@ export async function updateCompetition(
     const internalChanged =
       existingCompetition?.statusInternal !== validatedData.statusInternal;
 
+    const transitioningToAnnounced =
+      publicChanged && validatedData.statusPublic === "announced";
+
+    let announcedSocial: {
+      wcaCompetitionUrl: string;
+      facebookPostId: string;
+      instagramMediaId: string | null;
+    } | null = null;
+
+    if (transitioningToAnnounced && !existingCompetition?.announcedPostedAt) {
+      const published = await publishCompetitionSocialAnnouncement({
+        wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
+        city: validatedData.city,
+        name: validatedData.name || null,
+        startDate: startDateStr!,
+        endDate: endDateStr!,
+      });
+      if (!published.ok) {
+        return { success: false, message: published.message };
+      }
+      announcedSocial = {
+        wcaCompetitionUrl: published.wcaCompetitionUrl,
+        facebookPostId: published.facebookPostId,
+        instagramMediaId: published.instagramMediaId,
+      };
+    }
+
     // Use a transaction for all DB changes
     await db.transaction(async (tx) => {
       // Update the competition
@@ -113,7 +144,10 @@ export async function updateCompetition(
         city: validatedData.city,
         stateId: validatedData.stateId,
         trelloUrl: newTrelloUrl,
-        wcaCompetitionUrl: validatedData.wcaCompetitionUrl || null,
+        wcaCompetitionUrl:
+          announcedSocial?.wcaCompetitionUrl ||
+          validatedData.wcaCompetitionUrl ||
+          null,
         capacity: validatedData.capacity || 0,
         startDate: startDateStr!,
         endDate: endDateStr!,
@@ -122,7 +156,16 @@ export async function updateCompetition(
         trelloAssignedAt: existingCompetition?.trelloAssignedAt,
         notes: validatedData.notes || null,
         updatedAt: new Date(),
+        announcedPostedAt: existingCompetition?.announcedPostedAt ?? null,
+        facebookPostId: existingCompetition?.facebookPostId ?? null,
+        instagramMediaId: existingCompetition?.instagramMediaId ?? null,
       };
+
+      if (announcedSocial) {
+        updatePayload.announcedPostedAt = new Date();
+        updatePayload.facebookPostId = announcedSocial.facebookPostId;
+        updatePayload.instagramMediaId = announcedSocial.instagramMediaId;
+      }
 
       // If trelloUrl changed, set trelloAssignedAt to now
       if (trelloUrlChanged) {

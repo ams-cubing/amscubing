@@ -20,6 +20,7 @@ import {
   sendDelegateAssignedEmail,
   sendOrganizerAssignedEmail,
 } from "@/lib/calendar-emails";
+import { publishCompetitionSocialAnnouncement } from "@/lib/announce-and-publish";
 import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -51,6 +52,30 @@ export async function createCompetition(
     const trelloUrl = validatedData.trelloUrl;
     const trelloAssignedAt = trelloUrl ? new Date() : null;
 
+    let announcedSocial: {
+      wcaCompetitionUrl: string;
+      facebookPostId: string;
+      instagramMediaId: string | null;
+    } | null = null;
+
+    if (validatedData.statusPublic === "announced") {
+      const published = await publishCompetitionSocialAnnouncement({
+        wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
+        city: validatedData.city,
+        name: validatedData.name || null,
+        startDate: startDateStr!,
+        endDate: endDateStr!,
+      });
+      if (!published.ok) {
+        return { success: false, message: published.message };
+      }
+      announcedSocial = {
+        wcaCompetitionUrl: published.wcaCompetitionUrl,
+        facebookPostId: published.facebookPostId,
+        instagramMediaId: published.instagramMediaId,
+      };
+    }
+
     // All DB changes in a transaction
     await db.transaction(async (tx) => {
       const [newCompetition] = await tx
@@ -61,7 +86,10 @@ export async function createCompetition(
           stateId: validatedData.stateId,
           requestedBy: null,
           trelloUrl: validatedData.trelloUrl || null,
-          wcaCompetitionUrl: validatedData.wcaCompetitionUrl || null,
+          wcaCompetitionUrl:
+            announcedSocial?.wcaCompetitionUrl ||
+            validatedData.wcaCompetitionUrl ||
+            null,
           capacity: validatedData.capacity || 0,
           startDate: startDateStr!,
           endDate: endDateStr!,
@@ -69,6 +97,9 @@ export async function createCompetition(
           statusInternal: validatedData.statusInternal,
           trelloAssignedAt: trelloAssignedAt,
           notes: validatedData.notes || null,
+          announcedPostedAt: announcedSocial ? new Date() : null,
+          facebookPostId: announcedSocial?.facebookPostId ?? null,
+          instagramMediaId: announcedSocial?.instagramMediaId ?? null,
         })
         .returning();
 

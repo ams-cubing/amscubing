@@ -1,13 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getSession, transaction, revalidatePath, revalidateTag } = vi.hoisted(
-  () => ({
-    getSession: vi.fn(),
-    transaction: vi.fn(),
-    revalidatePath: vi.fn(),
-    revalidateTag: vi.fn(),
-  }),
-);
+const {
+  getSession,
+  transaction,
+  findFirst,
+  updateWhere,
+  insertValues,
+  revalidatePath,
+  revalidateTag,
+  publishCompetitionSocialAnnouncement,
+} = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  transaction: vi.fn(),
+  findFirst: vi.fn(),
+  updateWhere: vi.fn(),
+  insertValues: vi.fn(),
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+  publishCompetitionSocialAnnouncement: vi.fn(),
+}));
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => new Headers()),
@@ -29,6 +40,11 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@workspace/db", () => ({
   db: {
     transaction,
+    query: {
+      competitions: {
+        findFirst,
+      },
+    },
   },
 }));
 
@@ -56,14 +72,34 @@ vi.mock("@/lib/notification-urls", () => ({
   })),
 }));
 
+vi.mock("@/lib/announce-and-publish", () => ({
+  publishCompetitionSocialAnnouncement,
+}));
+
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
+
+const confirmedCompetition = {
+  city: "CDMX",
+  name: "Test Open 2026",
+  startDate: "2026-10-01",
+  endDate: "2026-10-02",
+  statusPublic: "confirmed",
+  statusInternal: "wca_approved",
+  wcaCompetitionUrl:
+    "https://www.worldcubeassociation.org/competitions/TestOpen2026",
+  announcedPostedAt: null,
+};
 
 describe("markAsAnnounced", () => {
   beforeEach(() => {
     getSession.mockReset();
     transaction.mockReset();
+    findFirst.mockReset();
+    updateWhere.mockReset();
+    insertValues.mockReset();
     revalidatePath.mockReset();
     revalidateTag.mockReset();
+    publishCompetitionSocialAnnouncement.mockReset();
   });
 
   it("rejects non-delegates without touching the database", async () => {
@@ -77,6 +113,8 @@ describe("markAsAnnounced", () => {
       success: false,
       message: "Solo delegados pueden realizar esta acción",
     });
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(publishCompetitionSocialAnnouncement).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
 
@@ -89,37 +127,134 @@ describe("markAsAnnounced", () => {
       success: false,
       message: "No autenticado",
     });
+    expect(findFirst).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("updates the competition for delegates", async () => {
+  it("rejects when WCA URL is missing", async () => {
     getSession.mockResolvedValue({
       user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue({
+      ...confirmedCompetition,
+      wcaCompetitionUrl: null,
+    });
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: false,
+      message:
+        "Debes agregar la URL de la competencia en la WCA antes de anunciar.",
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("URL");
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the WCA URL is not a real competition", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: false,
+      message:
+        "No se pudo obtener la competencia de la WCA (404). Verifica la URL.",
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("WCA");
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("announces successfully even when there is no competition logo", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: true,
+      wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
+      facebookPostId: "fb_no_logo",
+      instagramMediaId: null,
+      displayName: "Test Open 2026",
     });
     transaction.mockImplementation(
       async (fn: (tx: unknown) => Promise<void>) => {
         await fn({
-          query: {
-            competitions: {
-              findFirst: vi.fn().mockResolvedValue({
-                city: "CDMX",
-                statusPublic: "confirmed",
-                statusInternal: "wca_approved",
-              }),
-            },
-          },
-          update: () => ({ set: () => ({ where: vi.fn() }) }),
-          insert: () => ({ values: vi.fn() }),
+          update: () => ({
+            set: () => ({
+              where: updateWhere,
+            }),
+          }),
+          insert: () => ({ values: insertValues }),
         });
       },
     );
 
     const result = await markAsAnnounced(7);
 
+    expect(result.success).toBe(true);
+    expect(transaction).toHaveBeenCalledOnce();
+  });
+
+  it("rejects when Meta publish fails and does not announce", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: false,
+      message: "Facebook: (#200) Permissions error",
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result).toEqual({
+      success: false,
+      message: "Facebook: (#200) Permissions error",
+    });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("updates the competition after successful social publish", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: true,
+      wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
+      facebookPostId: "fb_123",
+      instagramMediaId: "ig_456",
+      displayName: "Test Open 2026",
+    });
+    transaction.mockImplementation(
+      async (fn: (tx: unknown) => Promise<void>) => {
+        await fn({
+          update: () => ({
+            set: () => ({
+              where: updateWhere,
+            }),
+          }),
+          insert: () => ({ values: insertValues }),
+        });
+      },
+    );
+
+    const result = await markAsAnnounced(7, {
+      wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
+    });
+
     expect(result).toEqual({
       success: true,
-      message: "Competencia marcada como anunciada",
+      message: "Competencia anunciada y publicada en Facebook e Instagram",
     });
+    expect(publishCompetitionSocialAnnouncement).toHaveBeenCalledOnce();
     expect(transaction).toHaveBeenCalledOnce();
+    expect(updateWhere).toHaveBeenCalledOnce();
   });
 });

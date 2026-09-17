@@ -1,7 +1,8 @@
-import { and, eq, max } from "drizzle-orm";
+import { and, eq, inArray, max } from "drizzle-orm";
 
 import {
   PHASE_LABELS,
+  REMOVED_TEMPLATE_CARD_TITLES,
   TEMPLATE_BOARD_NAME,
   TEMPLATE_CARDS,
   TEMPLATE_LISTS,
@@ -260,7 +261,24 @@ async function createFreshAmsBoardTemplate() {
   return board.id;
 }
 
+async function removeRetiredTemplateCards() {
+  if (REMOVED_TEMPLATE_CARD_TITLES.length === 0) return;
+
+  const removed = await db
+    .delete(cards)
+    .where(inArray(cards.title, [...REMOVED_TEMPLATE_CARD_TITLES]))
+    .returning({ id: cards.id, title: cards.title });
+
+  if (removed.length > 0) {
+    console.log(
+      `🗑️  Removed ${removed.length} retired board card(s): ${REMOVED_TEMPLATE_CARD_TITLES.join(", ")}`,
+    );
+  }
+}
+
 export async function seedAmsBoardTemplate() {
+  await removeRetiredTemplateCards();
+
   const existing = await db.query.boards.findFirst({
     where: templateBoardWhere,
   });
@@ -275,6 +293,8 @@ export async function seedAmsBoardTemplate() {
 
 /** Deletes the AMS template board (if any) and recreates it from seed data. */
 export async function reseedAmsBoardTemplate() {
+  await removeRetiredTemplateCards();
+
   const removed = await db
     .delete(boards)
     .where(templateBoardWhere)
