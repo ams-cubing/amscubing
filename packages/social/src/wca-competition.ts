@@ -97,8 +97,7 @@ export async function fetchWcaCompetition(
         shortName: data.short_name ?? null,
         information: data.information ?? null,
         url:
-          data.url ??
-          `https://www.worldcubeassociation.org/competitions/${id}`,
+          data.url ?? `https://www.worldcubeassociation.org/competitions/${id}`,
         logoUrl: extractFirstImageUrl(data.information),
         city: data.city?.trim() || null,
         venueName,

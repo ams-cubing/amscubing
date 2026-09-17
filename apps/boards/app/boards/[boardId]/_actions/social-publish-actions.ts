@@ -6,10 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import { boards, cardAttachments, competitions } from "@workspace/db/schema";
 
-import {
-  assertCardOnBoard,
-  requireBoardAccess,
-} from "../_lib/board-access";
+import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 
 export type SaveCompetitionSocialFieldsResult =
   | { ok: true; message: string }

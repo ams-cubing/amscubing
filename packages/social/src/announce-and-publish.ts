@@ -59,7 +59,10 @@ function requireCustomText(
   return { ok: true, text };
 }
 
-function resolveImageUrl(flyerUrl: string | null | undefined, logoUrl: string | null) {
+function resolveImageUrl(
+  flyerUrl: string | null | undefined,
+  logoUrl: string | null,
+) {
   const flyer = flyerUrl?.trim() || null;
   return flyer || logoUrl || null;
 }

@@ -20,8 +20,6 @@ export const metadata: Metadata = {
     "Revisa y reintenta publicaciones de competencias en Torneo de Rubik.",
 };
 
-export const dynamic = "force-dynamic";
-
 function socialStatus(
   facebookPostId: string | null,
   instagramMediaId: string | null,

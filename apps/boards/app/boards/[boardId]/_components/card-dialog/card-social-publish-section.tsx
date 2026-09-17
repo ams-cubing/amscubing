@@ -43,7 +43,9 @@ export function CardSocialPublishSection({
     competition?.socialFlyerUrl ?? null,
   );
   const [pending, startTransition] = React.useTransition();
-  const [preview, setPreview] = React.useState<PreviewState>({ status: "idle" });
+  const [preview, setPreview] = React.useState<PreviewState>({
+    status: "idle",
+  });
 
   React.useEffect(() => {
     setCustomText(competition?.socialCustomText ?? "");
@@ -57,7 +59,8 @@ export function CardSocialPublishSection({
 
   const { startUpload, isUploading } = useUploadThing("socialFlyer", {
     onClientUploadComplete: (files) => {
-      const url = files[0]?.serverData?.url ?? files[0]?.ufsUrl ?? files[0]?.url;
+      const url =
+        files[0]?.serverData?.url ?? files[0]?.ufsUrl ?? files[0]?.url;
       if (url) {
         setFlyerUrl(url);
         toast.success("Flyer subido");

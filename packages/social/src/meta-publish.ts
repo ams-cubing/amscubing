@@ -74,7 +74,9 @@ export function buildAnnouncementCaption(
     input.venueDetails?.trim() ||
     input.venueAddress?.trim() ||
     null;
-  const cityLine = [input.city, input.stateName?.trim()].filter(Boolean).join(", ");
+  const cityLine = [input.city, input.stateName?.trim()]
+    .filter(Boolean)
+    .join(", ");
   const events = formatEventLabels(input.eventIds ?? []);
   const limit =
     input.competitorLimit && input.competitorLimit > 0
@@ -388,7 +390,8 @@ export async function publishInstagramOnly(input: {
   if (!imageUrl) {
     return {
       ok: false,
-      message: "Se necesita un logo de la competencia para publicar en Instagram.",
+      message:
+        "Se necesita un logo de la competencia para publicar en Instagram.",
     };
   }
 

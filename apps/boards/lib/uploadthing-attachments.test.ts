@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  getBoardMocks,
-  resetBoardMocks,
-} from "@/test/setup-server-mocks";
+import { getBoardMocks, resetBoardMocks } from "@/test/setup-server-mocks";
 
 import {
   assertBoardUploadAccess,
