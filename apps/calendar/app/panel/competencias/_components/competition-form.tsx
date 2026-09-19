@@ -135,7 +135,17 @@ const competitionSchema = z
   .refine((data) => data.organizerWcaIds.includes(data.primaryOrganizerWcaId), {
     message: "El organizador principal debe estar en la lista de organizadores",
     path: ["primaryOrganizerWcaId"],
-  });
+  })
+  .refine(
+    (data) =>
+      data.statusPublic !== "announced" ||
+      Boolean(data.wcaCompetitionUrl?.trim()),
+    {
+      message:
+        "La URL de la WCA es obligatoria para anunciar (se publica en Torneo de Rubik)",
+      path: ["wcaCompetitionUrl"],
+    },
+  );
 
 type CompetitionFormValues = z.infer<typeof competitionSchema>;
 

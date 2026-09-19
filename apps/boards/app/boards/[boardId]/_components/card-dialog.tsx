@@ -57,6 +57,10 @@ import { CardCommentsSection } from "./card-dialog/card-comments-section";
 import { CardDescriptionSection } from "./card-dialog/card-description-section";
 import type { DescriptionEditorHandle } from "./card-dialog/description-editor";
 import {
+  CardSocialPublishSection,
+  isSocialPublishCard,
+} from "./card-dialog/card-social-publish-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
@@ -503,7 +507,16 @@ export function CardDialog({
               }
             />
 
+            {isSocialPublishCard(card.title) ? (
+              <CardSocialPublishSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
             <CardAttachmentsSection
+              boardId={board.id}
               card={card}
               showAttachmentForm={showAttachmentForm}
               attachmentName={attachmentName}

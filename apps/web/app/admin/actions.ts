@@ -31,6 +31,7 @@ function revalidateAdminAndDelegates() {
   revalidatePath("/admin/delegados");
   revalidatePath("/admin/editores");
   revalidatePath("/admin/tableros");
+  revalidatePath("/admin/redes");
   revalidatePath("/nosotros");
 }
 
