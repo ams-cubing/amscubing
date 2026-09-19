@@ -6,6 +6,7 @@ const nextConfig = {
     "@workspace/auth",
     "@workspace/social",
   ],
+  serverExternalPackages: ["sharp", "@resvg/resvg-js"],
   images: {
     unoptimized: true,
     remotePatterns: [
