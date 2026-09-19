@@ -13,6 +13,7 @@
     "dist",
     "src/seed.ts",
     "src/seed-template.ts",
+    "src/sync-template.ts",
     "src/seed-board-template.ts",
     "src/migrate.ts"
   ]

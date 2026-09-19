@@ -14,6 +14,7 @@
     "db:migrate": "pnpm --filter @workspace/db db:migrate",
     "db:seed": "pnpm --filter @workspace/db db:seed",
     "db:seed-template": "pnpm --filter @workspace/db db:seed-template",
+    "db:sync-template": "pnpm --filter @workspace/db db:sync-template",
     "db:generate": "pnpm --filter @workspace/db db:generate",
     "db:studio": "pnpm --filter @workspace/db db:studio",
     "test": "turbo test",
