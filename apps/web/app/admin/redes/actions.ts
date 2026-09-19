@@ -8,6 +8,9 @@ import { competitions } from "@workspace/db/schema";
 import {
   completeInstagramAnnouncement,
   publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCover,
+  refreshTorneoDeRubikCoverBestEffort,
+  generateTorneoDeRubikCoverPng,
 } from "@workspace/social";
 
 import type { AdminActionResult } from "@/app/admin/actions";
@@ -16,6 +19,46 @@ import { requireDelegate } from "@/lib/session";
 function revalidateSocial() {
   revalidatePath("/admin/redes");
   revalidateTag("competitions", "days");
+}
+
+export async function refreshFacebookCover(options?: {
+  force?: boolean;
+}): Promise<AdminActionResult> {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false, message: authResult.message };
+  }
+
+  const result = await refreshTorneoDeRubikCover({ force: options?.force });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  revalidatePath("/admin/redes");
+  return { ok: true, message: result.message };
+}
+
+/** Returns a data URL for the current generated cover (admin preview). */
+export async function previewFacebookCover(): Promise<
+  | { ok: true; dataUrl: string; slotCount: number }
+  | { ok: false; message: string }
+> {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false, message: authResult.message };
+  }
+
+  const generated = await generateTorneoDeRubikCoverPng();
+  if (!generated.ok) {
+    return generated;
+  }
+
+  const dataUrl = `data:image/png;base64,${generated.png.toString("base64")}`;
+  return {
+    ok: true,
+    dataUrl,
+    slotCount: generated.slotCount,
+  };
 }
 
 async function loadAnnouncedCompetition(competitionId: number) {
@@ -112,6 +155,7 @@ export async function retrySocialPublish(
     .where(eq(competitions.id, competitionId));
 
   revalidateSocial();
+  await refreshTorneoDeRubikCoverBestEffort();
   return {
     ok: true,
     message: published.instagramMediaId

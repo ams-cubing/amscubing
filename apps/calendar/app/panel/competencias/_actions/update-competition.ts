@@ -25,7 +25,10 @@ import {
   sendOrganizerAssignedEmail,
   sendOrganizerRemovedEmail,
 } from "@/lib/calendar-emails";
-import { publishCompetitionSocialAnnouncement } from "@workspace/social";
+import {
+  publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
+} from "@workspace/social";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
@@ -457,6 +460,10 @@ export async function updateCompetition(
     revalidatePath("/panel/competencias", "layout");
     revalidatePath("/panel");
     revalidatePath("/");
+
+    if (announcedSocial) {
+      await refreshTorneoDeRubikCoverBestEffort();
+    }
 
     return {
       success: true,

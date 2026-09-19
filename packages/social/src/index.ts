@@ -7,14 +7,22 @@ export {
   fetchWcaCompetition,
   type WcaCompetitionDetails,
 } from "./wca-competition";
-export { formatDateRangeEs, formatEventLabels } from "./format";
+export {
+  formatDateRangeEs,
+  formatEventLabels,
+  formatPlaceLine,
+  formatCoverDateRange,
+  formatCoverRegistrationRange,
+} from "./format";
 export {
   getMetaConfig,
+  getMetaPageConfig,
   buildAnnouncementCaption,
   facebookPostUrl,
   publishToTorneoDeRubik,
   publishInstagramOnly,
   fetchInstagramPermalink,
+  updateFacebookPageCover,
   type MetaConfig,
   type PublishAnnouncementInput,
   type PublishAnnouncementResult,
@@ -29,3 +37,22 @@ export {
   type AnnounceSocialPublishResult,
   type AnnouncementPreviewResult,
 } from "./announce-and-publish";
+export {
+  COVER_WIDTH,
+  COVER_HEIGHT,
+  COVER_MAX_SLOTS,
+  selectCoverCompetitions,
+  generateCoverPng,
+  generateCoverPngFromInputs,
+  prepareCoverSlots,
+  hashCoverPng,
+  type CoverSlotInput,
+  type CoverSlot,
+} from "./cover-image";
+export {
+  listCoverCompetitionInputs,
+  generateTorneoDeRubikCoverPng,
+  refreshTorneoDeRubikCover,
+  refreshTorneoDeRubikCoverBestEffort,
+  type RefreshCoverResult,
+} from "./refresh-cover";

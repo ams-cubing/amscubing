@@ -9,6 +9,7 @@ const {
   revalidatePath,
   revalidateTag,
   publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   transaction: vi.fn(),
@@ -18,6 +19,7 @@ const {
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
   publishCompetitionSocialAnnouncement: vi.fn(),
+  refreshTorneoDeRubikCoverBestEffort: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -74,6 +76,7 @@ vi.mock("@/lib/notification-urls", () => ({
 
 vi.mock("@workspace/social", () => ({
   publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
 }));
 
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
@@ -100,6 +103,8 @@ describe("markAsAnnounced", () => {
     revalidatePath.mockReset();
     revalidateTag.mockReset();
     publishCompetitionSocialAnnouncement.mockReset();
+    refreshTorneoDeRubikCoverBestEffort.mockReset();
+    refreshTorneoDeRubikCoverBestEffort.mockResolvedValue(undefined);
   });
 
   it("rejects non-delegates without touching the database", async () => {

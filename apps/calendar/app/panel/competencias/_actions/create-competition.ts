@@ -20,7 +20,10 @@ import {
   sendDelegateAssignedEmail,
   sendOrganizerAssignedEmail,
 } from "@/lib/calendar-emails";
-import { publishCompetitionSocialAnnouncement } from "@workspace/social";
+import {
+  publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
+} from "@workspace/social";
 import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -252,6 +255,10 @@ export async function createCompetition(
       } else {
         message = "Competencia y tablero creados exitosamente";
       }
+    }
+
+    if (announcedSocial) {
+      await refreshTorneoDeRubikCoverBestEffort();
     }
 
     return {

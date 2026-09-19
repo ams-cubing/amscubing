@@ -45,14 +45,10 @@ export function extractSpanishIntroFromInformation(
 
 function isolateSpanishSection(markdown: string): string {
   const espanolMatch = /#{1,6}\s*Espa[nñ]ol\b/i.exec(markdown);
-  const start = espanolMatch
-    ? espanolMatch.index + espanolMatch[0].length
-    : 0;
+  const start = espanolMatch ? espanolMatch.index + espanolMatch[0].length : 0;
   const afterStart = markdown.slice(start);
   const englishMatch = /#{1,6}\s*English\b/i.exec(afterStart);
-  return englishMatch
-    ? afterStart.slice(0, englishMatch.index)
-    : afterStart;
+  return englishMatch ? afterStart.slice(0, englishMatch.index) : afterStart;
 }
 
 function stripMarkdownImages(text: string): string {

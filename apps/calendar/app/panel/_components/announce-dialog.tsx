@@ -88,8 +88,8 @@ export function AnnounceDialog({
           </p>
           <p>
             La publicación solo continúa si la URL apunta a una competencia real
-            en la WCA. El texto personalizado del tablero es opcional: si no hay,
-            se usa la introducción en español de la página WCA.
+            en la WCA. El texto personalizado del tablero es opcional: si no
+            hay, se usa la introducción en español de la página WCA.
           </p>
 
           <div className="space-y-2 pt-1">

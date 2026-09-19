@@ -14,6 +14,7 @@ import {
   SocialPostsList,
   type SocialPostRow,
 } from "@/app/admin/redes/social-posts-list";
+import { FacebookCoverPanel } from "@/app/admin/redes/facebook-cover-panel";
 
 export const metadata: Metadata = {
   title: "Redes | Admin AMS",
@@ -136,9 +137,12 @@ export default async function AdminRedesPage() {
           Competencias anunciadas con estado de Facebook e Instagram. El copy
           creativo, etiquetas y flyer viven en la tarjeta del tablero; aquí
           puedes ver el preview, reintentar, completar Instagram o marcar como
-          publicada manualmente.
+          publicada manualmente. La portada de la página se actualiza al
+          anunciar o con el botón de abajo.
         </p>
       </header>
+
+      <FacebookCoverPanel />
 
       <section className="space-y-6 rounded-5.5 bg-ams-soft p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">

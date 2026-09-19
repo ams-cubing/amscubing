@@ -14,6 +14,8 @@ export type WcaCompetitionDetails = {
   venueDetails: string | null;
   eventIds: string[];
   competitorLimit: number | null;
+  registrationOpen: string | null;
+  registrationClose: string | null;
 };
 
 export function extractWcaCompetitionId(
@@ -76,6 +78,8 @@ export async function fetchWcaCompetition(
       venue_details?: string | null;
       event_ids?: string[] | null;
       competitor_limit?: number | null;
+      registration_open?: string | null;
+      registration_close?: string | null;
     };
 
     const venueFromHtml = stripHtml(data.venue);
@@ -107,6 +111,16 @@ export async function fetchWcaCompetition(
         competitorLimit:
           typeof data.competitor_limit === "number" && data.competitor_limit > 0
             ? data.competitor_limit
+            : null,
+        registrationOpen:
+          typeof data.registration_open === "string" &&
+          data.registration_open.trim()
+            ? data.registration_open.trim()
+            : null,
+        registrationClose:
+          typeof data.registration_close === "string" &&
+          data.registration_close.trim()
+            ? data.registration_close.trim()
             : null,
       },
     };
