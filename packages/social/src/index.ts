@@ -12,6 +12,8 @@ export {
   formatDateRangeEs,
   formatEventLabels,
   formatPlaceLine,
+  formatCoverCityLine,
+  formatCoverStateLabel,
   formatCoverDateRange,
   formatCoverRegistrationRange,
 } from "./format";
@@ -42,6 +44,7 @@ export {
   COVER_WIDTH,
   COVER_HEIGHT,
   COVER_MAX_SLOTS,
+  coverRowCounts,
   selectCoverCompetitions,
   generateCoverPng,
   generateCoverPngFromInputs,

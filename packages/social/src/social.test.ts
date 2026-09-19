@@ -9,13 +9,16 @@ import {
 import { buildAnnouncementCaption, facebookPostUrl } from "./meta-publish";
 import { resolveAnnouncementBodyText } from "./announce-and-publish";
 import {
+  formatCoverCityLine,
   formatCoverDateRange,
   formatCoverRegistrationRange,
+  formatCoverStateLabel,
   formatEventLabels,
   formatPlaceLine,
 } from "./format";
 import {
   COVER_MAX_SLOTS,
+  coverRowCounts,
   generateCoverPngFromInputs,
   selectCoverCompetitions,
 } from "./cover-image";
@@ -205,30 +208,71 @@ describe("formatPlaceLine", () => {
   });
 });
 
-describe("formatCoverDateRange", () => {
-  it("formats a multi-day range like the Canva cover", () => {
-    expect(formatCoverDateRange("2026-05-16", "2026-05-17")).toBe(
-      "16 MAY - 17 MAY",
+describe("formatCoverCityLine", () => {
+  it("returns the city without state", () => {
+    expect(formatCoverCityLine("Tepic", "Nayarit")).toBe("Tepic");
+  });
+
+  it("strips a trailing comma-state suffix", () => {
+    expect(formatCoverCityLine("Salamanca, Guanajuato", "Guanajuato")).toBe(
+      "Salamanca",
     );
+  });
+});
+
+describe("formatCoverStateLabel", () => {
+  it("uppercases ordinary states", () => {
+    expect(formatCoverStateLabel("Nayarit")).toBe("NAYARIT");
+    expect(formatCoverStateLabel("Michoacán")).toBe("MICHOACÁN");
+  });
+
+  it("abbreviates Baja California like Canva", () => {
+    expect(formatCoverStateLabel("Baja California")).toBe("B. CALIFORNIA");
+  });
+});
+
+describe("formatCoverDateRange", () => {
+  it("formats a multi-day same-month range like the Canva cover", () => {
+    expect(formatCoverDateRange("2026-05-16", "2026-05-17")).toBe("16-17 MAYO");
   });
 
   it("formats a single day", () => {
-    expect(formatCoverDateRange("2026-05-16", "2026-05-16")).toBe("16 MAY");
+    expect(formatCoverDateRange("2026-04-05", "2026-04-05")).toBe("5 ABRIL");
+  });
+
+  it("formats a cross-month range", () => {
+    expect(formatCoverDateRange("2026-04-28", "2026-05-01")).toBe(
+      "28 ABRIL - 1 MAYO",
+    );
   });
 });
 
 describe("formatCoverRegistrationRange", () => {
-  it("formats registration datetimes to short date ranges", () => {
+  it("formats registration datetimes with Canva-style dates", () => {
     expect(
       formatCoverRegistrationRange(
         "2026-04-02T17:00:00.000Z",
         "2026-05-04T05:59:59.000Z",
       ),
-    ).toBe("02 ABR - 04 MAY");
+    ).toBe("2 ABRIL - 4 MAYO");
   });
 
   it("returns null when both sides are missing", () => {
     expect(formatCoverRegistrationRange(null, null)).toBeNull();
+  });
+});
+
+describe("coverRowCounts", () => {
+  it("uses one row up to five slots", () => {
+    expect(coverRowCounts(1)).toEqual([1]);
+    expect(coverRowCounts(5)).toEqual([5]);
+  });
+
+  it("splits denser covers like Canva (5+4, 3+3)", () => {
+    expect(coverRowCounts(6)).toEqual([3, 3]);
+    expect(coverRowCounts(7)).toEqual([4, 3]);
+    expect(coverRowCounts(8)).toEqual([4, 4]);
+    expect(coverRowCounts(9)).toEqual([5, 4]);
   });
 });
 
