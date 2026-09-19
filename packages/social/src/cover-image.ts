@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { Resvg } from "@resvg/resvg-js";
 import sharp from "sharp";
 
 import {
@@ -23,6 +24,41 @@ const LOGO_MAX_BYTES = 8 * 1024 * 1024;
 const TITLE_YELLOW = "#FFE600";
 const DATE_MAGENTA = "#FF2D9B";
 const LABEL_WHITE = "#FFFFFF";
+
+/**
+ * Family names must match the TTF `name` table (id 1). Sharp/librsvg ignores
+ * `@font-face` data URLs, so cell text is rendered with resvg + one font file
+ * at a time (loading several fonts together makes resvg mis-fallback).
+ */
+const COVER_FONTS = {
+  script: {
+    files: [
+      "SmoothFantasy.ttf",
+      "SmoothFantasy.otf",
+      "Smooth Fantasy.ttf",
+      "Smooth Fantasy.otf",
+    ],
+    family: "Smooth Fantasy Personal Use Onl",
+  },
+  bold: {
+    files: [
+      "CodecPro-ExtraBold.ttf",
+      "CodecProExtraBold.ttf",
+      "Codec Pro ExtraBold.ttf",
+      "CodecPro-Bold.ttf",
+    ],
+    family: "Codec Pro ExtraBold",
+  },
+  regular: {
+    files: [
+      "CodecPro.ttf",
+      "CodecPro-Regular.ttf",
+      "Codec Pro.ttf",
+      "CodecProRegular.ttf",
+    ],
+    family: "Codec Pro",
+  },
+} as const;
 
 const ASSETS_DIR_CANDIDATES = [
   path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../assets"),
@@ -46,7 +82,7 @@ export function resolveCoverAssetsDir(): string {
   return resolveAssetsDir();
 }
 
-function findFontFile(candidates: string[]): string | null {
+function findFontFile(candidates: readonly string[]): string | null {
   const fontsDir = path.join(resolveAssetsDir(), "fonts");
   for (const name of candidates) {
     const full = path.join(fontsDir, name);
@@ -54,6 +90,30 @@ function findFontFile(candidates: string[]): string | null {
   }
   const fallback = path.join(fontsDir, "GamingSporty.ttf");
   return existsSync(fallback) ? fallback : null;
+}
+
+type ResolvedCoverFont = {
+  path: string;
+  family: string;
+};
+
+function resolveCoverFonts(): {
+  script: ResolvedCoverFont | null;
+  bold: ResolvedCoverFont | null;
+  regular: ResolvedCoverFont | null;
+} {
+  const scriptPath = findFontFile(COVER_FONTS.script.files);
+  const boldPath = findFontFile(COVER_FONTS.bold.files);
+  const regularPath = findFontFile(COVER_FONTS.regular.files);
+  return {
+    script: scriptPath
+      ? { path: scriptPath, family: COVER_FONTS.script.family }
+      : null,
+    bold: boldPath ? { path: boldPath, family: COVER_FONTS.bold.family } : null,
+    regular: regularPath
+      ? { path: regularPath, family: COVER_FONTS.regular.family }
+      : null,
+  };
 }
 
 export type CoverSlotInput = {
@@ -76,20 +136,6 @@ export type CoverSlot = {
 /** Select up to 9 competitions for the cover (already sorted by startDate asc). */
 export function selectCoverCompetitions<T>(competitions: T[]): T[] {
   return competitions.slice(0, COVER_MAX_SLOTS);
-}
-
-function fontFileToCssUrl(fontPath: string): string {
-  const data = readFileSync(fontPath);
-  const ext = path.extname(fontPath).toLowerCase();
-  const mime =
-    ext === ".otf"
-      ? "font/otf"
-      : ext === ".woff2"
-        ? "font/woff2"
-        : ext === ".woff"
-          ? "font/woff"
-          : "font/ttf";
-  return `url('data:${mime};base64,${data.toString("base64")}')`;
 }
 
 async function fetchLogoBuffer(
@@ -146,90 +192,138 @@ function escapeXml(text: string): string {
     .replaceAll("'", "&apos;");
 }
 
-function buildCellSvg(
-  slot: CoverSlot,
-  cellWidth: number,
-  cellHeight: number,
-): Buffer {
-  const scriptFont = findFontFile([
-    "SmoothFantasy.ttf",
-    "SmoothFantasy.otf",
-    "Smooth Fantasy.ttf",
-    "Smooth Fantasy.otf",
-  ]);
-  const boldFont = findFontFile([
-    "CodecPro-ExtraBold.ttf",
-    "CodecProExtraBold.ttf",
-    "Codec Pro ExtraBold.ttf",
-    "CodecPro-Bold.ttf",
-  ]);
-  const regularFont = findFontFile([
-    "CodecPro.ttf",
-    "CodecPro-Regular.ttf",
-    "Codec Pro.ttf",
-    "CodecProRegular.ttf",
-  ]);
-
-  const faces: string[] = [];
-  if (scriptFont) {
-    faces.push(
-      `@font-face{font-family:'CoverScript';src:${fontFileToCssUrl(scriptFont)};}`,
-    );
-  }
-  if (boldFont) {
-    faces.push(
-      `@font-face{font-family:'CoverBold';src:${fontFileToCssUrl(boldFont)};}`,
-    );
-  }
-  if (regularFont) {
-    faces.push(
-      `@font-face{font-family:'CoverRegular';src:${fontFileToCssUrl(regularFont)};}`,
-    );
-  }
-
-  const scriptFamily = scriptFont ? "CoverScript" : "cursive";
-  const boldFamily = boldFont ? "CoverBold" : "sans-serif";
-  const regularFamily = regularFont ? "CoverRegular" : "sans-serif";
-
-  const cx = cellWidth / 2;
-  // Leave room for the logo composite above the text block.
-  const textTop = slot.logoBuffer ? 250 : 120;
-  const place = escapeXml(slot.placeLine);
-  const dates = escapeXml(slot.eventDates);
-  const regLabel = slot.registrationDates ? "REGISTRO" : "";
-  const regDates = slot.registrationDates
-    ? escapeXml(slot.registrationDates)
-    : "";
-
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${cellWidth}" height="${cellHeight}" viewBox="0 0 ${cellWidth} ${cellHeight}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+function renderTextLayer(options: {
+  width: number;
+  height: number;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  fill: string;
+  font: ResolvedCoverFont;
+  letterSpacingEm?: number;
+  glow?: boolean;
+}): Buffer {
+  const letterSpacing =
+    options.letterSpacingEm != null
+      ? ` letter-spacing="${options.letterSpacingEm}em"`
+      : "";
+  const filterAttr = options.glow ? ` filter="url(#glow)"` : "";
+  const glowFilter = options.glow
+    ? `<filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
-    </filter>
-    <style><![CDATA[
-      ${faces.join("")}
-      .place { font-family: '${scriptFamily}', cursive; font-size: 42px; fill: ${TITLE_YELLOW}; filter: url(#glow); }
-      .dates { font-family: '${boldFamily}', sans-serif; font-size: 26px; fill: ${DATE_MAGENTA}; font-weight: 800; }
-      .reg-label { font-family: '${regularFamily}', sans-serif; font-size: 16px; fill: ${LABEL_WHITE}; letter-spacing: 0.12em; }
-      .reg-dates { font-family: '${regularFamily}', sans-serif; font-size: 18px; fill: ${LABEL_WHITE}; }
-    ]]></style>
+    </filter>`
+    : "";
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${options.width}" height="${options.height}" viewBox="0 0 ${options.width} ${options.height}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="cellClip">
+      <rect x="0" y="0" width="${options.width}" height="${options.height}"/>
+    </clipPath>
+    ${glowFilter}
   </defs>
-  <text class="place" x="${cx}" y="${textTop}" text-anchor="middle">${place}</text>
-  <text class="dates" x="${cx}" y="${textTop + 48}" text-anchor="middle">${dates}</text>
-  ${
-    regLabel
-      ? `<text class="reg-label" x="${cx}" y="${textTop + 84}" text-anchor="middle">${regLabel}</text>
-  <text class="reg-dates" x="${cx}" y="${textTop + 112}" text-anchor="middle">${regDates}</text>`
-      : ""
-  }
+  <g clip-path="url(#cellClip)">
+    <text x="${options.x}" y="${options.y}" text-anchor="middle"
+      font-family="${escapeXml(options.font.family)}"
+      font-size="${options.fontSize}px"
+      fill="${options.fill}"${letterSpacing}${filterAttr}>${escapeXml(options.text)}</text>
+  </g>
 </svg>`;
 
-  return Buffer.from(svg);
+  const resvg = new Resvg(svg, {
+    font: {
+      fontFiles: [options.font.path],
+      loadSystemFonts: false,
+      defaultFontFamily: options.font.family,
+    },
+  });
+  return Buffer.from(resvg.render().asPng());
+}
+
+/** Keep place titles inside a column (~546px) with the script face. */
+function placeFontSize(placeLine: string): number {
+  const len = placeLine.length;
+  if (len > 28) return 26;
+  if (len > 22) return 30;
+  if (len > 16) return 36;
+  return 42;
+}
+
+function buildCellTextLayers(
+  slot: CoverSlot,
+  cellWidth: number,
+  cellHeight: number,
+  fonts: ReturnType<typeof resolveCoverFonts>,
+): Buffer[] {
+  const cx = cellWidth / 2;
+  const textTop = slot.logoBuffer ? 250 : 120;
+  const layers: Buffer[] = [];
+  const titleSize = placeFontSize(slot.placeLine);
+
+  if (slot.placeLine && fonts.script) {
+    layers.push(
+      renderTextLayer({
+        width: cellWidth,
+        height: cellHeight,
+        text: slot.placeLine,
+        x: cx,
+        y: textTop,
+        fontSize: titleSize,
+        fill: TITLE_YELLOW,
+        font: fonts.script,
+        glow: true,
+      }),
+    );
+  }
+
+  if (slot.eventDates && fonts.bold) {
+    layers.push(
+      renderTextLayer({
+        width: cellWidth,
+        height: cellHeight,
+        text: slot.eventDates,
+        x: cx,
+        y: textTop + Math.round(titleSize * 1.15),
+        fontSize: 26,
+        fill: DATE_MAGENTA,
+        font: fonts.bold,
+      }),
+    );
+  }
+
+  if (slot.registrationDates && fonts.regular) {
+    const regTop = textTop + Math.round(titleSize * 1.15) + 36;
+    layers.push(
+      renderTextLayer({
+        width: cellWidth,
+        height: cellHeight,
+        text: "REGISTRO",
+        x: cx,
+        y: regTop,
+        fontSize: 16,
+        fill: LABEL_WHITE,
+        font: fonts.regular,
+        letterSpacingEm: 0.12,
+      }),
+      renderTextLayer({
+        width: cellWidth,
+        height: cellHeight,
+        text: slot.registrationDates,
+        x: cx,
+        y: regTop + 28,
+        fontSize: 18,
+        fill: LABEL_WHITE,
+        font: fonts.regular,
+      }),
+    );
+  }
+
+  return layers;
 }
 
 /**
@@ -242,6 +336,13 @@ export async function generateCoverPng(slots: CoverSlot[]): Promise<Buffer> {
   if (!existsSync(backgroundPath)) {
     throw new Error(
       `Falta el fondo de portada en ${backgroundPath}. Copia cover-background.png a packages/social/assets/.`,
+    );
+  }
+
+  const fonts = resolveCoverFonts();
+  if (!fonts.script || !fonts.bold || !fonts.regular) {
+    throw new Error(
+      "Faltan tipografías de portada en packages/social/assets/fonts (SmoothFantasy, CodecPro-ExtraBold, CodecPro).",
     );
   }
 
@@ -267,12 +368,14 @@ export async function generateCoverPng(slots: CoverSlot[]): Promise<Buffer> {
       });
     }
 
-    const cellSvg = buildCellSvg(slot, cellWidth, cellHeight);
-    const cellPng = await sharp(cellSvg)
-      .resize(cellWidth, cellHeight)
-      .png()
-      .toBuffer();
-    composites.push({ input: cellPng, left, top });
+    for (const layer of buildCellTextLayers(
+      slot,
+      cellWidth,
+      cellHeight,
+      fonts,
+    )) {
+      composites.push({ input: layer, left, top });
+    }
   }
 
   return sharp(backgroundPath)

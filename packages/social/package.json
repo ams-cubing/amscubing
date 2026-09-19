@@ -13,6 +13,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@workspace/db": "workspace:*",
     "drizzle-orm": "catalog:",
     "sharp": "^0.34.4"

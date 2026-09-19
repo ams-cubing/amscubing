@@ -82,16 +82,9 @@ export async function fetchWcaCompetition(
       registration_close?: string | null;
     };
 
-    const venueFromHtml = stripHtml(data.venue);
-    const venueName = venueFromHtml || null;
-    const venueAddress =
-      typeof data.venue_address === "string" && data.venue_address.trim()
-        ? data.venue_address.trim()
-        : null;
-    const venueDetails =
-      typeof data.venue_details === "string" && data.venue_details.trim()
-        ? data.venue_details.trim()
-        : null;
+    const venueName = plainTextFromWcaMarkup(data.venue);
+    const venueAddress = plainTextFromWcaMarkup(data.venue_address);
+    const venueDetails = plainTextFromWcaMarkup(data.venue_details);
 
     return {
       ok: true,
@@ -133,11 +126,19 @@ export async function fetchWcaCompetition(
   }
 }
 
-function stripHtml(value: string | null | undefined): string | null {
+/**
+ * WCA venue fields are often HTML and/or markdown links
+ * (e.g. `[Globo, Museo de la Niñez](https://…)`). Social captions need the
+ * plain label only.
+ */
+export function plainTextFromWcaMarkup(
+  value: string | null | undefined,
+): string | null {
   if (!value) return null;
   const text = value
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
   return text.length > 0 ? text : null;

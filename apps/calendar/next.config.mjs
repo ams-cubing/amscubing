@@ -7,7 +7,7 @@ const nextConfig = {
     "@workspace/auth",
     "@workspace/social",
   ],
-  serverExternalPackages: ["sharp"],
+  serverExternalPackages: ["sharp", "@resvg/resvg-js"],
   images: {
     unoptimized: true,
   },
