@@ -7,6 +7,7 @@ import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
 import {
   completeInstagramAnnouncement,
+  getTorneoDeRubikCoverStatus,
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCover,
   refreshTorneoDeRubikCoverBestEffort,
@@ -14,6 +15,7 @@ import {
 } from "@workspace/social";
 
 import type { AdminActionResult } from "@/app/admin/actions";
+import type { FacebookCoverPanelStatus } from "@/app/admin/redes/facebook-cover-panel";
 import { requireDelegate } from "@/lib/session";
 
 function revalidateSocial() {
@@ -21,9 +23,22 @@ function revalidateSocial() {
   revalidateTag("competitions", "days");
 }
 
+function toCoverPanelStatus(
+  status: Awaited<ReturnType<typeof getTorneoDeRubikCoverStatus>>,
+): FacebookCoverPanelStatus {
+  return {
+    status: status.status,
+    slotCount: status.slotCount,
+    uploadedAt: status.uploadedAt?.toISOString() ?? null,
+  };
+}
+
 export async function refreshFacebookCover(options?: {
   force?: boolean;
-}): Promise<AdminActionResult> {
+}): Promise<
+  | { ok: true; message: string; coverStatus: FacebookCoverPanelStatus }
+  | { ok: false; message: string }
+> {
   const authResult = await requireDelegate();
   if (!authResult.ok) {
     return { ok: false, message: authResult.message };
@@ -34,8 +49,9 @@ export async function refreshFacebookCover(options?: {
     return { ok: false, message: result.message };
   }
 
+  const coverStatus = toCoverPanelStatus(await getTorneoDeRubikCoverStatus());
   revalidatePath("/admin/redes");
-  return { ok: true, message: result.message };
+  return { ok: true, message: result.message, coverStatus };
 }
 
 /** Returns a data URL for the current generated cover (admin preview). */

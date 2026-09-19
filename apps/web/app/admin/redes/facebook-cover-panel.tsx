@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import type { CoverStatus } from "@workspace/social";
 import { Button } from "@workspace/ui/components/button";
 
 import {
@@ -9,12 +10,46 @@ import {
   refreshFacebookCover,
 } from "@/app/admin/redes/actions";
 
-export function FacebookCoverPanel() {
+export type FacebookCoverPanelStatus = {
+  status: CoverStatus;
+  slotCount: number;
+  uploadedAt: string | null;
+};
+
+function coverStatusLabel(status: CoverStatus): string {
+  switch (status) {
+    case "current":
+      return "Portada al día";
+    case "outdated":
+      return "Portada desactualizada";
+    case "unknown":
+      return "Sin registro de portada subida";
+  }
+}
+
+function coverStatusClassName(status: CoverStatus): string {
+  switch (status) {
+    case "current":
+      return "text-emerald-800";
+    case "outdated":
+      return "text-amber-800";
+    case "unknown":
+      return "text-black/55";
+  }
+}
+
+export function FacebookCoverPanel({
+  initialStatus,
+}: {
+  initialStatus: FacebookCoverPanelStatus;
+}) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [slotCount, setSlotCount] = useState<number | null>(null);
+  const [coverStatus, setCoverStatus] =
+    useState<FacebookCoverPanelStatus>(initialStatus);
 
   function runPreview() {
     setMessage(null);
@@ -47,6 +82,9 @@ export function FacebookCoverPanel() {
         return;
       }
       setMessage(result.message);
+      if (result.coverStatus) {
+        setCoverStatus(result.coverStatus);
+      }
     });
   }
 
@@ -61,6 +99,18 @@ export function FacebookCoverPanel() {
             Genera la portada de Torneo de Rubik con hasta 9 competencias
             anunciadas (logo, ciudad, fechas y registro). Sin badges de estado
             ni cupo.
+          </p>
+          <p
+            className={`mt-3 text-sm font-medium ${coverStatusClassName(coverStatus.status)}`}
+            role="status"
+          >
+            {coverStatusLabel(coverStatus.status)}
+            {coverStatus.slotCount > 0
+              ? ` · ${coverStatus.slotCount} competencia${coverStatus.slotCount === 1 ? "" : "s"} en la portada`
+              : " · sin competencias anunciadas"}
+            {coverStatus.uploadedAt
+              ? ` · última subida ${new Date(coverStatus.uploadedAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}`
+              : null}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
