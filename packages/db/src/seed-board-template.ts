@@ -1,4 +1,4 @@
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, max, sql } from "drizzle-orm";
 
 import {
   PHASE_LABELS,
@@ -22,6 +22,12 @@ import {
 
 type LabelRow = typeof labels.$inferSelect;
 type ListRow = typeof boardLists.$inferSelect;
+
+type SyncBoardResult = {
+  inserted: number;
+  listsReordered: number;
+  skipped?: string;
+};
 
 async function insertTemplateCard(input: {
   cardDef: (typeof TEMPLATE_CARDS)[number];
@@ -102,18 +108,16 @@ function buildLabelByKey(labelRows: LabelRow[]) {
   return labelByKey;
 }
 
-function buildListByTitle(listRows: ListRow[]) {
+function tryBuildListByTitle(listRows: ListRow[]): {
+  listByTitle: Record<(typeof TEMPLATE_LISTS)[number], ListRow>;
+  missing: string[];
+} {
   const listByTitle = Object.fromEntries(
     listRows.map((list) => [list.title, list]),
   ) as Record<(typeof TEMPLATE_LISTS)[number], ListRow>;
 
-  for (const title of TEMPLATE_LISTS) {
-    if (!listByTitle[title]) {
-      throw new Error(`Missing list on template: ${title}`);
-    }
-  }
-
-  return listByTitle;
+  const missing = TEMPLATE_LISTS.filter((title) => !listByTitle[title]);
+  return { listByTitle, missing };
 }
 
 async function syncMissingTemplateLabels(boardId: number) {
@@ -123,7 +127,7 @@ async function syncMissingTemplateLabels(boardId: number) {
   });
   const existingNames = new Set(existing.map((l) => l.name));
   const missing = PHASE_LABELS.filter((l) => !existingNames.has(l.name));
-  if (missing.length === 0) return;
+  if (missing.length === 0) return 0;
 
   await db.insert(labels).values(
     missing.map((label) => ({
@@ -132,9 +136,7 @@ async function syncMissingTemplateLabels(boardId: number) {
       color: label.color,
     })),
   );
-  console.log(
-    `✅ Synced ${missing.length} missing label(s) onto AMS board template (id=${boardId})`,
-  );
+  return missing.length;
 }
 
 /**
@@ -180,10 +182,7 @@ async function reorderTemplateCardsToSeedOrder(
     if (!needsReorder) continue;
 
     for (const [position, cardId] of orderedIds.entries()) {
-      await db
-        .update(cards)
-        .set({ position })
-        .where(eq(cards.id, cardId));
+      await db.update(cards).set({ position }).where(eq(cards.id, cardId));
     }
     reordered += 1;
   }
@@ -191,17 +190,73 @@ async function reorderTemplateCardsToSeedOrder(
   return reordered;
 }
 
-async function syncMissingTemplateCards(boardId: number) {
+/** Insert position implied by neighbors already on the same list. */
+async function resolveInsertPosition(
+  listId: number,
+  cardDef: (typeof TEMPLATE_CARDS)[number],
+) {
+  const listCards = await db.query.cards.findMany({
+    where: eq(cards.listId, listId),
+    columns: { title: true, position: true },
+    orderBy: (c, { asc }) => [asc(c.position)],
+  });
+
+  const sameListTitles = TEMPLATE_CARDS.filter(
+    (c) => c.list === cardDef.list,
+  ).map((c) => c.title);
+  const index = sameListTitles.indexOf(cardDef.title);
+  const beforeTitles = sameListTitles.slice(0, index);
+  const afterTitles = sameListTitles.slice(index + 1);
+
+  for (let i = beforeTitles.length - 1; i >= 0; i -= 1) {
+    const neighbor = listCards.find((c) => c.title === beforeTitles[i]);
+    if (neighbor) return neighbor.position + 1;
+  }
+  for (const title of afterTitles) {
+    const neighbor = listCards.find((c) => c.title === title);
+    if (neighbor) return neighbor.position;
+  }
+
+  const [{ value: maxPosition }] = await db
+    .select({ value: max(cards.position) })
+    .from(cards)
+    .where(eq(cards.listId, listId));
+  return (maxPosition ?? -1) + 1;
+}
+
+async function shiftCardsFromPosition(listId: number, fromPosition: number) {
+  await db
+    .update(cards)
+    .set({ position: sql`${cards.position} + 1` })
+    .where(and(eq(cards.listId, listId), gte(cards.position, fromPosition)));
+}
+
+/**
+ * Inserts any TEMPLATE_CARDS missing from a board (by title across all lists).
+ * When `reorderToSeedOrder` is true (template board), also rewrites positions.
+ */
+async function syncMissingCardsOntoBoard(
+  boardId: number,
+  options: { reorderToSeedOrder: boolean; label?: string },
+): Promise<SyncBoardResult> {
+  const label = options.label ?? `board id=${boardId}`;
   await syncMissingTemplateLabels(boardId);
 
   const listRows = await db.query.boardLists.findMany({
     where: eq(boardLists.boardId, boardId),
   });
+  const { listByTitle, missing: missingLists } = tryBuildListByTitle(listRows);
+  if (missingLists.length > 0) {
+    return {
+      inserted: 0,
+      listsReordered: 0,
+      skipped: `missing lists (${missingLists.join(", ")})`,
+    };
+  }
+
   const labelRows = await db.query.labels.findMany({
     where: eq(labels.boardId, boardId),
   });
-
-  const listByTitle = buildListByTitle(listRows);
   const labelByKey = buildLabelByKey(labelRows);
 
   const allExistingTitles = new Set<string>();
@@ -219,24 +274,32 @@ async function syncMissingTemplateCards(boardId: number) {
   for (const cardDef of TEMPLATE_CARDS) {
     if (allExistingTitles.has(cardDef.title)) continue;
 
-    // Temporary position; reorderTemplateCardsToSeedOrder places it correctly.
     const list = listByTitle[cardDef.list];
-    const [{ value: maxPosition }] = await db
-      .select({ value: max(cards.position) })
-      .from(cards)
-      .where(eq(cards.listId, list.id));
+    const insertPosition = options.reorderToSeedOrder
+      ? (await db
+          .select({ value: max(cards.position) })
+          .from(cards)
+          .where(eq(cards.listId, list.id))
+          .then((rows) => (rows[0]?.value ?? -1) + 1))
+      : await resolveInsertPosition(list.id, cardDef);
 
-    const nextPosition = (maxPosition ?? -1) + 1;
+    if (!options.reorderToSeedOrder) {
+      await shiftCardsFromPosition(list.id, insertPosition);
+    }
+
     await insertTemplateCard({
       cardDef,
-      position: nextPosition,
+      position: insertPosition,
       listByTitle,
       labelByKey,
     });
+    allExistingTitles.add(cardDef.title);
     inserted += 1;
   }
 
-  const listsReordered = await reorderTemplateCardsToSeedOrder(listByTitle);
+  const listsReordered = options.reorderToSeedOrder
+    ? await reorderTemplateCardsToSeedOrder(listByTitle)
+    : 0;
 
   if (inserted > 0 || listsReordered > 0) {
     const parts: string[] = [];
@@ -244,12 +307,64 @@ async function syncMissingTemplateCards(boardId: number) {
     if (listsReordered > 0) {
       parts.push(`reordered ${listsReordered} list(s)`);
     }
-    console.log(
-      `✅ Synced AMS board template (id=${boardId}): ${parts.join(", ")}`,
-    );
-  } else {
+    console.log(`✅ Synced ${label}: ${parts.join(", ")}`);
+  }
+
+  return { inserted, listsReordered };
+}
+
+async function syncMissingTemplateCards(boardId: number) {
+  const result = await syncMissingCardsOntoBoard(boardId, {
+    reorderToSeedOrder: true,
+    label: `AMS board template (id=${boardId})`,
+  });
+  if (result.inserted === 0 && result.listsReordered === 0) {
     console.log("⏭️  AMS board template already up to date");
   }
+}
+
+/** Backfill missing TEMPLATE_CARDS onto every non-template competition board. */
+export async function syncMissingTemplateCardsOntoCompetitionBoards() {
+  const targets = await db.query.boards.findMany({
+    where: and(eq(boards.isTemplate, false), isNotNull(boards.competitionId)),
+    columns: { id: true, name: true, competitionId: true },
+  });
+
+  let boardsUpdated = 0;
+  let cardsInserted = 0;
+  let boardsSkipped = 0;
+
+  for (const board of targets) {
+    const result = await syncMissingCardsOntoBoard(board.id, {
+      reorderToSeedOrder: false,
+      label: `board «${board.name}» (id=${board.id})`,
+    });
+    if (result.skipped) {
+      boardsSkipped += 1;
+      console.log(
+        `⏭️  Skipped board «${board.name}» (id=${board.id}): ${result.skipped}`,
+      );
+      continue;
+    }
+    if (result.inserted > 0) {
+      boardsUpdated += 1;
+      cardsInserted += result.inserted;
+    }
+  }
+
+  if (boardsUpdated > 0) {
+    console.log(
+      `✅ Backfilled ${cardsInserted} card(s) across ${boardsUpdated} competition board(s)`,
+    );
+  } else {
+    console.log("⏭️  Competition boards already have all template cards");
+  }
+
+  if (boardsSkipped > 0) {
+    console.log(`⚠️  Skipped ${boardsSkipped} board(s) with incomplete lists`);
+  }
+
+  return { boardsUpdated, cardsInserted, boardsSkipped, total: targets.length };
 }
 
 const templateBoardWhere = and(
@@ -345,12 +460,17 @@ export async function seedAmsBoardTemplate() {
     where: templateBoardWhere,
   });
 
+  let templateId: number;
   if (existing) {
     await syncMissingTemplateCards(existing.id);
-    return existing.id;
+    templateId = existing.id;
+  } else {
+    templateId = await createFreshAmsBoardTemplate();
   }
 
-  return createFreshAmsBoardTemplate();
+  await syncMissingTemplateCardsOntoCompetitionBoards();
+
+  return templateId;
 }
 
 /** Deletes the AMS template board (if any) and recreates it from seed data. */
