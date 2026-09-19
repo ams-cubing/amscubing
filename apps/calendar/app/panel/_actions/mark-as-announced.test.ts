@@ -9,6 +9,7 @@ const {
   revalidatePath,
   revalidateTag,
   publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   transaction: vi.fn(),
@@ -18,6 +19,7 @@ const {
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
   publishCompetitionSocialAnnouncement: vi.fn(),
+  refreshTorneoDeRubikCoverBestEffort: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -74,6 +76,7 @@ vi.mock("@/lib/notification-urls", () => ({
 
 vi.mock("@workspace/social", () => ({
   publishCompetitionSocialAnnouncement,
+  refreshTorneoDeRubikCoverBestEffort,
 }));
 
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
@@ -100,6 +103,8 @@ describe("markAsAnnounced", () => {
     revalidatePath.mockReset();
     revalidateTag.mockReset();
     publishCompetitionSocialAnnouncement.mockReset();
+    refreshTorneoDeRubikCoverBestEffort.mockReset();
+    refreshTorneoDeRubikCoverBestEffort.mockResolvedValue(undefined);
   });
 
   it("rejects non-delegates without touching the database", async () => {
@@ -152,22 +157,46 @@ describe("markAsAnnounced", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects when custom social text is missing", async () => {
+  it("announces successfully when custom social text is empty", async () => {
     getSession.mockResolvedValue({
       user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
     });
-    findFirst.mockResolvedValue(confirmedCompetition);
-    publishCompetitionSocialAnnouncement.mockResolvedValue({
-      ok: false,
-      message:
-        "Falta el texto personalizado del post. Complétalo en la tarjeta «Publicación redes Torneo de Rubik» del tablero.",
+    findFirst.mockResolvedValue({
+      ...confirmedCompetition,
+      socialCustomText: null,
+      socialTags: null,
+      socialFlyerUrl: null,
+      capacity: 80,
     });
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: true,
+      wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
+      facebookPostId: "fb_from_wca_intro",
+      instagramMediaId: null,
+      displayName: "Test Open 2026",
+    });
+    transaction.mockImplementation(
+      async (fn: (tx: unknown) => Promise<void>) => {
+        await fn({
+          update: () => ({
+            set: () => ({
+              where: updateWhere,
+            }),
+          }),
+          insert: () => ({ values: insertValues }),
+        });
+      },
+    );
 
     const result = await markAsAnnounced(7);
 
-    expect(result.success).toBe(false);
-    expect(result.message).toContain("texto personalizado");
-    expect(transaction).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(publishCompetitionSocialAnnouncement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        socialCustomText: "",
+      }),
+    );
+    expect(transaction).toHaveBeenCalledOnce();
   });
 
   it("rejects when the WCA URL is not a real competition", async () => {

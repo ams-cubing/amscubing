@@ -88,12 +88,18 @@ describe("saveCompetitionSocialFields", () => {
     expect(dbUpdate).not.toHaveBeenCalled();
   });
 
-  it("returns error when custom text is empty", async () => {
-    const { findFirstCard, findFirstBoard, dbUpdate } = getBoardMocks();
+  it("saves null when custom text is empty", async () => {
+    const { findFirstCard, findFirstBoard, dbUpdate, revalidatePath } =
+      getBoardMocks();
     mockAuthenticatedUser();
     mockBoardAccessAllowed();
     findFirstCard.mockResolvedValue(cardOnBoard(cardId));
     findFirstBoard.mockResolvedValue({ competitionId: 42 });
+
+    const setFn = vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    dbUpdate.mockReturnValue({ set: setFn });
 
     const result = await saveCompetitionSocialFields({
       boardId,
@@ -104,10 +110,17 @@ describe("saveCompetitionSocialFields", () => {
     });
 
     expect(result).toEqual({
-      ok: false,
-      message: "El texto personalizado del post es obligatorio",
+      ok: true,
+      message: "Datos de publicación guardados",
     });
-    expect(dbUpdate).not.toHaveBeenCalled();
+    expect(setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        socialCustomText: null,
+        socialTags: null,
+        socialFlyerUrl: null,
+      }),
+    );
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
   });
 
   it("saves social fields and revalidates", async () => {

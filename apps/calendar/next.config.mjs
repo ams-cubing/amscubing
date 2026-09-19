@@ -7,6 +7,7 @@ const nextConfig = {
     "@workspace/auth",
     "@workspace/social",
   ],
+  serverExternalPackages: ["sharp"],
   images: {
     unoptimized: true,
   },

@@ -45,6 +45,27 @@ export function getMetaConfig():
   };
 }
 
+/** Page token only — enough for cover photo updates (IG id not required). */
+export function getMetaPageConfig():
+  | { ok: true; config: Pick<MetaConfig, "pageId" | "pageAccessToken"> }
+  | { ok: false; message: string } {
+  const pageId = process.env.META_PAGE_ID?.trim();
+  const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
+
+  if (!pageId || !pageAccessToken) {
+    return {
+      ok: false,
+      message:
+        "Falta la configuración de Meta (META_PAGE_ID, META_PAGE_ACCESS_TOKEN). No se puede actualizar la portada.",
+    };
+  }
+
+  return {
+    ok: true,
+    config: { pageId, pageAccessToken },
+  };
+}
+
 import { formatDateRangeEs, formatEventLabels } from "./format";
 
 export type BuildAnnouncementCaptionInput = {
@@ -136,6 +157,54 @@ async function graphPost(
   } catch (error) {
     console.error("Meta Graph POST failed:", error);
     return { ok: false, message: "Error de red al publicar en Meta." };
+  }
+}
+
+async function graphPostMultipart(
+  path: string,
+  fields: Record<string, string>,
+  file: {
+    fieldName: string;
+    filename: string;
+    buffer: Buffer;
+    contentType: string;
+  },
+): Promise<
+  { ok: true; data: Record<string, unknown> } | { ok: false; message: string }
+> {
+  try {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(fields)) {
+      form.append(key, value);
+    }
+    form.append(
+      file.fieldName,
+      new Blob([new Uint8Array(file.buffer)], { type: file.contentType }),
+      file.filename,
+    );
+
+    const response = await fetch(`${GRAPH_BASE}${path}`, {
+      method: "POST",
+      body: form,
+    });
+
+    const json = (await response.json()) as {
+      error?: { message?: string };
+      id?: string;
+      post_id?: string;
+    };
+
+    if (!response.ok || json.error) {
+      return {
+        ok: false,
+        message: json.error?.message ?? `Meta API error (${response.status})`,
+      };
+    }
+
+    return { ok: true, data: json as Record<string, unknown> };
+  } catch (error) {
+    console.error("Meta Graph multipart POST failed:", error);
+    return { ok: false, message: "Error de red al subir imagen a Meta." };
   }
 }
 
@@ -433,4 +502,72 @@ export async function fetchInstagramPermalink(
   } catch {
     return null;
   }
+}
+
+/**
+ * Upload an unpublished photo then set it as the Facebook Page cover.
+ * Requires pages_manage_metadata (in addition to posting scopes).
+ */
+export async function updateFacebookPageCover(
+  imagePng: Buffer,
+): Promise<{ ok: true; photoId: string } | { ok: false; message: string }> {
+  const meta = getMetaPageConfig();
+  if (!meta.ok) {
+    return { ok: false, message: meta.message };
+  }
+
+  const { config } = meta;
+  const uploaded = await graphPostMultipart(
+    `/${config.pageId}/photos`,
+    {
+      published: "false",
+      access_token: config.pageAccessToken,
+    },
+    {
+      fieldName: "source",
+      filename: "torneo-cover.png",
+      buffer: imagePng,
+      contentType: "image/png",
+    },
+  );
+
+  if (!uploaded.ok) {
+    return { ok: false, message: `Facebook cover upload: ${uploaded.message}` };
+  }
+
+  const photoId =
+    typeof uploaded.data.id === "string" ? uploaded.data.id : null;
+  if (!photoId) {
+    return {
+      ok: false,
+      message: "Facebook: la API no devolvió un id de foto para la portada.",
+    };
+  }
+
+  const cover = await graphPost(`/${config.pageId}`, {
+    cover: JSON.stringify({
+      cover_id: photoId,
+      offset_x: 0,
+      offset_y: 0,
+    }),
+    access_token: config.pageAccessToken,
+  });
+
+  if (!cover.ok) {
+    // Fallback endpoint used by some Graph versions / tokens.
+    const alt = await graphPost(`/${config.pageId}/cover_photos`, {
+      photo: photoId,
+      offset_y: "0",
+      no_feed_story: "true",
+      access_token: config.pageAccessToken,
+    });
+    if (!alt.ok) {
+      return {
+        ok: false,
+        message: `Facebook cover set: ${cover.message}`,
+      };
+    }
+  }
+
+  return { ok: true, photoId };
 }

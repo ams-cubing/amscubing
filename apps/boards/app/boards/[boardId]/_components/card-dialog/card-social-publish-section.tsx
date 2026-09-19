@@ -73,7 +73,7 @@ export function CardSocialPublishSection({
 
   const loadPreview = React.useCallback(
     (text: string, tagValue: string, flyer: string | null) => {
-      if (!competition || !text.trim()) {
+      if (!competition) {
         setPreview({ status: "idle" });
         return;
       }
@@ -120,7 +120,7 @@ export function CardSocialPublishSection({
   );
 
   React.useEffect(() => {
-    if (!competition || !customText.trim()) {
+    if (!competition) {
       setPreview({ status: "idle" });
       return;
     }
@@ -164,20 +164,23 @@ export function CardSocialPublishSection({
       <div>
         <h3 className="text-sm font-semibold">Publicación redes</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
-          Texto, etiquetas y flyer para Torneo de Rubik. Fechas, sede,
-          categorías y cupo salen de la WCA.
+          Etiquetas y flyer para Torneo de Rubik. Fechas, sede, categorías y
+          cupo salen de la WCA. El texto personalizado es opcional: si lo dejas
+          vacío, se usa la introducción en español de la página WCA.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`social-text-${cardId}`}>Texto personalizado</Label>
+        <Label htmlFor={`social-text-${cardId}`}>
+          Texto personalizado (opcional)
+        </Label>
         <Textarea
           id={`social-text-${cardId}`}
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
           rows={8}
           disabled={readOnly || pending}
-          placeholder="Historia / copy creativo del anuncio…"
+          placeholder="Historia / copy creativo del anuncio… Si está vacío, se toma de la WCA."
         />
       </div>
 
@@ -250,7 +253,7 @@ export function CardSocialPublishSection({
           <Button
             type="button"
             size="sm"
-            disabled={pending || isUploading || !customText.trim()}
+            disabled={pending || isUploading}
             onClick={handleSave}
           >
             {pending ? "Guardando…" : "Guardar"}

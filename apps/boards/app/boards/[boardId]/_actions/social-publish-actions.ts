@@ -34,14 +34,7 @@ export async function saveCompetitionSocialFields(input: {
     };
   }
 
-  const customText = input.customText.trim();
-  if (!customText) {
-    return {
-      ok: false,
-      message: "El texto personalizado del post es obligatorio",
-    };
-  }
-
+  const customText = input.customText.trim() || null;
   const tags = input.tags.trim() || null;
   const flyerUrl = input.flyerUrl?.trim() || null;
 
