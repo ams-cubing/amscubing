@@ -111,20 +111,18 @@ export function AnnounceDialog({
         </div>
 
         <DialogFooter>
-          <div className="flex w-full items-center justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="ghost" className="min-w-24" disabled={pending}>
-                Volver
-              </Button>
-            </DialogClose>
-            <Button
-              className="min-w-36"
-              disabled={!canSubmit}
-              onClick={handleAnnounce}
-            >
-              {pending ? "Publicando..." : "Anunciar y publicar"}
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full sm:w-auto" disabled={pending}>
+              Volver
             </Button>
-          </div>
+          </DialogClose>
+          <Button
+            className="w-full sm:w-auto"
+            disabled={!canSubmit}
+            onClick={handleAnnounce}
+          >
+            {pending ? "Publicando..." : "Anunciar y publicar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

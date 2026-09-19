@@ -236,7 +236,7 @@ export function CardDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[min(92vh,900px)] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
+        className="flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 md:top-[50%] md:left-[50%] md:h-auto md:max-h-[min(92vh,900px)] md:max-w-[calc(100%-2rem)] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg md:border lg:max-w-5xl"
         showCloseButton
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
@@ -271,8 +271,8 @@ export function CardDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.85fr)]">
-          <div className="min-h-0 space-y-6 overflow-y-auto px-4 py-4 sm:px-6">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.85fr)] lg:overflow-hidden">
+          <div className="min-w-0 space-y-6 px-4 py-4 sm:px-6 lg:min-h-0 lg:overflow-y-auto">
             <div className="space-y-3">
               <Input
                 value={title}

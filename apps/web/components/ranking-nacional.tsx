@@ -113,10 +113,10 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
         </div>
 
         <div className="overflow-hidden rounded-2xl border-2 border-white/15">
-          <div className="grid grid-cols-[70px_1fr_120px] gap-3 bg-white/5 px-4 py-4 text-xs font-bold uppercase tracking-[0.06em] text-white/52 md:grid-cols-[80px_1fr_150px_180px] md:px-7">
+          <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] gap-2 bg-white/5 px-3 py-4 text-xs font-bold uppercase tracking-[0.06em] text-white/52 sm:gap-3 sm:px-4 md:grid-cols-[80px_minmax(0,1fr)_150px_180px] md:px-7">
             <div>#</div>
             <div>Competidor</div>
-            <div>Resultado</div>
+            <div className="text-right md:text-left">Resultado</div>
             <div className="hidden md:block">Estado</div>
           </div>
 
@@ -127,25 +127,25 @@ export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
                 href={row.profileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`grid grid-cols-[70px_1fr_120px] gap-3 border-t border-white/10 px-4 py-4 transition-colors hover:bg-white/8 md:grid-cols-[80px_1fr_150px_180px] md:px-7 ${
+                className={`grid grid-cols-[2.25rem_minmax(0,1fr)_auto] gap-2 border-t border-white/10 px-3 py-4 transition-colors hover:bg-white/8 sm:gap-3 sm:px-4 md:grid-cols-[80px_minmax(0,1fr)_150px_180px] md:px-7 ${
                   index === 0 ? "bg-[rgba(254,80,0,0.08)]" : ""
                 }`}
               >
                 <div className="ams-display text-xl text-ams-orange">
                   {row.countryRank}
                 </div>
-                <div>
-                  <p className="ams-heading text-sm font-bold leading-tight text-white md:text-base">
+                <div className="min-w-0">
+                  <p className="ams-heading truncate text-sm font-bold leading-tight text-white md:text-base">
                     {row.name}
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-white/45 md:hidden">
+                  <p className="mt-1 truncate text-xs font-semibold text-white/45 md:hidden">
                     {row.state}
                   </p>
                 </div>
-                <div className="ams-display text-lg text-white">
+                <div className="ams-display shrink-0 text-right text-base text-white tabular-nums sm:text-lg md:text-left">
                   {row.result}
                 </div>
-                <div className="hidden text-sm font-semibold text-white/62 md:block">
+                <div className="hidden min-w-0 truncate text-sm font-semibold text-white/62 md:block">
                   {row.state}
                 </div>
               </a>

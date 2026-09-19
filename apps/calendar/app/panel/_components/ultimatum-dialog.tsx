@@ -181,16 +181,18 @@ export function UltimatumDialog({
           </div>
 
           <DialogFooter>
-            <div className="flex w-full items-center justify-end gap-2">
-              <DialogClose type="button" asChild>
-                <Button variant="ghost" className="min-w-24">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={pending} className="min-w-30">
-                {pending ? "Enviando..." : "Enviar ultimátum"}
+            <DialogClose type="button" asChild>
+              <Button variant="ghost" className="w-full sm:w-auto">
+                Cancelar
               </Button>
-            </div>
+            </DialogClose>
+            <Button
+              type="submit"
+              disabled={pending}
+              className="w-full sm:w-auto"
+            >
+              {pending ? "Enviando..." : "Enviar ultimátum"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

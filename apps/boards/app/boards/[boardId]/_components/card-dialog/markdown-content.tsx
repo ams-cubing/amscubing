@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@workspace/ui/lib/utils";
 
 export const descriptionProseClassName = cn(
-  "description-prose text-sm text-muted-foreground",
+  "description-prose min-w-0 break-words text-sm text-muted-foreground",
   "[&_.tiptap]:outline-none",
   "[&_p]:leading-relaxed [&_p:not(:last-child)]:mb-3",
   "[&_strong]:font-semibold [&_strong]:text-foreground",

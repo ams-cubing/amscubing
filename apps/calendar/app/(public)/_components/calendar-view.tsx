@@ -330,9 +330,9 @@ export function CalendarView({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0 top-0 left-0 md:top-[50%] md:left-[50%] md:h-auto md:max-h-[min(90dvh,900px)] md:w-[calc(100%-2rem)] md:max-w-2xl md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg md:border">
           <DialogHeader>
-            <DialogTitle className="text-2xl">
+            <DialogTitle className="min-w-0 pr-8 text-2xl break-words">
               {selectedCompetition?.statusPublic === "announced" ||
               isDelegate ? (
                 selectedCompetition?.wcaCompetitionUrl ? (
@@ -340,10 +340,12 @@ export function CalendarView({
                     href={selectedCompetition.wcaCompetitionUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline hover:text-primary flex items-center gap-1"
+                    className="flex min-w-0 items-start gap-1 hover:text-primary hover:underline"
                   >
-                    {selectedCompetition.name}
-                    <ExternalLink />
+                    <span className="min-w-0 break-words">
+                      {selectedCompetition.name}
+                    </span>
+                    <ExternalLink className="mt-1 size-5 shrink-0" />
                   </Link>
                 ) : (
                   selectedCompetition?.name ||

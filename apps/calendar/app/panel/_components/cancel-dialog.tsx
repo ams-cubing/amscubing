@@ -60,21 +60,19 @@ export function CancelDialog({
         </div>
 
         <DialogFooter>
-          <div className="flex w-full items-center justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="ghost" className="min-w-24" disabled={pending}>
-                Volver
-              </Button>
-            </DialogClose>
-            <Button
-              variant="destructive"
-              className="min-w-30"
-              disabled={pending}
-              onClick={handleCancel}
-            >
-              {pending ? "Cancelando..." : "Cancelar competencia"}
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full sm:w-auto" disabled={pending}>
+              Volver
             </Button>
-          </div>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            className="w-full sm:w-auto"
+            disabled={pending}
+            onClick={handleCancel}
+          >
+            {pending ? "Cancelando..." : "Cancelar competencia"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
