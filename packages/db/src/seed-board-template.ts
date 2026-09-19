@@ -137,6 +137,60 @@ async function syncMissingTemplateLabels(boardId: number) {
   );
 }
 
+/**
+ * Places template cards in TEMPLATE_CARDS order within each list.
+ * Non-template (custom) cards keep their relative order after template cards.
+ */
+async function reorderTemplateCardsToSeedOrder(
+  listByTitle: Record<(typeof TEMPLATE_LISTS)[number], ListRow>,
+) {
+  const templateTitlesByList = Object.fromEntries(
+    TEMPLATE_LISTS.map((title) => [title, [] as string[]]),
+  ) as Record<(typeof TEMPLATE_LISTS)[number], string[]>;
+
+  for (const cardDef of TEMPLATE_CARDS) {
+    templateTitlesByList[cardDef.list].push(cardDef.title);
+  }
+
+  let reordered = 0;
+  for (const listTitle of TEMPLATE_LISTS) {
+    const list = listByTitle[listTitle];
+    const listCards = await db.query.cards.findMany({
+      where: eq(cards.listId, list.id),
+      columns: { id: true, title: true, position: true },
+      orderBy: (c, { asc }) => [asc(c.position)],
+    });
+
+    const byTitle = new Map(listCards.map((card) => [card.title, card]));
+    const templateTitleOrder = templateTitlesByList[listTitle];
+    const templateTitleSet = new Set(templateTitleOrder);
+
+    const orderedIds: number[] = [];
+    for (const title of templateTitleOrder) {
+      const card = byTitle.get(title);
+      if (card) orderedIds.push(card.id);
+    }
+    for (const card of listCards) {
+      if (!templateTitleSet.has(card.title)) orderedIds.push(card.id);
+    }
+
+    const needsReorder = orderedIds.some(
+      (id, index) => listCards[index]?.id !== id,
+    );
+    if (!needsReorder) continue;
+
+    for (const [position, cardId] of orderedIds.entries()) {
+      await db
+        .update(cards)
+        .set({ position })
+        .where(eq(cards.id, cardId));
+    }
+    reordered += 1;
+  }
+
+  return reordered;
+}
+
 async function syncMissingTemplateCards(boardId: number) {
   await syncMissingTemplateLabels(boardId);
 
@@ -165,6 +219,7 @@ async function syncMissingTemplateCards(boardId: number) {
   for (const cardDef of TEMPLATE_CARDS) {
     if (allExistingTitles.has(cardDef.title)) continue;
 
+    // Temporary position; reorderTemplateCardsToSeedOrder places it correctly.
     const list = listByTitle[cardDef.list];
     const [{ value: maxPosition }] = await db
       .select({ value: max(cards.position) })
@@ -181,9 +236,16 @@ async function syncMissingTemplateCards(boardId: number) {
     inserted += 1;
   }
 
-  if (inserted > 0) {
+  const listsReordered = await reorderTemplateCardsToSeedOrder(listByTitle);
+
+  if (inserted > 0 || listsReordered > 0) {
+    const parts: string[] = [];
+    if (inserted > 0) parts.push(`${inserted} missing card(s)`);
+    if (listsReordered > 0) {
+      parts.push(`reordered ${listsReordered} list(s)`);
+    }
     console.log(
-      `✅ Synced ${inserted} missing card(s) onto AMS board template (id=${boardId})`,
+      `✅ Synced AMS board template (id=${boardId}): ${parts.join(", ")}`,
     );
   } else {
     console.log("⏭️  AMS board template already up to date");
