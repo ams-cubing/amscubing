@@ -5,6 +5,15 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 
 import { Button } from "@workspace/ui/components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
 
 import {
   completeInstagramPublish,
@@ -82,6 +91,7 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
   const title =
     row.preview && row.preview.ok
@@ -98,13 +108,6 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
   const canMarkManual = row.status === "missing";
 
   const runAction = (action: "retry" | "ig" | "manual") => {
-    if (action === "manual") {
-      const confirmed = window.confirm(
-        "¿Marcar como publicada manualmente? No se enviará nada a Meta.",
-      );
-      if (!confirmed) return;
-    }
-
     setMessage(null);
     setError(null);
     startTransition(async () => {
@@ -116,6 +119,9 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
             : await markAsManuallyPublished(row.id);
       if (result.ok) {
         setMessage(result.message);
+        if (action === "manual") {
+          setManualDialogOpen(false);
+        }
         router.refresh();
       } else {
         setError(result.message);
@@ -221,9 +227,9 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
             variant="outline"
             size="sm"
             disabled={pending}
-            onClick={() => runAction("manual")}
+            onClick={() => setManualDialogOpen(true)}
           >
-            {pending ? "Guardando…" : "Marcar como publicada manualmente"}
+            Marcar como publicada manualmente
           </Button>
         ) : null}
       </div>
@@ -231,7 +237,7 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
       {message ? (
         <p className="ams-copy mt-3 text-sm text-emerald-800">{message}</p>
       ) : null}
-      {error ? (
+      {error && !manualDialogOpen ? (
         <p className="ams-copy mt-3 text-sm text-rose-700">{error}</p>
       ) : null}
 
@@ -276,6 +282,38 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
           )}
         </div>
       ) : null}
+
+      <Dialog
+        open={manualDialogOpen}
+        onOpenChange={(open) => {
+          setManualDialogOpen(open);
+          if (!open) setError(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Marcar como publicada manualmente</DialogTitle>
+            <DialogDescription>
+              ¿Marcar{" "}
+              <span className="font-semibold text-foreground">{title}</span>{" "}
+              como publicada manualmente? No se enviará nada a Meta.
+            </DialogDescription>
+          </DialogHeader>
+          {error ? (
+            <p className="ams-copy text-sm text-rose-700">{error}</p>
+          ) : null}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost" disabled={pending}>
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button disabled={pending} onClick={() => runAction("manual")}>
+              {pending ? "Guardando…" : "Marcar como manual"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
