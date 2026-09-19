@@ -77,30 +77,23 @@ export default async function AdminRedesPage() {
 
   const list: SocialPostRow[] = await Promise.all(
     rows.map(async (row) => {
-      const preview =
-        row.wcaCompetitionUrl && row.socialCustomText?.trim()
-          ? await buildAnnouncementPreview({
-              wcaCompetitionUrl: row.wcaCompetitionUrl,
-              city: row.city,
-              stateName: row.state?.name ?? null,
-              name: row.name,
-              startDate: row.startDate,
-              endDate: row.endDate,
-              capacity: row.capacity,
-              socialCustomText: row.socialCustomText,
-              socialTags: row.socialTags,
-              socialFlyerUrl: row.socialFlyerUrl,
-            })
-          : row.socialCustomText?.trim()
-            ? {
-                ok: false as const,
-                message: "Falta la URL de la competencia en la WCA.",
-              }
-            : {
-                ok: false as const,
-                message:
-                  "Falta el texto personalizado (tarjeta Publicación redes Torneo de Rubik).",
-              };
+      const preview = row.wcaCompetitionUrl
+        ? await buildAnnouncementPreview({
+            wcaCompetitionUrl: row.wcaCompetitionUrl,
+            city: row.city,
+            stateName: row.state?.name ?? null,
+            name: row.name,
+            startDate: row.startDate,
+            endDate: row.endDate,
+            capacity: row.capacity,
+            socialCustomText: row.socialCustomText,
+            socialTags: row.socialTags,
+            socialFlyerUrl: row.socialFlyerUrl,
+          })
+        : {
+            ok: false as const,
+            message: "Falta la URL de la competencia en la WCA.",
+          };
 
       const instagramUrl = row.instagramMediaId
         ? await fetchInstagramPermalink(row.instagramMediaId)

@@ -1,4 +1,6 @@
 export { extractFirstImageUrl } from "./competition-logo";
+export { extractSpanishIntroFromInformation } from "./competition-information";
+
 export {
   extractWcaCompetitionId,
   normalizeWcaCompetitionUrl,
@@ -22,6 +24,7 @@ export {
   publishCompetitionSocialAnnouncement,
   buildAnnouncementPreview,
   completeInstagramAnnouncement,
+  resolveAnnouncementBodyText,
   type AnnounceSocialPublishInput,
   type AnnounceSocialPublishResult,
   type AnnouncementPreviewResult,

@@ -3,6 +3,7 @@ import {
   publishInstagramOnly,
   publishToTorneoDeRubik,
 } from "./meta-publish";
+import { extractSpanishIntroFromInformation } from "./competition-information";
 import {
   fetchWcaCompetition,
   normalizeWcaCompetitionUrl,
@@ -16,8 +17,8 @@ export type AnnounceSocialPublishInput = {
   startDate: string;
   endDate: string;
   capacity?: number | null;
-  /** Required before announce. */
-  socialCustomText: string;
+  /** Optional; falls back to Spanish intro from WCA information. */
+  socialCustomText?: string | null;
   socialTags?: string | null;
   socialFlyerUrl?: string | null;
 };
@@ -45,18 +46,16 @@ export type AnnouncementPreviewResult =
     }
   | { ok: false; message: string };
 
-function requireCustomText(
+/** Prefer custom text; else Spanish intro from WCA information; else empty. */
+export function resolveAnnouncementBodyText(
   customText: string | null | undefined,
-): { ok: true; text: string } | { ok: false; message: string } {
-  const text = customText?.trim() ?? "";
-  if (!text) {
-    return {
-      ok: false,
-      message:
-        "Falta el texto personalizado del post. Complétalo en la tarjeta «Publicación redes Torneo de Rubik» del tablero.",
-    };
+  information: string | null | undefined,
+): string {
+  const trimmed = customText?.trim() ?? "";
+  if (trimmed) {
+    return trimmed;
   }
-  return { ok: true, text };
+  return extractSpanishIntroFromInformation(information) ?? "";
 }
 
 function resolveImageUrl(
@@ -68,17 +67,12 @@ function resolveImageUrl(
 }
 
 /**
- * Validates WCA URL + required custom text, then publishes to Torneo de Rubik.
- * Image: flyer → WCA logo → FB link-only.
+ * Validates WCA URL, resolves intro text (custom or WCA information), then
+ * publishes to Torneo de Rubik. Image: flyer → WCA logo → FB link-only.
  */
 export async function publishCompetitionSocialAnnouncement(
   input: AnnounceSocialPublishInput,
 ): Promise<AnnounceSocialPublishResult> {
-  const custom = requireCustomText(input.socialCustomText);
-  if (!custom.ok) {
-    return { ok: false, message: custom.message };
-  }
-
   const rawUrl = input.wcaCompetitionUrl?.trim() ?? "";
   if (!rawUrl) {
     return {
@@ -95,6 +89,11 @@ export async function publishCompetitionSocialAnnouncement(
     return { ok: false, message: wca.message };
   }
 
+  const bodyText = resolveAnnouncementBodyText(
+    input.socialCustomText,
+    wca.competition.information,
+  );
+
   const displayName =
     wca.competition.shortName ??
     wca.competition.name ??
@@ -108,7 +107,7 @@ export async function publishCompetitionSocialAnnouncement(
     startDate: input.startDate,
     endDate: input.endDate,
     wcaUrl: wca.competition.url,
-    customText: custom.text,
+    customText: bodyText,
     tags: input.socialTags,
     venueName: wca.competition.venueName,
     venueAddress: wca.competition.venueAddress,
@@ -141,11 +140,6 @@ export async function publishCompetitionSocialAnnouncement(
 export async function buildAnnouncementPreview(
   input: AnnounceSocialPublishInput,
 ): Promise<AnnouncementPreviewResult> {
-  const custom = requireCustomText(input.socialCustomText);
-  if (!custom.ok) {
-    return { ok: false, message: custom.message };
-  }
-
   const rawUrl = input.wcaCompetitionUrl?.trim() ?? "";
   if (!rawUrl) {
     return {
@@ -158,6 +152,11 @@ export async function buildAnnouncementPreview(
   if (!wca.ok) {
     return { ok: false, message: wca.message };
   }
+
+  const bodyText = resolveAnnouncementBodyText(
+    input.socialCustomText,
+    wca.competition.information,
+  );
 
   const displayName =
     wca.competition.shortName ??
@@ -182,7 +181,7 @@ export async function buildAnnouncementPreview(
       startDate: input.startDate,
       endDate: input.endDate,
       wcaUrl: wca.competition.url,
-      customText: custom.text,
+      customText: bodyText,
       tags: input.socialTags,
       venueName: wca.competition.venueName,
       venueAddress: wca.competition.venueAddress,
