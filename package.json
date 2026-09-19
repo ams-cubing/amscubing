@@ -18,7 +18,7 @@
     "db:generate": "pnpm --filter @workspace/db db:generate",
     "db:studio": "pnpm --filter @workspace/db db:studio",
     "test": "turbo test",
-    "clean": "rm -rf .turbo node_modules coverage apps/*/.next apps/*/.turbo apps/*/node_modules packages/*/dist packages/*/node_modules"
+    "clean": "rm -rf .turbo .pnpm-store node_modules coverage apps/*/.next apps/*/.turbo apps/*/node_modules packages/*/dist packages/*/node_modules"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
