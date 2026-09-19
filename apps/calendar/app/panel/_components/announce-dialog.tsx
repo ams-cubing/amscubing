@@ -112,7 +112,11 @@ export function AnnounceDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="ghost" className="w-full sm:w-auto" disabled={pending}>
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto"
+              disabled={pending}
+            >
               Volver
             </Button>
           </DialogClose>

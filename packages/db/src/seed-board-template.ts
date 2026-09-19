@@ -276,11 +276,11 @@ async function syncMissingCardsOntoBoard(
 
     const list = listByTitle[cardDef.list];
     const insertPosition = options.reorderToSeedOrder
-      ? (await db
+      ? await db
           .select({ value: max(cards.position) })
           .from(cards)
           .where(eq(cards.listId, list.id))
-          .then((rows) => (rows[0]?.value ?? -1) + 1))
+          .then((rows) => (rows[0]?.value ?? -1) + 1)
       : await resolveInsertPosition(list.id, cardDef);
 
     if (!options.reorderToSeedOrder) {
