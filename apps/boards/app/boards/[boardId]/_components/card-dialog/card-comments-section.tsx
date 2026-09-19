@@ -55,7 +55,7 @@ export function CardCommentsSection({
               </Avatar>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="min-w-0 break-words text-sm font-medium">
+                  <span className="min-w-0 wrap-break-word text-sm font-medium">
                     {comment.author.name}
                   </span>
                   <span className="text-xs text-muted-foreground">

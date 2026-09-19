@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@workspace/db";
@@ -20,20 +21,33 @@ export const metadata: Metadata = {
     "Revisa y reintenta publicaciones de competencias en Torneo de Rubik.",
 };
 
+function todayMexicoIsoDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+  }).format(new Date());
+}
+
 function socialStatus(
   facebookPostId: string | null,
   instagramMediaId: string | null,
+  socialPublishedManually: boolean,
 ): SocialPostRow["status"] {
   if (facebookPostId && instagramMediaId) return "fb_ig";
   if (facebookPostId) return "fb_only";
+  if (socialPublishedManually) return "manual";
   return "missing";
 }
 
 export default async function AdminRedesPage() {
+  await connection();
+
+  const today = todayMexicoIsoDate();
+
   const rows = await db.query.competitions.findMany({
     where: eq(competitions.statusPublic, "announced"),
     orderBy: [
-      sql`${competitions.announcedPostedAt} DESC NULLS LAST`,
+      // Unpublished (no FB id and not manual) first, then by start date desc
+      sql`CASE WHEN ${competitions.facebookPostId} IS NULL AND ${competitions.socialPublishedManually} = false THEN 0 ELSE 1 END`,
       desc(competitions.startDate),
     ],
     columns: {
@@ -47,6 +61,7 @@ export default async function AdminRedesPage() {
       announcedPostedAt: true,
       facebookPostId: true,
       instagramMediaId: true,
+      socialPublishedManually: true,
       socialCustomText: true,
       socialTags: true,
       socialFlyerUrl: true,
@@ -54,7 +69,7 @@ export default async function AdminRedesPage() {
     with: {
       state: { columns: { name: true } },
     },
-    limit: 100,
+    limit: 300,
   });
 
   const list: SocialPostRow[] = await Promise.all(
@@ -94,6 +109,7 @@ export default async function AdminRedesPage() {
         city: row.city,
         startDate: row.startDate,
         endDate: row.endDate,
+        isPast: row.endDate < today,
         wcaCompetitionUrl: row.wcaCompetitionUrl,
         announcedPostedAt: row.announcedPostedAt?.toISOString() ?? null,
         facebookPostId: row.facebookPostId,
@@ -102,7 +118,11 @@ export default async function AdminRedesPage() {
           : null,
         instagramMediaId: row.instagramMediaId,
         instagramUrl,
-        status: socialStatus(row.facebookPostId, row.instagramMediaId),
+        status: socialStatus(
+          row.facebookPostId,
+          row.instagramMediaId,
+          row.socialPublishedManually,
+        ),
         preview,
       };
     }),
@@ -120,7 +140,8 @@ export default async function AdminRedesPage() {
         <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-black/65">
           Competencias anunciadas con estado de Facebook e Instagram. El copy
           creativo, etiquetas y flyer viven en la tarjeta del tablero; aquí
-          puedes ver el preview, reintentar o completar Instagram.
+          puedes ver el preview, reintentar, completar Instagram o marcar como
+          publicada manualmente.
         </p>
       </header>
 

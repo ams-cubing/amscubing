@@ -8,6 +8,7 @@ import { Button } from "@workspace/ui/components/button";
 
 import {
   completeInstagramPublish,
+  markAsManuallyPublished,
   retrySocialPublish,
 } from "@/app/admin/redes/actions";
 
@@ -17,13 +18,14 @@ export type SocialPostRow = {
   city: string;
   startDate: string;
   endDate: string;
+  isPast: boolean;
   wcaCompetitionUrl: string | null;
   announcedPostedAt: string | null;
   facebookPostId: string | null;
   facebookUrl: string | null;
   instagramMediaId: string | null;
   instagramUrl: string | null;
-  status: "fb_ig" | "fb_only" | "missing";
+  status: "fb_ig" | "fb_only" | "manual" | "missing";
   preview:
     | {
         ok: true;
@@ -44,6 +46,8 @@ function statusLabel(status: SocialPostRow["status"]) {
       return "FB + IG";
     case "fb_only":
       return "Solo FB";
+    case "manual":
+      return "Manual";
     case "missing":
       return "Sin publicar";
   }
@@ -55,6 +59,8 @@ function statusClass(status: SocialPostRow["status"]) {
       return "bg-emerald-100 text-emerald-900";
     case "fb_only":
       return "bg-amber-100 text-amber-900";
+    case "manual":
+      return "bg-sky-100 text-sky-900";
     case "missing":
       return "bg-rose-100 text-rose-900";
   }
@@ -88,17 +94,27 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
       ? formatDate(row.startDate)
       : `${formatDate(row.startDate)} – ${formatDate(row.endDate)}`;
 
-  const canRetry = !row.facebookPostId;
+  const canRetry = row.status === "missing";
   const canCompleteIg = Boolean(row.facebookPostId) && !row.instagramMediaId;
+  const canMarkManual = row.status === "missing";
 
-  const runAction = (action: "retry" | "ig") => {
+  const runAction = (action: "retry" | "ig" | "manual") => {
+    if (action === "manual") {
+      const confirmed = window.confirm(
+        "¿Marcar como publicada manualmente? No se enviará nada a Meta.",
+      );
+      if (!confirmed) return;
+    }
+
     setMessage(null);
     setError(null);
     startTransition(async () => {
       const result =
         action === "retry"
           ? await retrySocialPublish(row.id)
-          : await completeInstagramPublish(row.id);
+          : action === "ig"
+            ? await completeInstagramPublish(row.id)
+            : await markAsManuallyPublished(row.id);
       if (result.ok) {
         setMessage(result.message);
         router.refresh();
@@ -121,6 +137,11 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
             >
               {statusLabel(row.status)}
             </span>
+            {row.isPast ? (
+              <span className="ams-heading rounded-full bg-black/5 px-2.5 py-1 text-xs font-bold text-black/55">
+                Pasada
+              </span>
+            ) : null}
           </div>
           <p className="ams-copy text-sm text-black/60">
             {row.city} · {dateLabel}
@@ -198,6 +219,17 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
             onClick={() => runAction("ig")}
           >
             {pending ? "Publicando…" : "Completar Instagram"}
+          </Button>
+        ) : null}
+        {canMarkManual ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={() => runAction("manual")}
+          >
+            {pending ? "Guardando…" : "Marcar como publicada manualmente"}
           </Button>
         ) : null}
       </div>
