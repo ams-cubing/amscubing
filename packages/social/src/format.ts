@@ -19,20 +19,31 @@ const EVENT_LABELS: Record<string, string> = {
   "333mbf": "Multi-BLD",
 };
 
-const MONTHS_ES_SHORT = [
-  "ENE",
-  "FEB",
-  "MAR",
-  "ABR",
-  "MAY",
-  "JUN",
-  "JUL",
-  "AGO",
-  "SEP",
-  "OCT",
-  "NOV",
-  "DIC",
+/** Full Spanish month names (uppercase) for Canva-style cover dates. */
+const MONTHS_ES_COVER = [
+  "ENERO",
+  "FEBRERO",
+  "MARZO",
+  "ABRIL",
+  "MAYO",
+  "JUNIO",
+  "JULIO",
+  "AGOSTO",
+  "SEPTIEMBRE",
+  "OCTUBRE",
+  "NOVIEMBRE",
+  "DICIEMBRE",
 ] as const;
+
+/** Cover state labels that differ from a plain uppercase name. */
+const COVER_STATE_LABELS: Record<string, string> = {
+  "baja california": "B. CALIFORNIA",
+  "baja california sur": "B. C. SUR",
+  "ciudad de mexico": "CDMX",
+  "ciudad de méxico": "CDMX",
+  "estado de mexico": "EDOMEX",
+  "estado de méxico": "EDOMEX",
+};
 
 export function formatEventLabels(eventIds: string[]): string {
   if (eventIds.length === 0) return "";
@@ -69,26 +80,75 @@ export function formatPlaceLine(
   return `${city}${separator}${state}`;
 }
 
-/** Cover-style date range: `16 MAY - 17 MAY` or `16 MAY` when same day. */
+/**
+ * City-only label for cover slots. Strips a trailing `, State` when present
+ * so script text does not repeat the state line.
+ */
+export function formatCoverCityLine(
+  cityName: string | null | undefined,
+  stateName?: string | null,
+): string {
+  const city = (cityName ?? "").trim();
+  if (!city) return "";
+
+  const state = (stateName ?? "").trim();
+  if (state) {
+    const suffix = `, ${state}`;
+    if (city.toLowerCase().endsWith(suffix.toLowerCase())) {
+      return city.slice(0, city.length - suffix.length).trim();
+    }
+  }
+
+  if (city.includes(",")) {
+    return city.split(",")[0]!.trim();
+  }
+
+  return city;
+}
+
+/** Uppercase state label for the cover (e.g. Baja California → B. CALIFORNIA). */
+export function formatCoverStateLabel(
+  stateName: string | null | undefined,
+): string {
+  const state = (stateName ?? "").trim();
+  if (!state) return "";
+
+  const key = state.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const mapped =
+    COVER_STATE_LABELS[state.toLowerCase()] ?? COVER_STATE_LABELS[key];
+  if (mapped) return mapped;
+
+  return state.toLocaleUpperCase("es-MX");
+}
+
+/**
+ * Cover-style date range like Canva: `4-5 ABRIL`, `5 ABRIL`, or
+ * `28 ABRIL - 1 MAYO` when the range crosses months.
+ */
 export function formatCoverDateRange(
   startDate: string,
   endDate?: string | null,
 ): string {
   const start = parseIsoParts(startDate);
   if (!start) return startDate;
-  const startLabel = `${pad2(start.day)} ${MONTHS_ES_SHORT[start.month - 1]}`;
+  const startMonth = MONTHS_ES_COVER[start.month - 1]!;
 
   if (!endDate || endDate === startDate) {
-    return startLabel;
+    return `${start.day} ${startMonth}`;
   }
 
   const end = parseIsoParts(endDate);
   if (!end) {
-    return `${startLabel} - ${endDate}`;
+    return `${start.day} ${startMonth} - ${endDate}`;
   }
 
-  const endLabel = `${pad2(end.day)} ${MONTHS_ES_SHORT[end.month - 1]}`;
-  return `${startLabel} - ${endLabel}`;
+  const endMonth = MONTHS_ES_COVER[end.month - 1]!;
+
+  if (start.year === end.year && start.month === end.month) {
+    return `${start.day}-${end.day} ${startMonth}`;
+  }
+
+  return `${start.day} ${startMonth} - ${end.day} ${endMonth}`;
 }
 
 /** Cover registration window from ISO datetimes or dates. */
@@ -131,10 +191,6 @@ function isoToDatePart(value: string | null | undefined): string | null {
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString().slice(0, 10);
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
 }
 
 function parseIsoParts(isoDate: string) {

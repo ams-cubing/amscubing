@@ -7,22 +7,26 @@ import { Resvg } from "@resvg/resvg-js";
 import sharp from "sharp";
 
 import {
+  formatCoverCityLine,
   formatCoverDateRange,
-  formatCoverRegistrationRange,
-  formatPlaceLine,
+  formatCoverStateLabel,
 } from "./format";
 
 export const COVER_WIDTH = 1640;
 export const COVER_HEIGHT = 924;
 export const COVER_MAX_SLOTS = 9;
-export const COVER_COLS = 3;
-export const COVER_ROWS = 3;
+
+const COVER_H_PADDING = 48;
+const COVER_V_PADDING = 36;
+const ROW_GAP = 28;
+const LOGO_TEXT_GAP = 30;
+const TEXT_LINE_GAP = 4;
+const CELL_BOTTOM_PAD = 18;
 
 const LOGO_FETCH_TIMEOUT_MS = 8_000;
 const LOGO_MAX_BYTES = 8 * 1024 * 1024;
 
 const TITLE_YELLOW = "#FFE600";
-const DATE_MAGENTA = "#FF2D9B";
 const LABEL_WHITE = "#FFFFFF";
 
 /**
@@ -127,9 +131,9 @@ export type CoverSlotInput = {
 };
 
 export type CoverSlot = {
-  placeLine: string;
+  cityLine: string;
+  stateLine: string;
   eventDates: string;
-  registrationDates: string | null;
   logoBuffer: Buffer | null;
 };
 
@@ -138,8 +142,22 @@ export function selectCoverCompetitions<T>(competitions: T[]): T[] {
   return competitions.slice(0, COVER_MAX_SLOTS);
 }
 
+/**
+ * Canva-style row packing: one row up to 5; otherwise top = ceil(n/2),
+ * bottom = floor(n/2) → 6→3+3, 7→4+3, 8→4+4, 9→5+4.
+ */
+export function coverRowCounts(slotCount: number): number[] {
+  const n = Math.max(0, Math.min(slotCount, COVER_MAX_SLOTS));
+  if (n === 0) return [];
+  if (n <= 5) return [n];
+  const top = Math.ceil(n / 2);
+  const bottom = Math.floor(n / 2);
+  return [top, bottom];
+}
+
 async function fetchLogoBuffer(
   logoUrl: string | null | undefined,
+  maxSide: number,
 ): Promise<Buffer | null> {
   const url = logoUrl?.trim();
   if (!url) return null;
@@ -155,7 +173,7 @@ async function fetchLogoBuffer(
       return null;
     }
     return await sharp(buffer)
-      .resize(220, 220, { fit: "inside", withoutEnlargement: true })
+      .resize(maxSide, maxSide, { fit: "inside", withoutEnlargement: true })
       .png()
       .toBuffer();
   } catch {
@@ -163,22 +181,29 @@ async function fetchLogoBuffer(
   }
 }
 
+/** Logo max side scales with how dense the densest row will be. */
+function logoMaxSideForCount(slotCount: number): number {
+  const rows = coverRowCounts(slotCount);
+  const maxCols = Math.max(1, ...rows);
+  // Logos dominate the cell in Canva; keep them large relative to the text stack.
+  if (maxCols >= 5) return 168;
+  if (maxCols === 4) return 188;
+  if (maxCols === 3) return 210;
+  return 230;
+}
+
 export async function prepareCoverSlots(
   inputs: CoverSlotInput[],
 ): Promise<CoverSlot[]> {
   const selected = selectCoverCompetitions(inputs);
+  const logoMax = logoMaxSideForCount(selected.length);
   return Promise.all(
     selected.map(async (input) => {
-      const placeLine = formatPlaceLine(input.city, input.stateName, {
-        separator: ". ",
-      });
+      const cityLine = formatCoverCityLine(input.city, input.stateName);
+      const stateLine = formatCoverStateLabel(input.stateName);
       const eventDates = formatCoverDateRange(input.startDate, input.endDate);
-      const registrationDates = formatCoverRegistrationRange(
-        input.registrationOpen,
-        input.registrationClose,
-      );
-      const logoBuffer = await fetchLogoBuffer(input.logoUrl);
-      return { placeLine, eventDates, registrationDates, logoBuffer };
+      const logoBuffer = await fetchLogoBuffer(input.logoUrl, logoMax);
+      return { cityLine, stateLine, eventDates, logoBuffer };
     }),
   );
 }
@@ -245,34 +270,96 @@ function renderTextLayer(options: {
   return Buffer.from(resvg.render().asPng());
 }
 
-/** Keep place titles inside a column (~546px) with the script face. */
-function placeFontSize(placeLine: string): number {
-  const len = placeLine.length;
-  if (len > 28) return 26;
-  if (len > 22) return 30;
-  if (len > 16) return 36;
-  return 42;
+/**
+ * Canva hierarchy: state (bold caps) is dominant, date is medium, city script
+ * is the smallest decorative line under the logo.
+ */
+function stateFontSize(cols: number): number {
+  if (cols >= 5) return 28;
+  if (cols === 4) return 32;
+  if (cols === 3) return 36;
+  return 40;
 }
+
+function dateFontSize(cols: number): number {
+  // Date sits between script and state — closer to state than script.
+  if (cols >= 5) return 22;
+  if (cols === 4) return 24;
+  if (cols === 3) return 26;
+  return 28;
+}
+
+/** Script stays clearly smaller than the state line and fits the column. */
+function cityFontSize(
+  cityLine: string,
+  cellWidth: number,
+  cols: number,
+): number {
+  const stateSize = stateFontSize(cols);
+  // Script ~55% of state — decorative accent, not competing with caps.
+  let size = Math.round(stateSize * 0.55);
+  const len = cityLine.length;
+  if (len > 18) size = Math.min(size, Math.round(stateSize * 0.45));
+  else if (len > 12) size = Math.min(size, Math.round(stateSize * 0.5));
+
+  // Smooth Fantasy is wide; clamp so long cities stay inside the column.
+  const estimated = size * 0.62 * Math.max(len, 1);
+  const maxWidth = cellWidth - 24;
+  if (estimated > maxWidth) {
+    size = Math.max(12, Math.floor(maxWidth / (0.62 * Math.max(len, 1))));
+  }
+  return size;
+}
+
+/** Vertical space needed for the three text lines (including baselines). */
+function textStackHeight(
+  citySize: number,
+  stateSize: number,
+  dateSize: number,
+): number {
+  // Script has large descenders; keep room below each baseline.
+  return (
+    citySize * 1.15 +
+    TEXT_LINE_GAP +
+    stateSize * 1.05 +
+    TEXT_LINE_GAP +
+    dateSize * 1.15 +
+    CELL_BOTTOM_PAD
+  );
+}
+
+type CellMetrics = {
+  cellWidth: number;
+  cellHeight: number;
+  cols: number;
+  logoHeight: number;
+};
 
 function buildCellTextLayers(
   slot: CoverSlot,
-  cellWidth: number,
-  cellHeight: number,
+  metrics: CellMetrics,
   fonts: ReturnType<typeof resolveCoverFonts>,
 ): Buffer[] {
+  const { cellWidth, cellHeight, cols, logoHeight } = metrics;
   const cx = cellWidth / 2;
-  const textTop = slot.logoBuffer ? 250 : 120;
   const layers: Buffer[] = [];
-  const titleSize = placeFontSize(slot.placeLine);
 
-  if (slot.placeLine && fonts.script) {
+  const titleSize = cityFontSize(slot.cityLine, cellWidth, cols);
+  const stateSize = stateFontSize(cols);
+  const datesSize = dateFontSize(cols);
+
+  // Logos sit at cell top + 8; text begins below that box + gap.
+  const logoBlock = slot.logoBuffer ? 8 + logoHeight + LOGO_TEXT_GAP : 16;
+  let y = logoBlock + titleSize * 0.82;
+
+  if (slot.cityLine && fonts.script) {
     layers.push(
       renderTextLayer({
         width: cellWidth,
         height: cellHeight,
-        text: slot.placeLine,
+        text: slot.cityLine,
         x: cx,
-        y: textTop,
+        y,
         fontSize: titleSize,
         fill: TITLE_YELLOW,
         font: fonts.script,
@@ -281,6 +368,27 @@ function buildCellTextLayers(
     );
   }
 
+  // Tight gap under script — Canva keeps state close to the city line.
+  y += titleSize * 0.42 + TEXT_LINE_GAP + stateSize * 0.85;
+
+  if (slot.stateLine && fonts.bold) {
+    layers.push(
+      renderTextLayer({
+        width: cellWidth,
+        height: cellHeight,
+        text: slot.stateLine,
+        x: cx,
+        y,
+        fontSize: stateSize,
+        fill: LABEL_WHITE,
+        font: fonts.bold,
+        glow: true,
+      }),
+    );
+  }
+
+  y += stateSize * 0.28 + TEXT_LINE_GAP + datesSize * 0.9;
+
   if (slot.eventDates && fonts.bold) {
     layers.push(
       renderTextLayer({
@@ -288,37 +396,11 @@ function buildCellTextLayers(
         height: cellHeight,
         text: slot.eventDates,
         x: cx,
-        y: textTop + Math.round(titleSize * 1.15),
-        fontSize: 26,
-        fill: DATE_MAGENTA,
+        y,
+        fontSize: datesSize,
+        fill: LABEL_WHITE,
         font: fonts.bold,
-      }),
-    );
-  }
-
-  if (slot.registrationDates && fonts.regular) {
-    const regTop = textTop + Math.round(titleSize * 1.15) + 36;
-    layers.push(
-      renderTextLayer({
-        width: cellWidth,
-        height: cellHeight,
-        text: "REGISTRO",
-        x: cx,
-        y: regTop,
-        fontSize: 16,
-        fill: LABEL_WHITE,
-        font: fonts.regular,
-        letterSpacingEm: 0.12,
-      }),
-      renderTextLayer({
-        width: cellWidth,
-        height: cellHeight,
-        text: slot.registrationDates,
-        x: cx,
-        y: regTop + 28,
-        fontSize: 18,
-        fill: LABEL_WHITE,
-        font: fonts.regular,
+        glow: true,
       }),
     );
   }
@@ -326,9 +408,69 @@ function buildCellTextLayers(
   return layers;
 }
 
+type LayoutCell = {
+  slot: CoverSlot;
+  left: number;
+  top: number;
+  cellWidth: number;
+  cellHeight: number;
+  cols: number;
+};
+
+function layoutCoverCells(slots: CoverSlot[]): LayoutCell[] {
+  const rowCounts = coverRowCounts(slots.length);
+  if (rowCounts.length === 0) return [];
+
+  const usableWidth = COVER_WIDTH - COVER_H_PADDING * 2;
+  const maxCols = Math.max(...rowCounts);
+  const cellWidth = Math.floor(usableWidth / maxCols);
+
+  const hasAnyLogo = slots.some((s) => s.logoBuffer != null);
+  const logoBudget = hasAnyLogo ? logoMaxSideForCount(slots.length) : 0;
+  const titleBudget = cityFontSize("San Andrés Cholula", cellWidth, maxCols);
+  const stateBudget = stateFontSize(maxCols);
+  const dateBudget = dateFontSize(maxCols);
+  const cellHeight = Math.ceil(
+    (logoBudget > 0 ? logoBudget + LOGO_TEXT_GAP + 8 : 12) +
+      textStackHeight(titleBudget, stateBudget, dateBudget),
+  );
+
+  const rowCount = rowCounts.length;
+  const blockHeight = rowCount * cellHeight + (rowCount - 1) * ROW_GAP;
+  const blockTop = Math.max(
+    COVER_V_PADDING,
+    Math.floor((COVER_HEIGHT - blockHeight) / 2),
+  );
+
+  const cells: LayoutCell[] = [];
+  let slotIndex = 0;
+
+  for (let row = 0; row < rowCounts.length; row++) {
+    const cols = rowCounts[row]!;
+    const rowWidth = cols * cellWidth;
+    const rowLeft = Math.floor((COVER_WIDTH - rowWidth) / 2);
+    const rowTop = blockTop + row * (cellHeight + ROW_GAP);
+
+    for (let col = 0; col < cols; col++) {
+      const slot = slots[slotIndex++];
+      if (!slot) break;
+      cells.push({
+        slot,
+        left: rowLeft + col * cellWidth,
+        top: rowTop,
+        cellWidth,
+        cellHeight,
+        cols,
+      });
+    }
+  }
+
+  return cells;
+}
+
 /**
  * Composite the Torneo de Rubik Facebook cover (1640×924, up to 9 slots).
- * No status badges or capacity fractions.
+ * Canva-style: centered rows, city script / state caps / white dates.
  */
 export async function generateCoverPng(slots: CoverSlot[]): Promise<Buffer> {
   const assetsDir = resolveAssetsDir();
@@ -346,32 +488,29 @@ export async function generateCoverPng(slots: CoverSlot[]): Promise<Buffer> {
     );
   }
 
-  const cellWidth = Math.floor(COVER_WIDTH / COVER_COLS);
-  const cellHeight = Math.floor(COVER_HEIGHT / COVER_ROWS);
+  const limited = slots.slice(0, COVER_MAX_SLOTS);
+  const cells = layoutCoverCells(limited);
   const composites: sharp.OverlayOptions[] = [];
 
-  for (let i = 0; i < slots.length && i < COVER_MAX_SLOTS; i++) {
-    const slot = slots[i]!;
-    const col = i % COVER_COLS;
-    const row = Math.floor(i / COVER_COLS);
-    const left = col * cellWidth;
-    const top = row * cellHeight;
+  for (const cell of cells) {
+    const { slot, left, top, cellWidth, cellHeight, cols } = cell;
+    let logoHeight = 0;
 
     if (slot.logoBuffer) {
       const logoMeta = await sharp(slot.logoBuffer).metadata();
       const logoW = logoMeta.width ?? 180;
       const logoH = logoMeta.height ?? 180;
+      logoHeight = logoH;
       composites.push({
         input: slot.logoBuffer,
         left: left + Math.floor((cellWidth - logoW) / 2),
-        top: top + 28,
+        top: top + 8,
       });
     }
 
     for (const layer of buildCellTextLayers(
       slot,
-      cellWidth,
-      cellHeight,
+      { cellWidth, cellHeight, cols, logoHeight: logoHeight || 0 },
       fonts,
     )) {
       composites.push({ input: layer, left, top });
