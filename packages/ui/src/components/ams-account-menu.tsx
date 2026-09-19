@@ -85,9 +85,12 @@ export function AmsAccountMenu({
       <Button
         asChild
         variant="destructive"
-        className="ams-glass border border-white/25"
+        className="ams-glass shrink-0 border border-white/25 px-3 sm:px-4"
       >
-        <a href={urls.signInHref}>Iniciar sesión</a>
+        <a href={urls.signInHref}>
+          <span className="sm:hidden">Entrar</span>
+          <span className="hidden sm:inline">Iniciar sesión</span>
+        </a>
       </Button>
     );
   }

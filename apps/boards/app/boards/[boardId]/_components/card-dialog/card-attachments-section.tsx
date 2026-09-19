@@ -1,7 +1,9 @@
 "use client";
 
-import { Ellipsis, Link2, Paperclip } from "lucide-react";
+import { Ellipsis, Link2, Paperclip, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -12,6 +14,8 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+
+import { useUploadThing } from "@/lib/uploadthing-client";
 
 import type { BoardCard } from "../../_lib/types";
 
@@ -130,6 +134,7 @@ function AttachmentRow({
 }
 
 export function CardAttachmentsSection({
+  boardId,
   card,
   showAttachmentForm,
   attachmentName,
@@ -145,6 +150,7 @@ export function CardAttachmentsSection({
   onAdd,
   onUpdate,
 }: {
+  boardId: number;
   card: BoardCard;
   showAttachmentForm: boolean;
   attachmentName: string;
@@ -160,6 +166,7 @@ export function CardAttachmentsSection({
   onAdd: () => void;
   onUpdate: (attachmentId: number, name: string, url: string) => void;
 }) {
+  const router = useRouter();
   const [editingAttachmentId, setEditingAttachmentId] = React.useState<
     number | null
   >(null);
@@ -168,7 +175,18 @@ export function CardAttachmentsSection({
     setEditingAttachmentId(null);
   }, [card.id]);
 
+  const { startUpload, isUploading } = useUploadThing("cardAttachment", {
+    onClientUploadComplete: () => {
+      toast.success("Archivo(s) subido(s)");
+      router.refresh();
+    },
+    onUploadError: (error) => {
+      toast.error(error.message || "Error al subir el archivo");
+    },
+  });
+
   const hasAttachments = card.attachments.length > 0;
+  const busy = pending || isUploading;
 
   if (!hasAttachments && !showAttachmentForm && readOnly) return null;
 
@@ -180,41 +198,66 @@ export function CardAttachmentsSection({
           Adjuntos
         </Label>
         {!readOnly && !showAttachmentForm && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
-            onClick={onShowForm}
-          >
-            Añadir
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              disabled={busy}
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/*,application/pdf";
+                input.multiple = true;
+                input.onchange = async () => {
+                  const files = input.files ? Array.from(input.files) : [];
+                  if (files.length === 0) return;
+                  await startUpload(files.slice(0, 4), {
+                    boardId,
+                    cardId: card.id,
+                  });
+                };
+                input.click();
+              }}
+            >
+              <Upload className="mr-1 size-3.5" />
+              {isUploading ? "Subiendo…" : "Subir archivo"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              disabled={busy}
+              onClick={onShowForm}
+            >
+              Añadir enlace
+            </Button>
+          </div>
         )}
       </div>
 
       {hasAttachments && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Enlaces</p>
-          <ul className="space-y-2">
-            {card.attachments.map((attachment) => (
-              <li key={attachment.id}>
-                <AttachmentRow
-                  attachment={attachment}
-                  pending={pending}
-                  readOnly={readOnly}
-                  editing={editingAttachmentId === attachment.id}
-                  onEdit={() => setEditingAttachmentId(attachment.id)}
-                  onCancelEdit={() => setEditingAttachmentId(null)}
-                  onSave={(name, url) => {
-                    onUpdate(attachment.id, name, url);
-                    setEditingAttachmentId(null);
-                  }}
-                  onRemove={() => onRemove(attachment.id)}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className="space-y-2">
+          {card.attachments.map((attachment) => (
+            <li key={attachment.id}>
+              <AttachmentRow
+                attachment={attachment}
+                pending={busy}
+                readOnly={readOnly}
+                editing={editingAttachmentId === attachment.id}
+                onEdit={() => setEditingAttachmentId(attachment.id)}
+                onCancelEdit={() => setEditingAttachmentId(null)}
+                onSave={(name, url) => {
+                  onUpdate(attachment.id, name, url);
+                  setEditingAttachmentId(null);
+                }}
+                onRemove={() => onRemove(attachment.id)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
 
       {showAttachmentForm && !readOnly && (
@@ -239,14 +282,15 @@ export function CardAttachmentsSection({
             required
           />
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              Añadir adjunto
+            <Button type="submit" size="sm" disabled={busy}>
+              Añadir enlace
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
               onClick={onHideForm}
+              disabled={busy}
             >
               Cancelar
             </Button>

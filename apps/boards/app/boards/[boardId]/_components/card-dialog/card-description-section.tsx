@@ -105,7 +105,7 @@ export function CardDescriptionSection({
               className={cn(
                 descriptionLong &&
                   !showFullDescription &&
-                  "max-h-36 overflow-hidden",
+                  "md:max-h-36 md:overflow-hidden",
               )}
             >
               <MarkdownContent content={description} />

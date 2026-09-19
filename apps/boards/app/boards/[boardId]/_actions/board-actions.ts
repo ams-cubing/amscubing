@@ -30,3 +30,5 @@ export {
   updateAttachmentAction,
   removeAttachmentAction,
 } from "./attachment-actions";
+
+export { saveCompetitionSocialFields } from "./social-publish-actions";

@@ -11,12 +11,16 @@ import {
 import { competitions, logs } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { publishCompetitionSocialAnnouncement } from "@workspace/social";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
-export async function markAsAnnounced(competitionId: number): Promise<{
+export async function markAsAnnounced(
+  competitionId: number,
+  options?: { wcaCompetitionUrl?: string },
+): Promise<{
   success: boolean;
   message: string;
 }> {
@@ -27,39 +31,79 @@ export async function markAsAnnounced(competitionId: number): Promise<{
   const { session } = authResult;
 
   try {
-    let city = "";
+    const competition = await db.query.competitions.findFirst({
+      where: eq(competitions.id, competitionId),
+      columns: {
+        city: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        capacity: true,
+        statusPublic: true,
+        statusInternal: true,
+        wcaCompetitionUrl: true,
+        announcedPostedAt: true,
+        socialCustomText: true,
+        socialTags: true,
+        socialFlyerUrl: true,
+      },
+      with: {
+        state: { columns: { name: true } },
+      },
+    });
+
+    if (!competition) {
+      return { success: false, message: "Competencia no encontrada" };
+    }
+
+    if (competition.statusPublic === "announced") {
+      return { success: false, message: "La competencia ya está anunciada" };
+    }
+
+    if (
+      competition.statusPublic === "suspended" ||
+      competition.statusInternal === "cancelled"
+    ) {
+      return {
+        success: false,
+        message: "No se puede anunciar una competencia cancelada",
+      };
+    }
+
+    const wcaCompetitionUrl =
+      options?.wcaCompetitionUrl?.trim() ||
+      competition.wcaCompetitionUrl?.trim() ||
+      "";
+
+    const published = await publishCompetitionSocialAnnouncement({
+      wcaCompetitionUrl,
+      city: competition.city,
+      stateName: competition.state?.name ?? null,
+      name: competition.name,
+      startDate: competition.startDate,
+      endDate: competition.endDate,
+      capacity: competition.capacity,
+      socialCustomText: competition.socialCustomText ?? "",
+      socialTags: competition.socialTags,
+      socialFlyerUrl: competition.socialFlyerUrl,
+    });
+
+    if (!published.ok) {
+      return { success: false, message: published.message };
+    }
+
+    const city = competition.city;
+
     await db.transaction(async (tx) => {
-      const competition = await tx.query.competitions.findFirst({
-        where: eq(competitions.id, competitionId),
-        columns: {
-          city: true,
-          statusPublic: true,
-          statusInternal: true,
-        },
-      });
-
-      if (!competition) {
-        throw new Error("Competition not found");
-      }
-
-      if (competition.statusPublic === "announced") {
-        throw new Error("La competencia ya está anunciada");
-      }
-
-      if (
-        competition.statusPublic === "suspended" ||
-        competition.statusInternal === "cancelled"
-      ) {
-        throw new Error("No se puede anunciar una competencia cancelada");
-      }
-
-      city = competition.city ?? "";
-
       await tx
         .update(competitions)
         .set({
           statusPublic: "announced",
           statusInternal: "wca_approved",
+          wcaCompetitionUrl: published.wcaCompetitionUrl,
+          announcedPostedAt: new Date(),
+          facebookPostId: published.facebookPostId,
+          instagramMediaId: published.instagramMediaId,
           updatedAt: new Date(),
         })
         .where(eq(competitions.id, competitionId));
@@ -72,6 +116,8 @@ export async function markAsAnnounced(competitionId: number): Promise<{
         details: {
           statusPublic: "announced",
           statusInternal: "wca_approved",
+          facebookPostId: published.facebookPostId,
+          instagramMediaId: published.instagramMediaId,
         },
       });
 
@@ -125,7 +171,10 @@ export async function markAsAnnounced(competitionId: number): Promise<{
     revalidatePath("/panel");
     revalidatePath("/");
 
-    return { success: true, message: "Competencia marcada como anunciada" };
+    return {
+      success: true,
+      message: "Competencia anunciada y publicada en Facebook e Instagram",
+    };
   } catch (error) {
     console.error("Error marking competition as announced:", error);
     return { success: false, message: getErrorMessage(error) };

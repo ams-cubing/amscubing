@@ -49,7 +49,7 @@ export function AmsSiteNav({
   return (
     <header className="sticky inset-x-0 top-0 z-50 border-b-[3px] border-ams-red bg-ams-navy">
       <nav
-        className="ams-container flex items-center gap-5 py-4 lg:gap-9"
+        className="ams-container flex items-center gap-3 py-4 sm:gap-5 lg:gap-9"
         style={{ fontFamily: "var(--font-sans), sans-serif" }}
       >
         <a
@@ -77,7 +77,7 @@ export function AmsSiteNav({
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
             asChild
             className="ams-glass hidden border border-white/25 md:inline-flex"

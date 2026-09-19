@@ -33,19 +33,19 @@ export function CardCommentsSection({
   onAdd: () => void;
 }) {
   return (
-    <div className="flex min-h-0 flex-col border-t bg-muted/20 lg:border-t-0 lg:border-l">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
-        <MessageSquare className="size-4" />
-        <h3 className="text-sm font-medium">Comentarios y actividad</h3>
+    <div className="flex min-h-0 min-w-0 flex-col border-t bg-muted/20 lg:h-full lg:overflow-hidden lg:border-t-0 lg:border-l">
+      <div className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
+        <MessageSquare className="size-4 shrink-0" />
+        <h3 className="min-w-0 text-sm font-medium">Comentarios y actividad</h3>
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <div className="min-w-0 space-y-4 px-4 py-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {card.comments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Aún no hay comentarios.
           </p>
         ) : (
           card.comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3">
+            <div key={comment.id} className="flex min-w-0 gap-3">
               <Avatar className="size-8 shrink-0">
                 <AvatarImage
                   src={comment.author.image || undefined}
@@ -55,7 +55,7 @@ export function CardCommentsSection({
               </Avatar>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-sm font-medium">
+                  <span className="min-w-0 break-words text-sm font-medium">
                     {comment.author.name}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -78,7 +78,7 @@ export function CardCommentsSection({
         )}
       </div>
       <form
-        className="shrink-0 border-t p-4"
+        className="flex shrink-0 flex-col gap-2 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         onSubmit={(e) => {
           e.preventDefault();
           if (!commentBody.trim()) return;
@@ -94,7 +94,7 @@ export function CardCommentsSection({
         <Button
           type="submit"
           size="sm"
-          className="mt-2"
+          className="w-full sm:w-auto sm:self-start"
           disabled={pending || !commentBody.trim()}
         >
           Comentar

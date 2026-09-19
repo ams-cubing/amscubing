@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
-  transpilePackages: ["@workspace/ui", "@workspace/db", "@workspace/auth"],
+  transpilePackages: [
+    "@workspace/ui",
+    "@workspace/db",
+    "@workspace/auth",
+    "@workspace/social",
+  ],
   experimental: {
     authInterrupts: true,
   },
@@ -36,6 +41,26 @@ const nextConfig = {
         protocol: "https",
         hostname: "www.worldcubeassociation.org",
         pathname: "/rails/active_storage/**",
+      },
+      {
+        protocol: "https",
+        hostname: "utfs.io",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.utfs.io",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "ufs.sh",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.ufs.sh",
+        pathname: "/**",
       },
     ],
   },

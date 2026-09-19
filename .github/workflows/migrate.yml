@@ -36,3 +36,8 @@ jobs:
         env:
           DATABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.DATABASE_URL_PRODUCTION || secrets.DATABASE_URL_STAGING }}
         run: pnpm db:migrate
+
+      - name: Sync AMS board template
+        env:
+          DATABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.DATABASE_URL_PRODUCTION || secrets.DATABASE_URL_STAGING }}
+        run: pnpm db:sync-template

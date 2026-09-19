@@ -48,10 +48,10 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { markAsAnnounced } from "../_actions/mark-as-announced";
 import { markAsCelebrated } from "../_actions/mark-celebrated";
 import { UltimatumDialog } from "./ultimatum-dialog";
 import { CancelDialog } from "./cancel-dialog";
+import { AnnounceDialog } from "./announce-dialog";
 
 interface GetCompetitionsTableColumnsProps {
   delegatesCounts: {
@@ -444,6 +444,7 @@ export function getCompetitionsTableColumns({
         const router = useRouter();
         const [open, setOpen] = useState(false);
         const [cancelOpen, setCancelOpen] = useState(false);
+        const [announceOpen, setAnnounceOpen] = useState(false);
         const [isPending, startTransition] = useTransition();
 
         const comp = row.original;
@@ -461,6 +462,13 @@ export function getCompetitionsTableColumns({
               competitionId={comp.id}
               open={cancelOpen}
               setOpen={setCancelOpen}
+            />
+            <AnnounceDialog
+              competitionId={comp.id}
+              city={comp.city}
+              initialWcaCompetitionUrl={comp.wcaCompetitionUrl}
+              open={announceOpen}
+              setOpen={setAnnounceOpen}
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -498,16 +506,7 @@ export function getCompetitionsTableColumns({
                       comp.statusPublic === "suspended" ||
                       comp.statusInternal === "cancelled"
                     }
-                    onClick={() => {
-                      startTransition(async () => {
-                        const res = await markAsAnnounced(comp.id);
-                        if (res.success) {
-                          toast.success("Competencia marcada como anunciada");
-                        } else {
-                          toast.error(res.message);
-                        }
-                      });
-                    }}
+                    onClick={() => setAnnounceOpen(true)}
                   >
                     Marcar como anunciada
                   </DropdownMenuItem>
