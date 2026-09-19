@@ -8,6 +8,7 @@ import {
   buildAnnouncementPreview,
   facebookPostUrl,
   fetchInstagramPermalink,
+  getTorneoDeRubikCoverStatus,
 } from "@workspace/social";
 
 import {
@@ -76,6 +77,8 @@ export default async function AdminRedesPage() {
     limit: 300,
   });
 
+  const coverStatus = await getTorneoDeRubikCoverStatus();
+
   const list: SocialPostRow[] = await Promise.all(
     rows.map(async (row) => {
       const preview = row.wcaCompetitionUrl
@@ -142,7 +145,13 @@ export default async function AdminRedesPage() {
         </p>
       </header>
 
-      <FacebookCoverPanel />
+      <FacebookCoverPanel
+        initialStatus={{
+          status: coverStatus.status,
+          slotCount: coverStatus.slotCount,
+          uploadedAt: coverStatus.uploadedAt?.toISOString() ?? null,
+        }}
+      />
 
       <section className="space-y-6 rounded-5.5 bg-ams-soft p-6 md:p-8">
         <h3 className="ams-display text-2xl leading-none text-ams-navy">

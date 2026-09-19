@@ -58,5 +58,10 @@ export {
   generateTorneoDeRubikCoverPng,
   refreshTorneoDeRubikCover,
   refreshTorneoDeRubikCoverBestEffort,
+  getTorneoDeRubikCoverStatus,
+  coverInputsFingerprint,
+  classifyCoverStatus,
   type RefreshCoverResult,
+  type CoverStatus,
+  type TorneoDeRubikCoverStatus,
 } from "./refresh-cover";

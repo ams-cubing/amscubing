@@ -186,14 +186,14 @@ export function CardSocialPublishSection({
 
       <div className="space-y-2">
         <Label htmlFor={`social-tags-${cardId}`}>
-          Equipos / cuentas a etiquetar
+          Teams / cuentas a etiquetar
         </Label>
         <Input
           id={`social-tags-${cardId}`}
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           disabled={readOnly || pending}
-          placeholder="@equipo Nombre del Team"
+          placeholder="@team Nombre del Team"
         />
       </div>
 

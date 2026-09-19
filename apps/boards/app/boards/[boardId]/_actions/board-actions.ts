@@ -32,3 +32,4 @@ export {
 } from "./attachment-actions";
 
 export { saveCompetitionSocialFields } from "./social-publish-actions";
+export { saveCompetitionWcaUrl } from "./wca-url-actions";

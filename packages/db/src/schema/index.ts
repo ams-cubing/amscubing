@@ -3,4 +3,5 @@ export * from "./auth";
 export * from "./boards";
 export * from "./competitions";
 export * from "./notifications";
+export * from "./social";
 export * from "./relations";
