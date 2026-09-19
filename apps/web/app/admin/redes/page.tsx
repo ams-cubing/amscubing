@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@workspace/db";
@@ -38,6 +39,8 @@ function socialStatus(
 }
 
 export default async function AdminRedesPage() {
+  await connection();
+
   const today = todayMexicoIsoDate();
 
   const rows = await db.query.competitions.findMany({
