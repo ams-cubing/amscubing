@@ -18,7 +18,6 @@ export type SocialPostRow = {
   city: string;
   startDate: string;
   endDate: string;
-  isPast: boolean;
   wcaCompetitionUrl: string | null;
   announcedPostedAt: string | null;
   facebookPostId: string | null;
@@ -137,11 +136,6 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
             >
               {statusLabel(row.status)}
             </span>
-            {row.isPast ? (
-              <span className="ams-heading rounded-full bg-black/5 px-2.5 py-1 text-xs font-bold text-black/55">
-                Pasada
-              </span>
-            ) : null}
           </div>
           <p className="ams-copy text-sm text-black/60">
             {row.city} · {dateLabel}

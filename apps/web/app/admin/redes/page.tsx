@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 
 import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
@@ -44,7 +44,10 @@ export default async function AdminRedesPage() {
   const today = todayMexicoIsoDate();
 
   const rows = await db.query.competitions.findMany({
-    where: eq(competitions.statusPublic, "announced"),
+    where: and(
+      eq(competitions.statusPublic, "announced"),
+      gte(competitions.endDate, today),
+    ),
     orderBy: [
       // Unpublished (no FB id and not manual) first, then by start date desc
       sql`CASE WHEN ${competitions.facebookPostId} IS NULL AND ${competitions.socialPublishedManually} = false THEN 0 ELSE 1 END`,
@@ -109,7 +112,6 @@ export default async function AdminRedesPage() {
         city: row.city,
         startDate: row.startDate,
         endDate: row.endDate,
-        isPast: row.endDate < today,
         wcaCompetitionUrl: row.wcaCompetitionUrl,
         announcedPostedAt: row.announcedPostedAt?.toISOString() ?? null,
         facebookPostId: row.facebookPostId,
