@@ -1,3 +1,5 @@
+import { plainTextFromWcaMarkup } from "./wca-competition";
+
 const GRAPH_API_VERSION = "v21.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
@@ -91,9 +93,9 @@ export function buildAnnouncementCaption(
   const customText = input.customText.trim();
   const dateLabel = formatDateRangeEs(input.startDate, input.endDate);
   const venueLine =
-    input.venueName?.trim() ||
-    input.venueDetails?.trim() ||
-    input.venueAddress?.trim() ||
+    plainTextFromWcaMarkup(input.venueName) ||
+    plainTextFromWcaMarkup(input.venueDetails) ||
+    plainTextFromWcaMarkup(input.venueAddress) ||
     null;
   const cityLine = [input.city, input.stateName?.trim()]
     .filter(Boolean)

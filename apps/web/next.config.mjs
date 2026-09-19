@@ -7,7 +7,10 @@ const nextConfig = {
     "@workspace/auth",
     "@workspace/social",
   ],
-  serverExternalPackages: ["sharp"],
+  serverExternalPackages: ["sharp", "@resvg/resvg-js"],
+  outputFileTracingIncludes: {
+    "/*": ["../../packages/social/assets/**/*"],
+  },
   experimental: {
     authInterrupts: true,
   },

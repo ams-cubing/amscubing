@@ -4,6 +4,7 @@ import { extractSpanishIntroFromInformation } from "./competition-information";
 import {
   extractWcaCompetitionId,
   normalizeWcaCompetitionUrl,
+  plainTextFromWcaMarkup,
 } from "./wca-competition";
 import { buildAnnouncementCaption, facebookPostUrl } from "./meta-publish";
 import { resolveAnnouncementBodyText } from "./announce-and-publish";
@@ -103,6 +104,22 @@ describe("wca competition URL helpers", () => {
   });
 });
 
+describe("plainTextFromWcaMarkup", () => {
+  it("keeps the label from a markdown venue link", () => {
+    expect(
+      plainTextFromWcaMarkup(
+        "[Globo, Museo de la Niñez](https://sic.gob.mx/ficha.php?table=museo&table_id=1020)",
+      ),
+    ).toBe("Globo, Museo de la Niñez");
+  });
+
+  it("strips HTML tags", () => {
+    expect(plainTextFromWcaMarkup("<a href='https://x.test'>Sala A</a>")).toBe(
+      "Sala A",
+    );
+  });
+});
+
 describe("buildAnnouncementCaption", () => {
   it("builds a Torneo de Rubik style caption with custom body and events", () => {
     const caption = buildAnnouncementCaption({
@@ -134,6 +151,27 @@ describe("buildAnnouncementCaption", () => {
     expect(caption).toContain(
       "https://www.worldcubeassociation.org/competitions/MegaMentePuebla2026",
     );
+  });
+
+  it("uses plain venue text when WCA sends a markdown link", () => {
+    const caption = buildAnnouncementCaption({
+      name: "Cubeando en Río Guadalajara 2026",
+      city: "Guadalajara",
+      stateName: "Jalisco",
+      startDate: "2026-10-03",
+      endDate: "2026-10-04",
+      wcaUrl:
+        "https://www.worldcubeassociation.org/competitions/CubeandoEnRioGuadalajara2026",
+      customText: "",
+      venueName:
+        "[Globo, Museo de la Niñez](https://sic.gob.mx/ficha.php?table=museo&table_id=1020)",
+      eventIds: ["333", "222", "444", "clock", "minx", "pyram"],
+      competitorLimit: 60,
+    });
+
+    expect(caption).toContain("📍: Globo, Museo de la Niñez");
+    expect(caption).not.toContain("sic.gob.mx");
+    expect(caption).not.toContain("[Globo");
   });
 });
 
@@ -228,6 +266,9 @@ describe("generateCoverPngFromInputs", () => {
     expect(result.png.subarray(0, 8)).toEqual(
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     );
+
+    // Spot-check that text rendered (not an empty/near-empty canvas).
+    expect(result.png.byteLength).toBeGreaterThan(40_000);
   }, 20_000);
 });
 

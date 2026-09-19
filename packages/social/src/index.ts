@@ -5,6 +5,7 @@ export {
   extractWcaCompetitionId,
   normalizeWcaCompetitionUrl,
   fetchWcaCompetition,
+  plainTextFromWcaMarkup,
   type WcaCompetitionDetails,
 } from "./wca-competition";
 export {
