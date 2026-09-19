@@ -546,12 +546,13 @@ export async function updateFacebookPageCover(
     };
   }
 
+  // Graph expects `cover` as the photo id (numeric string), not a JSON blob.
+  // See Page Updating: cover = numeric string | integer.
   const cover = await graphPost(`/${config.pageId}`, {
-    cover: JSON.stringify({
-      cover_id: photoId,
-      offset_x: 0,
-      offset_y: 0,
-    }),
+    cover: photoId,
+    offset_x: "0",
+    offset_y: "0",
+    no_feed_story: "true",
     access_token: config.pageAccessToken,
   });
 
@@ -566,7 +567,7 @@ export async function updateFacebookPageCover(
     if (!alt.ok) {
       return {
         ok: false,
-        message: `Facebook cover set: ${cover.message}`,
+        message: `Facebook cover set: ${cover.message}; fallback: ${alt.message}`,
       };
     }
   }
