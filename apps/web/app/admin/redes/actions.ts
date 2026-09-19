@@ -32,6 +32,7 @@ async function loadAnnouncedCompetition(competitionId: number) {
       wcaCompetitionUrl: true,
       facebookPostId: true,
       instagramMediaId: true,
+      socialPublishedManually: true,
       socialCustomText: true,
       socialTags: true,
       socialFlyerUrl: true,
@@ -56,6 +57,13 @@ export async function retrySocialPublish(
     return {
       ok: false,
       message: "Solo se puede publicar competencias anunciadas",
+    };
+  }
+
+  if (competition.socialPublishedManually) {
+    return {
+      ok: false,
+      message: "Esta competencia ya está marcada como publicada manualmente",
     };
   }
 
@@ -97,6 +105,7 @@ export async function retrySocialPublish(
       wcaCompetitionUrl: published.wcaCompetitionUrl,
       facebookPostId: published.facebookPostId,
       instagramMediaId: published.instagramMediaId,
+      socialPublishedManually: false,
       announcedPostedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -173,4 +182,49 @@ export async function completeInstagramPublish(
 
   revalidateSocial();
   return { ok: true, message: "Instagram publicado" };
+}
+
+export async function markAsManuallyPublished(
+  competitionId: number,
+): Promise<AdminActionResult> {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false, message: authResult.message };
+  }
+
+  const competition = await loadAnnouncedCompetition(competitionId);
+
+  if (!competition || competition.statusPublic !== "announced") {
+    return {
+      ok: false,
+      message:
+        "Solo se puede marcar como publicada manualmente competencias anunciadas",
+    };
+  }
+
+  if (competition.facebookPostId) {
+    return {
+      ok: false,
+      message: "Ya hay una publicación en Facebook vía Meta",
+    };
+  }
+
+  if (competition.socialPublishedManually) {
+    return {
+      ok: false,
+      message: "Ya está marcada como publicada manualmente",
+    };
+  }
+
+  await db
+    .update(competitions)
+    .set({
+      socialPublishedManually: true,
+      announcedPostedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(competitions.id, competitionId));
+
+  revalidateSocial();
+  return { ok: true, message: "Marcada como publicada manualmente" };
 }

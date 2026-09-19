@@ -23,7 +23,7 @@ export function DetailsDialog({ details }: { details: unknown }) {
           <DialogTitle>Detalles</DialogTitle>
         </DialogHeader>
         <div className="min-w-0 max-h-64 overflow-auto">
-          <pre className="min-w-0 overflow-x-auto whitespace-pre-wrap break-words text-xs">
+          <pre className="min-w-0 overflow-x-auto whitespace-pre-wrap wrap-break-word text-xs">
             {JSON.stringify(details || {}, null, 2)}
           </pre>
         </div>

@@ -1,0 +1,1 @@
+ALTER TABLE "competition" ADD COLUMN "social_published_manually" boolean DEFAULT false NOT NULL;

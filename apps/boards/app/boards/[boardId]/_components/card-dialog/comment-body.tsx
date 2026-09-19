@@ -50,7 +50,7 @@ export function CommentBody({
   );
 
   return (
-    <div className="min-w-0 break-words whitespace-pre-wrap rounded-md border bg-background px-3 py-2 text-sm">
+    <div className="min-w-0 wrap-break-word whitespace-pre-wrap rounded-md border bg-background px-3 py-2 text-sm">
       {segments.map((segment, index) => {
         if (segment.type === "text") {
           return <CommentText key={index} value={segment.value} />;

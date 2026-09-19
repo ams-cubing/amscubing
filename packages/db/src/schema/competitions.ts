@@ -82,6 +82,9 @@ export const competitions = pgTable("competition", {
   announcedPostedAt: timestamp("announced_posted_at"),
   facebookPostId: text("facebook_post_id"),
   instagramMediaId: text("instagram_media_id"),
+  socialPublishedManually: boolean("social_published_manually")
+    .default(false)
+    .notNull(),
 
   socialCustomText: text("social_custom_text"),
   socialTags: text("social_tags"),
