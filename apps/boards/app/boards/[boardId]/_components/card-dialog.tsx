@@ -61,6 +61,10 @@ import {
   isSocialPublishCard,
 } from "./card-dialog/card-social-publish-section";
 import {
+  CardWcaUrlSection,
+  isWcaWebsiteCard,
+} from "./card-dialog/card-wca-url-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
@@ -506,6 +510,14 @@ export function CardDialog({
                 )
               }
             />
+
+            {isWcaWebsiteCard(card.title) ? (
+              <CardWcaUrlSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
 
             {isSocialPublishCard(card.title) ? (
               <CardSocialPublishSection
