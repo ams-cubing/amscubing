@@ -158,6 +158,8 @@ async function PageContent() {
                           <span key={d.delegateWcaId}>
                             {d.delegateName} ({d.delegateWcaId})
                             {d.isPrimary && " ★"}
+                            {d.status === "pending" &&
+                              " · pendiente de confirmación"}
                             {i < compDelegates.length - 1 && ", "}
                           </span>
                         ))}

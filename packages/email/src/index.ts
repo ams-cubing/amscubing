@@ -154,15 +154,15 @@ export function dateRequestDelegateEmail(input: {
   panelUrl: string;
 }) {
   return renderEmailLayout({
-    previewText: `Nueva asignación: ${input.city}`,
+    previewText: `Nueva propuesta de delegación: ${input.city}`,
     bodyHtml: [
       emailParagraph(`Hola ${escapeHtml(input.delegateName)},`),
       emailParagraph(
-        `Se te ha asignado como delegado para la competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).`,
+        `Se te propuso como delegado para la competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}). Confirma o rechaza la asignación en el panel.`,
       ),
     ].join(""),
     cta: {
-      label: "Mira los detalles en el panel de competencias",
+      label: "Confirmar o rechazar en el panel",
       href: input.panelUrl,
     },
   });
@@ -173,7 +173,7 @@ export function dateRequestDelegateSubject(input: {
   startDate: string;
   endDate: string;
 }) {
-  return `Nueva asignación: ${input.city} (${input.startDate} - ${input.endDate})`;
+  return `Nueva propuesta de delegación: ${input.city} (${input.startDate} - ${input.endDate})`;
 }
 
 export function dateRequestOrganizerEmail(input: {
@@ -183,8 +183,17 @@ export function dateRequestOrganizerEmail(input: {
   endDate: string;
   delegateName: string | null;
   delegateEmail: string | null;
+  pendingConfirmation: boolean;
   misCompetenciasUrl: string;
 }) {
+  const delegateParagraph = input.pendingConfirmation
+    ? emailParagraph(
+        `Se propuso a ${escapeHtml(input.delegateName ?? "un delegado")} para esta fecha. La asignación queda pendiente de su confirmación.`,
+      )
+    : emailParagraph(
+        `Aún no se ha propuesto un delegado para esta fecha. El equipo de AMS dará seguimiento.`,
+      );
+
   return renderEmailLayout({
     previewText: `Fecha solicitada en ${input.city}`,
     bodyHtml: [
@@ -192,12 +201,7 @@ export function dateRequestOrganizerEmail(input: {
       emailParagraph(
         `Tu solicitud de fecha para una competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}) ha sido creada exitosamente.`,
       ),
-      emailParagraph(
-        `El delegado asignado es: ${escapeHtml(input.delegateName ?? "Aún no se ha asignado un delegado")}`,
-      ),
-      emailParagraph(
-        `Puedes contactarlo en: ${escapeHtml(input.delegateEmail ?? "Pendiente")}`,
-      ),
+      delegateParagraph,
     ].join(""),
     cta: {
       label: "Revisa los detalles aquí",
@@ -212,6 +216,73 @@ export function dateRequestOrganizerSubject(input: {
   endDate: string;
 }) {
   return `Fecha solicitada en ${input.city} (${input.startDate} - ${input.endDate})`;
+}
+
+export function dateRequestAcceptedOrganizerEmail(input: {
+  organizerName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  delegateName: string;
+  delegateEmail: string;
+  misCompetenciasUrl: string;
+}) {
+  return renderEmailLayout({
+    previewText: `Delegado confirmado en ${input.city}`,
+    bodyHtml: [
+      emailParagraph(`Hola ${escapeHtml(input.organizerName)},`),
+      emailParagraph(
+        `${escapeHtml(input.delegateName)} confirmó la delegación para la competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).`,
+      ),
+      emailParagraph(
+        `Puedes contactarlo en: ${escapeHtml(input.delegateEmail)}`,
+      ),
+    ].join(""),
+    cta: {
+      label: "Revisa los detalles aquí",
+      href: input.misCompetenciasUrl,
+    },
+  });
+}
+
+export function dateRequestAcceptedOrganizerSubject(input: { city: string }) {
+  return `Delegado confirmado: ${input.city}`;
+}
+
+export function dateRequestDeclinedOrganizerEmail(input: {
+  organizerName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  nextDelegateName: string | null;
+  misCompetenciasUrl: string;
+}) {
+  const followUp = input.nextDelegateName
+    ? emailParagraph(
+        `Se propuso a ${escapeHtml(input.nextDelegateName)} como siguiente opción. Queda pendiente de su confirmación.`,
+      )
+    : emailParagraph(
+        `Por ahora no hay otro delegado disponible para esa fecha. El equipo de AMS dará seguimiento.`,
+      );
+
+  return renderEmailLayout({
+    previewText: `Actualización de delegación en ${input.city}`,
+    bodyHtml: [
+      emailParagraph(`Hola ${escapeHtml(input.organizerName)},`),
+      emailParagraph(
+        `Hubo un cambio en la propuesta de delegado para tu competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).`,
+      ),
+      followUp,
+    ].join(""),
+    cta: {
+      label: "Revisa los detalles aquí",
+      href: input.misCompetenciasUrl,
+    },
+  });
+}
+
+export function dateRequestDeclinedOrganizerSubject(input: { city: string }) {
+  return `Actualización de delegación: ${input.city}`;
 }
 
 export function organizerAssignedEmail(input: {

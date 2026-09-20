@@ -9,7 +9,7 @@ import {
   competitionOrganizers,
   user,
 } from "@workspace/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 
 export async function getUserOrganizerCompetitionIds(wcaId: string) {
   const rows = await db
@@ -47,10 +47,16 @@ export async function getDelegatesForCompetitions(competitionIds: number[]) {
       delegateName: user.name,
       delegateWcaId: user.wcaId,
       isPrimary: competitionDelegates.isPrimary,
+      status: competitionDelegates.status,
     })
     .from(competitionDelegates)
     .leftJoin(user, eq(competitionDelegates.delegateWcaId, user.wcaId))
-    .where(inArray(competitionDelegates.competitionId, competitionIds));
+    .where(
+      and(
+        inArray(competitionDelegates.competitionId, competitionIds),
+        ne(competitionDelegates.status, "declined"),
+      ),
+    );
 }
 
 export async function getOrganizersForCompetitions(competitionIds: number[]) {

@@ -26,10 +26,12 @@ async function PageContent({
 
   const formattedCompetition = {
     ...competition,
-    delegates: competition.delegates.map((d) => ({
-      delegateWcaId: d.delegateWcaId,
-      isPrimary: d.isPrimary,
-    })),
+    delegates: competition.delegates
+      .filter((d) => d.status !== "declined")
+      .map((d) => ({
+        delegateWcaId: d.delegateWcaId,
+        isPrimary: d.isPrimary,
+      })),
     organizers: competition.organizers.map((o) => ({
       organizerWcaId: o.organizerWcaId,
       isPrimary: o.isPrimary,

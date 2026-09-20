@@ -104,7 +104,7 @@ export function formatNotificationTitle(
     case "competition_readiness":
       return `Tablero listo: ${ctx.statusLabel ?? "revisar estatus"} — ${city}`;
     case "date_requested":
-      return `Nueva solicitud de fecha: ${city}`;
+      return `Confirma solicitud de fecha: ${city}`;
     case "ultimatum_sent":
       return `Ultimátum enviado para ${city}`;
   }
@@ -246,7 +246,12 @@ export async function competitionTeamUsers(
     })
     .from(competitionDelegates)
     .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
-    .where(eq(competitionDelegates.competitionId, competitionId));
+    .where(
+      and(
+        eq(competitionDelegates.competitionId, competitionId),
+        eq(competitionDelegates.status, "accepted"),
+      ),
+    );
 
   const organizers = await dbOrTx
     .select({
@@ -345,7 +350,12 @@ export async function competitionDelegatesOnly(
     })
     .from(competitionDelegates)
     .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
-    .where(eq(competitionDelegates.competitionId, competitionId));
+    .where(
+      and(
+        eq(competitionDelegates.competitionId, competitionId),
+        eq(competitionDelegates.status, "accepted"),
+      ),
+    );
 
   return rows;
 }

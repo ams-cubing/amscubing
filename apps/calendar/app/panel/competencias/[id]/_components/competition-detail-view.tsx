@@ -27,6 +27,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { getBoardsUrl } from "@/lib/urls";
 
 import { BoardAssignControls } from "../../_components/board-assign-controls";
+import { DateRequestResponseControls } from "./date-request-response-controls";
 
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
@@ -40,10 +41,20 @@ function formatDate(date: string) {
   });
 }
 
+function assignmentStatusLabel(
+  status: "pending" | "accepted" | "declined" | undefined,
+) {
+  if (status === "pending") return "Pendiente de confirmación";
+  if (status === "declined") return "Rechazada";
+  return null;
+}
+
 export function CompetitionDetailView({
   competition,
+  currentUserWcaId,
 }: {
   competition: CompetitionDetail;
+  currentUserWcaId?: string | null;
 }) {
   const boardsUrl = getBoardsUrl();
   const location = [
@@ -55,6 +66,16 @@ export function CompetitionDetailView({
   ]
     .filter(Boolean)
     .join(", ");
+
+  const visibleDelegates = competition.delegates.filter(
+    (row) => row.status !== "declined",
+  );
+  const pendingForCurrentUser = competition.delegates.some(
+    (row) =>
+      row.status === "pending" &&
+      row.delegateWcaId === currentUserWcaId &&
+      Boolean(currentUserWcaId),
+  );
 
   return (
     <div className="space-y-6">
@@ -100,37 +121,48 @@ export function CompetitionDetailView({
         </Button>
       </div>
 
+      {pendingForCurrentUser && (
+        <DateRequestResponseControls competitionId={competition.id} />
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <section className="bg-card border rounded-lg p-4 md:p-5 shadow-sm space-y-3">
           <h2 className="font-semibold flex items-center gap-2">
             <Users className="size-4" />
             Delegados
           </h2>
-          {competition.delegates.length === 0 ? (
+          {visibleDelegates.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sin delegados</p>
           ) : (
             <ul className="space-y-2">
-              {competition.delegates.map((row) => (
-                <li key={row.delegateWcaId} className="flex items-center gap-2">
-                  <Avatar className="size-8">
-                    <AvatarImage src={row.delegate?.image ?? undefined} />
-                    <AvatarFallback>
-                      {row.delegate?.name?.slice(0, 1) ?? "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 text-sm">
-                    <div className="font-medium truncate">
-                      {row.delegate?.name ?? "Usuario"}
-                      {row.isPrimary && (
-                        <span className="text-muted-foreground"> ★</span>
-                      )}
+              {visibleDelegates.map((row) => {
+                const statusLabel = assignmentStatusLabel(row.status);
+                return (
+                  <li
+                    key={row.delegateWcaId}
+                    className="flex items-center gap-2"
+                  >
+                    <Avatar className="size-8">
+                      <AvatarImage src={row.delegate?.image ?? undefined} />
+                      <AvatarFallback>
+                        {row.delegate?.name?.slice(0, 1) ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 text-sm">
+                      <div className="font-medium truncate">
+                        {row.delegate?.name ?? "Usuario"}
+                        {row.isPrimary && (
+                          <span className="text-muted-foreground"> ★</span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {row.delegateWcaId}
+                        {statusLabel ? ` · ${statusLabel}` : null}
+                      </div>
                     </div>
-                    <div className="text-muted-foreground text-xs">
-                      {row.delegateWcaId}
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

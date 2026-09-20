@@ -13,7 +13,11 @@ export async function getUserAvailability(wcaId: string) {
 
 export async function getDelegateBusyDays(wcaId: string) {
   const delegateCompetitionRows = await db.query.competitionDelegates.findMany({
-    where: (cd, { eq }) => eq(cd.delegateWcaId, wcaId),
+    where: (cd, { and, eq, inArray }) =>
+      and(
+        eq(cd.delegateWcaId, wcaId),
+        inArray(cd.status, ["pending", "accepted"]),
+      ),
     columns: { competitionId: true },
   });
 

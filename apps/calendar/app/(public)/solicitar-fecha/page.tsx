@@ -59,8 +59,8 @@ async function PageContent({
             </h1>
             <p className="text-muted-foreground mt-2 text-sm md:text-base">
               Complete el formulario para solicitar una fecha para su
-              competencia. El delegado será asignado automáticamente según la
-              ubicación.
+              competencia. Se propondrá un delegado según la ubicación; la
+              asignación queda pendiente de su confirmación.
             </p>
           </div>
           <div className="bg-yellow-50 border border-yellow-200 dark:border-yellow-700 dark:bg-yellow-900/20 rounded-lg p-4 md:p-5 shadow-sm">
@@ -106,7 +106,8 @@ async function PageContent({
           </h1>
           <p className="text-muted-foreground mt-2 text-sm md:text-base">
             Complete el formulario para solicitar una fecha para su competencia.
-            El delegado será asignado automáticamente según la ubicación.
+            Se propondrá un delegado según la ubicación; la asignación queda
+            pendiente de su confirmación.
           </p>
         </div>
         <DateRequestForm availability={availabilityData} />

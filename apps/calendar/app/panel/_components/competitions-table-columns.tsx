@@ -272,6 +272,7 @@ export function getCompetitionsTableColumns({
               name: string;
               image: string | null;
               isPrimary: boolean;
+              status?: "pending" | "accepted" | "declined";
             }[]
           | undefined;
         if (!delegates || delegates.length === 0) {
@@ -287,7 +288,7 @@ export function getCompetitionsTableColumns({
               .map((d) => (
                 <Avatar
                   key={d.wcaId ?? d.name}
-                  title={`${d.name}${d.isPrimary ? " (Principal)" : ""}`}
+                  title={`${d.name}${d.isPrimary ? " (Principal)" : ""}${d.status === "pending" ? " · Pendiente" : ""}`}
                 >
                   <AvatarImage src={d.image || undefined} alt={d.name} />
                   <AvatarFallback>

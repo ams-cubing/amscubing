@@ -7,20 +7,19 @@ import {
 } from "@workspace/db/notifications";
 import {
   competitions,
-  user,
-  states,
   competitionDelegates,
   competitionOrganizers,
   availability,
   logs,
 } from "@workspace/db/schema";
 import { z } from "zod";
-import { eq, and, lte, gte } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import {
   sendDateRequestDelegateEmail,
   sendDateRequestOrganizerEmail,
 } from "@/lib/calendar-emails";
+import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { headers } from "next/headers";
@@ -61,82 +60,16 @@ export async function submitDateRequest(
       };
     }
 
-    // Validate input
     const validatedData = dateRequestSchema.parse(data);
 
-    // 1. Get the state and its region
-    const state = await db.query.states.findFirst({
-      where: eq(states.id, validatedData.stateId),
-      with: {
-        region: true,
-      },
+    const startDateStr = validatedData.startDate.toISOString().split("T")[0]!;
+    const endDateStr = validatedData.endDate.toISOString().split("T")[0]!;
+
+    const proposedDelegate = await findEligibleDelegate({
+      stateId: validatedData.stateId,
+      startDate: startDateStr,
+      endDate: endDateStr,
     });
-
-    if (!state) {
-      return {
-        success: false,
-        message: "Estado no encontrado",
-      };
-    }
-
-    // 2. Find a delegate availble for that region
-    const startDateStr = validatedData.startDate.toISOString().split("T")[0];
-    const endDateStr = validatedData.endDate.toISOString().split("T")[0];
-    const start = new Date(startDateStr!);
-    const end = new Date(endDateStr!);
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    const daysCount =
-      Math.floor((end.getTime() - start.getTime()) / oneDayMs) + 1;
-
-    let candidates = await db.query.user.findMany({
-      where: and(eq(user.regionId, state.regionId), eq(user.role, "delegate")),
-      columns: { id: true, wcaId: true, name: true, email: true, role: true },
-    });
-
-    if (candidates.length === 0) {
-      candidates = await db.query.user.findMany({
-        where: eq(user.role, "delegate"),
-        columns: { id: true, wcaId: true, name: true, email: true, role: true },
-      });
-    }
-
-    let delegateInRegion = null;
-    for (const c of candidates) {
-      // availability rows for the full range
-      const availRows = await db.query.availability.findMany({
-        where: (a, { and, eq, gte, lte }) =>
-          and(
-            eq(a.userWcaId, c.wcaId),
-            gte(a.date, startDateStr!),
-            lte(a.date, endDateStr!),
-          ),
-        columns: { date: true },
-      });
-
-      if (availRows.length !== daysCount) continue;
-
-      // ensure no overlapping competitions assigned in the same range
-      const overlapping = await db
-        .select()
-        .from(competitionDelegates)
-        .innerJoin(
-          competitions,
-          eq(competitionDelegates.competitionId, competitions.id),
-        )
-        .where(
-          and(
-            eq(competitionDelegates.delegateWcaId, c.wcaId),
-            lte(competitions.startDate, endDateStr!),
-            gte(competitions.endDate, startDateStr!),
-          ),
-        )
-        .limit(1);
-
-      if (overlapping.length > 0) continue;
-
-      delegateInRegion = c;
-      break;
-    }
 
     let newCompetition;
     try {
@@ -146,37 +79,17 @@ export async function submitDateRequest(
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            requestedBy: session?.user?.wcaId,
-            startDate: startDateStr!,
-            endDate: endDateStr!,
+            requestedBy: session.user.wcaId,
+            startDate: startDateStr,
+            endDate: endDateStr,
             statusPublic: "reserved",
             statusInternal: "looking_for_venue",
           })
           .returning();
 
-        if (!delegateInRegion) {
-          return { comp };
-        }
-
-        await tx.insert(competitionDelegates).values({
-          competitionId: comp?.id,
-          delegateWcaId: delegateInRegion.wcaId,
-          isPrimary: true,
-        });
-
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              eq(availability.userWcaId, delegateInRegion.wcaId),
-              gte(availability.date, startDateStr!),
-              lte(availability.date, endDateStr!),
-            ),
-          );
-
-        if (session?.user?.wcaId) {
+        if (session.user.wcaId) {
           await tx.insert(competitionOrganizers).values({
-            competitionId: comp?.id,
+            competitionId: comp!.id,
             organizerWcaId: session.user.wcaId,
             isPrimary: true,
           });
@@ -185,23 +98,40 @@ export async function submitDateRequest(
         await tx.insert(logs).values({
           action: "create_competition",
           targetType: "competition",
-          targetId: String(comp?.id),
-          actorId: session?.user.id,
+          targetId: String(comp!.id),
+          actorId: session.user.id,
           details: validatedData,
         });
 
-        if (comp?.id && session?.user?.id) {
+        if (proposedDelegate) {
+          await tx.insert(competitionDelegates).values({
+            competitionId: comp!.id,
+            delegateWcaId: proposedDelegate.wcaId,
+            isPrimary: true,
+            status: "pending",
+          });
+
+          await tx
+            .delete(availability)
+            .where(
+              and(
+                eq(availability.userWcaId, proposedDelegate.wcaId),
+                gte(availability.date, startDateStr),
+                lte(availability.date, endDateStr),
+              ),
+            );
+
           await insertNotifications(tx, [
             competitionNotificationRow({
               recipient: {
-                id: delegateInRegion.id,
-                role: delegateInRegion.role,
-                wcaId: delegateInRegion.wcaId,
+                id: proposedDelegate.id,
+                role: proposedDelegate.role,
+                wcaId: proposedDelegate.wcaId,
               },
               actorId: session.user.id,
               type: "date_requested",
               urls: notificationAppUrls(),
-              competitionId: comp.id,
+              competitionId: comp!.id,
               city: validatedData.city,
             }),
           ]);
@@ -217,13 +147,14 @@ export async function submitDateRequest(
     }
 
     try {
-      if (delegateInRegion) {
+      if (proposedDelegate && newCompetition?.id) {
         await sendDateRequestDelegateEmail({
-          to: delegateInRegion.email,
-          delegateName: delegateInRegion.name,
-          city: newCompetition?.city ?? validatedData.city,
-          startDate: startDateStr!,
-          endDate: endDateStr!,
+          to: proposedDelegate.email,
+          delegateName: proposedDelegate.name,
+          city: newCompetition.city ?? validatedData.city,
+          startDate: startDateStr,
+          endDate: endDateStr,
+          competitionId: newCompetition.id,
         });
       }
     } catch (err) {
@@ -231,15 +162,16 @@ export async function submitDateRequest(
     }
 
     try {
-      if (session?.user?.email && session.user.name) {
+      if (session.user.email && session.user.name) {
         await sendDateRequestOrganizerEmail({
           to: session.user.email,
           organizerName: session.user.name,
           city: newCompetition?.city ?? validatedData.city,
-          startDate: startDateStr!,
-          endDate: endDateStr!,
-          delegateName: delegateInRegion?.name ?? null,
-          delegateEmail: delegateInRegion?.email ?? null,
+          startDate: startDateStr,
+          endDate: endDateStr,
+          delegateName: proposedDelegate?.name ?? null,
+          delegateEmail: proposedDelegate?.email ?? null,
+          pendingConfirmation: Boolean(proposedDelegate),
         });
       }
     } catch (err) {
@@ -248,7 +180,9 @@ export async function submitDateRequest(
 
     return {
       success: true,
-      message: `Solicitud creada exitosamente. Delegado asignado: ${delegateInRegion ? delegateInRegion.name : "Aún no se ha asignado un delegado"}`,
+      message: proposedDelegate
+        ? `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`
+        : "Solicitud creada. Aún no hay un delegado disponible para proponer.",
     };
   } catch (error) {
     console.error("Error submitting date request:", error);

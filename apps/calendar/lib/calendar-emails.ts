@@ -1,6 +1,10 @@
 import {
   competitionStatusChangedEmail,
   competitionStatusChangedSubject,
+  dateRequestAcceptedOrganizerEmail,
+  dateRequestAcceptedOrganizerSubject,
+  dateRequestDeclinedOrganizerEmail,
+  dateRequestDeclinedOrganizerSubject,
   dateRequestDelegateEmail,
   dateRequestDelegateSubject,
   dateRequestOrganizerEmail,
@@ -23,6 +27,10 @@ import { getCalendarUrl } from "@/lib/urls";
 
 function panelUrl() {
   return `${getCalendarUrl()}/panel`;
+}
+
+function competitionPanelUrl(competitionId: number) {
+  return `${getCalendarUrl()}/panel/competencias/${competitionId}`;
 }
 
 function misCompetenciasUrl() {
@@ -96,6 +104,7 @@ export async function sendDateRequestDelegateEmail(input: {
   city: string;
   startDate: string;
   endDate: string;
+  competitionId: number;
 }) {
   if (!isDeliverableEmail(input.to)) return;
 
@@ -107,7 +116,7 @@ export async function sendDateRequestDelegateEmail(input: {
       city: input.city,
       startDate: input.startDate,
       endDate: input.endDate,
-      panelUrl: panelUrl(),
+      panelUrl: competitionPanelUrl(input.competitionId),
     }),
   });
 }
@@ -120,6 +129,7 @@ export async function sendDateRequestOrganizerEmail(input: {
   endDate: string;
   delegateName: string | null;
   delegateEmail: string | null;
+  pendingConfirmation: boolean;
 }) {
   if (!isDeliverableEmail(input.to)) return;
 
@@ -133,6 +143,57 @@ export async function sendDateRequestOrganizerEmail(input: {
       endDate: input.endDate,
       delegateName: input.delegateName,
       delegateEmail: input.delegateEmail,
+      pendingConfirmation: input.pendingConfirmation,
+      misCompetenciasUrl: misCompetenciasUrl(),
+    }),
+  });
+}
+
+export async function sendDateRequestAcceptedOrganizerEmail(input: {
+  to: string;
+  organizerName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  delegateName: string;
+  delegateEmail: string;
+}) {
+  if (!isDeliverableEmail(input.to)) return;
+
+  await sendEmail({
+    to: input.to,
+    subject: dateRequestAcceptedOrganizerSubject(input),
+    html: dateRequestAcceptedOrganizerEmail({
+      organizerName: input.organizerName,
+      city: input.city,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      delegateName: input.delegateName,
+      delegateEmail: input.delegateEmail,
+      misCompetenciasUrl: misCompetenciasUrl(),
+    }),
+  });
+}
+
+export async function sendDateRequestDeclinedOrganizerEmail(input: {
+  to: string;
+  organizerName: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  nextDelegateName: string | null;
+}) {
+  if (!isDeliverableEmail(input.to)) return;
+
+  await sendEmail({
+    to: input.to,
+    subject: dateRequestDeclinedOrganizerSubject(input),
+    html: dateRequestDeclinedOrganizerEmail({
+      organizerName: input.organizerName,
+      city: input.city,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      nextDelegateName: input.nextDelegateName,
       misCompetenciasUrl: misCompetenciasUrl(),
     }),
   });

@@ -82,7 +82,11 @@ export async function updateCompetition(
 
     // Fetch existing delegate assignments so we can detect added/removed delegates
     const existingDelegatesRows = await db.query.competitionDelegates.findMany({
-      where: (cd, { eq }) => eq(cd.competitionId, competitionId),
+      where: (cd, { and, eq, ne }) =>
+        and(
+          eq(cd.competitionId, competitionId),
+          ne(cd.status, "declined"),
+        ),
       columns: { delegateWcaId: true },
     });
 
