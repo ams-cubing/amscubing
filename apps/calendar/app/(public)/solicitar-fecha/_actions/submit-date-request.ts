@@ -5,9 +5,12 @@ import {
   dateRequestNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
-import { availability, dateRequests } from "@workspace/db/schema";
+import { dateRequests } from "@workspace/db/schema";
+import { and, eq, gte } from "drizzle-orm";
 import { z } from "zod";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { headers } from "next/headers";
+
+import { holdAvailability, toDateOnlyString } from "@/lib/availability-dates";
 import { auth } from "@/lib/auth";
 import {
   sendDateRequestDelegateEmail,
@@ -16,7 +19,7 @@ import {
 import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
-import { headers } from "next/headers";
+import { MAX_DATE_REQUESTS_PER_WEEK } from "../_lib/constants";
 
 const dateRequestSchema = z
   .object({
@@ -62,80 +65,105 @@ export async function submitDateRequest(
     }
 
     const validatedData = dateRequestSchema.parse(data);
+    const startDateStr = toDateOnlyString(validatedData.startDate);
+    const endDateStr = toDateOnlyString(validatedData.endDate);
+    const requesterWcaId = session.user.wcaId;
 
-    const startDateStr = validatedData.startDate.toISOString().split("T")[0]!;
-    const endDateStr = validatedData.endDate.toISOString().split("T")[0]!;
-
-    const proposedDelegate = await findEligibleDelegate({
-      stateId: validatedData.stateId,
-      startDate: startDateStr,
-      endDate: endDateStr,
+    const recentRequests = await db.query.dateRequests.findMany({
+      where: and(
+        eq(dateRequests.requestedBy, requesterWcaId),
+        gte(
+          dateRequests.createdAt,
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        ),
+      ),
+      columns: { id: true },
     });
 
+    if (recentRequests.length >= MAX_DATE_REQUESTS_PER_WEEK) {
+      return {
+        success: false,
+        message:
+          "Has alcanzado el límite de 3 solicitudes por semana. Intenta de nuevo más tarde.",
+      };
+    }
+
+    let proposedDelegate;
     let newRequest;
+
     try {
       const result = await db.transaction(async (tx) => {
+        const proposed = await findEligibleDelegate(
+          {
+            stateId: validatedData.stateId,
+            startDate: startDateStr,
+            endDate: endDateStr,
+          },
+          tx,
+        );
+
+        if (!proposed) {
+          return { proposed: null, request: null };
+        }
+
         const [request] = await tx
           .insert(dateRequests)
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            requestedBy: session.user.wcaId!,
+            requestedBy: requesterWcaId,
             startDate: startDateStr,
             endDate: endDateStr,
-            proposedDelegateWcaId: proposedDelegate?.wcaId ?? null,
+            proposedDelegateWcaId: proposed.wcaId,
             declinedDelegateWcaIds: [],
-            status: proposedDelegate ? "open" : "exhausted",
+            status: "open",
           })
           .returning();
 
-        if (proposedDelegate) {
-          await tx
-            .delete(availability)
-            .where(
-              and(
-                eq(availability.userWcaId, proposedDelegate.wcaId),
-                gte(availability.date, startDateStr),
-                lte(availability.date, endDateStr),
-              ),
-            );
+        await holdAvailability(tx, proposed.wcaId, startDateStr, endDateStr);
 
-          await insertNotifications(tx, [
-            dateRequestNotificationRow({
-              recipient: {
-                id: proposedDelegate.id,
-                role: proposedDelegate.role,
-                wcaId: proposedDelegate.wcaId,
-              },
-              actorId: session.user.id,
-              type: "date_requested",
-              urls: notificationAppUrls(),
-              dateRequestId: request!.id,
-              city: validatedData.city,
-            }),
-          ]);
-        }
+        await insertNotifications(tx, [
+          dateRequestNotificationRow({
+            recipient: {
+              id: proposed.id,
+              role: proposed.role,
+              wcaId: proposed.wcaId,
+            },
+            actorId: session.user.id,
+            type: "date_requested",
+            urls: notificationAppUrls(),
+            dateRequestId: request!.id,
+            city: validatedData.city,
+          }),
+        ]);
 
-        return { request };
+        return { proposed, request };
       });
 
+      proposedDelegate = result.proposed;
       newRequest = result.request;
     } catch (err) {
       console.error("Transaction failed:", err);
       throw err;
     }
 
+    if (!proposedDelegate || !newRequest) {
+      return {
+        success: false,
+        message:
+          "No hay un delegado disponible para esas fechas. Elige otro rango o intenta más tarde.",
+      };
+    }
+
     try {
-      if (proposedDelegate && newRequest?.id) {
-        await sendDateRequestDelegateEmail({
-          to: proposedDelegate.email,
-          delegateName: proposedDelegate.name,
-          city: newRequest.city ?? validatedData.city,
-          startDate: startDateStr,
-          endDate: endDateStr,
-          dateRequestId: newRequest.id,
-        });
-      }
+      await sendDateRequestDelegateEmail({
+        to: proposedDelegate.email,
+        delegateName: proposedDelegate.name,
+        city: newRequest.city ?? validatedData.city,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        dateRequestId: newRequest.id,
+      });
     } catch (err) {
       console.error("Error sending delegate email via Resend:", err);
     }
@@ -145,12 +173,12 @@ export async function submitDateRequest(
         await sendDateRequestOrganizerEmail({
           to: session.user.email,
           organizerName: session.user.name,
-          city: newRequest?.city ?? validatedData.city,
+          city: newRequest.city ?? validatedData.city,
           startDate: startDateStr,
           endDate: endDateStr,
-          delegateName: proposedDelegate?.name ?? null,
-          delegateEmail: proposedDelegate?.email ?? null,
-          pendingConfirmation: Boolean(proposedDelegate),
+          delegateName: proposedDelegate.name,
+          delegateEmail: proposedDelegate.email,
+          pendingConfirmation: true,
         });
       }
     } catch (err) {
@@ -159,9 +187,7 @@ export async function submitDateRequest(
 
     return {
       success: true,
-      message: proposedDelegate
-        ? `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`
-        : "Solicitud creada. Aún no hay un delegado disponible para proponer.",
+      message: `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`,
     };
   } catch (error) {
     console.error("Error submitting date request:", error);

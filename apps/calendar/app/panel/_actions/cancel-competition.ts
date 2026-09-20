@@ -8,10 +8,16 @@ import {
   formatPublicStatusLabel,
   insertNotifications,
 } from "@workspace/db/notifications";
-import { boards, competitions, logs } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  boards,
+  competitionDelegates,
+  competitions,
+  logs,
+} from "@workspace/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
+import { restoreAvailability } from "@/lib/availability-dates";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
@@ -31,10 +37,33 @@ export async function cancelCompetition(competitionId: number): Promise<{
     await db.transaction(async (tx) => {
       const competition = await tx.query.competitions.findFirst({
         where: eq(competitions.id, competitionId),
-        columns: { city: true },
+        columns: {
+          city: true,
+          startDate: true,
+          endDate: true,
+        },
       });
 
       city = competition?.city ?? "";
+
+      if (competition) {
+        const activeDelegates = await tx.query.competitionDelegates.findMany({
+          where: and(
+            eq(competitionDelegates.competitionId, competitionId),
+            inArray(competitionDelegates.status, ["pending", "accepted"]),
+          ),
+          columns: { delegateWcaId: true },
+        });
+
+        for (const row of activeDelegates) {
+          await restoreAvailability(
+            tx,
+            row.delegateWcaId,
+            competition.startDate,
+            competition.endDate,
+          );
+        }
+      }
 
       await tx
         .update(competitions)

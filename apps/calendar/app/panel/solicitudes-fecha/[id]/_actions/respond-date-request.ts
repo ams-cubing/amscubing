@@ -6,16 +6,19 @@ import {
   insertNotifications,
 } from "@workspace/db/notifications";
 import {
-  availability,
   competitionDelegates,
   competitionOrganizers,
   competitions,
   dateRequests,
   logs,
 } from "@workspace/db/schema";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
+import {
+  holdAvailability,
+  restoreAvailability,
+} from "@/lib/availability-dates";
 import {
   sendDateRequestAcceptedOrganizerEmail,
   sendDateRequestDeclinedOrganizerEmail,
@@ -25,31 +28,6 @@ import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
-
-function dateRangeStrings(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
-
-async function restoreAvailability(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  wcaId: string,
-  startDate: string,
-  endDate: string,
-) {
-  const dates = dateRangeStrings(startDate, endDate);
-  if (dates.length === 0) return;
-
-  await tx
-    .insert(availability)
-    .values(dates.map((date) => ({ userWcaId: wcaId, date })))
-    .onConflictDoNothing();
-}
 
 export async function acceptDateRequest(dateRequestId: number): Promise<{
   success: boolean;
@@ -89,6 +67,13 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
       };
     }
 
+    if (request.competitionId != null) {
+      return {
+        success: false,
+        message: "Esta solicitud ya tiene una competencia asociada",
+      };
+    }
+
     if (request.proposedDelegateWcaId !== wcaId) {
       return {
         success: false,
@@ -97,6 +82,24 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
     }
 
     const competitionId = await db.transaction(async (tx) => {
+      const fresh = await tx.query.dateRequests.findFirst({
+        where: eq(dateRequests.id, dateRequestId),
+        columns: {
+          status: true,
+          proposedDelegateWcaId: true,
+          competitionId: true,
+        },
+      });
+
+      if (
+        !fresh ||
+        fresh.status !== "open" ||
+        fresh.competitionId != null ||
+        fresh.proposedDelegateWcaId !== wcaId
+      ) {
+        throw new Error("La solicitud ya no está disponible para confirmar");
+      }
+
       const [comp] = await tx
         .insert(competitions)
         .values({
@@ -105,6 +108,7 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
           requestedBy: request.requestedBy,
           startDate: request.startDate,
           endDate: request.endDate,
+          capacity: 50,
           statusPublic: "reserved",
           statusInternal: "looking_for_venue",
         })
@@ -256,42 +260,42 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
       ...new Set([...(request.declinedDelegateWcaIds ?? []), wcaId]),
     ];
 
-    const nextDelegate = await findEligibleDelegate({
-      stateId: request.stateId,
-      startDate: request.startDate,
-      endDate: request.endDate,
-      excludeWcaIds: declined,
-    });
-
-    await db.transaction(async (tx) => {
+    const nextDelegate = await db.transaction(async (tx) => {
       await restoreAvailability(tx, wcaId, request.startDate, request.endDate);
 
-      if (nextDelegate) {
+      const next = await findEligibleDelegate(
+        {
+          stateId: request.stateId,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          excludeWcaIds: declined,
+        },
+        tx,
+      );
+
+      if (next) {
         await tx
           .update(dateRequests)
           .set({
-            proposedDelegateWcaId: nextDelegate.wcaId,
+            proposedDelegateWcaId: next.wcaId,
             declinedDelegateWcaIds: declined,
             updatedAt: new Date(),
           })
           .where(eq(dateRequests.id, dateRequestId));
 
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              eq(availability.userWcaId, nextDelegate.wcaId),
-              gte(availability.date, request.startDate),
-              lte(availability.date, request.endDate),
-            ),
-          );
+        await holdAvailability(
+          tx,
+          next.wcaId,
+          request.startDate,
+          request.endDate,
+        );
 
         await insertNotifications(tx, [
           dateRequestNotificationRow({
             recipient: {
-              id: nextDelegate.id,
-              role: nextDelegate.role,
-              wcaId: nextDelegate.wcaId,
+              id: next.id,
+              role: next.role,
+              wcaId: next.wcaId,
             },
             actorId: session.user.id,
             type: "date_requested",
@@ -312,7 +316,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
                   urls: notificationAppUrls(),
                   dateRequestId,
                   city: request.city,
-                  statusLabel: `Se propuso a ${nextDelegate.name}`,
+                  statusLabel: `Se propuso a ${next.name}`,
                 }),
               ]
             : []),
@@ -346,6 +350,8 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           ]);
         }
       }
+
+      return next;
     });
 
     if (nextDelegate) {

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
+import { toDateOnlyString } from "@/lib/availability-dates";
 
 export async function submitAvailability(data: { dates: Date[] }) {
   try {
@@ -24,7 +25,7 @@ export async function submitAvailability(data: { dates: Date[] }) {
     }
 
     const values = data.dates.map((date) => ({
-      date: date.toISOString().split("T")[0]!,
+      date: toDateOnlyString(date),
     }));
 
     const existingRows = await db

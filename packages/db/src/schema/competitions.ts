@@ -72,7 +72,7 @@ export const competitions = pgTable("competition", {
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
 
-  capacity: integer("capacity").notNull().default(0),
+  capacity: integer("capacity").notNull().default(50),
 
   statusPublic: publicStatusEnum("status_public").default("reserved").notNull(),
   statusInternal: internalStatusEnum("status_internal")

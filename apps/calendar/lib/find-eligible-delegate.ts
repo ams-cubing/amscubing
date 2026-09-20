@@ -10,6 +10,8 @@ import {
 } from "@workspace/db/schema";
 import { and, eq, gte, inArray, isNotNull, lte, notInArray } from "drizzle-orm";
 
+import { dateRangeStrings } from "@/lib/availability-dates";
+
 export type EligibleDelegate = {
   id: string;
   wcaId: string;
@@ -18,13 +20,18 @@ export type EligibleDelegate = {
   role: "delegate" | "user" | "editor";
 };
 
-export async function findEligibleDelegate(input: {
-  stateId: string;
-  startDate: string;
-  endDate: string;
-  excludeWcaIds?: string[];
-}): Promise<EligibleDelegate | null> {
-  const state = await db.query.states.findFirst({
+type EligibleExecutor = Pick<typeof db, "query" | "select">;
+
+export async function findEligibleDelegate(
+  input: {
+    stateId: string;
+    startDate: string;
+    endDate: string;
+    excludeWcaIds?: string[];
+  },
+  executor: EligibleExecutor = db,
+): Promise<EligibleDelegate | null> {
+  const state = await executor.query.states.findFirst({
     where: eq(states.id, input.stateId),
     columns: { regionId: true },
   });
@@ -33,15 +40,14 @@ export async function findEligibleDelegate(input: {
     return null;
   }
 
-  const start = new Date(input.startDate);
-  const end = new Date(input.endDate);
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  const daysCount =
-    Math.floor((end.getTime() - start.getTime()) / oneDayMs) + 1;
+  const daysCount = dateRangeStrings(input.startDate, input.endDate).length;
+  if (daysCount === 0) {
+    return null;
+  }
 
   const excludeWcaIds = input.excludeWcaIds?.filter(Boolean) ?? [];
 
-  let candidates = await db.query.user.findMany({
+  let candidates = await executor.query.user.findMany({
     where: and(
       eq(user.regionId, state.regionId),
       eq(user.role, "delegate"),
@@ -53,7 +59,7 @@ export async function findEligibleDelegate(input: {
   });
 
   if (candidates.length === 0) {
-    candidates = await db.query.user.findMany({
+    candidates = await executor.query.user.findMany({
       where: and(
         eq(user.role, "delegate"),
         excludeWcaIds.length > 0
@@ -65,7 +71,7 @@ export async function findEligibleDelegate(input: {
   }
 
   for (const candidate of candidates) {
-    const availRows = await db.query.availability.findMany({
+    const availRows = await executor.query.availability.findMany({
       where: (a, { and: andFn, eq: eqFn, gte: gteFn, lte: lteFn }) =>
         andFn(
           eqFn(a.userWcaId, candidate.wcaId),
@@ -77,7 +83,7 @@ export async function findEligibleDelegate(input: {
 
     if (availRows.length !== daysCount) continue;
 
-    const overlappingCompetition = await db
+    const overlappingCompetition = await executor
       .select({ competitionId: competitionDelegates.competitionId })
       .from(competitionDelegates)
       .innerJoin(
@@ -96,7 +102,7 @@ export async function findEligibleDelegate(input: {
 
     if (overlappingCompetition.length > 0) continue;
 
-    const overlappingDateRequest = await db
+    const overlappingDateRequest = await executor
       .select({ id: dateRequests.id })
       .from(dateRequests)
       .where(

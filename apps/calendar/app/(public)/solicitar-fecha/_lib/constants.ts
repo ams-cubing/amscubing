@@ -1,0 +1,1 @@
+export const MAX_DATE_REQUESTS_PER_WEEK = 3;

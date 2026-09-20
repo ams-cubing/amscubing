@@ -13,9 +13,8 @@ import {
   competitionDelegates,
   competitionOrganizers,
   logs,
-  availability,
 } from "@workspace/db/schema";
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import {
@@ -29,6 +28,11 @@ import {
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
 } from "@workspace/social";
+import {
+  holdAvailability,
+  restoreAvailability,
+  toDateOnlyString,
+} from "@/lib/availability-dates";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
@@ -52,12 +56,12 @@ export async function updateCompetition(
     // Validate input
     const validatedData = updateCompetitionSchema.parse(data);
 
-    const startDateStr = validatedData.startDate.toISOString().split("T")[0];
-    const endDateStr = validatedData.endDate.toISOString().split("T")[0];
+    const startDateStr = toDateOnlyString(validatedData.startDate);
+    const endDateStr = toDateOnlyString(validatedData.endDate);
 
     // Fetch existing trelloUrl to detect changes
     const existingCompetition = await db.query.competitions.findFirst({
-      where: (c, { eq }) => eq(c.id, competitionId),
+      where: (c, { eq: eqFn }) => eqFn(c.id, competitionId),
       columns: {
         trelloUrl: true,
         trelloAssignedAt: true,
@@ -80,21 +84,24 @@ export async function updateCompetition(
     const newTrelloUrl = validatedData.trelloUrl || null;
     const trelloUrlChanged = existingCompetition?.trelloUrl !== newTrelloUrl;
 
-    // Fetch existing delegate assignments so we can detect added/removed delegates
+    // Fetch all existing delegate assignments (including declined) so we can
+    // preserve pending status and decline history.
     const existingDelegatesRows = await db.query.competitionDelegates.findMany({
-      where: (cd, { and, eq, ne }) =>
-        and(eq(cd.competitionId, competitionId), ne(cd.status, "declined")),
-      columns: { delegateWcaId: true },
+      where: (cd, { eq: eqFn }) => eqFn(cd.competitionId, competitionId),
+      columns: { delegateWcaId: true, status: true, isPrimary: true },
     });
 
-    const previousDelegateWcaIds = existingDelegatesRows.map(
-      (r) => r.delegateWcaId,
+    const previousByWcaId = new Map(
+      existingDelegatesRows.map((r) => [r.delegateWcaId, r]),
     );
+    const previousActiveWcaIds = existingDelegatesRows
+      .filter((r) => r.status !== "declined")
+      .map((r) => r.delegateWcaId);
     const newDelegateWcaIds = validatedData.delegateWcaIds;
     const addedDelegateWcaIds = newDelegateWcaIds.filter(
-      (id) => !previousDelegateWcaIds.includes(id),
+      (id) => !previousActiveWcaIds.includes(id),
     );
-    const removedDelegateWcaIds = previousDelegateWcaIds.filter(
+    const removedDelegateWcaIds = previousActiveWcaIds.filter(
       (id) => !newDelegateWcaIds.includes(id),
     );
 
@@ -137,7 +144,7 @@ export async function updateCompetition(
         name: validatedData.name || null,
         startDate: startDateStr!,
         endDate: endDateStr!,
-        capacity: validatedData.capacity ?? existingCompetition?.capacity ?? 0,
+        capacity: validatedData.capacity ?? existingCompetition?.capacity ?? 50,
         socialCustomText: existingCompetition?.socialCustomText ?? "",
         socialTags: existingCompetition?.socialTags,
         socialFlyerUrl: existingCompetition?.socialFlyerUrl,
@@ -164,7 +171,7 @@ export async function updateCompetition(
           announcedSocial?.wcaCompetitionUrl ||
           validatedData.wcaCompetitionUrl ||
           null,
-        capacity: validatedData.capacity || 0,
+        capacity: validatedData.capacity ?? 50,
         startDate: startDateStr!,
         endDate: endDateStr!,
         statusPublic: validatedData.statusPublic,
@@ -198,26 +205,52 @@ export async function updateCompetition(
         .delete(competitionDelegates)
         .where(eq(competitionDelegates.competitionId, competitionId));
 
-      // Insert new delegate assignments
-      const delegateAssignments = validatedData.delegateWcaIds.map((wcaId) => ({
-        competitionId: competitionId,
-        delegateWcaId: wcaId,
-        isPrimary: wcaId === validatedData.primaryDelegateWcaId,
-      }));
+      // Preserve pending/accepted for unchanged WCA IDs; new admin assigns → accepted.
+      // Also keep declined history for rows not re-added (decline→next exclusions).
+      const delegateAssignments = [
+        ...validatedData.delegateWcaIds.map((wcaId) => {
+          const previous = previousByWcaId.get(wcaId);
+          const status =
+            previous?.status === "pending"
+              ? ("pending" as const)
+              : ("accepted" as const);
+          return {
+            competitionId,
+            delegateWcaId: wcaId,
+            isPrimary: wcaId === validatedData.primaryDelegateWcaId,
+            status,
+          };
+        }),
+        ...existingDelegatesRows
+          .filter(
+            (r) =>
+              r.status === "declined" &&
+              !validatedData.delegateWcaIds.includes(r.delegateWcaId),
+          )
+          .map((r) => ({
+            competitionId,
+            delegateWcaId: r.delegateWcaId,
+            isPrimary: false,
+            status: "declined" as const,
+          })),
+      ];
 
       if (delegateAssignments.length > 0) {
         await tx.insert(competitionDelegates).values(delegateAssignments);
+      }
 
-        // Remove availability entries for assigned delegates for the competition date range
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              inArray(availability.userWcaId, validatedData.delegateWcaIds),
-              gte(availability.date, startDateStr!),
-              lte(availability.date, endDateStr!),
-            ),
-          );
+      for (const wcaId of removedDelegateWcaIds) {
+        const previous = previousByWcaId.get(wcaId);
+        if (
+          previous &&
+          (previous.status === "pending" || previous.status === "accepted")
+        ) {
+          await restoreAvailability(tx, wcaId, startDateStr!, endDateStr!);
+        }
+      }
+
+      for (const wcaId of addedDelegateWcaIds) {
+        await holdAvailability(tx, wcaId, startDateStr!, endDateStr!);
       }
 
       // Delete existing organizer assignments

@@ -6,15 +6,18 @@ import {
   insertNotifications,
 } from "@workspace/db/notifications";
 import {
-  availability,
   competitionDelegates,
   competitionOrganizers,
   competitions,
   user,
 } from "@workspace/db/schema";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
+import {
+  holdAvailability,
+  restoreAvailability,
+} from "@/lib/availability-dates";
 import {
   sendDateRequestAcceptedOrganizerEmail,
   sendDateRequestDeclinedOrganizerEmail,
@@ -25,37 +28,14 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 
-function dateRangeStrings(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
-
-async function restoreAvailability(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  wcaId: string,
-  startDate: string,
-  endDate: string,
-) {
-  const dates = dateRangeStrings(startDate, endDate);
-  if (dates.length === 0) return;
-
-  await tx
-    .insert(availability)
-    .values(dates.map((date) => ({ userWcaId: wcaId, date })))
-    .onConflictDoNothing();
-}
-
 async function getPrimaryOrganizer(competitionId: number) {
   const row = await db
     .select({
+      id: user.id,
       name: user.name,
       email: user.email,
       wcaId: user.wcaId,
+      role: user.role,
     })
     .from(competitionOrganizers)
     .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
@@ -70,6 +50,7 @@ async function getPrimaryOrganizer(competitionId: number) {
   return row[0] ?? null;
 }
 
+/** Accept a pending competition_delegate assignment (post-create reassignment). */
 export async function acceptDateRequest(competitionId: number): Promise<{
   success: boolean;
   message: string;
@@ -114,16 +95,36 @@ export async function acceptDateRequest(competitionId: number): Promise<{
       };
     }
 
-    await db
-      .update(competitionDelegates)
-      .set({ status: "accepted" })
-      .where(
-        and(
-          eq(competitionDelegates.competitionId, competitionId),
-          eq(competitionDelegates.delegateWcaId, wcaId),
-          eq(competitionDelegates.status, "pending"),
-        ),
-      );
+    await db.transaction(async (tx) => {
+      await tx
+        .update(competitionDelegates)
+        .set({ status: "accepted" })
+        .where(
+          and(
+            eq(competitionDelegates.competitionId, competitionId),
+            eq(competitionDelegates.delegateWcaId, wcaId),
+            eq(competitionDelegates.status, "pending"),
+          ),
+        );
+
+      const organizer = await getPrimaryOrganizer(competitionId);
+      if (organizer?.id && organizer.wcaId) {
+        await insertNotifications(tx, [
+          competitionNotificationRow({
+            recipient: {
+              id: organizer.id,
+              role: organizer.role,
+              wcaId: organizer.wcaId,
+            },
+            actorId: session.user.id,
+            type: "date_request_accepted",
+            urls: notificationAppUrls(),
+            competitionId,
+            city: competition.city,
+          }),
+        ]);
+      }
+    });
 
     const organizer = await getPrimaryOrganizer(competitionId);
     if (organizer?.email && organizer.name && session.user.email) {
@@ -158,6 +159,7 @@ export async function acceptDateRequest(competitionId: number): Promise<{
   }
 }
 
+/** Decline a pending competition_delegate assignment; optionally propose the next eligible. */
 export async function declineDateRequest(competitionId: number): Promise<{
   success: boolean;
   message: string;
@@ -216,14 +218,7 @@ export async function declineDateRequest(competitionId: number): Promise<{
       ...declinedRows.map((row) => row.delegateWcaId),
     ];
 
-    const nextDelegate = await findEligibleDelegate({
-      stateId: competition.stateId,
-      startDate: competition.startDate,
-      endDate: competition.endDate,
-      excludeWcaIds,
-    });
-
-    await db.transaction(async (tx) => {
+    const nextDelegate = await db.transaction(async (tx) => {
       await tx
         .update(competitionDelegates)
         .set({ status: "declined", isPrimary: false })
@@ -242,30 +237,37 @@ export async function declineDateRequest(competitionId: number): Promise<{
         competition.endDate,
       );
 
-      if (nextDelegate) {
+      const next = await findEligibleDelegate(
+        {
+          stateId: competition.stateId,
+          startDate: competition.startDate,
+          endDate: competition.endDate,
+          excludeWcaIds,
+        },
+        tx,
+      );
+
+      if (next) {
         await tx.insert(competitionDelegates).values({
           competitionId,
-          delegateWcaId: nextDelegate.wcaId,
+          delegateWcaId: next.wcaId,
           isPrimary: true,
           status: "pending",
         });
 
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              eq(availability.userWcaId, nextDelegate.wcaId),
-              gte(availability.date, competition.startDate),
-              lte(availability.date, competition.endDate),
-            ),
-          );
+        await holdAvailability(
+          tx,
+          next.wcaId,
+          competition.startDate,
+          competition.endDate,
+        );
 
         await insertNotifications(tx, [
           competitionNotificationRow({
             recipient: {
-              id: nextDelegate.id,
-              role: nextDelegate.role,
-              wcaId: nextDelegate.wcaId,
+              id: next.id,
+              role: next.role,
+              wcaId: next.wcaId,
             },
             actorId: session.user.id,
             type: "date_requested",
@@ -275,6 +277,8 @@ export async function declineDateRequest(competitionId: number): Promise<{
           }),
         ]);
       }
+
+      return next;
     });
 
     if (nextDelegate) {

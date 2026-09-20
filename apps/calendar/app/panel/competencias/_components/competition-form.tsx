@@ -172,6 +172,7 @@ interface FullCompetition extends Competition {
   delegates: {
     delegateWcaId: string;
     isPrimary: boolean;
+    status?: "pending" | "accepted" | "declined";
   }[];
   organizers: {
     organizerWcaId: string;
@@ -194,6 +195,12 @@ export function CompetitionForm({
   const minDate = addWeeks(new Date(), 5);
 
   const router = useRouter();
+
+  const pendingDelegateWcaIds = new Set(
+    (competition?.delegates ?? [])
+      .filter((d) => d.status === "pending")
+      .map((d) => d.delegateWcaId),
+  );
 
   const form = useForm<CompetitionFormValues>({
     resolver: zodResolver(
@@ -229,7 +236,7 @@ export function CompetitionForm({
           endDate: undefined,
           trelloUrl: "",
           wcaCompetitionUrl: "",
-          capacity: 10,
+          capacity: 50,
           statusPublic: "reserved",
           statusInternal: "looking_for_venue",
           notes: "",
@@ -718,6 +725,11 @@ export function CompetitionForm({
                         </FormControl>
                         <FormLabel className="font-normal cursor-pointer">
                           {delegate.name} ({delegate.wcaId})
+                          {pendingDelegateWcaIds.has(delegate.wcaId) ? (
+                            <span className="ml-2 text-xs text-amber-700 dark:text-amber-400">
+                              Pendiente de confirmación
+                            </span>
+                          ) : null}
                         </FormLabel>
                       </FormItem>
                     )}
