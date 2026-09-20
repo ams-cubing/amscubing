@@ -197,7 +197,7 @@ describe("updateCompetition pending preservation", () => {
           delete: vi.fn(() => ({
             where: deleteWhere.mockResolvedValue(undefined),
           })),
-          insert: vi.fn((table: { id?: string } | Record<string, unknown>) => ({
+          insert: vi.fn(() => ({
             values: (vals: unknown) => {
               // competitionDelegates insert is an array of assignments
               if (Array.isArray(vals) && vals[0]?.delegateWcaId) {
