@@ -6,7 +6,11 @@ import {
   normalizeWcaCompetitionUrl,
   plainTextFromWcaMarkup,
 } from "./wca-competition";
-import { buildAnnouncementCaption, facebookPostUrl } from "./meta-publish";
+import {
+  buildAnnouncementCaption,
+  buildProximasCompetenciasCaption,
+  facebookPostUrl,
+} from "./meta-publish";
 import { resolveAnnouncementBodyText } from "./announce-and-publish";
 import {
   formatCoverCityLine,
@@ -15,6 +19,7 @@ import {
   formatCoverStateLabel,
   formatEventLabels,
   formatPlaceLine,
+  formatUpcomingListDateRangeEs,
 } from "./format";
 import {
   COVER_MAX_SLOTS,
@@ -180,6 +185,107 @@ describe("buildAnnouncementCaption", () => {
     expect(caption).toContain("📍: Globo, Museo de la Niñez");
     expect(caption).not.toContain("sic.gob.mx");
     expect(caption).not.toContain("[Globo");
+  });
+});
+
+describe("formatUpcomingListDateRangeEs", () => {
+  it("formats a same-month multi-day range with a hyphen", () => {
+    expect(formatUpcomingListDateRangeEs("2025-08-16", "2025-08-17")).toBe(
+      "16-17 de agosto 2025",
+    );
+  });
+
+  it("formats a single day without a hyphen range", () => {
+    expect(formatUpcomingListDateRangeEs("2025-09-06", "2025-09-06")).toBe(
+      "6 de septiembre 2025",
+    );
+  });
+
+  it("formats a cross-month range", () => {
+    expect(formatUpcomingListDateRangeEs("2025-04-28", "2025-05-01")).toBe(
+      "28 de abril – 1 de mayo 2025",
+    );
+  });
+});
+
+describe("buildProximasCompetenciasCaption", () => {
+  it("builds a multi-competition cover caption without registro or info tags", () => {
+    const caption = buildProximasCompetenciasCaption([
+      {
+        name: "Cubing Express Buenavista 2025",
+        city: "Ciudad de México",
+        stateName: "CdMx",
+        startDate: "2025-08-16",
+        endDate: "2025-08-17",
+        venueName: "Auditorio Plutarco Elias Calles. Cen del PRI.",
+        eventIds: ["333", "222", "pyram", "skewb", "333oh", "minx"],
+        competitorLimit: 80,
+      },
+      {
+        name: "Baja Warm Up I 2025",
+        city: "Tijuana",
+        stateName: "Baja California",
+        startDate: "2025-09-06",
+        endDate: "2025-09-06",
+        venueName: "Museo el Trompo",
+        eventIds: ["333", "222", "minx", "skewb"],
+        competitorLimit: 36,
+      },
+    ]);
+
+    expect(caption.startsWith("PRÓXIMAS COMPETENCIAS:")).toBe(true);
+    expect(caption).toContain("Cubing Express Buenavista 2025");
+    expect(caption).toContain("📅: 16-17 de agosto 2025");
+    expect(caption).toContain(
+      "📍: Auditorio Plutarco Elias Calles. Cen del PRI.",
+    );
+    expect(caption).toContain("🏙️: Ciudad de México, CdMx");
+    expect(caption).toContain("🔻: 3x3, 2x2, Pyraminx, Skewb, 3OH, Megaminx");
+    expect(caption).toContain("🎟️: 80 competidores");
+    expect(caption).toContain("Baja Warm Up I 2025");
+    expect(caption).toContain("📅: 6 de septiembre 2025");
+    expect(caption).toContain("Toda la info:");
+    expect(caption).toContain(
+      "https://www.worldcubeassociation.org/competitions?region=MX",
+    );
+    expect(caption).not.toContain("registro");
+    expect(caption).not.toContain("ℹ️");
+  });
+
+  it("skips empty venue and events lines", () => {
+    const caption = buildProximasCompetenciasCaption([
+      {
+        name: "Solo Nombre 2026",
+        city: "Tepic",
+        stateName: "Nayarit",
+        startDate: "2026-05-16",
+        endDate: "2026-05-17",
+        eventIds: [],
+        competitorLimit: null,
+        capacityFallback: null,
+      },
+    ]);
+
+    expect(caption).toContain("Solo Nombre 2026");
+    expect(caption).toContain("🏙️: Tepic, Nayarit");
+    expect(caption).not.toContain("📍:");
+    expect(caption).not.toContain("🔻:");
+    expect(caption).not.toContain("🎟️:");
+  });
+
+  it("uses capacity fallback when competitor limit is missing", () => {
+    const caption = buildProximasCompetenciasCaption([
+      {
+        name: "Fallback Cupo 2026",
+        city: "Puebla",
+        stateName: "Puebla",
+        startDate: "2026-09-26",
+        endDate: "2026-09-27",
+        capacityFallback: 70,
+      },
+    ]);
+
+    expect(caption).toContain("🎟️: 70 competidores");
   });
 });
 

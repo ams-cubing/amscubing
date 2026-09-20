@@ -17,7 +17,11 @@ import {
   coverInputsFingerprint,
   type CoverStatus,
 } from "./cover-fingerprint";
-import { updateFacebookPageCover } from "./meta-publish";
+import {
+  buildProximasCompetenciasCaption,
+  updateFacebookPageCover,
+  type ProximasCompetenciasCaptionItem,
+} from "./meta-publish";
 import { fetchWcaCompetition } from "./wca-competition";
 
 export type RefreshCoverResult =
@@ -38,6 +42,24 @@ export type TorneoDeRubikCoverStatus = {
   inputsFingerprint: string;
 };
 
+/** Announced cover row: paint fields + caption enrichment from one WCA pass. */
+export type CoverCompetitionRow = {
+  name: string;
+  city: string;
+  stateName: string | null;
+  startDate: string;
+  endDate: string;
+  logoUrl: string | null;
+  registrationOpen: string | null;
+  registrationClose: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+  venueDetails: string | null;
+  eventIds: string[];
+  competitorLimit: number | null;
+  capacityFallback: number | null;
+};
+
 export type { CoverStatus };
 export { classifyCoverStatus, coverInputsFingerprint };
 
@@ -52,6 +74,36 @@ function todayMexicoIsoDate() {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+function toCoverSlotInput(row: CoverCompetitionRow): CoverSlotInput {
+  return {
+    city: row.city,
+    stateName: row.stateName,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    logoUrl: row.logoUrl,
+    registrationOpen: row.registrationOpen,
+    registrationClose: row.registrationClose,
+  };
+}
+
+function toCaptionItem(
+  row: CoverCompetitionRow,
+): ProximasCompetenciasCaptionItem {
+  return {
+    name: row.name,
+    city: row.city,
+    stateName: row.stateName,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    venueName: row.venueName,
+    venueAddress: row.venueAddress,
+    venueDetails: row.venueDetails,
+    eventIds: row.eventIds,
+    competitorLimit: row.competitorLimit,
+    capacityFallback: row.capacityFallback,
+  };
 }
 
 async function loadStoredCoverState() {
@@ -107,7 +159,8 @@ async function persistCoverState(options: {
   coverHashCacheHydrated = true;
 }
 
-export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
+/** Announced upcoming comps for the cover (≤9), with WCA enrichment for paint + caption. */
+export async function listCoverCompetitions(): Promise<CoverCompetitionRow[]> {
   const today = todayMexicoIsoDate();
   const rows = await db.query.competitions.findMany({
     where: and(
@@ -116,9 +169,11 @@ export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
     ),
     orderBy: [asc(competitions.startDate), asc(competitions.id)],
     columns: {
+      name: true,
       city: true,
       startDate: true,
       endDate: true,
+      capacity: true,
       wcaCompetitionUrl: true,
     },
     with: {
@@ -127,11 +182,17 @@ export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
     limit: COVER_MAX_SLOTS,
   });
 
-  const slots: CoverSlotInput[] = await Promise.all(
+  return Promise.all(
     rows.map(async (row) => {
       let logoUrl: string | null = null;
       let registrationOpen: string | null = null;
       let registrationClose: string | null = null;
+      let venueName: string | null = null;
+      let venueAddress: string | null = null;
+      let venueDetails: string | null = null;
+      let eventIds: string[] = [];
+      let competitorLimit: number | null = null;
+      let displayName = row.name?.trim() || "Competencia";
 
       const wcaUrl = row.wcaCompetitionUrl?.trim();
       if (wcaUrl) {
@@ -140,10 +201,20 @@ export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
           logoUrl = wca.competition.logoUrl;
           registrationOpen = wca.competition.registrationOpen;
           registrationClose = wca.competition.registrationClose;
+          venueName = wca.competition.venueName;
+          venueAddress = wca.competition.venueAddress;
+          venueDetails = wca.competition.venueDetails;
+          eventIds = wca.competition.eventIds;
+          competitorLimit = wca.competition.competitorLimit;
+          displayName =
+            wca.competition.shortName?.trim() ||
+            wca.competition.name?.trim() ||
+            displayName;
         }
       }
 
       return {
+        name: displayName,
         city: row.city,
         stateName: row.state?.name ?? null,
         startDate: row.startDate,
@@ -151,11 +222,20 @@ export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
         logoUrl,
         registrationOpen,
         registrationClose,
+        venueName,
+        venueAddress,
+        venueDetails,
+        eventIds,
+        competitorLimit,
+        capacityFallback: row.capacity > 0 ? row.capacity : null,
       };
     }),
   );
+}
 
-  return slots;
+export async function listCoverCompetitionInputs(): Promise<CoverSlotInput[]> {
+  const rows = await listCoverCompetitions();
+  return rows.map(toCoverSlotInput);
 }
 
 /** Generate the current cover PNG without uploading to Meta. */
@@ -166,12 +246,15 @@ export async function generateTorneoDeRubikCoverPng(): Promise<
       hash: string;
       slotCount: number;
       inputs: CoverSlotInput[];
+      competitions: CoverCompetitionRow[];
       inputsFingerprint: string;
+      caption: string;
     }
   | { ok: false; message: string }
 > {
   try {
-    const inputs = await listCoverCompetitionInputs();
+    const competitions = await listCoverCompetitions();
+    const inputs = competitions.map(toCoverSlotInput);
     const generated = await generateCoverPngFromInputs(inputs);
     return {
       ok: true,
@@ -179,7 +262,11 @@ export async function generateTorneoDeRubikCoverPng(): Promise<
       hash: generated.hash,
       slotCount: generated.slotCount,
       inputs,
+      competitions,
       inputsFingerprint: coverInputsFingerprint(inputs),
+      caption: buildProximasCompetenciasCaption(
+        competitions.map(toCaptionItem),
+      ),
     };
   } catch (error) {
     console.error("Failed to generate Torneo de Rubik cover:", error);
@@ -195,7 +282,8 @@ export async function generateTorneoDeRubikCoverPng(): Promise<
 
 /**
  * Regenerate the Torneo de Rubik Facebook page cover from announced competitions.
- * Safe to call after announce; skips Meta upload when the PNG hash is unchanged.
+ * Uploads once as a published photo with PRÓXIMAS caption, then sets that photo as cover.
+ * Skips Meta when the PNG hash is unchanged.
  */
 export async function refreshTorneoDeRubikCover(options?: {
   force?: boolean;
@@ -216,7 +304,10 @@ export async function refreshTorneoDeRubikCover(options?: {
     };
   }
 
-  const uploaded = await updateFacebookPageCover(generated.png);
+  const uploaded = await updateFacebookPageCover(
+    generated.png,
+    generated.caption,
+  );
   if (!uploaded.ok) {
     return uploaded;
   }

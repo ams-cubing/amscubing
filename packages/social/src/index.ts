@@ -16,11 +16,13 @@ export {
   formatCoverStateLabel,
   formatCoverDateRange,
   formatCoverRegistrationRange,
+  formatUpcomingListDateRangeEs,
 } from "./format";
 export {
   getMetaConfig,
   getMetaPageConfig,
   buildAnnouncementCaption,
+  buildProximasCompetenciasCaption,
   facebookPostUrl,
   publishToTorneoDeRubik,
   publishInstagramOnly,
@@ -30,6 +32,7 @@ export {
   type PublishAnnouncementInput,
   type PublishAnnouncementResult,
   type BuildAnnouncementCaptionInput,
+  type ProximasCompetenciasCaptionItem,
 } from "./meta-publish";
 export {
   publishCompetitionSocialAnnouncement,
@@ -54,6 +57,7 @@ export {
   type CoverSlot,
 } from "./cover-image";
 export {
+  listCoverCompetitions,
   listCoverCompetitionInputs,
   generateTorneoDeRubikCoverPng,
   refreshTorneoDeRubikCover,
@@ -64,6 +68,7 @@ export {
   type RefreshCoverResult,
   type CoverStatus,
   type TorneoDeRubikCoverStatus,
+  type CoverCompetitionRow,
 } from "./refresh-cover";
 export {
   classifyCompetitionSocialStatus,
