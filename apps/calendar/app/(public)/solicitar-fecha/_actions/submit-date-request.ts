@@ -2,16 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
-  competitionNotificationRow,
+  dateRequestNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
-import {
-  competitions,
-  competitionDelegates,
-  competitionOrganizers,
-  availability,
-  logs,
-} from "@workspace/db/schema";
+import { availability, dateRequests } from "@workspace/db/schema";
 import { z } from "zod";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
@@ -60,6 +54,13 @@ export async function submitDateRequest(
       };
     }
 
+    if (!session.user.wcaId) {
+      return {
+        success: false,
+        message: "Usuario sin WCA ID",
+      };
+    }
+
     const validatedData = dateRequestSchema.parse(data);
 
     const startDateStr = validatedData.startDate.toISOString().split("T")[0]!;
@@ -71,46 +72,24 @@ export async function submitDateRequest(
       endDate: endDateStr,
     });
 
-    let newCompetition;
+    let newRequest;
     try {
       const result = await db.transaction(async (tx) => {
-        const [comp] = await tx
-          .insert(competitions)
+        const [request] = await tx
+          .insert(dateRequests)
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            requestedBy: session.user.wcaId,
+            requestedBy: session.user.wcaId!,
             startDate: startDateStr,
             endDate: endDateStr,
-            statusPublic: "reserved",
-            statusInternal: "looking_for_venue",
+            proposedDelegateWcaId: proposedDelegate?.wcaId ?? null,
+            declinedDelegateWcaIds: [],
+            status: proposedDelegate ? "open" : "exhausted",
           })
           .returning();
 
-        if (session.user.wcaId) {
-          await tx.insert(competitionOrganizers).values({
-            competitionId: comp!.id,
-            organizerWcaId: session.user.wcaId,
-            isPrimary: true,
-          });
-        }
-
-        await tx.insert(logs).values({
-          action: "create_competition",
-          targetType: "competition",
-          targetId: String(comp!.id),
-          actorId: session.user.id,
-          details: validatedData,
-        });
-
         if (proposedDelegate) {
-          await tx.insert(competitionDelegates).values({
-            competitionId: comp!.id,
-            delegateWcaId: proposedDelegate.wcaId,
-            isPrimary: true,
-            status: "pending",
-          });
-
           await tx
             .delete(availability)
             .where(
@@ -122,7 +101,7 @@ export async function submitDateRequest(
             );
 
           await insertNotifications(tx, [
-            competitionNotificationRow({
+            dateRequestNotificationRow({
               recipient: {
                 id: proposedDelegate.id,
                 role: proposedDelegate.role,
@@ -131,30 +110,30 @@ export async function submitDateRequest(
               actorId: session.user.id,
               type: "date_requested",
               urls: notificationAppUrls(),
-              competitionId: comp!.id,
+              dateRequestId: request!.id,
               city: validatedData.city,
             }),
           ]);
         }
 
-        return { comp };
+        return { request };
       });
 
-      newCompetition = result.comp;
+      newRequest = result.request;
     } catch (err) {
       console.error("Transaction failed:", err);
       throw err;
     }
 
     try {
-      if (proposedDelegate && newCompetition?.id) {
+      if (proposedDelegate && newRequest?.id) {
         await sendDateRequestDelegateEmail({
           to: proposedDelegate.email,
           delegateName: proposedDelegate.name,
-          city: newCompetition.city ?? validatedData.city,
+          city: newRequest.city ?? validatedData.city,
           startDate: startDateStr,
           endDate: endDateStr,
-          competitionId: newCompetition.id,
+          dateRequestId: newRequest.id,
         });
       }
     } catch (err) {
@@ -166,7 +145,7 @@ export async function submitDateRequest(
         await sendDateRequestOrganizerEmail({
           to: session.user.email,
           organizerName: session.user.name,
-          city: newCompetition?.city ?? validatedData.city,
+          city: newRequest?.city ?? validatedData.city,
           startDate: startDateStr,
           endDate: endDateStr,
           delegateName: proposedDelegate?.name ?? null,

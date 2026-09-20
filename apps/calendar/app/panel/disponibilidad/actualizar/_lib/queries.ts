@@ -1,6 +1,8 @@
 import "server-only";
 
 import { db } from "@workspace/db";
+import { dateRequests } from "@workspace/db/schema";
+import { and, eq } from "drizzle-orm";
 
 export async function getUserAvailability(wcaId: string) {
   return db.query.availability.findMany({
@@ -9,6 +11,18 @@ export async function getUserAvailability(wcaId: string) {
       date: true,
     },
   });
+}
+
+function addDateRangeToSet(
+  set: Set<string>,
+  startDate: string,
+  endDate: string,
+) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    set.add(d.toISOString().slice(0, 10));
+  }
 }
 
 export async function getDelegateBusyDays(wcaId: string) {
@@ -34,14 +48,26 @@ export async function getDelegateBusyDays(wcaId: string) {
         })
       : [];
 
+  const openDateRequests = await db
+    .select({
+      startDate: dateRequests.startDate,
+      endDate: dateRequests.endDate,
+    })
+    .from(dateRequests)
+    .where(
+      and(
+        eq(dateRequests.status, "open"),
+        eq(dateRequests.proposedDelegateWcaId, wcaId),
+      ),
+    );
+
   const delegateBusyDaysSet = new Set<string>();
   for (const comp of delegateBusyCompetitions) {
     if (!comp?.startDate || !comp?.endDate) continue;
-    const start = new Date(comp.startDate);
-    const end = new Date(comp.endDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      delegateBusyDaysSet.add(d.toISOString().slice(0, 10));
-    }
+    addDateRangeToSet(delegateBusyDaysSet, comp.startDate, comp.endDate);
+  }
+  for (const request of openDateRequests) {
+    addDateRangeToSet(delegateBusyDaysSet, request.startDate, request.endDate);
   }
 
   return Array.from(delegateBusyDaysSet).sort();

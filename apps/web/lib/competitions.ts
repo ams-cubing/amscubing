@@ -208,7 +208,7 @@ function formatCompetitionSpotlight(
     status,
     url:
       status === "En curso"
-        ? `https://live.worldcubeassociation.org/competitions/${getWcaCompetitionId(
+        ? `https://live.worldcubeassociation.org/link/competitions/${getWcaCompetitionId(
             competition,
           )}`
         : (competition.wcaCompetitionUrl ??

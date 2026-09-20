@@ -105,6 +105,12 @@ export function formatNotificationTitle(
       return `Tablero listo: ${ctx.statusLabel ?? "revisar estatus"} — ${city}`;
     case "date_requested":
       return `Confirma solicitud de fecha: ${city}`;
+    case "date_request_accepted":
+      return `Delegado confirmado: ${city}`;
+    case "date_request_declined":
+      return ctx.statusLabel
+        ? `${ctx.statusLabel} — ${city}`
+        : `Actualización de solicitud de fecha: ${city}`;
     case "ultimatum_sent":
       return `Ultimátum enviado para ${city}`;
   }
@@ -118,6 +124,7 @@ export function hrefForNotification(
     boardId?: number;
     cardId?: number;
     competitionId?: number;
+    dateRequestId?: number;
   },
 ) {
   const calendar = opts.urls.calendarUrl.replace(/\/$/, "");
@@ -135,6 +142,22 @@ export function hrefForNotification(
       return `${boardPath}?card=${opts.cardId}`;
     }
     return boardPath;
+  }
+
+  if (type === "date_requested" && opts.dateRequestId != null) {
+    return `${calendar}/panel/solicitudes-fecha/${opts.dateRequestId}`;
+  }
+
+  if (
+    (type === "date_request_accepted" || type === "date_request_declined") &&
+    opts.competitionId != null &&
+    opts.recipientRole === "delegate"
+  ) {
+    return `${calendar}/panel/competencias/${opts.competitionId}`;
+  }
+
+  if (type === "date_request_accepted" && opts.competitionId != null) {
+    return `${calendar}/mis-competencias`;
   }
 
   if (
@@ -183,6 +206,39 @@ export function competitionNotificationRow(opts: {
       statusLabel: opts.statusLabel,
       statusPublic: opts.statusPublic,
       statusInternal: opts.statusInternal,
+    },
+  };
+}
+
+export function dateRequestNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  type: NotificationType;
+  urls: AppUrls;
+  dateRequestId: number;
+  city: string;
+  competitionId?: number;
+  statusLabel?: string;
+}): NewNotificationRow {
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: opts.type,
+    title: formatNotificationTitle(opts.type, {
+      city: opts.city,
+      statusLabel: opts.statusLabel,
+    }),
+    href: hrefForNotification(opts.type, {
+      urls: opts.urls,
+      recipientRole: opts.recipient.role,
+      dateRequestId: opts.dateRequestId,
+      competitionId: opts.competitionId,
+    }),
+    payload: {
+      dateRequestId: opts.dateRequestId,
+      competitionId: opts.competitionId,
+      city: opts.city,
+      statusLabel: opts.statusLabel,
     },
   };
 }

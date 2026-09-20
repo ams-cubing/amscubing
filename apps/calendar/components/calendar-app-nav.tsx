@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   CalendarDays,
   ChevronDown,
+  Inbox,
   Moon,
   PlusCircle,
   Sun,
@@ -33,6 +34,11 @@ const CALENDAR_LINKS = [
 
 const DELEGATE_LINKS = [
   { name: "Panel de delegado", href: "/panel", icon: UserIcon },
+  {
+    name: "Solicitudes de fecha",
+    href: "/panel/solicitudes-fecha",
+    icon: Inbox,
+  },
   {
     name: "Nueva competencia",
     href: "/panel/competencias/nueva",

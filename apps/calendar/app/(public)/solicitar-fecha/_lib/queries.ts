@@ -5,14 +5,11 @@ import { availability, regions, states, user } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getRecentRequestsCount(wcaId: string) {
-  return db.query.competitions.findMany({
-    where: (competitions, { and, gte, eq }) =>
+  return db.query.dateRequests.findMany({
+    where: (request, { and, gte, eq }) =>
       and(
-        eq(competitions.requestedBy, wcaId),
-        gte(
-          competitions.createdAt,
-          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        ),
+        eq(request.requestedBy, wcaId),
+        gte(request.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
       ),
   });
 }

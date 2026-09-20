@@ -31,9 +31,7 @@ async function PageContent({
     requireDelegate(),
   ]);
 
-  const currentUserWcaId = authResult.ok
-    ? authResult.session.user.wcaId
-    : null;
+  const currentUserWcaId = authResult.ok ? authResult.session.user.wcaId : null;
 
   return (
     <main className="p-4 md:p-6 lg:p-8">

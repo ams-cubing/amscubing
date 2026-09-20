@@ -4,10 +4,11 @@ import { db } from "@workspace/db";
 import {
   competitionDelegates,
   competitions,
+  dateRequests,
   states,
   user,
 } from "@workspace/db/schema";
-import { and, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, lte, notInArray } from "drizzle-orm";
 
 export type EligibleDelegate = {
   id: string;
@@ -76,7 +77,7 @@ export async function findEligibleDelegate(input: {
 
     if (availRows.length !== daysCount) continue;
 
-    const overlapping = await db
+    const overlappingCompetition = await db
       .select({ competitionId: competitionDelegates.competitionId })
       .from(competitionDelegates)
       .innerJoin(
@@ -93,7 +94,23 @@ export async function findEligibleDelegate(input: {
       )
       .limit(1);
 
-    if (overlapping.length > 0) continue;
+    if (overlappingCompetition.length > 0) continue;
+
+    const overlappingDateRequest = await db
+      .select({ id: dateRequests.id })
+      .from(dateRequests)
+      .where(
+        and(
+          eq(dateRequests.status, "open"),
+          eq(dateRequests.proposedDelegateWcaId, candidate.wcaId),
+          isNotNull(dateRequests.proposedDelegateWcaId),
+          lte(dateRequests.startDate, input.endDate),
+          gte(dateRequests.endDate, input.startDate),
+        ),
+      )
+      .limit(1);
+
+    if (overlappingDateRequest.length > 0) continue;
 
     return candidate;
   }

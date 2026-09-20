@@ -23,6 +23,7 @@ import {
   competitions,
   logs,
 } from "./competitions";
+import { dateRequests } from "./date-requests";
 import { regions, states } from "./geo";
 import { notifications } from "./notifications";
 
@@ -35,6 +36,12 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   delegatedCompetitions: many(competitionDelegates),
   organizedCompetitions: many(competitionOrganizers),
+  requestedDateRequests: many(dateRequests, {
+    relationName: "dateRequestRequester",
+  }),
+  proposedDateRequests: many(dateRequests, {
+    relationName: "dateRequestProposedDelegate",
+  }),
   availability: many(availability),
   activityLogs: many(logs),
   cardMemberships: many(cardMembers),
@@ -97,12 +104,34 @@ export const competitionsRelations = relations(
     }),
     delegates: many(competitionDelegates),
     organizers: many(competitionOrganizers),
+    dateRequests: many(dateRequests),
     board: one(boards, {
       fields: [competitions.boardId],
       references: [boards.id],
     }),
   }),
 );
+
+export const dateRequestsRelations = relations(dateRequests, ({ one }) => ({
+  state: one(states, {
+    fields: [dateRequests.stateId],
+    references: [states.id],
+  }),
+  requester: one(user, {
+    fields: [dateRequests.requestedBy],
+    references: [user.wcaId],
+    relationName: "dateRequestRequester",
+  }),
+  proposedDelegate: one(user, {
+    fields: [dateRequests.proposedDelegateWcaId],
+    references: [user.wcaId],
+    relationName: "dateRequestProposedDelegate",
+  }),
+  competition: one(competitions, {
+    fields: [dateRequests.competitionId],
+    references: [competitions.id],
+  }),
+}));
 
 export const boardsRelations = relations(boards, ({ one, many }) => ({
   competition: one(competitions, {

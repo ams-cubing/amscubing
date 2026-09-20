@@ -33,6 +33,10 @@ function competitionPanelUrl(competitionId: number) {
   return `${getCalendarUrl()}/panel/competencias/${competitionId}`;
 }
 
+function dateRequestPanelUrl(dateRequestId: number) {
+  return `${getCalendarUrl()}/panel/solicitudes-fecha/${dateRequestId}`;
+}
+
 function misCompetenciasUrl() {
   return `${getCalendarUrl()}/mis-competencias`;
 }
@@ -104,9 +108,17 @@ export async function sendDateRequestDelegateEmail(input: {
   city: string;
   startDate: string;
   endDate: string;
-  competitionId: number;
+  dateRequestId?: number;
+  competitionId?: number;
 }) {
   if (!isDeliverableEmail(input.to)) return;
+
+  const href =
+    input.dateRequestId != null
+      ? dateRequestPanelUrl(input.dateRequestId)
+      : input.competitionId != null
+        ? competitionPanelUrl(input.competitionId)
+        : panelUrl();
 
   await sendEmail({
     to: input.to,
@@ -116,7 +128,7 @@ export async function sendDateRequestDelegateEmail(input: {
       city: input.city,
       startDate: input.startDate,
       endDate: input.endDate,
-      panelUrl: competitionPanelUrl(input.competitionId),
+      panelUrl: href,
     }),
   });
 }

@@ -7,9 +7,10 @@ import {
   regions,
   competitionDelegates,
   competitionOrganizers,
+  dateRequests,
   user,
 } from "@workspace/db/schema";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 export async function getUserOrganizerCompetitionIds(wcaId: string) {
   const rows = await db
@@ -17,6 +18,29 @@ export async function getUserOrganizerCompetitionIds(wcaId: string) {
     .from(competitionOrganizers)
     .where(eq(competitionOrganizers.organizerWcaId, wcaId));
   return rows.map((c) => c.competitionId);
+}
+
+export async function getUserDateRequests(wcaId: string) {
+  return db
+    .select({
+      id: dateRequests.id,
+      city: dateRequests.city,
+      startDate: dateRequests.startDate,
+      endDate: dateRequests.endDate,
+      status: dateRequests.status,
+      competitionId: dateRequests.competitionId,
+      proposedDelegateName: user.name,
+      proposedDelegateWcaId: dateRequests.proposedDelegateWcaId,
+      stateName: states.name,
+      regionName: regions.displayName,
+      createdAt: dateRequests.createdAt,
+    })
+    .from(dateRequests)
+    .leftJoin(states, eq(dateRequests.stateId, states.id))
+    .leftJoin(regions, eq(states.regionId, regions.id))
+    .leftJoin(user, eq(dateRequests.proposedDelegateWcaId, user.wcaId))
+    .where(eq(dateRequests.requestedBy, wcaId))
+    .orderBy(desc(dateRequests.createdAt));
 }
 
 export async function getUserCompetitions(competitionIds: number[]) {
