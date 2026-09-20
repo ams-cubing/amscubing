@@ -2,6 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
+  acceptPendingDelegateAssignment,
+  declinePendingDelegateAssignment,
+} from "@workspace/db/competition-transitions";
+import {
   competitionNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
@@ -80,32 +84,11 @@ export async function acceptDateRequest(competitionId: number): Promise<{
       return { success: false, message: "Competencia no encontrada" };
     }
 
-    const pending = await db.query.competitionDelegates.findFirst({
-      where: and(
-        eq(competitionDelegates.competitionId, competitionId),
-        eq(competitionDelegates.delegateWcaId, wcaId),
-        eq(competitionDelegates.status, "pending"),
-      ),
-    });
-
-    if (!pending) {
-      return {
-        success: false,
-        message: "No tienes una propuesta pendiente para esta competencia",
-      };
-    }
-
     await db.transaction(async (tx) => {
-      await tx
-        .update(competitionDelegates)
-        .set({ status: "accepted" })
-        .where(
-          and(
-            eq(competitionDelegates.competitionId, competitionId),
-            eq(competitionDelegates.delegateWcaId, wcaId),
-            eq(competitionDelegates.status, "pending"),
-          ),
-        );
+      await acceptPendingDelegateAssignment(tx, {
+        competitionId,
+        delegateWcaId: wcaId,
+      });
 
       const organizer = await getPrimaryOrganizer(competitionId);
       if (organizer?.id && organizer.wcaId) {
@@ -190,21 +173,6 @@ export async function declineDateRequest(competitionId: number): Promise<{
       return { success: false, message: "Competencia no encontrada" };
     }
 
-    const pending = await db.query.competitionDelegates.findFirst({
-      where: and(
-        eq(competitionDelegates.competitionId, competitionId),
-        eq(competitionDelegates.delegateWcaId, wcaId),
-        eq(competitionDelegates.status, "pending"),
-      ),
-    });
-
-    if (!pending) {
-      return {
-        success: false,
-        message: "No tienes una propuesta pendiente para esta competencia",
-      };
-    }
-
     const declinedRows = await db.query.competitionDelegates.findMany({
       where: and(
         eq(competitionDelegates.competitionId, competitionId),
@@ -219,24 +187,6 @@ export async function declineDateRequest(competitionId: number): Promise<{
     ];
 
     const nextDelegate = await db.transaction(async (tx) => {
-      await tx
-        .update(competitionDelegates)
-        .set({ status: "declined", isPrimary: false })
-        .where(
-          and(
-            eq(competitionDelegates.competitionId, competitionId),
-            eq(competitionDelegates.delegateWcaId, wcaId),
-            eq(competitionDelegates.status, "pending"),
-          ),
-        );
-
-      await restoreAvailability(
-        tx,
-        wcaId,
-        competition.startDate,
-        competition.endDate,
-      );
-
       const next = await findEligibleDelegate(
         {
           stateId: competition.stateId,
@@ -247,14 +197,20 @@ export async function declineDateRequest(competitionId: number): Promise<{
         tx,
       );
 
-      if (next) {
-        await tx.insert(competitionDelegates).values({
-          competitionId,
-          delegateWcaId: next.wcaId,
-          isPrimary: true,
-          status: "pending",
-        });
+      await declinePendingDelegateAssignment(tx, {
+        competitionId,
+        delegateWcaId: wcaId,
+        nextDelegate: next ? { wcaId: next.wcaId } : null,
+      });
 
+      await restoreAvailability(
+        tx,
+        wcaId,
+        competition.startDate,
+        competition.endDate,
+      );
+
+      if (next) {
         await holdAvailability(
           tx,
           next.wcaId,

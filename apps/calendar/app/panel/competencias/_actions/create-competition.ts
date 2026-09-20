@@ -2,6 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
+  assertInitialStatuses,
+  normalizeStatusIntent,
+} from "@workspace/db/competition-transitions";
+import {
   competitionNotificationRow,
   insertNotifications,
   userIdsByWcaIds,
@@ -46,6 +50,12 @@ export async function createCompetition(
     // Validate input
     const validatedData = createCompetitionSchema.parse(data);
 
+    const initialStatuses = normalizeStatusIntent({
+      statusPublic: validatedData.statusPublic,
+      statusInternal: validatedData.statusInternal,
+    });
+    assertInitialStatuses(initialStatuses);
+
     const startDateStr = toDateOnlyString(validatedData.startDate);
     const endDateStr = toDateOnlyString(validatedData.endDate);
 
@@ -60,7 +70,7 @@ export async function createCompetition(
       instagramMediaId: string | null;
     } | null = null;
 
-    if (validatedData.statusPublic === "announced") {
+    if (initialStatuses.statusPublic === "announced") {
       const published = await publishCompetitionSocialAnnouncement({
         wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
         city: validatedData.city,
@@ -97,8 +107,8 @@ export async function createCompetition(
           capacity: validatedData.capacity ?? 50,
           startDate: startDateStr!,
           endDate: endDateStr!,
-          statusPublic: validatedData.statusPublic,
-          statusInternal: validatedData.statusInternal,
+          statusPublic: initialStatuses.statusPublic,
+          statusInternal: initialStatuses.statusInternal,
           trelloAssignedAt: trelloAssignedAt,
           notes: validatedData.notes || null,
           announcedPostedAt: announcedSocial ? new Date() : null,

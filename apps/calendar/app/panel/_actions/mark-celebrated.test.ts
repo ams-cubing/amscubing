@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getSession, transaction, revalidatePath, revalidateTag } = vi.hoisted(
-  () => ({
-    getSession: vi.fn(),
-    transaction: vi.fn(),
-    revalidatePath: vi.fn(),
-    revalidateTag: vi.fn(),
-  }),
-);
+const {
+  getSession,
+  transaction,
+  revalidatePath,
+  revalidateTag,
+  applyStatusTransition,
+} = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  transaction: vi.fn(),
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+  applyStatusTransition: vi.fn(),
+}));
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => new Headers()),
@@ -32,17 +37,12 @@ vi.mock("@workspace/db", () => ({
   },
 }));
 
-vi.mock("@workspace/db/schema", () => ({
-  competitions: { id: "id" },
-  logs: {},
+vi.mock("@workspace/db/competition-transitions", () => ({
+  applyStatusTransition,
 }));
 
 vi.mock("@workspace/db/notifications", () => ({
-  competitionTeamUsers: vi.fn().mockResolvedValue([]),
   competitionOrganizersOnly: vi.fn().mockResolvedValue([]),
-  insertNotifications: vi.fn().mockResolvedValue(undefined),
-  formatInternalStatusLabel: vi.fn((status: string) => status),
-  competitionNotificationRow: vi.fn(() => ({})),
 }));
 
 vi.mock("@/lib/calendar-emails", () => ({
@@ -64,6 +64,27 @@ describe("markAsCelebrated", () => {
     transaction.mockReset();
     revalidatePath.mockReset();
     revalidateTag.mockReset();
+    applyStatusTransition.mockReset();
+    applyStatusTransition.mockResolvedValue({
+      city: "CDMX",
+      from: {
+        statusPublic: "announced",
+        statusInternal: "wca_approved",
+      },
+      to: {
+        statusPublic: "announced",
+        statusInternal: "celebrated",
+      },
+      statusLabel: "Celebrado",
+      effects: {
+        requiresSocialPublish: false,
+        archiveBoard: false,
+        notify: true,
+      },
+    });
+    transaction.mockImplementation(
+      async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
+    );
   });
 
   it("rejects non-delegates without touching the database", async () => {
@@ -96,22 +117,6 @@ describe("markAsCelebrated", () => {
     getSession.mockResolvedValue({
       user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
     });
-    transaction.mockImplementation(
-      async (fn: (tx: unknown) => Promise<void>) => {
-        await fn({
-          query: {
-            competitions: {
-              findFirst: vi.fn().mockResolvedValue({
-                city: "CDMX",
-                statusPublic: "announced",
-              }),
-            },
-          },
-          update: () => ({ set: () => ({ where: vi.fn() }) }),
-          insert: () => ({ values: vi.fn() }),
-        });
-      },
-    );
 
     const result = await markAsCelebrated(7);
 
@@ -120,5 +125,12 @@ describe("markAsCelebrated", () => {
       message: "Competencia marcada como celebrada",
     });
     expect(transaction).toHaveBeenCalledOnce();
+    expect(applyStatusTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        competitionId: 7,
+        transitionId: "celebrate",
+      }),
+    );
   });
 });

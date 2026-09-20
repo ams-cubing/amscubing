@@ -9,6 +9,7 @@
     "./notifications": "./src/notifications.ts",
     "./mentions": "./src/mentions.ts",
     "./board-readiness": "./src/board-readiness.ts",
+    "./competition-transitions": "./src/competition-transitions.ts",
     "./utils": "./src/utils.ts",
     "./data/mexico": "./src/data/mexico.ts",
     "./data/delegates": "./src/data/delegates.ts",

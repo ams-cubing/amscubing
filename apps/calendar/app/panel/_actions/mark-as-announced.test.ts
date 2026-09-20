@@ -4,22 +4,22 @@ const {
   getSession,
   transaction,
   findFirst,
-  updateWhere,
-  insertValues,
   revalidatePath,
   revalidateTag,
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
+  applyStatusTransition,
+  assertCanApply,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   transaction: vi.fn(),
   findFirst: vi.fn(),
-  updateWhere: vi.fn(),
-  insertValues: vi.fn(),
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
   publishCompetitionSocialAnnouncement: vi.fn(),
   refreshTorneoDeRubikCoverBestEffort: vi.fn(),
+  applyStatusTransition: vi.fn(),
+  assertCanApply: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -55,12 +55,13 @@ vi.mock("@workspace/db/schema", () => ({
   logs: {},
 }));
 
+vi.mock("@workspace/db/competition-transitions", () => ({
+  applyStatusTransition,
+  assertCanApply,
+}));
+
 vi.mock("@workspace/db/notifications", () => ({
-  competitionTeamUsers: vi.fn().mockResolvedValue([]),
   competitionOrganizersOnly: vi.fn().mockResolvedValue([]),
-  insertNotifications: vi.fn().mockResolvedValue(undefined),
-  formatPublicStatusLabel: vi.fn((status: string) => status),
-  competitionNotificationRow: vi.fn(() => ({})),
 }));
 
 vi.mock("@/lib/calendar-emails", () => ({
@@ -98,13 +99,34 @@ describe("markAsAnnounced", () => {
     getSession.mockReset();
     transaction.mockReset();
     findFirst.mockReset();
-    updateWhere.mockReset();
-    insertValues.mockReset();
     revalidatePath.mockReset();
     revalidateTag.mockReset();
     publishCompetitionSocialAnnouncement.mockReset();
     refreshTorneoDeRubikCoverBestEffort.mockReset();
     refreshTorneoDeRubikCoverBestEffort.mockResolvedValue(undefined);
+    applyStatusTransition.mockReset();
+    assertCanApply.mockReset();
+    assertCanApply.mockImplementation(() => undefined);
+    applyStatusTransition.mockResolvedValue({
+      city: "CDMX",
+      from: {
+        statusPublic: "confirmed",
+        statusInternal: "venue_found",
+      },
+      to: {
+        statusPublic: "announced",
+        statusInternal: "wca_approved",
+      },
+      statusLabel: "Anunciada",
+      effects: {
+        requiresSocialPublish: true,
+        archiveBoard: false,
+        notify: true,
+      },
+    });
+    transaction.mockImplementation(
+      async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
+    );
   });
 
   it("rejects non-delegates without touching the database", async () => {
@@ -175,18 +197,6 @@ describe("markAsAnnounced", () => {
       instagramMediaId: null,
       displayName: "Test Open 2026",
     });
-    transaction.mockImplementation(
-      async (fn: (tx: unknown) => Promise<void>) => {
-        await fn({
-          update: () => ({
-            set: () => ({
-              where: updateWhere,
-            }),
-          }),
-          insert: () => ({ values: insertValues }),
-        });
-      },
-    );
 
     const result = await markAsAnnounced(7);
 
@@ -197,6 +207,7 @@ describe("markAsAnnounced", () => {
       }),
     );
     expect(transaction).toHaveBeenCalledOnce();
+    expect(applyStatusTransition).toHaveBeenCalledOnce();
   });
 
   it("rejects when the WCA URL is not a real competition", async () => {
@@ -229,18 +240,6 @@ describe("markAsAnnounced", () => {
       instagramMediaId: null,
       displayName: "Test Open 2026",
     });
-    transaction.mockImplementation(
-      async (fn: (tx: unknown) => Promise<void>) => {
-        await fn({
-          update: () => ({
-            set: () => ({
-              where: updateWhere,
-            }),
-          }),
-          insert: () => ({ values: insertValues }),
-        });
-      },
-    );
 
     const result = await markAsAnnounced(7);
 
@@ -279,18 +278,6 @@ describe("markAsAnnounced", () => {
       instagramMediaId: "ig_456",
       displayName: "Test Open 2026",
     });
-    transaction.mockImplementation(
-      async (fn: (tx: unknown) => Promise<void>) => {
-        await fn({
-          update: () => ({
-            set: () => ({
-              where: updateWhere,
-            }),
-          }),
-          insert: () => ({ values: insertValues }),
-        });
-      },
-    );
 
     const result = await markAsAnnounced(7, {
       wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
@@ -302,6 +289,16 @@ describe("markAsAnnounced", () => {
     });
     expect(publishCompetitionSocialAnnouncement).toHaveBeenCalledOnce();
     expect(transaction).toHaveBeenCalledOnce();
-    expect(updateWhere).toHaveBeenCalledOnce();
+    expect(applyStatusTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        competitionId: 7,
+        transitionId: "announce",
+        patch: expect.objectContaining({
+          facebookPostId: "fb_123",
+          instagramMediaId: "ig_456",
+        }),
+      }),
+    );
   });
 });

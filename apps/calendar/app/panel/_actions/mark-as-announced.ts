@@ -2,13 +2,11 @@
 
 import { db } from "@workspace/db";
 import {
-  competitionNotificationRow,
-  competitionOrganizersOnly,
-  competitionTeamUsers,
-  formatPublicStatusLabel,
-  insertNotifications,
-} from "@workspace/db/notifications";
-import { competitions, logs } from "@workspace/db/schema";
+  applyStatusTransition,
+  assertCanApply,
+} from "@workspace/db/competition-transitions";
+import { competitionOrganizersOnly } from "@workspace/db/notifications";
+import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
@@ -59,18 +57,13 @@ export async function markAsAnnounced(
       return { success: false, message: "Competencia no encontrada" };
     }
 
-    if (competition.statusPublic === "announced") {
-      return { success: false, message: "La competencia ya está anunciada" };
-    }
-
-    if (
-      competition.statusPublic === "suspended" ||
-      competition.statusInternal === "cancelled"
-    ) {
-      return {
-        success: false,
-        message: "No se puede anunciar una competencia cancelada",
-      };
+    try {
+      assertCanApply("announce", {
+        statusPublic: competition.statusPublic,
+        statusInternal: competition.statusInternal,
+      });
+    } catch (err) {
+      return { success: false, message: getErrorMessage(err) };
     }
 
     const wcaCompetitionUrl =
@@ -95,56 +88,26 @@ export async function markAsAnnounced(
       return { success: false, message: published.message };
     }
 
-    const city = competition.city;
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(competitions)
-        .set({
-          statusPublic: "announced",
-          statusInternal: "wca_approved",
+    const applied = await db.transaction(async (tx) =>
+      applyStatusTransition(tx, {
+        competitionId,
+        actorId: session.user.id,
+        transitionId: "announce",
+        source: "calendar",
+        urls: notificationAppUrls(),
+        patch: {
           wcaCompetitionUrl: published.wcaCompetitionUrl,
           announcedPostedAt: new Date(),
           facebookPostId: published.facebookPostId,
           instagramMediaId: published.instagramMediaId,
-          updatedAt: new Date(),
-        })
-        .where(eq(competitions.id, competitionId));
-
-      await tx.insert(logs).values({
-        action: "update_competition",
-        targetType: "competition",
-        targetId: String(competitionId),
-        actorId: session.user.id,
-        details: {
-          statusPublic: "announced",
-          statusInternal: "wca_approved",
+        },
+        extraLogDetails: {
           facebookPostId: published.facebookPostId,
           instagramMediaId: published.instagramMediaId,
         },
-      });
+      }),
+    );
 
-      const team = await competitionTeamUsers(tx, competitionId);
-      const urls = notificationAppUrls();
-      await insertNotifications(
-        tx,
-        team.map((recipient) =>
-          competitionNotificationRow({
-            recipient,
-            actorId: session.user.id,
-            type: "competition_status_changed",
-            urls,
-            competitionId,
-            city,
-            statusLabel: formatPublicStatusLabel("announced"),
-            statusPublic: "announced",
-            statusInternal: "wca_approved",
-          }),
-        ),
-      );
-    });
-
-    const statusLabel = formatPublicStatusLabel("announced");
     try {
       const organizers = await competitionOrganizersOnly(db, competitionId);
       for (const organizer of organizers) {
@@ -154,8 +117,8 @@ export async function markAsAnnounced(
           await sendCompetitionStatusChangedEmail({
             to: organizer.email,
             recipientName: organizer.name,
-            city,
-            statusLabel,
+            city: applied.city,
+            statusLabel: applied.statusLabel,
           });
         } catch (err) {
           console.error(

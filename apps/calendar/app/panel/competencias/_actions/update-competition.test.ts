@@ -86,6 +86,7 @@ vi.mock("@workspace/db/schema", () => ({
   },
   competitionDelegates: { competitionId: "competition_id" },
   competitionOrganizers: { competitionId: "competition_id" },
+  boards: { competitionId: "competition_id" },
   logs: {},
 }));
 

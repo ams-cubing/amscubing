@@ -1,15 +1,8 @@
 "use server";
 
 import { db } from "@workspace/db";
-import {
-  competitionNotificationRow,
-  competitionOrganizersOnly,
-  competitionTeamUsers,
-  formatInternalStatusLabel,
-  insertNotifications,
-} from "@workspace/db/notifications";
-import { competitions, logs } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { applyStatusTransition } from "@workspace/db/competition-transitions";
+import { competitionOrganizersOnly } from "@workspace/db/notifications";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -27,52 +20,16 @@ export async function markAsCelebrated(competitionId: number): Promise<{
   const { session } = authResult;
 
   try {
-    let city = "";
-    await db.transaction(async (tx) => {
-      const competition = await tx.query.competitions.findFirst({
-        where: eq(competitions.id, competitionId),
-        columns: { city: true, statusPublic: true },
-      });
-
-      city = competition?.city ?? "";
-
-      await tx
-        .update(competitions)
-        .set({
-          statusInternal: "celebrated",
-          updatedAt: new Date(),
-        })
-        .where(eq(competitions.id, competitionId));
-
-      await tx.insert(logs).values({
-        action: "update_competition",
-        targetType: "competition",
-        targetId: String(competitionId),
+    const applied = await db.transaction(async (tx) =>
+      applyStatusTransition(tx, {
+        competitionId,
         actorId: session.user.id,
-        details: { statusInternal: "celebrated" },
-      });
+        transitionId: "celebrate",
+        source: "calendar",
+        urls: notificationAppUrls(),
+      }),
+    );
 
-      const team = await competitionTeamUsers(tx, competitionId);
-      const urls = notificationAppUrls();
-      await insertNotifications(
-        tx,
-        team.map((recipient) =>
-          competitionNotificationRow({
-            recipient,
-            actorId: session.user.id,
-            type: "competition_status_changed",
-            urls,
-            competitionId,
-            city,
-            statusLabel: formatInternalStatusLabel("celebrated"),
-            statusPublic: competition?.statusPublic,
-            statusInternal: "celebrated",
-          }),
-        ),
-      );
-    });
-
-    const statusLabel = formatInternalStatusLabel("celebrated");
     try {
       const organizers = await competitionOrganizersOnly(db, competitionId);
       for (const organizer of organizers) {
@@ -82,8 +39,8 @@ export async function markAsCelebrated(competitionId: number): Promise<{
           await sendCompetitionStatusChangedEmail({
             to: organizer.email,
             recipientName: organizer.name,
-            city,
-            statusLabel,
+            city: applied.city,
+            statusLabel: applied.statusLabel,
           });
         } catch (err) {
           console.error(
@@ -97,6 +54,7 @@ export async function markAsCelebrated(competitionId: number): Promise<{
     }
 
     revalidateTag("competitions", "days");
+    revalidateTag("competition-public-status-counts", "days");
     revalidateTag("competition-status-internal-counts", "days");
     revalidatePath("/panel");
     revalidatePath("/");

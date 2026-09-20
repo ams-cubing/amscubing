@@ -2,6 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
+  resolveStatusChange,
+  type ResolveStatusChangeResult,
+} from "@workspace/db/competition-transitions";
+import {
   competitionNotificationRow,
   formatInternalStatusLabel,
   formatPublicStatusLabel,
@@ -9,6 +13,7 @@ import {
   userIdsByWcaIds,
 } from "@workspace/db/notifications";
 import {
+  boards,
   competitions,
   competitionDelegates,
   competitionOrganizers,
@@ -127,8 +132,33 @@ export async function updateCompetition(
     const internalChanged =
       existingCompetition?.statusInternal !== validatedData.statusInternal;
 
+    let statusResolution: ResolveStatusChangeResult = { noop: true };
+    let resolvedStatuses = {
+      statusPublic: validatedData.statusPublic,
+      statusInternal: validatedData.statusInternal,
+    };
+
+    if (
+      existingCompetition &&
+      (publicChanged || internalChanged)
+    ) {
+      statusResolution = resolveStatusChange(
+        {
+          statusPublic: existingCompetition.statusPublic,
+          statusInternal: existingCompetition.statusInternal,
+        },
+        validatedData.statusPublic,
+        validatedData.statusInternal,
+      );
+      if (!("noop" in statusResolution)) {
+        resolvedStatuses = statusResolution.to;
+      }
+    }
+
     const transitioningToAnnounced =
-      publicChanged && validatedData.statusPublic === "announced";
+      !("noop" in statusResolution) && statusResolution.id === "announce";
+    const cancelling =
+      !("noop" in statusResolution) && statusResolution.id === "cancel";
 
     let announcedSocial: {
       wcaCompetitionUrl: string;
@@ -136,7 +166,10 @@ export async function updateCompetition(
       instagramMediaId: string | null;
     } | null = null;
 
-    if (transitioningToAnnounced && !existingCompetition?.announcedPostedAt) {
+    if (
+      transitioningToAnnounced &&
+      !existingCompetition?.announcedPostedAt
+    ) {
       const published = await publishCompetitionSocialAnnouncement({
         wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
         city: validatedData.city,
@@ -174,8 +207,8 @@ export async function updateCompetition(
         capacity: validatedData.capacity ?? 50,
         startDate: startDateStr!,
         endDate: endDateStr!,
-        statusPublic: validatedData.statusPublic,
-        statusInternal: validatedData.statusInternal,
+        statusPublic: resolvedStatuses.statusPublic,
+        statusInternal: resolvedStatuses.statusInternal,
         trelloAssignedAt: existingCompetition?.trelloAssignedAt,
         notes: validatedData.notes || null,
         updatedAt: new Date(),
@@ -199,6 +232,16 @@ export async function updateCompetition(
         .update(competitions)
         .set(updatePayload)
         .where(eq(competitions.id, competitionId));
+
+      if (cancelling) {
+        await tx
+          .update(boards)
+          .set({
+            archivedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(boards.competitionId, competitionId));
+      }
 
       // Delete existing delegate assignments
       await tx
@@ -316,17 +359,19 @@ export async function updateCompetition(
         }),
       );
 
-      const statusRows =
-        publicChanged || internalChanged
+      const statusChanged = !("noop" in statusResolution);
+      const statusRows = statusChanged
           ? [...new Set([...newDelegateWcaIds, ...newOrganizerWcaIds])].flatMap(
               (wcaId) => {
                 const recipient = usersByWca.get(wcaId);
                 if (!recipient || assignedRecipientIds.has(recipient.id)) {
                   return [];
                 }
-                const statusLabel = publicChanged
-                  ? formatPublicStatusLabel(validatedData.statusPublic)
-                  : formatInternalStatusLabel(validatedData.statusInternal);
+                const statusLabel =
+                  existingCompetition?.statusPublic !==
+                  resolvedStatuses.statusPublic
+                    ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
+                    : formatInternalStatusLabel(resolvedStatuses.statusInternal);
                 return [
                   competitionNotificationRow({
                     recipient,
@@ -336,8 +381,8 @@ export async function updateCompetition(
                     competitionId,
                     city,
                     statusLabel,
-                    statusPublic: validatedData.statusPublic,
-                    statusInternal: validatedData.statusInternal,
+                    statusPublic: resolvedStatuses.statusPublic,
+                    statusInternal: resolvedStatuses.statusInternal,
                   }),
                 ];
               },
@@ -449,10 +494,11 @@ export async function updateCompetition(
         }
       }
 
-      if (publicChanged || internalChanged) {
-        const statusLabel = publicChanged
-          ? formatPublicStatusLabel(validatedData.statusPublic)
-          : formatInternalStatusLabel(validatedData.statusInternal);
+      if (!("noop" in statusResolution)) {
+        const statusLabel =
+          existingCompetition?.statusPublic !== resolvedStatuses.statusPublic
+            ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
+            : formatInternalStatusLabel(resolvedStatuses.statusInternal);
         const statusOrganizerWcaIds = newOrganizerWcaIds.filter(
           (id) => !addedOrganizerWcaIds.includes(id),
         );

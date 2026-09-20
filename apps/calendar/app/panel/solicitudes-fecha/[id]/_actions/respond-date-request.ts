@@ -1,17 +1,12 @@
 "use server";
 
 import { db } from "@workspace/db";
+import { createCompetitionFromDateRequestAccept } from "@workspace/db/competition-transitions";
 import {
   dateRequestNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
-import {
-  competitionDelegates,
-  competitionOrganizers,
-  competitions,
-  dateRequests,
-  logs,
-} from "@workspace/db/schema";
+import { dateRequests } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
@@ -100,57 +95,19 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
         throw new Error("La solicitud ya no está disponible para confirmar");
       }
 
-      const [comp] = await tx
-        .insert(competitions)
-        .values({
+      const newCompetitionId = await createCompetitionFromDateRequestAccept(
+        tx,
+        {
+          dateRequestId,
+          actorId: session.user.id,
           city: request.city,
           stateId: request.stateId,
           requestedBy: request.requestedBy,
           startDate: request.startDate,
           endDate: request.endDate,
-          capacity: 50,
-          statusPublic: "reserved",
-          statusInternal: "looking_for_venue",
-        })
-        .returning({ id: competitions.id });
-
-      const newCompetitionId = comp!.id;
-
-      await tx.insert(competitionDelegates).values({
-        competitionId: newCompetitionId,
-        delegateWcaId: wcaId,
-        isPrimary: true,
-        status: "accepted",
-      });
-
-      await tx.insert(competitionOrganizers).values({
-        competitionId: newCompetitionId,
-        organizerWcaId: request.requestedBy,
-        isPrimary: true,
-      });
-
-      await tx.insert(logs).values({
-        action: "create_competition",
-        targetType: "competition",
-        targetId: String(newCompetitionId),
-        actorId: session.user.id,
-        details: {
-          fromDateRequestId: dateRequestId,
-          city: request.city,
-          stateId: request.stateId,
-          startDate: request.startDate,
-          endDate: request.endDate,
+          delegateWcaId: wcaId,
         },
-      });
-
-      await tx
-        .update(dateRequests)
-        .set({
-          status: "accepted",
-          competitionId: newCompetitionId,
-          updatedAt: new Date(),
-        })
-        .where(eq(dateRequests.id, dateRequestId));
+      );
 
       if (request.requester) {
         await insertNotifications(tx, [

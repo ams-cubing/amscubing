@@ -1,6 +1,5 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { db } from "@workspace/db";
@@ -8,15 +7,8 @@ import {
   evaluateBoardReadiness,
   isSuggestionApplicable,
 } from "@workspace/db/board-readiness";
-import {
-  competitionNotificationRow,
-  competitionOrganizersOnly,
-  competitionTeamUsers,
-  formatInternalStatusLabel,
-  formatPublicStatusLabel,
-  insertNotifications,
-} from "@workspace/db/notifications";
-import { competitions, logs } from "@workspace/db/schema";
+import { applyStatusTransition } from "@workspace/db/competition-transitions";
+import { competitionOrganizersOnly } from "@workspace/db/notifications";
 
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { sendCompetitionStatusChangedEmail } from "@/lib/board-emails";
@@ -64,8 +56,7 @@ export async function applyReadinessSuggestionAction(input: {
     throw new Error("Usa el calendario para anunciar la competencia");
   }
 
-  const { targetStatusPublic, targetStatusInternal } = suggestion;
-  if (!targetStatusPublic || !targetStatusInternal) {
+  if (!suggestion.transitionId) {
     throw new Error("Sugerencia inválida");
   }
 
@@ -74,54 +65,16 @@ export async function applyReadinessSuggestionAction(input: {
     boardsUrl: getBoardsUrl(),
   };
 
-  const statusLabel =
-    targetStatusPublic !== readiness.statusPublic
-      ? formatPublicStatusLabel(targetStatusPublic)
-      : formatInternalStatusLabel(targetStatusInternal);
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(competitions)
-      .set({
-        statusPublic:
-          targetStatusPublic as typeof competitions.$inferSelect.statusPublic,
-        statusInternal:
-          targetStatusInternal as typeof competitions.$inferSelect.statusInternal,
-        updatedAt: new Date(),
-      })
-      .where(eq(competitions.id, readiness.competitionId));
-
-    await tx.insert(logs).values({
-      action: "update_competition",
-      targetType: "competition",
-      targetId: String(readiness.competitionId),
+  const applied = await db.transaction(async (tx) =>
+    applyStatusTransition(tx, {
+      competitionId: readiness.competitionId,
       actorId: actor.id,
-      details: {
-        statusPublic: targetStatusPublic,
-        statusInternal: targetStatusInternal,
-        source: "board_readiness",
-        suggestionKind: suggestion.kind,
-      },
-    });
-
-    const team = await competitionTeamUsers(tx, readiness.competitionId);
-    await insertNotifications(
-      tx,
-      team.map((recipient) =>
-        competitionNotificationRow({
-          recipient,
-          actorId: actor.id,
-          type: "competition_status_changed",
-          urls,
-          competitionId: readiness.competitionId,
-          city: readiness.city,
-          statusLabel,
-          statusPublic: targetStatusPublic,
-          statusInternal: targetStatusInternal,
-        }),
-      ),
-    );
-  });
+      transitionId: suggestion.transitionId!,
+      source: "board_readiness",
+      suggestionKind: suggestion.kind,
+      urls,
+    }),
+  );
 
   try {
     const organizers = await competitionOrganizersOnly(
@@ -135,8 +88,8 @@ export async function applyReadinessSuggestionAction(input: {
         await sendCompetitionStatusChangedEmail({
           to: organizer.email,
           recipientName: organizer.name,
-          city: readiness.city,
-          statusLabel,
+          city: applied.city,
+          statusLabel: applied.statusLabel,
         });
       } catch (err) {
         console.error("Error sending organizer status email via Resend:", err);
