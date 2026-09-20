@@ -89,7 +89,7 @@ describe("getCompetitionSpotlights", () => {
       expect.objectContaining({
         id: "Ongoing",
         status: "En curso",
-        url: "https://live.worldcubeassociation.org/competitions/Ongoing",
+        url: "https://live.worldcubeassociation.org/link/competitions/Ongoing",
       }),
     ]);
   });
