@@ -255,6 +255,10 @@ export async function getBoardForUser(user: User, boardId: number) {
           socialCustomText: true,
           socialTags: true,
           socialFlyerUrl: true,
+          announcedPostedAt: true,
+          facebookPostId: true,
+          instagramMediaId: true,
+          socialPublishedManually: true,
         },
         with: {
           state: {

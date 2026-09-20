@@ -76,12 +76,14 @@ export function CardDialog({
   open,
   onOpenChange,
   readOnly = false,
+  canManageSocialPublish = false,
 }: {
   board: BoardDetail;
   card: BoardCard | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
+  canManageSocialPublish?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
@@ -524,6 +526,7 @@ export function CardDialog({
                 board={board}
                 cardId={card.id}
                 readOnly={readOnly}
+                canManageSocialPublish={canManageSocialPublish}
               />
             ) : null}
 

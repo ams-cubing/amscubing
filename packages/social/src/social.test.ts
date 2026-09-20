@@ -26,6 +26,7 @@ import {
   classifyCoverStatus,
   coverInputsFingerprint,
 } from "./cover-fingerprint";
+import { classifyCompetitionSocialStatus } from "./social-post-status";
 import type { CoverSlotInput } from "./cover-image";
 const UPEN_INFORMATION =
   "![](https://www.worldcubeassociation.org/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6MTYyNzIzLCJwdXIiOiJibG9iX2lkIn19--bf638126f96e668f65b37e3ce68edb80c6d49543/upen%20(1).png) ###### Español ¡Bienvenidos al UPEN Open 2026, otra competencia en el hermoso estado de Nayarit!. Este evento emocionante y lleno de velocidad se llevará a cabo en la ciudad de Tepic los días sábado 16 y domingo 17 de mayo de 2026. El UPEN Open 2026 reunirá a cuberos de todo el estado de Nayarit y más allá, brindándoles la oportunidad de mostrar su destreza y competir en una variedad de eventos. Tanto si eres un principiante como un profesional experimentado, este torneo ofrece una oportunidad para que todos participen y se diviertan. Esta competencia es reconocida como una competencia oficial de la Asociación Mundial del Cubo. Por lo tanto, todos los competidores deben estar familiarizados y entender el[ reglamento de la WCA](https://www.worldcubeassociation.org/regulations/translations/spanish-american/) antes de la competencia. **AVISO DE FILMACIÓN Y FOTOGRAFÍA** En este evento se tomarán fotografías y videos que podrán ser usados por la [Asociación Mexicana de Speedcubing](https://amscubing.org/) con fines de promoción, documentación y difusión de nuestras actividades. Al asistir, autorizas el uso de tu imagen en los términos de nuestro Aviso de Privacidad. 📄 Consúltalo aquí 👉 www.amscubing.org/privacidad/ ###### English Welcome to UPEN Open 2026, another competition in the beautiful state of Nayarit! This exciting and high-speed event will take place in the city of Tepic on Saturday, May 16, and Sunday, May 17, 2026. UPEN Open 2026 will bring together cubers from across the state of Nayarit and beyond, providing them with the opportunity to showcase their skills and compete in a variety of events. Whether you are a beginner or an experienced professional, this tournament offers a chance for everyone to participate and have fun. This competition is recognized as an official event by the World Cube Association. Therefore, all competitors must be familiar with and understand the[ WCA regulations](https://www.worldcubeassociation.org/regulations/) before the competition. **NOTICE OF FILMING AND PHOTOGRAPHY** Photos and videos will be taken at this event, which may be used by [Asociación Mexicana de Speedcubing](https://amscubing.org/) for promotion, documentation, and dissemination of our activities. By attending, you authorize the use of your image under the terms of our Privacy Notice. 📄 Check it here 👉 www.amscubing.org/privacidad/";
@@ -380,5 +381,66 @@ describe("classifyCoverStatus", () => {
 
   it("returns outdated when fingerprints differ", () => {
     expect(classifyCoverStatus("old", "new")).toBe("outdated");
+  });
+});
+
+describe("classifyCompetitionSocialStatus", () => {
+  const announced = {
+    statusPublic: "announced",
+    facebookPostId: null as string | null,
+    instagramMediaId: null as string | null,
+    socialPublishedManually: false,
+  };
+
+  it("returns pending_announce when not announced", () => {
+    expect(
+      classifyCompetitionSocialStatus({
+        ...announced,
+        statusPublic: "confirmed",
+      }),
+    ).toBe("pending_announce");
+  });
+
+  it("returns fb_ig when both Meta ids exist", () => {
+    expect(
+      classifyCompetitionSocialStatus({
+        ...announced,
+        facebookPostId: "fb",
+        instagramMediaId: "ig",
+      }),
+    ).toBe("fb_ig");
+  });
+
+  it("returns fb_only when only Facebook exists", () => {
+    expect(
+      classifyCompetitionSocialStatus({
+        ...announced,
+        facebookPostId: "fb",
+      }),
+    ).toBe("fb_only");
+  });
+
+  it("returns manual when marked manually without Meta", () => {
+    expect(
+      classifyCompetitionSocialStatus({
+        ...announced,
+        socialPublishedManually: true,
+      }),
+    ).toBe("manual");
+  });
+
+  it("returns missing when announced with no publish outcome", () => {
+    expect(classifyCompetitionSocialStatus(announced)).toBe("missing");
+  });
+
+  it("prefers Meta over manual", () => {
+    expect(
+      classifyCompetitionSocialStatus({
+        ...announced,
+        facebookPostId: "fb",
+        instagramMediaId: "ig",
+        socialPublishedManually: true,
+      }),
+    ).toBe("fb_ig");
   });
 });

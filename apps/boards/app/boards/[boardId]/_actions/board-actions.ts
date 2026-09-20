@@ -31,5 +31,10 @@ export {
   removeAttachmentAction,
 } from "./attachment-actions";
 
-export { saveCompetitionSocialFields } from "./social-publish-actions";
+export {
+  saveCompetitionSocialFields,
+  retryBoardCompetitionSocialPublish,
+  completeBoardCompetitionInstagramPublish,
+  markBoardCompetitionSocialManual,
+} from "./social-publish-actions";
 export { saveCompetitionWcaUrl } from "./wca-url-actions";

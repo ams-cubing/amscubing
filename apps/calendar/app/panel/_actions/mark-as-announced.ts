@@ -178,7 +178,9 @@ export async function markAsAnnounced(
 
     return {
       success: true,
-      message: "Competencia anunciada y publicada en Facebook e Instagram",
+      message: published.instagramMediaId
+        ? "Competencia anunciada y publicada en Facebook e Instagram"
+        : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)",
     };
   } catch (error) {
     console.error("Error marking competition as announced:", error);

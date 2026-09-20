@@ -28,6 +28,7 @@ import { getBoardsUrl } from "@/lib/urls";
 
 import { BoardAssignControls } from "../../_components/board-assign-controls";
 import { DateRequestResponseControls } from "./date-request-response-controls";
+import { CompetitionSocialStatusSection } from "./competition-social-status-section";
 
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
@@ -124,6 +125,15 @@ export function CompetitionDetailView({
       {pendingForCurrentUser && (
         <DateRequestResponseControls competitionId={competition.id} />
       )}
+
+      <CompetitionSocialStatusSection
+        competitionId={competition.id}
+        statusPublic={competition.statusPublic}
+        facebookPostId={competition.facebookPostId}
+        instagramMediaId={competition.instagramMediaId}
+        socialPublishedManually={competition.socialPublishedManually}
+        announcedPostedAt={competition.announcedPostedAt}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="bg-card border rounded-lg p-4 md:p-5 shadow-sm space-y-3">

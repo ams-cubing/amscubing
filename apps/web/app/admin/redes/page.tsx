@@ -6,6 +6,7 @@ import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
 import {
   buildAnnouncementPreview,
+  classifyCompetitionSocialStatus,
   facebookPostUrl,
   fetchInstagramPermalink,
   getTorneoDeRubikCoverStatus,
@@ -27,17 +28,6 @@ function todayMexicoIsoDate() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
   }).format(new Date());
-}
-
-function socialStatus(
-  facebookPostId: string | null,
-  instagramMediaId: string | null,
-  socialPublishedManually: boolean,
-): SocialPostRow["status"] {
-  if (facebookPostId && instagramMediaId) return "fb_ig";
-  if (facebookPostId) return "fb_only";
-  if (socialPublishedManually) return "manual";
-  return "missing";
 }
 
 export default async function AdminRedesPage() {
@@ -117,11 +107,12 @@ export default async function AdminRedesPage() {
           : null,
         instagramMediaId: row.instagramMediaId,
         instagramUrl,
-        status: socialStatus(
-          row.facebookPostId,
-          row.instagramMediaId,
-          row.socialPublishedManually,
-        ),
+        status: classifyCompetitionSocialStatus({
+          statusPublic: "announced",
+          facebookPostId: row.facebookPostId,
+          instagramMediaId: row.instagramMediaId,
+          socialPublishedManually: row.socialPublishedManually,
+        }),
         preview,
       };
     }),

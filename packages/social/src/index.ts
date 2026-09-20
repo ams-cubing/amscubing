@@ -65,3 +65,20 @@ export {
   type CoverStatus,
   type TorneoDeRubikCoverStatus,
 } from "./refresh-cover";
+export {
+  classifyCompetitionSocialStatus,
+  competitionSocialStatusLabel,
+  competitionSocialStatusDescription,
+  competitionSocialStatusClassName,
+  competitionSocialCanRetry,
+  competitionSocialCanCompleteInstagram,
+  competitionSocialCanMarkManual,
+  type CompetitionSocialStatus,
+  type ClassifyCompetitionSocialStatusInput,
+} from "./social-post-status";
+export {
+  retryCompetitionSocialPublish,
+  completeCompetitionInstagramPublish,
+  markCompetitionSocialPublishedManually,
+  type CompetitionSocialMutationResult,
+} from "./social-publish-recovery";

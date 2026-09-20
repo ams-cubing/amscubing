@@ -1,18 +1,26 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 
 import { SOCIAL_PUBLISH_CARD_TITLE } from "@workspace/db/data/ams-board-template";
+import { classifyCompetitionSocialStatus } from "@workspace/social/status";
 import { Button } from "@workspace/ui/components/button";
+import { CompetitionSocialStatusPanel } from "@workspace/ui/components/competition-social-status-panel";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 
 import { useUploadThing } from "@/lib/uploadthing-client";
 
-import { saveCompetitionSocialFields } from "../../_actions/social-publish-actions";
+import {
+  completeBoardCompetitionInstagramPublish,
+  markBoardCompetitionSocialManual,
+  retryBoardCompetitionSocialPublish,
+  saveCompetitionSocialFields,
+} from "../../_actions/social-publish-actions";
 import type { BoardDetail } from "../../_lib/types";
 
 export function isSocialPublishCard(title: string) {
@@ -25,15 +33,22 @@ type PreviewState =
   | { status: "ok"; caption: string; imageUrl: string | null }
   | { status: "error"; message: string };
 
+function facebookUrl(facebookPostId: string) {
+  return `https://www.facebook.com/${facebookPostId}`;
+}
+
 export function CardSocialPublishSection({
   board,
   cardId,
   readOnly,
+  canManageSocialPublish = false,
 }: {
   board: BoardDetail;
   cardId: number;
   readOnly?: boolean;
+  canManageSocialPublish?: boolean;
 }) {
+  const router = useRouter();
   const competition = board.competition;
   const [customText, setCustomText] = React.useState(
     competition?.socialCustomText ?? "",
@@ -142,6 +157,20 @@ export function CardSocialPublishSection({
     );
   }
 
+  const socialStatus = classifyCompetitionSocialStatus({
+    statusPublic: competition.statusPublic,
+    facebookPostId: competition.facebookPostId,
+    instagramMediaId: competition.instagramMediaId,
+    socialPublishedManually: competition.socialPublishedManually,
+  });
+
+  const readOnlyHint =
+    socialStatus === "pending_announce"
+      ? "Se publica al anunciar en el calendario."
+      : socialStatus === "missing" || socialStatus === "fb_only"
+        ? "Un delegado puede reintentar o completar la publicación desde aquí o en el calendario."
+        : null;
+
   const handleSave = () => {
     startTransition(async () => {
       const result = await saveCompetitionSocialFields({
@@ -161,8 +190,29 @@ export function CardSocialPublishSection({
 
   return (
     <section className="space-y-4 rounded-lg border p-4">
+      <CompetitionSocialStatusPanel
+        className="border-0 bg-muted/20 p-3 shadow-none"
+        status={socialStatus}
+        facebookPostId={competition.facebookPostId}
+        facebookUrl={
+          competition.facebookPostId
+            ? facebookUrl(competition.facebookPostId)
+            : null
+        }
+        instagramMediaId={competition.instagramMediaId}
+        announcedPostedAt={competition.announcedPostedAt}
+        canRetry={canManageSocialPublish}
+        readOnlyHint={!canManageSocialPublish ? readOnlyHint : null}
+        onRetry={() => retryBoardCompetitionSocialPublish(board.id)}
+        onCompleteInstagram={() =>
+          completeBoardCompetitionInstagramPublish(board.id)
+        }
+        onMarkManual={() => markBoardCompetitionSocialManual(board.id)}
+        onActionSuccess={() => router.refresh()}
+      />
+
       <div>
-        <h3 className="text-sm font-semibold">Publicación redes</h3>
+        <h3 className="text-sm font-semibold">Preparar contenido</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
           Etiquetas y flyer para Torneo de Rubik. Fechas, sede, categorías y
           cupo salen de la WCA. El texto personalizado es opcional: si lo dejas

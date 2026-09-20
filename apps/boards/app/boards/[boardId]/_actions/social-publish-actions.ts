@@ -1,12 +1,19 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { db } from "@workspace/db";
 import { boards, cardAttachments, competitions } from "@workspace/db/schema";
+import {
+  completeCompetitionInstagramPublish,
+  markCompetitionSocialPublishedManually,
+  retryCompetitionSocialPublish,
+  type CompetitionSocialMutationResult,
+} from "@workspace/social";
 
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
+import { requireDelegate } from "@/lib/session";
 
 export type SaveCompetitionSocialFieldsResult =
   | { ok: true; message: string }
@@ -71,4 +78,80 @@ export async function saveCompetitionSocialFields(input: {
 
   revalidatePath(`/boards/${input.boardId}`);
   return { ok: true, message: "Datos de publicación guardados" };
+}
+
+async function requireDelegateBoardCompetition(boardId: number) {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { ok: false as const, message: authResult.message };
+  }
+
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+    columns: { competitionId: true },
+  });
+
+  if (!board?.competitionId) {
+    return {
+      ok: false as const,
+      message: "Este tablero no está ligado a una competencia",
+    };
+  }
+
+  return {
+    ok: true as const,
+    competitionId: board.competitionId,
+  };
+}
+
+function revalidateBoardSocial(boardId: number) {
+  revalidatePath(`/boards/${boardId}`);
+  revalidateTag("competitions", "days");
+}
+
+export async function retryBoardCompetitionSocialPublish(
+  boardId: number,
+): Promise<CompetitionSocialMutationResult> {
+  const gate = await requireDelegateBoardCompetition(boardId);
+  if (!gate.ok) {
+    return { ok: false, message: gate.message };
+  }
+
+  const result = await retryCompetitionSocialPublish(gate.competitionId);
+  if (result.ok) {
+    revalidateBoardSocial(boardId);
+  }
+  return result;
+}
+
+export async function completeBoardCompetitionInstagramPublish(
+  boardId: number,
+): Promise<CompetitionSocialMutationResult> {
+  const gate = await requireDelegateBoardCompetition(boardId);
+  if (!gate.ok) {
+    return { ok: false, message: gate.message };
+  }
+
+  const result = await completeCompetitionInstagramPublish(gate.competitionId);
+  if (result.ok) {
+    revalidateBoardSocial(boardId);
+  }
+  return result;
+}
+
+export async function markBoardCompetitionSocialManual(
+  boardId: number,
+): Promise<CompetitionSocialMutationResult> {
+  const gate = await requireDelegateBoardCompetition(boardId);
+  if (!gate.ok) {
+    return { ok: false, message: gate.message };
+  }
+
+  const result = await markCompetitionSocialPublishedManually(
+    gate.competitionId,
+  );
+  if (result.ok) {
+    revalidateBoardSocial(boardId);
+  }
+  return result;
 }

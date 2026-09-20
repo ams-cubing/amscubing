@@ -236,6 +236,7 @@ export default async function BoardPage({
         board={board}
         readOnly={isArchived}
         initialCardId={initialCardId}
+        canManageSocialPublish={isDelegate}
       />
     </div>
   );
