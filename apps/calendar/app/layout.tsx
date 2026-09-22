@@ -11,6 +11,7 @@ import { HeaderNotifications } from "@/components/header-notifications";
 import { CalendarAmsNav } from "@/components/ams-site-nav";
 import { Toaster } from "sonner";
 import { Footer } from "@/components/footer";
+import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
 import { auth } from "@/lib/auth";
 import { canSeeBoardsNav } from "@/lib/boards";
 import {
@@ -71,10 +72,17 @@ async function CalendarAppNavWrapper() {
     ? toSessionUser(session.user as RawSessionUser)
     : null;
 
+  const isDelegate = normalizedUser?.role === "delegate";
+  const delegateBadgeCount =
+    isDelegate && normalizedUser?.wcaId
+      ? (await getDelegatePanelBadges(normalizedUser.wcaId)).total
+      : 0;
+
   return (
     <CalendarAppNav
       isSignedIn={normalizedUser != null}
-      isDelegate={normalizedUser?.role === "delegate"}
+      isDelegate={isDelegate}
+      delegateBadgeCount={delegateBadgeCount}
       notifications={
         <Suspense fallback={null}>
           <HeaderNotifications />

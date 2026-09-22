@@ -320,7 +320,7 @@ export function CompetitionForm({
           }
 
           const id = result.competitionId ?? competition?.id;
-          router.push(id ? `/panel/competencias/${id}` : "/panel");
+          router.push(id ? `/panel/competencias/${id}` : "/panel/competencias");
         } else {
           toast.error(
             result.message ||

@@ -130,6 +130,8 @@ export async function acceptDateRequest(competitionId: number): Promise<{
     revalidateTag("competitions", "days");
     revalidateTag("competition-delegates-counts", "days");
     revalidatePath(`/panel/competencias/${competitionId}`);
+    revalidatePath("/panel/competencias");
+    revalidatePath("/panel");
     revalidatePath("/mis-competencias");
 
     return {
@@ -272,6 +274,8 @@ export async function declineDateRequest(competitionId: number): Promise<{
     revalidateTag("competitions", "days");
     revalidateTag("competition-delegates-counts", "days");
     revalidatePath(`/panel/competencias/${competitionId}`);
+    revalidatePath("/panel/competencias");
+    revalidatePath("/panel");
     revalidatePath("/mis-competencias");
     revalidatePath("/solicitar-fecha");
 

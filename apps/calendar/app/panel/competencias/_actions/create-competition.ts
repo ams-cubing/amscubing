@@ -246,6 +246,7 @@ export async function createCompetition(
     revalidateTag("competition-status-internal-counts", "days");
     revalidateTag("competition-state-counts", "days");
     revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");
 

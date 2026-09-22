@@ -38,7 +38,9 @@ const suspendedCancelled: StatusPair = {
 
 describe("getTransition / assertCanApply", () => {
   it("allows confirm_venue from reserved or open", () => {
-    expect(() => assertCanApply("confirm_venue", reservedLooking)).not.toThrow();
+    expect(() =>
+      assertCanApply("confirm_venue", reservedLooking),
+    ).not.toThrow();
     expect(() =>
       assertCanApply("confirm_venue", {
         statusPublic: "open",
@@ -142,11 +144,7 @@ describe("normalizeStatusIntent", () => {
 describe("resolveStatusChange", () => {
   it("returns noop when pair unchanged", () => {
     expect(
-      resolveStatusChange(
-        reservedLooking,
-        "reserved",
-        "looking_for_venue",
-      ),
+      resolveStatusChange(reservedLooking, "reserved", "looking_for_venue"),
     ).toEqual({ noop: true });
   });
 

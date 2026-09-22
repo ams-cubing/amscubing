@@ -13,6 +13,7 @@ import { requireDelegate } from "@/lib/session";
 
 function revalidateCompetitionSocial(competitionId: number) {
   revalidateTag("competitions", "days");
+  revalidatePath("/panel/competencias");
   revalidatePath("/panel");
   revalidatePath(`/panel/competencias/${competitionId}`);
   revalidatePath("/");
