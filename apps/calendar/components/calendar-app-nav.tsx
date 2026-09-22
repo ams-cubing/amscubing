@@ -2,55 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Activity,
-  CalendarCheck,
-  CalendarDays,
-  ChevronDown,
-  Inbox,
-  Moon,
-  PlusCircle,
-  Sun,
-  UserIcon,
-} from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Suspense, type ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@workspace/ui/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
 import { cn } from "@workspace/ui/lib/utils";
+
+import { isDelegatePanelPath } from "@/lib/delegate-panel-nav";
 
 const CALENDAR_LINKS = [
   { name: "Inicio", href: "/" },
   { name: "Regiones", href: "/regiones" },
   { name: "Solicitar fecha", href: "/solicitar-fecha" },
-] as const;
-
-const DELEGATE_LINKS = [
-  { name: "Panel de delegado", href: "/panel", icon: UserIcon },
-  {
-    name: "Solicitudes de fecha",
-    href: "/panel/solicitudes-fecha",
-    icon: Inbox,
-  },
-  {
-    name: "Nueva competencia",
-    href: "/panel/competencias/nueva",
-    icon: PlusCircle,
-  },
-  {
-    name: "Disponibilidad",
-    href: "/panel/disponibilidad",
-    icon: CalendarCheck,
-  },
-  { name: "Feriados", href: "/panel/feriados", icon: CalendarDays },
-  { name: "Actividad", href: "/panel/actividad", icon: Activity },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
@@ -97,10 +62,12 @@ function NavLink({
   href,
   label,
   active,
+  badgeCount,
 }: {
   href: string;
   label: string;
   active: boolean;
+  badgeCount?: number;
 }) {
   return (
     <Link
@@ -113,6 +80,14 @@ function NavLink({
       )}
     >
       {label}
+      {badgeCount != null && badgeCount > 0 ? (
+        <span
+          className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold leading-none text-destructive-foreground"
+          aria-label={`${badgeCount} pendientes`}
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -120,21 +95,20 @@ function NavLink({
 type CalendarAppNavProps = {
   isSignedIn?: boolean;
   isDelegate?: boolean;
+  delegateBadgeCount?: number;
   notifications?: ReactNode;
 };
 
 function CalendarAppNavShell({
   isSignedIn = false,
   isDelegate = false,
+  delegateBadgeCount = 0,
   notifications,
   pathname,
 }: CalendarAppNavProps & {
   pathname: string | null;
 }) {
   const activePath = pathname ?? "";
-  const delegateActive =
-    pathname != null &&
-    DELEGATE_LINKS.some((item) => isActivePath(pathname, item.href));
 
   return (
     <div className="border-b border-border bg-card">
@@ -162,32 +136,12 @@ function CalendarAppNavShell({
             />
           ) : null}
           {isDelegate ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
-                    delegateActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent/70 hover:text-foreground",
-                  )}
-                >
-                  Delegado
-                  <ChevronDown className="size-3.5 opacity-70" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-52">
-                {DELEGATE_LINKS.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link href={item.href}>
-                      <item.icon />
-                      {item.name}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <NavLink
+              href="/panel"
+              label="Panel"
+              active={pathname != null && isDelegatePanelPath(activePath)}
+              badgeCount={delegateBadgeCount}
+            />
           ) : null}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1">

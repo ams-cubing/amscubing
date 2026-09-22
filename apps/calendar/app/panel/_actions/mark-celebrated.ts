@@ -56,6 +56,7 @@ export async function markAsCelebrated(competitionId: number): Promise<{
     revalidateTag("competitions", "days");
     revalidateTag("competition-public-status-counts", "days");
     revalidateTag("competition-status-internal-counts", "days");
+    revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");
 

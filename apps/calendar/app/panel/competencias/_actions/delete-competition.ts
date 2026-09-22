@@ -75,6 +75,7 @@ export async function deleteCompetition(competitionId: number): Promise<{
     revalidateTag("competition-status-internal-counts", "days");
     revalidateTag("competition-state-counts", "days");
     revalidateTag("competition-delegates-counts", "days");
+    revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");
 

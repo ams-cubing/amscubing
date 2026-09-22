@@ -156,6 +156,8 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
     revalidatePath(`/panel/solicitudes-fecha/${dateRequestId}`);
     revalidatePath("/panel/solicitudes-fecha");
     revalidatePath(`/panel/competencias/${competitionId}`);
+    revalidatePath("/panel/competencias");
+    revalidatePath("/panel");
     revalidatePath("/mis-competencias");
 
     return {
@@ -343,6 +345,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
 
     revalidatePath(`/panel/solicitudes-fecha/${dateRequestId}`);
     revalidatePath("/panel/solicitudes-fecha");
+    revalidatePath("/panel");
     revalidatePath("/mis-competencias");
     revalidatePath("/solicitar-fecha");
 

@@ -112,6 +112,7 @@ export async function sendUltimatum(
     }
 
     revalidateTag("competitions", "days");
+    revalidatePath("/panel/competencias");
     revalidatePath("/panel");
   } catch (error) {
     return { success: false, message: getErrorMessage(error) };

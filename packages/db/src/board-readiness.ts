@@ -1,9 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import {
-  getTransition,
-  type TransitionId,
-} from "./competition-transitions";
+import { getTransition, type TransitionId } from "./competition-transitions";
 import { db } from "./index";
 import { TEMPLATE_LISTS } from "./data/ams-board-template";
 import { boardLists, boards, competitions } from "./schema";

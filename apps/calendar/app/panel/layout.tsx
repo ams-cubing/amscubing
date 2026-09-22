@@ -4,6 +4,9 @@ import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 
+import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
+import { PanelSubnav } from "@/app/panel/_components/panel-subnav";
+
 async function PanelGuard({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -13,7 +16,16 @@ async function PanelGuard({ children }: { children: React.ReactNode }) {
     unauthorized();
   }
 
-  return <>{children}</>;
+  const badges = session.user.wcaId
+    ? await getDelegatePanelBadges(session.user.wcaId)
+    : { solicitudesFecha: 0, competencias: 0, total: 0 };
+
+  return (
+    <>
+      <PanelSubnav badges={badges} />
+      {children}
+    </>
+  );
 }
 
 function PanelGuardFallback() {

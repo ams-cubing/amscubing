@@ -120,8 +120,7 @@ const TRANSITIONS: Record<TransitionId, TransitionDef> = {
       statusPublic: "announced",
       statusInternal: "wca_approved",
     }),
-    canApply: (from) =>
-      from.statusPublic !== "announced" && !isCancelled(from),
+    canApply: (from) => from.statusPublic !== "announced" && !isCancelled(from),
     rejectMessage: "No se puede anunciar esta competencia",
   },
   open_registration: {
@@ -358,15 +357,16 @@ export async function applyStatusTransition(
       previousStatusInternal: effectiveFrom.statusInternal,
       ...(def.effects.archiveBoard ? { boardArchived: true } : {}),
       ...(input.source ? { source: input.source } : {}),
-      ...(input.suggestionKind
-        ? { suggestionKind: input.suggestionKind }
-        : {}),
+      ...(input.suggestionKind ? { suggestionKind: input.suggestionKind } : {}),
       ...(input.extraLogDetails ?? {}),
     },
   });
 
   if (def.effects.notify) {
-    const team = await competitionTeamUsers(tx as typeof db, input.competitionId);
+    const team = await competitionTeamUsers(
+      tx as typeof db,
+      input.competitionId,
+    );
     await insertNotifications(
       tx as typeof db,
       team.map((recipient) =>

@@ -138,10 +138,7 @@ export async function updateCompetition(
       statusInternal: validatedData.statusInternal,
     };
 
-    if (
-      existingCompetition &&
-      (publicChanged || internalChanged)
-    ) {
+    if (existingCompetition && (publicChanged || internalChanged)) {
       statusResolution = resolveStatusChange(
         {
           statusPublic: existingCompetition.statusPublic,
@@ -166,10 +163,7 @@ export async function updateCompetition(
       instagramMediaId: string | null;
     } | null = null;
 
-    if (
-      transitioningToAnnounced &&
-      !existingCompetition?.announcedPostedAt
-    ) {
+    if (transitioningToAnnounced && !existingCompetition?.announcedPostedAt) {
       const published = await publishCompetitionSocialAnnouncement({
         wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
         city: validatedData.city,
@@ -361,33 +355,33 @@ export async function updateCompetition(
 
       const statusChanged = !("noop" in statusResolution);
       const statusRows = statusChanged
-          ? [...new Set([...newDelegateWcaIds, ...newOrganizerWcaIds])].flatMap(
-              (wcaId) => {
-                const recipient = usersByWca.get(wcaId);
-                if (!recipient || assignedRecipientIds.has(recipient.id)) {
-                  return [];
-                }
-                const statusLabel =
-                  existingCompetition?.statusPublic !==
-                  resolvedStatuses.statusPublic
-                    ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
-                    : formatInternalStatusLabel(resolvedStatuses.statusInternal);
-                return [
-                  competitionNotificationRow({
-                    recipient,
-                    actorId: session.user.id,
-                    type: "competition_status_changed",
-                    urls,
-                    competitionId,
-                    city,
-                    statusLabel,
-                    statusPublic: resolvedStatuses.statusPublic,
-                    statusInternal: resolvedStatuses.statusInternal,
-                  }),
-                ];
-              },
-            )
-          : [];
+        ? [...new Set([...newDelegateWcaIds, ...newOrganizerWcaIds])].flatMap(
+            (wcaId) => {
+              const recipient = usersByWca.get(wcaId);
+              if (!recipient || assignedRecipientIds.has(recipient.id)) {
+                return [];
+              }
+              const statusLabel =
+                existingCompetition?.statusPublic !==
+                resolvedStatuses.statusPublic
+                  ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
+                  : formatInternalStatusLabel(resolvedStatuses.statusInternal);
+              return [
+                competitionNotificationRow({
+                  recipient,
+                  actorId: session.user.id,
+                  type: "competition_status_changed",
+                  urls,
+                  competitionId,
+                  city,
+                  statusLabel,
+                  statusPublic: resolvedStatuses.statusPublic,
+                  statusInternal: resolvedStatuses.statusInternal,
+                }),
+              ];
+            },
+          )
+        : [];
 
       await insertNotifications(tx, [...assignmentRows, ...statusRows]);
     });
@@ -538,6 +532,7 @@ export async function updateCompetition(
     revalidateTag("competition-state-counts", "days");
     revalidateTag("competition-delegates-counts", "days");
     revalidatePath("/panel/competencias", "layout");
+    revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");
 
