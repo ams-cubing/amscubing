@@ -182,6 +182,37 @@ export function formatDateRangeEs(startDate: string, endDate: string): string {
   return `${formatDateEs(startDate)} – ${formatDateEs(endDate)}`;
 }
 
+/**
+ * Upcoming-list caption dates: `16-17 de agosto 2025` or `6 de septiembre 2025`.
+ */
+export function formatUpcomingListDateRangeEs(
+  startDate: string,
+  endDate: string,
+): string {
+  const start = parseIsoParts(startDate);
+  if (!start) return startDate;
+  const startMonth = monthName(start.month);
+
+  if (!endDate || endDate === startDate) {
+    return `${start.day} de ${startMonth} ${start.year}`;
+  }
+
+  const end = parseIsoParts(endDate);
+  if (!end) {
+    return `${startDate} – ${endDate}`;
+  }
+
+  if (start.year === end.year && start.month === end.month) {
+    return `${start.day}-${end.day} de ${startMonth} ${start.year}`;
+  }
+
+  if (start.year === end.year) {
+    return `${start.day} de ${startMonth} – ${end.day} de ${monthName(end.month)} ${start.year}`;
+  }
+
+  return `${start.day} de ${startMonth} ${start.year} – ${end.day} de ${monthName(end.month)} ${end.year}`;
+}
+
 function isoToDatePart(value: string | null | undefined): string | null {
   if (!value?.trim()) return null;
   const trimmed = value.trim();

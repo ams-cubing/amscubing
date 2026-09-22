@@ -1,0 +1,2 @@
+CREATE TYPE "public"."delegate_assignment_status" AS ENUM('pending', 'accepted', 'declined');--> statement-breakpoint
+ALTER TABLE "competition_delegate" ADD COLUMN "status" "delegate_assignment_status" DEFAULT 'accepted' NOT NULL;

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { formatAction } from "@/lib/utils";
+import { requireDelegate } from "@/lib/session";
 
 import { CompetitionDetailView } from "./_components/competition-detail-view";
 import { DetailsDialog } from "./_components/details-dialog";
@@ -25,12 +26,20 @@ async function PageContent({
     notFound();
   }
 
-  const competitionLogs = await getCompetitionLogs(competition.id);
+  const [competitionLogs, authResult] = await Promise.all([
+    getCompetitionLogs(competition.id),
+    requireDelegate(),
+  ]);
+
+  const currentUserWcaId = authResult.ok ? authResult.session.user.wcaId : null;
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
-        <CompetitionDetailView competition={competition} />
+        <CompetitionDetailView
+          competition={competition}
+          currentUserWcaId={currentUserWcaId}
+        />
 
         <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
           <h2 className="text-lg md:text-xl font-bold mb-4">

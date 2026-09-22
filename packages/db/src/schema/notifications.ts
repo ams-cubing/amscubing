@@ -24,6 +24,8 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "competition_status_changed",
   "competition_readiness",
   "date_requested",
+  "date_request_accepted",
+  "date_request_declined",
   "ultimatum_sent",
 ]);
 
@@ -35,6 +37,7 @@ export type NotificationPayload = {
   cardId?: number;
   cardTitle?: string;
   competitionId?: number;
+  dateRequestId?: number;
   city?: string;
   statusPublic?: string;
   statusInternal?: string;

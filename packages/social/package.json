@@ -10,7 +10,8 @@
     "test:watch": "vitest"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./status": "./src/social-post-status.ts"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

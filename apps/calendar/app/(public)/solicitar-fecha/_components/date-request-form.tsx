@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,6 +36,28 @@ import { es } from "react-day-picker/locale";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
+
+function makeDateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function rangeIsFullyAvailable(
+  from: Date,
+  to: Date,
+  availableDateKeys: Set<string>,
+) {
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(0, 0, 0, 0);
+  while (cursor <= end) {
+    if (!availableDateKeys.has(makeDateKey(cursor))) return false;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return true;
+}
 
 const dateRequestSchema = z
   .object({
@@ -76,11 +98,6 @@ export function DateRequestForm({
     parseDateStringToLocal(a.date),
   );
 
-  const makeDateKey = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate(),
-    ).padStart(2, "0")}`;
-
   const availableDateKeys = new Set(availableDates.map(makeDateKey));
 
   const [pending, startTransition] = useTransition();
@@ -111,6 +128,12 @@ export function DateRequestForm({
       endDate: undefined,
     },
   });
+
+  useEffect(() => {
+    form.setValue("stateId", state || "");
+    form.setValue("startDate", undefined as unknown as Date);
+    form.setValue("endDate", undefined as unknown as Date);
+  }, [state, form]);
 
   const stateSelected = Boolean(form.watch("stateId"));
 
@@ -231,12 +254,32 @@ export function DateRequestForm({
                 }}
                 onSelect={(range: DateRange | undefined) => {
                   if (!stateSelected) return;
-                  if (range?.from) {
+                  if (!range?.from) {
+                    form.setValue("startDate", undefined as unknown as Date);
+                    form.setValue("endDate", undefined as unknown as Date);
+                    return;
+                  }
+                  if (range.to) {
+                    if (
+                      !rangeIsFullyAvailable(
+                        range.from,
+                        range.to,
+                        availableDateKeys,
+                      )
+                    ) {
+                      form.setValue("startDate", range.from);
+                      form.setValue("endDate", undefined as unknown as Date);
+                      toast.error(
+                        "El rango incluye días sin disponibilidad. Elige fechas contiguas disponibles.",
+                      );
+                      return;
+                    }
                     form.setValue("startDate", range.from);
-                  }
-                  if (range?.to) {
                     form.setValue("endDate", range.to);
+                    return;
                   }
+                  form.setValue("startDate", range.from);
+                  form.setValue("endDate", undefined as unknown as Date);
                 }}
                 disabled={(date) => {
                   if (!stateSelected) return true;

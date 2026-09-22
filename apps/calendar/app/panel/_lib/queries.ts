@@ -70,6 +70,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                       SELECT 1
                       FROM competition_delegate cd
                       WHERE cd.competition_id = ${competitions.id}
+                        AND cd.status <> 'declined'
                         AND cd.delegate_wca_id IN (${sql.join(delegateValueLiterals, sql`, `)})
                     )
                   `
@@ -82,6 +83,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                       SELECT 1
                       FROM competition_delegate cd_unassigned
                       WHERE cd_unassigned.competition_id = ${competitions.id}
+                        AND cd_unassigned.status <> 'declined'
                     )
                   `
                   : sql``
@@ -158,6 +160,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
               name: string;
               image: string | null;
               isPrimary: boolean;
+              status: "pending" | "accepted" | "declined";
             }[]
           >`
               COALESCE(
@@ -165,11 +168,13 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                   'wcaId', u.wca_id,
                   'name', u.name,
                   'image', u.image,
-                  'isPrimary', cd.is_primary
+                  'isPrimary', cd.is_primary,
+                  'status', cd.status
                 ))
                 FROM competition_delegate cd
                 JOIN "user" u ON u.wca_id = cd.delegate_wca_id
-                WHERE cd.competition_id = ${competitions.id}),
+                WHERE cd.competition_id = ${competitions.id}
+                  AND cd.status <> 'declined'),
                 '[]'::json
               )
             `,
@@ -350,6 +355,7 @@ export async function getCompetitionDelegatesCounts() {
         eq(competitions.id, competitionDelegates.competitionId),
       )
       .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
+      .where(ne(competitionDelegates.status, "declined"))
       .groupBy(competitionDelegates.delegateWcaId, user.name)
       .having(gt(count(), 0));
 
@@ -364,6 +370,7 @@ export async function getCompetitionDelegatesCounts() {
             SELECT 1
             FROM competition_delegate cd
             WHERE cd.competition_id = ${competitions.id}
+              AND cd.status <> 'declined'
           )
         `,
       )

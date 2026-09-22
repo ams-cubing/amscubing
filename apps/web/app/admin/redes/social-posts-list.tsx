@@ -4,6 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Image from "next/image";
 
+import {
+  competitionSocialCanCompleteInstagram,
+  competitionSocialCanMarkManual,
+  competitionSocialCanRetry,
+  competitionSocialStatusClassName,
+  competitionSocialStatusLabel,
+  type CompetitionSocialStatus,
+} from "@workspace/social/status";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -33,7 +41,7 @@ export type SocialPostRow = {
   facebookUrl: string | null;
   instagramMediaId: string | null;
   instagramUrl: string | null;
-  status: "fb_ig" | "fb_only" | "manual" | "missing";
+  status: CompetitionSocialStatus;
   preview:
     | {
         ok: true;
@@ -47,32 +55,6 @@ export type SocialPostRow = {
     | { ok: false; message: string }
     | null;
 };
-
-function statusLabel(status: SocialPostRow["status"]) {
-  switch (status) {
-    case "fb_ig":
-      return "FB + IG";
-    case "fb_only":
-      return "Solo FB";
-    case "manual":
-      return "Manual";
-    case "missing":
-      return "Sin publicar";
-  }
-}
-
-function statusClass(status: SocialPostRow["status"]) {
-  switch (status) {
-    case "fb_ig":
-      return "bg-emerald-100 text-emerald-900";
-    case "fb_only":
-      return "bg-amber-100 text-amber-900";
-    case "manual":
-      return "bg-sky-100 text-sky-900";
-    case "missing":
-      return "bg-rose-100 text-rose-900";
-  }
-}
 
 function formatDate(iso: string) {
   const [year, month, day] = iso.split("-").map(Number);
@@ -103,9 +85,12 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
       ? formatDate(row.startDate)
       : `${formatDate(row.startDate)} – ${formatDate(row.endDate)}`;
 
-  const canRetry = row.status === "missing";
-  const canCompleteIg = Boolean(row.facebookPostId) && !row.instagramMediaId;
-  const canMarkManual = row.status === "missing";
+  const canRetry = competitionSocialCanRetry(row.status);
+  const canCompleteIg = competitionSocialCanCompleteInstagram({
+    facebookPostId: row.facebookPostId,
+    instagramMediaId: row.instagramMediaId,
+  });
+  const canMarkManual = competitionSocialCanMarkManual(row.status);
 
   const runAction = (action: "retry" | "ig" | "manual") => {
     setMessage(null);
@@ -138,9 +123,9 @@ function SocialPostCard({ row }: { row: SocialPostRow }) {
               {title}
             </h4>
             <span
-              className={`ams-heading rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(row.status)}`}
+              className={`ams-heading rounded-full px-2.5 py-1 text-xs font-bold ${competitionSocialStatusClassName(row.status)}`}
             >
-              {statusLabel(row.status)}
+              {competitionSocialStatusLabel(row.status)}
             </span>
           </div>
           <p className="ams-copy text-sm text-black/60">

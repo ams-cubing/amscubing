@@ -50,6 +50,11 @@ export const logTargetTypeEnum = pgEnum("log_target_type", [
   "availability",
 ]);
 
+export const delegateAssignmentStatusEnum = pgEnum(
+  "delegate_assignment_status",
+  ["pending", "accepted", "declined"],
+);
+
 export const competitions = pgTable("competition", {
   id: serial("id").primaryKey(),
   name: text("name"),
@@ -67,7 +72,7 @@ export const competitions = pgTable("competition", {
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
 
-  capacity: integer("capacity").notNull().default(0),
+  capacity: integer("capacity").notNull().default(50),
 
   statusPublic: publicStatusEnum("status_public").default("reserved").notNull(),
   statusInternal: internalStatusEnum("status_internal")
@@ -108,6 +113,7 @@ export const competitionDelegates = pgTable("competition_delegate", {
     .notNull()
     .references(() => user.wcaId, { onDelete: "cascade" }),
   isPrimary: boolean("is_primary").default(false).notNull(),
+  status: delegateAssignmentStatusEnum("status").default("accepted").notNull(),
 });
 
 export type CompetitionDelegate = InferSelectModel<typeof competitionDelegates>;

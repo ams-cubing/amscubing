@@ -1,5 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
+import {
+  getTransition,
+  type TransitionId,
+} from "./competition-transitions";
 import { db } from "./index";
 import { TEMPLATE_LISTS } from "./data/ams-board-template";
 import { boardLists, boards, competitions } from "./schema";
@@ -87,7 +91,11 @@ export type ReadinessSuggestion = {
   kindLabel: "apply_status" | "announce_ready";
   label: string;
   description: string;
+  /** Named transition to apply when kindLabel is apply_status */
+  transitionId?: TransitionId;
+  /** Derived from transitionId; kept for notification payload compatibility */
   targetStatusPublic?: string;
+  /** Derived from transitionId; kept for notification payload compatibility */
   targetStatusInternal?: string;
   missingCards: { title: string; currentList: string }[];
   progress: { approved: number; total: number };
@@ -144,6 +152,15 @@ function phaseProgress(phaseCards: BoardCardRow[]) {
   return { approved, total: phaseCards.length };
 }
 
+function targetsFromTransition(transitionId: TransitionId) {
+  // ask_for_help needs from-state; readiness never uses it.
+  const to = getTransition(transitionId).resolveTo({
+    statusPublic: "announced",
+    statusInternal: "wca_approved",
+  });
+  return { public: to.statusPublic, internal: to.statusInternal };
+}
+
 function buildSuggestion(
   kind: ReadinessSuggestionKind,
   phaseCards: BoardCardRow[],
@@ -151,13 +168,17 @@ function buildSuggestion(
   description: string,
   kindLabel: ReadinessSuggestion["kindLabel"],
   readyToApply: boolean,
-  targets?: { public: string; internal: string },
+  transitionId?: TransitionId,
 ): ReadinessSuggestion {
+  const targets = transitionId
+    ? targetsFromTransition(transitionId)
+    : undefined;
   return {
     kind,
     kindLabel,
     label,
     description,
+    transitionId,
     targetStatusPublic: targets?.public,
     targetStatusInternal: targets?.internal,
     missingCards: missingFromApproved(phaseCards),
@@ -216,7 +237,7 @@ export async function evaluateBoardReadiness(
       "Todas las tarjetas de pre-anuncio están aprobadas. Puedes marcar la sede como confirmada.",
       "apply_status",
       true,
-      { public: "confirmed", internal: "venue_found" },
+      "confirm_venue",
     );
   } else if (
     statusPublic === "confirmed" &&
@@ -246,7 +267,7 @@ export async function evaluateBoardReadiness(
       "Todas las tarjetas de post-anuncio están aprobadas. Puedes marcar el registro como abierto.",
       "apply_status",
       true,
-      { public: "announced", internal: "registration_open" },
+      "open_registration",
     );
   } else if (
     statusInternal !== "celebrated" &&
@@ -261,7 +282,7 @@ export async function evaluateBoardReadiness(
       "Todas las tarjetas de post-celebración están aprobadas. Puedes marcar la competencia como celebrada.",
       "apply_status",
       true,
-      { public: "announced", internal: "celebrated" },
+      "celebrate",
     );
   } else if (preAnnounce.length > 0 && !preAnnounceReady) {
     suggestion = buildSuggestion(
@@ -271,7 +292,7 @@ export async function evaluateBoardReadiness(
       "Completa y aprueba las tarjetas de pre-anuncio para confirmar la sede.",
       "apply_status",
       false,
-      { public: "confirmed", internal: "venue_found" },
+      "confirm_venue",
     );
   } else if (
     postAnnounce.length > 0 &&
@@ -285,7 +306,7 @@ export async function evaluateBoardReadiness(
       "Completa y aprueba las tarjetas de post-anuncio.",
       "apply_status",
       false,
-      { public: "announced", internal: "registration_open" },
+      "open_registration",
     );
   } else if (postCelebrate.length > 0 && !postCelebrateReady) {
     suggestion = buildSuggestion(
@@ -295,7 +316,7 @@ export async function evaluateBoardReadiness(
       "Completa y aprueba las tarjetas de post-celebración.",
       "apply_status",
       false,
-      { public: "announced", internal: "celebrated" },
+      "celebrate",
     );
   }
 

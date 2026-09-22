@@ -2,6 +2,10 @@
 
 import { db } from "@workspace/db";
 import {
+  assertInitialStatuses,
+  normalizeStatusIntent,
+} from "@workspace/db/competition-transitions";
+import {
   competitionNotificationRow,
   insertNotifications,
   userIdsByWcaIds,
@@ -11,9 +15,7 @@ import {
   competitionDelegates,
   competitionOrganizers,
   logs,
-  availability,
 } from "@workspace/db/schema";
-import { and, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import {
@@ -24,6 +26,7 @@ import {
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
 } from "@workspace/social";
+import { holdAvailability, toDateOnlyString } from "@/lib/availability-dates";
 import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -47,8 +50,14 @@ export async function createCompetition(
     // Validate input
     const validatedData = createCompetitionSchema.parse(data);
 
-    const startDateStr = validatedData.startDate.toISOString().split("T")[0];
-    const endDateStr = validatedData.endDate.toISOString().split("T")[0];
+    const initialStatuses = normalizeStatusIntent({
+      statusPublic: validatedData.statusPublic,
+      statusInternal: validatedData.statusInternal,
+    });
+    assertInitialStatuses(initialStatuses);
+
+    const startDateStr = toDateOnlyString(validatedData.startDate);
+    const endDateStr = toDateOnlyString(validatedData.endDate);
 
     let newCompetitionId: number | undefined;
 
@@ -61,14 +70,14 @@ export async function createCompetition(
       instagramMediaId: string | null;
     } | null = null;
 
-    if (validatedData.statusPublic === "announced") {
+    if (initialStatuses.statusPublic === "announced") {
       const published = await publishCompetitionSocialAnnouncement({
         wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
         city: validatedData.city,
         name: validatedData.name || null,
         startDate: startDateStr!,
         endDate: endDateStr!,
-        capacity: validatedData.capacity || 0,
+        capacity: validatedData.capacity ?? 50,
         socialCustomText: "",
       });
       if (!published.ok) {
@@ -95,11 +104,11 @@ export async function createCompetition(
             announcedSocial?.wcaCompetitionUrl ||
             validatedData.wcaCompetitionUrl ||
             null,
-          capacity: validatedData.capacity || 0,
+          capacity: validatedData.capacity ?? 50,
           startDate: startDateStr!,
           endDate: endDateStr!,
-          statusPublic: validatedData.statusPublic,
-          statusInternal: validatedData.statusInternal,
+          statusPublic: initialStatuses.statusPublic,
+          statusInternal: initialStatuses.statusInternal,
           trelloAssignedAt: trelloAssignedAt,
           notes: validatedData.notes || null,
           announcedPostedAt: announcedSocial ? new Date() : null,
@@ -114,21 +123,15 @@ export async function createCompetition(
         competitionId: newCompetitionId,
         delegateWcaId: wcaId,
         isPrimary: wcaId === validatedData.primaryDelegateWcaId,
+        status: "accepted" as const,
       }));
 
       if (delegateAssignments.length > 0) {
         await tx.insert(competitionDelegates).values(delegateAssignments);
 
-        // Remove availability entries for assigned delegates for the competition date range
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              inArray(availability.userWcaId, validatedData.delegateWcaIds),
-              gte(availability.date, startDateStr!),
-              lte(availability.date, endDateStr!),
-            ),
-          );
+        for (const wcaId of validatedData.delegateWcaIds) {
+          await holdAvailability(tx, wcaId, startDateStr!, endDateStr!);
+        }
       }
 
       const organizerAssignments = validatedData.organizerWcaIds.map(

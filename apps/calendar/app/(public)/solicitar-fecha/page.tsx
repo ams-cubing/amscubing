@@ -5,6 +5,7 @@ import { formatDistance } from "date-fns";
 import { es } from "date-fns/locale";
 import { headers } from "next/headers";
 import { Mail } from "lucide-react";
+import { MAX_DATE_REQUESTS_PER_WEEK } from "./_lib/constants";
 import {
   getRecentRequestsCount,
   getDelegatesForState,
@@ -44,10 +45,22 @@ async function PageContent({
     );
   }
 
-  const recentRequestsCount = await getRecentRequestsCount(session.user.wcaId);
+  if (!session.user.wcaId) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 md:p-5 shadow-sm">
+            <p className="text-sm md:text-base text-blue-800 dark:text-blue-200 font-medium">
+              Tu cuenta necesita un WCA ID vinculado para solicitar una fecha.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
-  const MAX_REQUESTS_PER_WEEK = 3;
-  const canSubmit = recentRequestsCount.length < MAX_REQUESTS_PER_WEEK;
+  const recentRequestsCount = await getRecentRequestsCount(session.user.wcaId);
+  const canSubmit = recentRequestsCount.length < MAX_DATE_REQUESTS_PER_WEEK;
 
   if (!canSubmit) {
     return (
@@ -59,14 +72,14 @@ async function PageContent({
             </h1>
             <p className="text-muted-foreground mt-2 text-sm md:text-base">
               Complete el formulario para solicitar una fecha para su
-              competencia. El delegado será asignado automáticamente según la
-              ubicación.
+              competencia. Se propondrá un delegado según la ubicación; la
+              asignación queda pendiente de su confirmación.
             </p>
           </div>
           <div className="bg-yellow-50 border border-yellow-200 dark:border-yellow-700 dark:bg-yellow-900/20 rounded-lg p-4 md:p-5 shadow-sm">
             <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 font-medium">
               Has alcanzado el límite de solicitudes por semana (
-              {MAX_REQUESTS_PER_WEEK}). Por favor, intenta nuevamente en{" "}
+              {MAX_DATE_REQUESTS_PER_WEEK}). Por favor, intenta nuevamente en{" "}
               {formatDistance(
                 new Date(
                   // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
@@ -106,7 +119,8 @@ async function PageContent({
           </h1>
           <p className="text-muted-foreground mt-2 text-sm md:text-base">
             Complete el formulario para solicitar una fecha para su competencia.
-            El delegado será asignado automáticamente según la ubicación.
+            Se propondrá un delegado según la ubicación; la asignación queda
+            pendiente de su confirmación.
           </p>
         </div>
         <DateRequestForm availability={availabilityData} />

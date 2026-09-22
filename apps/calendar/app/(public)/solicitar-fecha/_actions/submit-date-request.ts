@@ -2,28 +2,24 @@
 
 import { db } from "@workspace/db";
 import {
-  competitionNotificationRow,
+  dateRequestNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
-import {
-  competitions,
-  user,
-  states,
-  competitionDelegates,
-  competitionOrganizers,
-  availability,
-  logs,
-} from "@workspace/db/schema";
+import { dateRequests } from "@workspace/db/schema";
+import { and, eq, gte } from "drizzle-orm";
 import { z } from "zod";
-import { eq, and, lte, gte } from "drizzle-orm";
+import { headers } from "next/headers";
+
+import { holdAvailability, toDateOnlyString } from "@/lib/availability-dates";
 import { auth } from "@/lib/auth";
 import {
   sendDateRequestDelegateEmail,
   sendDateRequestOrganizerEmail,
 } from "@/lib/calendar-emails";
+import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
-import { headers } from "next/headers";
+import { MAX_DATE_REQUESTS_PER_WEEK } from "../_lib/constants";
 
 const dateRequestSchema = z
   .object({
@@ -61,185 +57,128 @@ export async function submitDateRequest(
       };
     }
 
-    // Validate input
-    const validatedData = dateRequestSchema.parse(data);
-
-    // 1. Get the state and its region
-    const state = await db.query.states.findFirst({
-      where: eq(states.id, validatedData.stateId),
-      with: {
-        region: true,
-      },
-    });
-
-    if (!state) {
+    if (!session.user.wcaId) {
       return {
         success: false,
-        message: "Estado no encontrado",
+        message: "Usuario sin WCA ID",
       };
     }
 
-    // 2. Find a delegate availble for that region
-    const startDateStr = validatedData.startDate.toISOString().split("T")[0];
-    const endDateStr = validatedData.endDate.toISOString().split("T")[0];
-    const start = new Date(startDateStr!);
-    const end = new Date(endDateStr!);
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    const daysCount =
-      Math.floor((end.getTime() - start.getTime()) / oneDayMs) + 1;
+    const validatedData = dateRequestSchema.parse(data);
+    const startDateStr = toDateOnlyString(validatedData.startDate);
+    const endDateStr = toDateOnlyString(validatedData.endDate);
+    const requesterWcaId = session.user.wcaId;
 
-    let candidates = await db.query.user.findMany({
-      where: and(eq(user.regionId, state.regionId), eq(user.role, "delegate")),
-      columns: { id: true, wcaId: true, name: true, email: true, role: true },
+    const recentRequests = await db.query.dateRequests.findMany({
+      where: and(
+        eq(dateRequests.requestedBy, requesterWcaId),
+        gte(
+          dateRequests.createdAt,
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        ),
+      ),
+      columns: { id: true },
     });
 
-    if (candidates.length === 0) {
-      candidates = await db.query.user.findMany({
-        where: eq(user.role, "delegate"),
-        columns: { id: true, wcaId: true, name: true, email: true, role: true },
-      });
+    if (recentRequests.length >= MAX_DATE_REQUESTS_PER_WEEK) {
+      return {
+        success: false,
+        message:
+          "Has alcanzado el límite de 3 solicitudes por semana. Intenta de nuevo más tarde.",
+      };
     }
 
-    let delegateInRegion = null;
-    for (const c of candidates) {
-      // availability rows for the full range
-      const availRows = await db.query.availability.findMany({
-        where: (a, { and, eq, gte, lte }) =>
-          and(
-            eq(a.userWcaId, c.wcaId),
-            gte(a.date, startDateStr!),
-            lte(a.date, endDateStr!),
-          ),
-        columns: { date: true },
-      });
+    let proposedDelegate;
+    let newRequest;
 
-      if (availRows.length !== daysCount) continue;
-
-      // ensure no overlapping competitions assigned in the same range
-      const overlapping = await db
-        .select()
-        .from(competitionDelegates)
-        .innerJoin(
-          competitions,
-          eq(competitionDelegates.competitionId, competitions.id),
-        )
-        .where(
-          and(
-            eq(competitionDelegates.delegateWcaId, c.wcaId),
-            lte(competitions.startDate, endDateStr!),
-            gte(competitions.endDate, startDateStr!),
-          ),
-        )
-        .limit(1);
-
-      if (overlapping.length > 0) continue;
-
-      delegateInRegion = c;
-      break;
-    }
-
-    let newCompetition;
     try {
       const result = await db.transaction(async (tx) => {
-        const [comp] = await tx
-          .insert(competitions)
+        const proposed = await findEligibleDelegate(
+          {
+            stateId: validatedData.stateId,
+            startDate: startDateStr,
+            endDate: endDateStr,
+          },
+          tx,
+        );
+
+        if (!proposed) {
+          return { proposed: null, request: null };
+        }
+
+        const [request] = await tx
+          .insert(dateRequests)
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            requestedBy: session?.user?.wcaId,
-            startDate: startDateStr!,
-            endDate: endDateStr!,
-            statusPublic: "reserved",
-            statusInternal: "looking_for_venue",
+            requestedBy: requesterWcaId,
+            startDate: startDateStr,
+            endDate: endDateStr,
+            proposedDelegateWcaId: proposed.wcaId,
+            declinedDelegateWcaIds: [],
+            status: "open",
           })
           .returning();
 
-        if (!delegateInRegion) {
-          return { comp };
-        }
+        await holdAvailability(tx, proposed.wcaId, startDateStr, endDateStr);
 
-        await tx.insert(competitionDelegates).values({
-          competitionId: comp?.id,
-          delegateWcaId: delegateInRegion.wcaId,
-          isPrimary: true,
-        });
+        await insertNotifications(tx, [
+          dateRequestNotificationRow({
+            recipient: {
+              id: proposed.id,
+              role: proposed.role,
+              wcaId: proposed.wcaId,
+            },
+            actorId: session.user.id,
+            type: "date_requested",
+            urls: notificationAppUrls(),
+            dateRequestId: request!.id,
+            city: validatedData.city,
+          }),
+        ]);
 
-        await tx
-          .delete(availability)
-          .where(
-            and(
-              eq(availability.userWcaId, delegateInRegion.wcaId),
-              gte(availability.date, startDateStr!),
-              lte(availability.date, endDateStr!),
-            ),
-          );
-
-        if (session?.user?.wcaId) {
-          await tx.insert(competitionOrganizers).values({
-            competitionId: comp?.id,
-            organizerWcaId: session.user.wcaId,
-            isPrimary: true,
-          });
-        }
-
-        await tx.insert(logs).values({
-          action: "create_competition",
-          targetType: "competition",
-          targetId: String(comp?.id),
-          actorId: session?.user.id,
-          details: validatedData,
-        });
-
-        if (comp?.id && session?.user?.id) {
-          await insertNotifications(tx, [
-            competitionNotificationRow({
-              recipient: {
-                id: delegateInRegion.id,
-                role: delegateInRegion.role,
-                wcaId: delegateInRegion.wcaId,
-              },
-              actorId: session.user.id,
-              type: "date_requested",
-              urls: notificationAppUrls(),
-              competitionId: comp.id,
-              city: validatedData.city,
-            }),
-          ]);
-        }
-
-        return { comp };
+        return { proposed, request };
       });
 
-      newCompetition = result.comp;
+      proposedDelegate = result.proposed;
+      newRequest = result.request;
     } catch (err) {
       console.error("Transaction failed:", err);
       throw err;
     }
 
+    if (!proposedDelegate || !newRequest) {
+      return {
+        success: false,
+        message:
+          "No hay un delegado disponible para esas fechas. Elige otro rango o intenta más tarde.",
+      };
+    }
+
     try {
-      if (delegateInRegion) {
-        await sendDateRequestDelegateEmail({
-          to: delegateInRegion.email,
-          delegateName: delegateInRegion.name,
-          city: newCompetition?.city ?? validatedData.city,
-          startDate: startDateStr!,
-          endDate: endDateStr!,
-        });
-      }
+      await sendDateRequestDelegateEmail({
+        to: proposedDelegate.email,
+        delegateName: proposedDelegate.name,
+        city: newRequest.city ?? validatedData.city,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        dateRequestId: newRequest.id,
+      });
     } catch (err) {
       console.error("Error sending delegate email via Resend:", err);
     }
 
     try {
-      if (session?.user?.email && session.user.name) {
+      if (session.user.email && session.user.name) {
         await sendDateRequestOrganizerEmail({
           to: session.user.email,
           organizerName: session.user.name,
-          city: newCompetition?.city ?? validatedData.city,
-          startDate: startDateStr!,
-          endDate: endDateStr!,
-          delegateName: delegateInRegion?.name ?? null,
-          delegateEmail: delegateInRegion?.email ?? null,
+          city: newRequest.city ?? validatedData.city,
+          startDate: startDateStr,
+          endDate: endDateStr,
+          delegateName: proposedDelegate.name,
+          delegateEmail: proposedDelegate.email,
+          pendingConfirmation: true,
         });
       }
     } catch (err) {
@@ -248,7 +187,7 @@ export async function submitDateRequest(
 
     return {
       success: true,
-      message: `Solicitud creada exitosamente. Delegado asignado: ${delegateInRegion ? delegateInRegion.name : "Aún no se ha asignado un delegado"}`,
+      message: `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`,
     };
   } catch (error) {
     console.error("Error submitting date request:", error);

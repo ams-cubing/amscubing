@@ -52,10 +52,12 @@ export function BoardKanban({
   board,
   readOnly = false,
   initialCardId = null,
+  canManageSocialPublish = false,
 }: {
   board: BoardDetail;
   readOnly?: boolean;
   initialCardId?: number | null;
+  canManageSocialPublish?: boolean;
 }) {
   const [columns, setColumns] = React.useState<ColumnsState>(() =>
     boardToColumns(board),
@@ -263,6 +265,7 @@ export function BoardKanban({
           if (!open) selectCard(null);
         }}
         readOnly={readOnly}
+        canManageSocialPublish={canManageSocialPublish}
       />
     </div>
   );

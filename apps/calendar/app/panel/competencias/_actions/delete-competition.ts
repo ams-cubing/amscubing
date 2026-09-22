@@ -1,9 +1,16 @@
 "use server";
 
 import { db } from "@workspace/db";
-import { boards, competitions, logs } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  boards,
+  competitionDelegates,
+  competitions,
+  logs,
+} from "@workspace/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
+
+import { restoreAvailability } from "@/lib/availability-dates";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 
@@ -19,6 +26,30 @@ export async function deleteCompetition(competitionId: number): Promise<{
     const { session } = authResult;
 
     await db.transaction(async (tx) => {
+      const competition = await tx.query.competitions.findFirst({
+        where: eq(competitions.id, competitionId),
+        columns: { startDate: true, endDate: true },
+      });
+
+      if (competition) {
+        const activeDelegates = await tx.query.competitionDelegates.findMany({
+          where: and(
+            eq(competitionDelegates.competitionId, competitionId),
+            inArray(competitionDelegates.status, ["pending", "accepted"]),
+          ),
+          columns: { delegateWcaId: true },
+        });
+
+        for (const row of activeDelegates) {
+          await restoreAvailability(
+            tx,
+            row.delegateWcaId,
+            competition.startDate,
+            competition.endDate,
+          );
+        }
+      }
+
       // Break the circular FK (competition.boardId ↔ board.competitionId)
       // then delete the board explicitly before the competition.
       await tx

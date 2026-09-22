@@ -68,7 +68,11 @@ export function getMetaPageConfig():
   };
 }
 
-import { formatDateRangeEs, formatEventLabels } from "./format";
+import {
+  formatDateRangeEs,
+  formatEventLabels,
+  formatUpcomingListDateRangeEs,
+} from "./format";
 
 export type BuildAnnouncementCaptionInput = {
   name: string;
@@ -86,6 +90,23 @@ export type BuildAnnouncementCaptionInput = {
   competitorLimit?: number | null;
   capacityFallback?: number | null;
 };
+
+export type ProximasCompetenciasCaptionItem = {
+  name: string;
+  city: string;
+  stateName?: string | null;
+  startDate: string;
+  endDate: string;
+  venueName?: string | null;
+  venueAddress?: string | null;
+  venueDetails?: string | null;
+  eventIds?: string[];
+  competitorLimit?: number | null;
+  capacityFallback?: number | null;
+};
+
+const WCA_MX_COMPETITIONS_URL =
+  "https://www.worldcubeassociation.org/competitions?region=MX";
 
 export function buildAnnouncementCaption(
   input: BuildAnnouncementCaptionInput,
@@ -122,6 +143,47 @@ export function buildAnnouncementCaption(
   if (tags) lines.push(`ℹ️: ${tags}`);
   lines.push(input.wcaUrl);
 
+  return lines.join("\n");
+}
+
+/** Multi-competition caption for the Torneo de Rubik cover feed post. */
+export function buildProximasCompetenciasCaption(
+  competitions: ProximasCompetenciasCaptionItem[],
+): string {
+  const lines: string[] = ["PRÓXIMAS COMPETENCIAS:"];
+
+  for (const competition of competitions) {
+    const name = competition.name.trim();
+    if (!name) continue;
+
+    const venueLine =
+      plainTextFromWcaMarkup(competition.venueName) ||
+      plainTextFromWcaMarkup(competition.venueDetails) ||
+      plainTextFromWcaMarkup(competition.venueAddress) ||
+      null;
+    const cityLine = [competition.city.trim(), competition.stateName?.trim()]
+      .filter(Boolean)
+      .join(", ");
+    const events = formatEventLabels(competition.eventIds ?? []);
+    const limit =
+      competition.competitorLimit && competition.competitorLimit > 0
+        ? competition.competitorLimit
+        : competition.capacityFallback && competition.capacityFallback > 0
+          ? competition.capacityFallback
+          : null;
+
+    lines.push("");
+    lines.push(name);
+    lines.push(
+      `📅: ${formatUpcomingListDateRangeEs(competition.startDate, competition.endDate)}`,
+    );
+    if (venueLine) lines.push(`📍: ${venueLine}`);
+    if (cityLine) lines.push(`🏙️: ${cityLine}`);
+    if (events) lines.push(`🔻: ${events}`);
+    if (limit) lines.push(`🎟️: ${limit} competidores`);
+  }
+
+  lines.push("", "Toda la info:", WCA_MX_COMPETITIONS_URL);
   return lines.join("\n");
 }
 
@@ -507,11 +569,13 @@ export async function fetchInstagramPermalink(
 }
 
 /**
- * Upload an unpublished photo then set it as the Facebook Page cover.
+ * Upload the cover PNG once as a published photo (timeline post + caption),
+ * then set that same photo as the Facebook Page cover without an auto feed story.
  * Requires pages_manage_metadata (in addition to posting scopes).
  */
 export async function updateFacebookPageCover(
   imagePng: Buffer,
+  caption: string,
 ): Promise<{ ok: true; photoId: string } | { ok: false; message: string }> {
   const meta = getMetaPageConfig();
   if (!meta.ok) {
@@ -522,7 +586,8 @@ export async function updateFacebookPageCover(
   const uploaded = await graphPostMultipart(
     `/${config.pageId}/photos`,
     {
-      published: "false",
+      published: "true",
+      caption,
       access_token: config.pageAccessToken,
     },
     {

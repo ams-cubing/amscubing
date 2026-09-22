@@ -1,0 +1,1 @@
+ALTER TABLE "competition" ALTER COLUMN "capacity" SET DEFAULT 50;
