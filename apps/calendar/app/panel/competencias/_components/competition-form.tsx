@@ -83,7 +83,11 @@ const competitionSchema = z
     }),
     trelloUrl: z.url("URL inválida").optional().or(z.literal("")),
     wcaCompetitionUrl: z.url("URL inválida").optional().or(z.literal("")),
-    capacity: z.number().min(2, "La capacidad debe ser al menos 2").optional(),
+    capacity: z
+      .number()
+      .min(2, "La capacidad debe ser al menos 2")
+      .nullable()
+      .optional(),
     statusPublic: z.enum([
       "open",
       "reserved",
@@ -301,7 +305,8 @@ export function CompetitionForm({
   async function onSubmit(data: CompetitionFormValues) {
     startTransition(async () => {
       try {
-        const { assignBoard, ...rest } = data;
+        const { assignBoard, capacity, ...fields } = data;
+        const rest = { ...fields, capacity: capacity ?? undefined };
         const result = isEditing
           ? await updateCompetition(competition.id, rest)
           : await createCompetition({ ...rest, assignBoard });
@@ -550,7 +555,7 @@ export function CompetitionForm({
                   value={field.value ?? ""}
                   onChange={(e) => {
                     const val = e.target.value;
-                    field.onChange(val === "" ? undefined : Number(val));
+                    field.onChange(val === "" ? null : Number(val));
                   }}
                 />
               </FormControl>

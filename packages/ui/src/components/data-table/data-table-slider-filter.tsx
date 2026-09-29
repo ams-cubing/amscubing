@@ -46,6 +46,57 @@ function parseValuesAsNumbers(value: unknown): RangeValue | undefined {
   return undefined;
 }
 
+type RangeNumberInputProps = Omit<
+  React.ComponentProps<typeof Input>,
+  "type" | "value" | "onChange"
+> & {
+  value: number;
+  onValueChange: (value: number) => void;
+};
+
+/**
+ * Keeps the typed text locally so the field can be emptied or hold an
+ * out-of-range draft; on blur it snaps back to `value`.
+ */
+function RangeNumberInput({
+  value,
+  onValueChange,
+  onFocus,
+  onBlur,
+  ...props
+}: RangeNumberInputProps) {
+  const [text, setText] = React.useState(() => String(value));
+  const focused = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!focused.current) setText(String(value));
+  }, [value]);
+
+  return (
+    <Input
+      {...props}
+      type="number"
+      value={text}
+      onChange={(event) => {
+        const next = event.target.value;
+        setText(next);
+        if (next.trim() === "") return;
+        const parsed = Number(next);
+        if (Number.isFinite(parsed)) onValueChange(parsed);
+      }}
+      onFocus={(event) => {
+        focused.current = true;
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        focused.current = false;
+        setText(String(value));
+        onBlur?.(event);
+      }}
+    />
+  );
+}
+
 interface DataTableSliderFilterProps<TData> {
   column: Column<TData, unknown>;
   title?: string;
@@ -101,20 +152,18 @@ export function DataTableSliderFilter<TData>({
     return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
   }, []);
 
-  const onFromInputChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const numValue = Number(event.target.value);
-      if (!Number.isNaN(numValue) && numValue >= min && numValue <= range[1]) {
+  const onFromValueChange = React.useCallback(
+    (numValue: number) => {
+      if (numValue >= min && numValue <= range[1]) {
         column.setFilterValue([numValue, range[1]]);
       }
     },
     [column, min, range],
   );
 
-  const onToInputChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const numValue = Number(event.target.value);
-      if (!Number.isNaN(numValue) && numValue <= max && numValue >= range[0]) {
+  const onToValueChange = React.useCallback(
+    (numValue: number) => {
+      if (numValue <= max && numValue >= range[0]) {
         column.setFilterValue([range[0], numValue]);
       }
     },
@@ -185,9 +234,8 @@ export function DataTableSliderFilter<TData>({
               De
             </Label>
             <div className="relative">
-              <Input
+              <RangeNumberInput
                 id={`${id}-from`}
-                type="number"
                 aria-valuemin={min}
                 aria-valuemax={max}
                 inputMode="numeric"
@@ -195,8 +243,8 @@ export function DataTableSliderFilter<TData>({
                 placeholder={min.toString()}
                 min={min}
                 max={max}
-                value={range[0]?.toString()}
-                onChange={onFromInputChange}
+                value={range[0]}
+                onValueChange={onFromValueChange}
                 className={cn("h-8 w-24", unit && "pr-8")}
               />
               {unit && (
@@ -209,9 +257,8 @@ export function DataTableSliderFilter<TData>({
               a
             </Label>
             <div className="relative">
-              <Input
+              <RangeNumberInput
                 id={`${id}-to`}
-                type="number"
                 aria-valuemin={min}
                 aria-valuemax={max}
                 inputMode="numeric"
@@ -219,8 +266,8 @@ export function DataTableSliderFilter<TData>({
                 placeholder={max.toString()}
                 min={min}
                 max={max}
-                value={range[1]?.toString()}
-                onChange={onToInputChange}
+                value={range[1]}
+                onValueChange={onToValueChange}
                 className={cn("h-8 w-24", unit && "pr-8")}
               />
               {unit && (
