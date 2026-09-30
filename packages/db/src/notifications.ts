@@ -20,7 +20,7 @@ export type AppUrls = {
 export type NotificationUser = {
   id: string;
   role: "delegate" | "user" | "editor";
-  wcaId: string;
+  wcaId: string | null;
 };
 
 export type NewNotificationRow = {
@@ -280,6 +280,7 @@ export async function userIdsByWcaIds(
     .where(inArray(user.wcaId, unique));
 
   for (const row of rows) {
+    if (!row.wcaId) continue;
     map.set(row.wcaId, {
       id: row.id,
       role: row.role,

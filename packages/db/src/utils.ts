@@ -4,6 +4,13 @@
 
 import { type AnyColumn, sql } from "drizzle-orm";
 
+/** Narrows user rows to those linked to a WCA ID (delegates, organizers). */
+export function hasWcaId<T extends { wcaId: string | null }>(
+  row: T,
+): row is T & { wcaId: string } {
+  return row.wcaId !== null;
+}
+
 export function isEmpty<TColumn extends AnyColumn>(column: TColumn) {
   return sql<boolean>`
     case

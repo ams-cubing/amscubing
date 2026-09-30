@@ -3,6 +3,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { db } from "@workspace/db";
+import { hasWcaId } from "@workspace/db/utils";
 import type { PublicDelegate } from "./delegate-types";
 
 export type { PublicDelegate };
@@ -61,7 +62,7 @@ export async function getPublicDelegates(): Promise<PublicDelegate[]> {
       },
     });
 
-    return rows.map((row) =>
+    return rows.filter(hasWcaId).map((row) =>
       withWcaMetadata({
         name: row.name,
         wcaId: row.wcaId,

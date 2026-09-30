@@ -58,7 +58,7 @@ export async function getActivityLogs() {
       .select()
       .from(user)
       .where(inArray(user.wcaId, userIds));
-    for (const u of users) usersMap.set(u.wcaId, u);
+    for (const u of users) if (u.wcaId) usersMap.set(u.wcaId, u);
   }
 
   return logsData.map((l) => {

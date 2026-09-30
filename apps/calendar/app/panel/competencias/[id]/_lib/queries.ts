@@ -1,6 +1,7 @@
 import "server-only";
 
 import { db } from "@workspace/db";
+import { hasWcaId } from "@workspace/db/utils";
 import { cacheLife, cacheTag } from "next/cache";
 
 export async function getCompetitionWithRelations(id: number) {
@@ -31,10 +32,11 @@ export async function getCompetitionWithRelations(id: number) {
 }
 
 export async function getAllDelegates() {
-  return db.query.user.findMany({
+  const rows = await db.query.user.findMany({
     where: (user, { eq }) => eq(user.role, "delegate"),
     orderBy: (user, { asc }) => asc(user.name),
   });
+  return rows.filter(hasWcaId);
 }
 
 export async function getCompetitionLogs(competitionId: number) {

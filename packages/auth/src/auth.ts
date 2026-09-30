@@ -1,12 +1,13 @@
 import { db } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { user } from "@workspace/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import { account, user } from "@workspace/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins";
 
 import { claimWcaStubUser } from "./claim-wca-stub";
+import { mergeUserIntoStub } from "./merge-wca-user";
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
 import { resolveWcaRole } from "./wca-role";
 
@@ -16,7 +17,8 @@ interface WCAProfile {
     created_at?: string;
     updated_at?: string;
     name: string;
-    wca_id: string;
+    /** Null when the WCA account has never competed. */
+    wca_id: string | null;
     gender?: string;
     country_iso2?: string;
     url?: string;
@@ -26,6 +28,22 @@ interface WCAProfile {
     };
     email: string;
   };
+}
+
+async function findUserWithoutWcaIdByAccount(wcaAccountId: string) {
+  const [row] = await db
+    .select({ id: user.id })
+    .from(account)
+    .innerJoin(user, eq(user.id, account.userId))
+    .where(
+      and(
+        eq(account.providerId, "wca"),
+        eq(account.accountId, wcaAccountId),
+        isNull(user.wcaId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 /**
@@ -66,7 +84,7 @@ export function createAuth() {
       additionalFields: {
         wcaId: {
           type: "string",
-          required: true,
+          required: false,
           unique: true,
         },
         role: {
@@ -120,15 +138,25 @@ export function createAuth() {
               );
 
               const data = (await response.json()) as WCAProfile;
+              const wcaId = data.me.wca_id || null;
 
               // Prefer a seeded/stub row (matched by WCA ID) so region/title/role
               // survive login. Claim placeholders to the real email so Better Auth
               // finds the user by email and links instead of inserting a duplicate.
-              const existing = data.me.wca_id
+              const existing = wcaId
                 ? await db.query.user.findFirst({
-                    where: eq(user.wcaId, data.me.wca_id),
+                    where: eq(user.wcaId, wcaId),
                   })
                 : null;
+
+              if (existing) {
+                const earlier = await findUserWithoutWcaIdByAccount(
+                  String(data.me.id),
+                );
+                if (earlier && earlier.id !== existing.id) {
+                  await mergeUserIntoStub(earlier.id, existing.id);
+                }
+              }
 
               const role = resolveWcaRole({
                 delegateStatus: data.me.delegate_status,
@@ -153,7 +181,7 @@ export function createAuth() {
                 email: claimed?.email ?? data.me.email,
                 image: claimed?.image ?? data.me.avatar?.thumb_url,
                 emailVerified: true,
-                wcaId: data.me.wca_id,
+                wcaId,
                 role,
                 regionId: claimed?.regionId ?? null,
                 delegateTitle: claimed?.delegateTitle ?? null,
@@ -161,15 +189,15 @@ export function createAuth() {
               };
             },
             mapProfileToUser: (profile: Record<string, unknown>) => {
-              if (!profile.wcaId || !profile.role) {
-                throw new Error("Invalid profile: missing wcaId or role");
+              if (!profile.role) {
+                throw new Error("Invalid profile: missing role");
               }
               return {
                 id: profile.id as string,
                 name: profile.name as string,
                 email: profile.email as string,
                 image: profile.image as string | undefined,
-                wcaId: profile.wcaId as string,
+                wcaId: (profile.wcaId as string | null | undefined) ?? null,
                 role: profile.role as "delegate" | "user" | "editor",
                 regionId: profile.regionId as string | null,
                 delegateTitle: profile.delegateTitle as string | null,

@@ -86,10 +86,10 @@ export default async function BoardPage({
       : null;
 
   const teamPeople = (() => {
-    const byWcaId = new Map<
+    const byUserId = new Map<
       string,
       {
-        wcaId: string;
+        userId: string;
         name: string;
         image: string | null;
         isPrimary: boolean;
@@ -99,8 +99,8 @@ export default async function BoardPage({
     if (board.competition) {
       for (const row of board.competition.delegates) {
         if (!row.delegate) continue;
-        byWcaId.set(row.delegate.wcaId, {
-          wcaId: row.delegate.wcaId,
+        byUserId.set(row.delegate.id, {
+          userId: row.delegate.id,
           name: row.delegate.name,
           image: row.delegate.image,
           isPrimary: row.isPrimary,
@@ -108,9 +108,9 @@ export default async function BoardPage({
       }
       for (const row of board.competition.organizers) {
         if (!row.organizer) continue;
-        const existing = byWcaId.get(row.organizer.wcaId);
-        byWcaId.set(row.organizer.wcaId, {
-          wcaId: row.organizer.wcaId,
+        const existing = byUserId.get(row.organizer.id);
+        byUserId.set(row.organizer.id, {
+          userId: row.organizer.id,
           name: row.organizer.name,
           image: row.organizer.image,
           isPrimary: existing?.isPrimary || row.isPrimary,
@@ -120,16 +120,16 @@ export default async function BoardPage({
 
     for (const row of board.members ?? []) {
       if (!row.user) continue;
-      if (byWcaId.has(row.user.wcaId)) continue;
-      byWcaId.set(row.user.wcaId, {
-        wcaId: row.user.wcaId,
+      if (byUserId.has(row.user.id)) continue;
+      byUserId.set(row.user.id, {
+        userId: row.user.id,
         name: row.user.name,
         image: row.user.image,
         isPrimary: false,
       });
     }
 
-    return [...byWcaId.values()].sort(
+    return [...byUserId.values()].sort(
       (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
     );
   })();
@@ -169,7 +169,7 @@ export default async function BoardPage({
               <AvatarGroup size={24}>
                 {teamPeople.map((person) => (
                   <Avatar
-                    key={person.wcaId}
+                    key={person.userId}
                     title={`${person.name}${person.isPrimary ? " (Principal)" : ""}`}
                   >
                     <AvatarImage

@@ -81,9 +81,18 @@ export function parseMentions(body: string): ParsedMentions {
 
 export type MentionTeamMember = {
   userId: string;
-  wcaId: string;
+  /** Null for members without a WCA ID; they are reachable only via group mentions. */
+  wcaId: string | null;
   name: string;
 };
+
+function membersByWcaId(team: MentionTeamMember[]) {
+  const map = new Map<string, MentionTeamMember>();
+  for (const member of team) {
+    if (member.wcaId) map.set(member.wcaId, member);
+  }
+  return map;
+}
 
 export type MentionRoleGroups = {
   all: MentionTeamMember[];
@@ -95,7 +104,7 @@ export function resolveMentionedUsers(
   wcaIds: string[],
   team: MentionTeamMember[],
 ): MentionTeamMember[] {
-  const byWcaId = new Map(team.map((member) => [member.wcaId, member]));
+  const byWcaId = membersByWcaId(team);
   const resolved: MentionTeamMember[] = [];
   const seen = new Set<string>();
 
@@ -144,7 +153,7 @@ export function segmentCommentBody(
   body: string,
   team: MentionTeamMember[],
 ): CommentBodySegment[] {
-  const byWcaId = new Map(team.map((member) => [member.wcaId, member]));
+  const byWcaId = membersByWcaId(team);
   const segments: CommentBodySegment[] = [];
   let lastIndex = 0;
 

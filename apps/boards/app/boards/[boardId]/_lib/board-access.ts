@@ -183,7 +183,7 @@ export async function assertUserAssignableToBoard(
   });
   if (asBoardMember) return;
 
-  if (!board.competitionId) {
+  if (!board.competitionId || !memberUser.wcaId) {
     throw new Error("El miembro debe haber sido invitado al tablero");
   }
 

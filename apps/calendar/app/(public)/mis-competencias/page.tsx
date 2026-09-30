@@ -63,7 +63,11 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
     return (
       <main className="p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
-          <p className="text-muted-foreground">Usuario sin WCA ID.</p>
+          <p className="text-muted-foreground">
+            Tu cuenta WCA aún no tiene un WCA ID. Cuando compitas por primera
+            vez, se vinculará automáticamente al iniciar sesión y aquí verás tus
+            competencias.
+          </p>
         </div>
       </main>
     );

@@ -8,6 +8,7 @@ import {
   states,
   user,
 } from "@workspace/db/schema";
+import { hasWcaId } from "@workspace/db/utils";
 import { and, eq, gte, inArray, isNotNull, lte, notInArray } from "drizzle-orm";
 
 import { dateRangeStrings } from "@/lib/availability-dates";
@@ -70,7 +71,7 @@ export async function findEligibleDelegate(
     });
   }
 
-  for (const candidate of candidates) {
+  for (const candidate of candidates.filter(hasWcaId)) {
     const availRows = await executor.query.availability.findMany({
       where: (a, { and: andFn, eq: eqFn, gte: gteFn, lte: lteFn }) =>
         andFn(

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
+import { hasWcaId } from "@workspace/db/utils";
 
 import {
   GrantEditorForm,
@@ -15,16 +16,18 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminEditoresPage() {
-  const editors = await db.query.user.findMany({
-    where: eq(user.role, "editor"),
-    orderBy: (t, { asc }) => [asc(t.name)],
-    columns: {
-      wcaId: true,
-      name: true,
-      email: true,
-      image: true,
-    },
-  });
+  const editors = (
+    await db.query.user.findMany({
+      where: eq(user.role, "editor"),
+      orderBy: (t, { asc }) => [asc(t.name)],
+      columns: {
+        wcaId: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    })
+  ).filter(hasWcaId);
 
   return (
     <div className="space-y-12">

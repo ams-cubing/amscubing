@@ -14,7 +14,8 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  wcaId: text("wca_id").notNull().unique(),
+  /** Null for WCA accounts that have never competed. */
+  wcaId: text("wca_id").unique(),
   role: text("role", { enum: ["delegate", "user", "editor"] })
     .default("user")
     .notNull(),

@@ -34,7 +34,7 @@ export function AccountSignIn() {
     >
       <a href={href}>
         <LogIn className="size-4" />
-        Iniciar sesión con WCA ID
+        Iniciar sesión con WCA
       </a>
     </Button>
   );

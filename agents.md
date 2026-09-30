@@ -39,6 +39,7 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
 - Página Blog: `apps/web/app/blog/page.tsx`, muestra entradas editoriales enlazadas desde `apps/web/lib/content.ts`.
 - Página Cursos: `apps/web/app/cursos/page.tsx`, conserva la funcionalidad como entrada al sitio externo `cursos.amscubing.org`.
 - Página Cuenta: `apps/web/app/cuenta/page.tsx`, usa la sesión compartida de `@workspace/auth` con WCA ID y funciona como hub de acciones. Usuarios generales ven mis competencias, blog y cursos; delegados ven además crear competencias, tableros, blog editorial y cursos. El schema actual solo distingue `user` y `delegate`; RBAC editorial fino queda pendiente.
+- `user.wcaId` puede ser `null`: cuentas WCA que nunca han competido pueden iniciar sesión. Calendario (mis competencias, solicitar fecha) y tableros por competencia siguen requiriendo WCA ID; para listas de delegados/organizadores usa `hasWcaId` de `@workspace/db/utils`.
 - Inicio de sesión: la web es el host canónico de auth. Usa `apps/web/app/iniciar-sesion/page.tsx` y `apps/web/app/api/auth/[...all]/route.ts`. Para probar local, `BETTER_AUTH_URL` debe ser `http://localhost:3000` y el callback WCA debe ser `http://localhost:3000/api/auth/callback/wca`.
 - Estilos de marca de la web: `apps/web/app/web.css`.
 - Contenido editorial corto: `apps/web/lib/content.ts`.
