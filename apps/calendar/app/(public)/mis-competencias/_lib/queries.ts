@@ -10,7 +10,13 @@ import {
   dateRequests,
   user,
 } from "@workspace/db/schema";
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, ne } from "drizzle-orm";
+
+function getTodayInMexicoCity() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+  }).format(new Date());
+}
 
 export async function getUserOrganizerCompetitionIds(wcaId: string) {
   const rows = await db
@@ -18,6 +24,21 @@ export async function getUserOrganizerCompetitionIds(wcaId: string) {
     .from(competitionOrganizers)
     .where(eq(competitionOrganizers.organizerWcaId, wcaId));
   return rows.map((c) => c.competitionId);
+}
+
+export async function getUserDelegateAssignments(wcaId: string) {
+  return db
+    .select({
+      competitionId: competitionDelegates.competitionId,
+      status: competitionDelegates.status,
+    })
+    .from(competitionDelegates)
+    .where(
+      and(
+        eq(competitionDelegates.delegateWcaId, wcaId),
+        ne(competitionDelegates.status, "declined"),
+      ),
+    );
 }
 
 export async function getUserDateRequests(wcaId: string) {
@@ -43,7 +64,10 @@ export async function getUserDateRequests(wcaId: string) {
     .orderBy(desc(dateRequests.createdAt));
 }
 
-export async function getUserCompetitions(competitionIds: number[]) {
+export async function getUserCompetitions(
+  competitionIds: number[],
+  { includePast }: { includePast: boolean },
+) {
   return db
     .select({
       id: competitions.id,
@@ -61,7 +85,19 @@ export async function getUserCompetitions(competitionIds: number[]) {
     .from(competitions)
     .leftJoin(states, eq(competitions.stateId, states.id))
     .leftJoin(regions, eq(states.regionId, regions.id))
-    .where(inArray(competitions.id, competitionIds));
+    .where(
+      and(
+        inArray(competitions.id, competitionIds),
+        includePast
+          ? undefined
+          : gte(competitions.endDate, getTodayInMexicoCity()),
+      ),
+    )
+    .orderBy(
+      includePast
+        ? desc(competitions.startDate)
+        : asc(competitions.startDate),
+    );
 }
 
 export async function getDelegatesForCompetitions(competitionIds: number[]) {

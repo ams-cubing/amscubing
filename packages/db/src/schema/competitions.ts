@@ -90,6 +90,7 @@ export const competitions = pgTable("competition", {
   socialPublishedManually: boolean("social_published_manually")
     .default(false)
     .notNull(),
+  socialPublishClaimedAt: timestamp("social_publish_claimed_at"),
 
   socialCustomText: text("social_custom_text"),
   socialTags: text("social_tags"),

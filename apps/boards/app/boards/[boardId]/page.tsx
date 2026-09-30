@@ -55,13 +55,14 @@ export default async function BoardPage({
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
 
-  if (!(await canAccessBoardsApp(user))) {
-    return <BoardsAccessDenied />;
-  }
-
   const board = await getBoardForUser(user, boardId);
 
-  if (!board) notFound();
+  if (!board) {
+    if (!(await canAccessBoardsApp(user))) {
+      return <BoardsAccessDenied />;
+    }
+    notFound();
+  }
 
   const readiness = board.competition
     ? await evaluateBoardReadiness(boardId)

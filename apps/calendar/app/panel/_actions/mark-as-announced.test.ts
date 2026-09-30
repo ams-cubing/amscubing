@@ -10,6 +10,9 @@ const {
   refreshTorneoDeRubikCoverBestEffort,
   applyStatusTransition,
   assertCanApply,
+  claimCompetitionSocialPublish,
+  releaseCompetitionSocialPublish,
+  dbUpdateSet,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   transaction: vi.fn(),
@@ -20,6 +23,9 @@ const {
   refreshTorneoDeRubikCoverBestEffort: vi.fn(),
   applyStatusTransition: vi.fn(),
   assertCanApply: vi.fn(),
+  claimCompetitionSocialPublish: vi.fn(),
+  releaseCompetitionSocialPublish: vi.fn(),
+  dbUpdateSet: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
@@ -42,6 +48,12 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@workspace/db", () => ({
   db: {
     transaction,
+    update: vi.fn(() => ({
+      set: (values: unknown) => {
+        dbUpdateSet(values);
+        return { where: vi.fn().mockResolvedValue(undefined) };
+      },
+    })),
     query: {
       competitions: {
         findFirst,
@@ -78,6 +90,10 @@ vi.mock("@/lib/notification-urls", () => ({
 vi.mock("@workspace/social", () => ({
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
+  claimCompetitionSocialPublish,
+  releaseCompetitionSocialPublish,
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE:
+    "Esta competencia ya se está publicando o ya fue publicada",
 }));
 
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
@@ -107,6 +123,11 @@ describe("markAsAnnounced", () => {
     applyStatusTransition.mockReset();
     assertCanApply.mockReset();
     assertCanApply.mockImplementation(() => undefined);
+    claimCompetitionSocialPublish.mockReset();
+    claimCompetitionSocialPublish.mockResolvedValue(true);
+    releaseCompetitionSocialPublish.mockReset();
+    releaseCompetitionSocialPublish.mockResolvedValue(undefined);
+    dbUpdateSet.mockReset();
     applyStatusTransition.mockResolvedValue({
       city: "CDMX",
       from: {
@@ -264,6 +285,117 @@ describe("markAsAnnounced", () => {
       message: "Facebook: (#200) Permissions error",
     });
     expect(transaction).not.toHaveBeenCalled();
+    expect(releaseCompetitionSocialPublish).toHaveBeenCalledWith(7);
+  });
+
+  it("does not publish when another request holds the publish claim", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    claimCompetitionSocialPublish.mockResolvedValue(false);
+
+    const result = await markAsAnnounced(7);
+
+    expect(result).toEqual({
+      success: false,
+      message: "Esta competencia ya se está publicando o ya fue publicada",
+      stale: true,
+    });
+    expect(publishCompetitionSocialAnnouncement).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("flags stale rows when the transition is no longer allowed", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue({
+      ...confirmedCompetition,
+      statusPublic: "announced",
+    });
+    assertCanApply.mockImplementation(() => {
+      throw new Error("No se puede anunciar esta competencia");
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result).toEqual({
+      success: false,
+      message: "No se puede anunciar esta competencia",
+      stale: true,
+    });
+    expect(claimCompetitionSocialPublish).not.toHaveBeenCalled();
+    expect(publishCompetitionSocialAnnouncement).not.toHaveBeenCalled();
+  });
+
+  it("skips publishing when a Facebook post already exists and only transitions", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue({
+      ...confirmedCompetition,
+      facebookPostId: "fb_existing",
+      instagramMediaId: "ig_existing",
+    });
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(true);
+    expect(claimCompetitionSocialPublish).not.toHaveBeenCalled();
+    expect(publishCompetitionSocialAnnouncement).not.toHaveBeenCalled();
+    expect(applyStatusTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        transitionId: "announce",
+        patch: expect.objectContaining({
+          facebookPostId: "fb_existing",
+          instagramMediaId: "ig_existing",
+        }),
+      }),
+    );
+  });
+
+  it("releases the claim when publishing throws", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockRejectedValue(
+      new Error("network down"),
+    );
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(false);
+    expect(releaseCompetitionSocialPublish).toHaveBeenCalledWith(7);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("persists post ids and clears the claim before the transition", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "delegate-1", role: "delegate", wcaId: "2010DEL01" },
+    });
+    findFirst.mockResolvedValue(confirmedCompetition);
+    publishCompetitionSocialAnnouncement.mockResolvedValue({
+      ok: true,
+      wcaCompetitionUrl: confirmedCompetition.wcaCompetitionUrl,
+      facebookPostId: "fb_1",
+      instagramMediaId: null,
+      displayName: "Test Open 2026",
+    });
+    transaction.mockRejectedValue(new Error("db down"));
+
+    const result = await markAsAnnounced(7);
+
+    expect(result.success).toBe(false);
+    expect(dbUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        facebookPostId: "fb_1",
+        socialPublishClaimedAt: null,
+      }),
+    );
+    expect(releaseCompetitionSocialPublish).not.toHaveBeenCalled();
   });
 
   it("updates the competition after successful social publish", async () => {

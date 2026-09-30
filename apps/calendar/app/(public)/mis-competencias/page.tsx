@@ -8,18 +8,18 @@ import {
 } from "@/lib/utils";
 import { cn } from "@workspace/ui/lib/utils";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { unauthorized } from "next/navigation";
 import {
   getUserOrganizerCompetitionIds,
+  getUserDelegateAssignments,
   getUserCompetitions,
   getUserDateRequests,
   getDelegatesForCompetitions,
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
-import { canAccessBoardsApp } from "@/lib/boards";
 import { getBoardsUrl } from "@/lib/urls";
-import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 function dateRequestStatusLabel(status: "open" | "accepted" | "exhausted") {
   switch (status) {
@@ -32,7 +32,21 @@ function dateRequestStatusLabel(status: "open" | "accepted" | "exhausted") {
   }
 }
 
-async function PageContent() {
+function PastToggle({ includePast }: { includePast: boolean }) {
+  return (
+    <Link
+      href={includePast ? "/mis-competencias" : "/mis-competencias?pasadas=1"}
+      className="text-xs md:text-sm text-primary hover:underline"
+    >
+      {includePast ? "Ocultar pasadas" : "Mostrar pasadas"}
+    </Link>
+  );
+}
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+async function PageContent({ searchParams }: { searchParams: SearchParams }) {
+  const includePast = (await searchParams).pasadas === "1";
   const headersList = await headers();
 
   const session = await auth.api.getSession({
@@ -43,8 +57,6 @@ async function PageContent() {
     unauthorized();
   }
 
-  const user = toSessionUser(session.user as RawSessionUser);
-  const canSeeBoards = await canAccessBoardsApp(user);
   const wcaId = session.user.wcaId;
 
   if (!wcaId) {
@@ -57,10 +69,20 @@ async function PageContent() {
     );
   }
 
-  const [competitionIds, dateRequestRows] = await Promise.all([
-    getUserOrganizerCompetitionIds(wcaId),
-    getUserDateRequests(wcaId),
-  ]);
+  const [organizerCompetitionIds, delegateAssignments, dateRequestRows] =
+    await Promise.all([
+      getUserOrganizerCompetitionIds(wcaId),
+      getUserDelegateAssignments(wcaId),
+      getUserDateRequests(wcaId),
+    ]);
+
+  const organizerIds = new Set(organizerCompetitionIds);
+  const delegateStatusByCompetition = new Map(
+    delegateAssignments.map((a) => [a.competitionId, a.status]),
+  );
+  const competitionIds = [
+    ...new Set([...organizerIds, ...delegateStatusByCompetition.keys()]),
+  ];
 
   const pendingDateRequests = dateRequestRows.filter(
     (row) => row.status === "open" || row.status === "exhausted",
@@ -69,7 +91,7 @@ async function PageContent() {
   const [userCompetitions, delegates, organizers] =
     competitionIds.length > 0
       ? await Promise.all([
-          getUserCompetitions(competitionIds),
+          getUserCompetitions(competitionIds, { includePast }),
           getDelegatesForCompetitions(competitionIds),
           getOrganizersForCompetitions(competitionIds),
         ])
@@ -106,15 +128,20 @@ async function PageContent() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Tus competencias</h1>
           <p className="text-muted-foreground mt-2 text-sm md:text-base">
-            Aquí puedes ver tus solicitudes de fecha y competencias programadas.
+            Solicitudes de fecha y competencias que organizas o delegas.
           </p>
         </div>
 
         {!hasAnything ? (
-          <div className="bg-card border rounded-lg p-4 md:p-5 shadow-sm">
+          <div className="bg-card border rounded-lg p-4 md:p-5 shadow-sm space-y-2">
             <p className="text-muted-foreground">
-              No tienes competencias ni solicitudes de fecha.
+              {includePast
+                ? "No tienes competencias ni solicitudes de fecha."
+                : "No tienes competencias próximas ni solicitudes de fecha."}
             </p>
+            {competitionIds.length > 0 && (
+              <PastToggle includePast={includePast} />
+            )}
           </div>
         ) : (
           <>
@@ -165,12 +192,26 @@ async function PageContent() {
               </section>
             )}
 
-            {userCompetitions.length > 0 && (
+            {competitionIds.length > 0 && (
               <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Competencias</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-lg font-semibold">Competencias</h2>
+                  <PastToggle includePast={includePast} />
+                </div>
+                {userCompetitions.length === 0 && (
+                  <div className="bg-card border rounded-lg p-4 md:p-5 shadow-sm">
+                    <p className="text-muted-foreground text-sm">
+                      No tienes competencias próximas.
+                    </p>
+                  </div>
+                )}
                 {userCompetitions.map((comp) => {
                   const compDelegates = delegatesByCompetition[comp.id] || [];
                   const compOrganizers = organizersByCompetition[comp.id] || [];
+                  const isOrganizer = organizerIds.has(comp.id);
+                  const delegateStatus = delegateStatusByCompetition.get(
+                    comp.id,
+                  );
                   return (
                     <div
                       key={comp.id}
@@ -230,6 +271,18 @@ async function PageContent() {
                       )}
 
                       <div className="flex flex-wrap gap-2">
+                        {isOrganizer && (
+                          <span className="text-xs px-2.5 py-1 rounded-md font-medium bg-muted text-foreground">
+                            Organizador
+                          </span>
+                        )}
+                        {delegateStatus && (
+                          <span className="text-xs px-2.5 py-1 rounded-md font-medium bg-muted text-foreground">
+                            {delegateStatus === "pending"
+                              ? "Delegado · pendiente"
+                              : "Delegado"}
+                          </span>
+                        )}
                         <span
                           className={cn(
                             "text-xs px-2.5 py-1 rounded-md font-medium",
@@ -248,7 +301,7 @@ async function PageContent() {
                         </span>
                       </div>
 
-                      {canSeeBoards && comp.boardId ? (
+                      {comp.boardId ? (
                         <a
                           href={`${getBoardsUrl()}/boards/${comp.boardId}`}
                           target="_blank"
@@ -257,17 +310,19 @@ async function PageContent() {
                         >
                           Ver tablero AMS
                         </a>
+                      ) : comp.trelloUrl ? (
+                        <a
+                          href={comp.trelloUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver en Trello
+                        </a>
                       ) : (
-                        comp.trelloUrl && (
-                          <a
-                            href={comp.trelloUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                          >
-                            Ver en Trello
-                          </a>
-                        )
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Tablero aún no asignado
+                        </p>
                       )}
                     </div>
                   );
@@ -281,10 +336,10 @@ async function PageContent() {
   );
 }
 
-export default function Page() {
+export default function Page({ searchParams }: { searchParams: SearchParams }) {
   return (
     <Suspense fallback={<Loading />}>
-      <PageContent />
+      <PageContent searchParams={searchParams} />
     </Suspense>
   );
 }

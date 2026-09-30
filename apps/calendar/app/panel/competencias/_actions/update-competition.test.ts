@@ -116,6 +116,10 @@ vi.mock("@/lib/notification-urls", () => ({
 vi.mock("@workspace/social", () => ({
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort: vi.fn(),
+  claimCompetitionSocialPublish: vi.fn().mockResolvedValue(true),
+  releaseCompetitionSocialPublish: vi.fn().mockResolvedValue(undefined),
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE:
+    "Esta competencia ya se está publicando o ya fue publicada",
 }));
 
 vi.mock("@/lib/availability-dates", async () => {

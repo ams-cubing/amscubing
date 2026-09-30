@@ -1,6 +1,5 @@
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 
-import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { db } from "@workspace/db";
 import {
   boardMembers,
@@ -25,11 +24,11 @@ const boardListWith = {
   },
 } as const;
 
+/**
+ * Delegates can open any board; everyone else needs to be a board member or an
+ * organizer/delegate of the board's competition.
+ */
 export async function canAccessBoard(user: User, boardId: number) {
-  if (!(await canAccessBoardsApp(user))) {
-    return false;
-  }
-
   if (user.role === "delegate") {
     return true;
   }
@@ -112,10 +111,6 @@ async function memberBoardIdsForUser(user: User) {
 }
 
 export async function listAccessibleBoards(user: User) {
-  if (!(await canAccessBoardsApp(user))) {
-    return [];
-  }
-
   if (user.role === "delegate") {
     return db.query.boards.findMany({
       where: and(eq(boards.isTemplate, false), isNull(boards.archivedAt)),
@@ -166,10 +161,6 @@ export async function listAccessibleBoards(user: User) {
 }
 
 export async function listArchivedBoards(user: User) {
-  if (!(await canAccessBoardsApp(user))) {
-    return [];
-  }
-
   if (user.role === "delegate") {
     return db.query.boards.findMany({
       where: and(eq(boards.isTemplate, false), isNotNull(boards.archivedAt)),

@@ -7,6 +7,9 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
 import { PanelSubnav } from "@/app/panel/_components/panel-subnav";
 
+// Announce actions publish to Facebook + Instagram (IG container polling is slow).
+export const maxDuration = 60;
+
 async function PanelGuard({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
