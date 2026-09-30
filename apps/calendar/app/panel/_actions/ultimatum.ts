@@ -49,6 +49,7 @@ export async function sendUltimatum(
         .update(competitions)
         .set({
           ultimatumSetTo: validatedData.deadline,
+          updatedAt: new Date(),
         })
         .where(eq(competitions.id, validatedData.competitionId));
 
