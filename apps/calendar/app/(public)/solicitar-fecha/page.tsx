@@ -45,21 +45,7 @@ async function PageContent({
     );
   }
 
-  if (!session.user.wcaId) {
-    return (
-      <main className="p-4 md:p-6 lg:p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 md:p-5 shadow-sm">
-            <p className="text-sm md:text-base text-blue-800 dark:text-blue-200 font-medium">
-              Tu cuenta necesita un WCA ID vinculado para solicitar una fecha.
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const recentRequestsCount = await getRecentRequestsCount(session.user.wcaId);
+  const recentRequestsCount = await getRecentRequestsCount(session.user.id);
   const canSubmit = recentRequestsCount.length < MAX_DATE_REQUESTS_PER_WEEK;
 
   if (!canSubmit) {

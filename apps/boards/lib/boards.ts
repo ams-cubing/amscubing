@@ -52,21 +52,23 @@ export async function canAccessBoard(user: User, boardId: number) {
     return true;
   }
 
-  if (!board.competitionId || !user.wcaId) {
+  if (!board.competitionId) {
     return false;
   }
 
   const [asDelegate, asOrganizer] = await Promise.all([
-    db.query.competitionDelegates.findFirst({
-      where: and(
-        eq(competitionDelegates.competitionId, board.competitionId),
-        eq(competitionDelegates.delegateWcaId, user.wcaId),
-      ),
-    }),
+    user.wcaId
+      ? db.query.competitionDelegates.findFirst({
+          where: and(
+            eq(competitionDelegates.competitionId, board.competitionId),
+            eq(competitionDelegates.delegateWcaId, user.wcaId),
+          ),
+        })
+      : undefined,
     db.query.competitionOrganizers.findFirst({
       where: and(
         eq(competitionOrganizers.competitionId, board.competitionId),
-        eq(competitionOrganizers.organizerWcaId, user.wcaId),
+        eq(competitionOrganizers.organizerUserId, user.id),
       ),
     }),
   ]);
@@ -84,17 +86,16 @@ export async function isBoardArchived(boardId: number) {
 
 async function competitionIdsForUser(user: User) {
   const wcaId = user.wcaId;
-  if (!wcaId) {
-    return [];
-  }
 
   const [delegateRows, organizerRows] = await Promise.all([
-    db.query.competitionDelegates.findMany({
-      where: eq(competitionDelegates.delegateWcaId, wcaId),
-      columns: { competitionId: true },
-    }),
+    wcaId
+      ? db.query.competitionDelegates.findMany({
+          where: eq(competitionDelegates.delegateWcaId, wcaId),
+          columns: { competitionId: true },
+        })
+      : [],
     db.query.competitionOrganizers.findMany({
-      where: eq(competitionOrganizers.organizerWcaId, wcaId),
+      where: eq(competitionOrganizers.organizerUserId, user.id),
       columns: { competitionId: true },
     }),
   ]);

@@ -18,11 +18,11 @@ function getTodayInMexicoCity() {
   }).format(new Date());
 }
 
-export async function getUserOrganizerCompetitionIds(wcaId: string) {
+export async function getUserOrganizerCompetitionIds(userId: string) {
   const rows = await db
     .select({ competitionId: competitionOrganizers.competitionId })
     .from(competitionOrganizers)
-    .where(eq(competitionOrganizers.organizerWcaId, wcaId));
+    .where(eq(competitionOrganizers.organizerUserId, userId));
   return rows.map((c) => c.competitionId);
 }
 
@@ -41,7 +41,7 @@ export async function getUserDelegateAssignments(wcaId: string) {
     );
 }
 
-export async function getUserDateRequests(wcaId: string) {
+export async function getUserDateRequests(userId: string) {
   return db
     .select({
       id: dateRequests.id,
@@ -60,7 +60,7 @@ export async function getUserDateRequests(wcaId: string) {
     .leftJoin(states, eq(dateRequests.stateId, states.id))
     .leftJoin(regions, eq(states.regionId, regions.id))
     .leftJoin(user, eq(dateRequests.proposedDelegateWcaId, user.wcaId))
-    .where(eq(dateRequests.requestedBy, wcaId))
+    .where(eq(dateRequests.requestedByUserId, userId))
     .orderBy(desc(dateRequests.createdAt));
 }
 
@@ -121,11 +121,12 @@ export async function getOrganizersForCompetitions(competitionIds: number[]) {
   return db
     .select({
       competitionId: competitionOrganizers.competitionId,
+      organizerUserId: competitionOrganizers.organizerUserId,
       organizerName: user.name,
       organizerWcaId: user.wcaId,
       isPrimary: competitionOrganizers.isPrimary,
     })
     .from(competitionOrganizers)
-    .leftJoin(user, eq(competitionOrganizers.organizerWcaId, user.wcaId))
+    .leftJoin(user, eq(competitionOrganizers.organizerUserId, user.id))
     .where(inArray(competitionOrganizers.competitionId, competitionIds));
 }

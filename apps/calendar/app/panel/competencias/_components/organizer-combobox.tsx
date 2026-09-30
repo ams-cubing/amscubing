@@ -17,24 +17,35 @@ import { AddWCAUserDialog } from "./add-wca-user-dialog";
 import { Button } from "@workspace/ui/components/button";
 import Image from "next/image";
 
+export type OrganizerOption = {
+  id: string;
+  name: string;
+  wcaId: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+/** WCA ID when linked; otherwise the email so users without WCA ID are identifiable. */
+export function organizerSubtitle(organizer: OrganizerOption) {
+  return organizer.wcaId ?? organizer.email ?? "";
+}
+
 type OrganizerComboboxProps = {
   value: string;
-  onValueChange: (value: string) => void;
+  onSelect: (organizer: OrganizerOption) => void;
   selectedOrganizers: string[];
   placeholder?: string;
 };
 
 export function OrganizerCombobox({
   value,
-  onValueChange,
+  onSelect,
   selectedOrganizers,
   placeholder = "Buscar organizador...",
 }: OrganizerComboboxProps) {
   const [search, setSearch] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
-  const [users, setUsers] = React.useState<
-    Array<{ wcaId: string; name: string; image: string | null }>
-  >([]);
+  const [users, setUsers] = React.useState<OrganizerOption[]>([]);
   const [showAddDialog, setShowAddDialog] = React.useState(false);
 
   // Initial load - fetch 5 random users
@@ -69,27 +80,28 @@ export function OrganizerCombobox({
 
   const handleValueChange = React.useCallback(
     (newValue: string) => {
-      onValueChange(newValue);
+      const selected = users.find((user) => user.id === newValue);
+      if (selected) onSelect(selected);
       // Clear the input after selection
       setSearch("");
     },
-    [onValueChange],
+    [users, onSelect],
   );
 
   const handleUserAdded = React.useCallback(
-    (user: { wcaId: string; name: string }) => {
+    (user: OrganizerOption) => {
       // Refresh the list
       searchUsers(search).then(setUsers);
       // Auto-select the new user
-      onValueChange(user.wcaId);
+      onSelect(user);
       // Clear the input
       setSearch("");
     },
-    [search, onValueChange],
+    [search, onSelect],
   );
 
   const availableUsers = users.filter(
-    (user) => !selectedOrganizers.includes(user.wcaId),
+    (user) => !selectedOrganizers.includes(user.id),
   );
 
   return (
@@ -132,7 +144,7 @@ export function OrganizerCombobox({
           </ComboboxEmpty>
           {!isLoading &&
             availableUsers.map((user) => (
-              <ComboboxItem key={user.wcaId} value={user.wcaId} outset>
+              <ComboboxItem key={user.id} value={user.id} outset>
                 <div className="flex items-center gap-2">
                   {user.image && (
                     <Image
@@ -146,7 +158,7 @@ export function OrganizerCombobox({
                   <div className="flex flex-col">
                     <span>{user.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {user.wcaId}
+                      {organizerSubtitle(user)}
                     </span>
                   </div>
                 </div>

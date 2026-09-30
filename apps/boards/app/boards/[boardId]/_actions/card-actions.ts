@@ -90,8 +90,7 @@ export async function moveCardAction(input: {
     movedIntoHecho &&
     board?.competitionId &&
     board.competition &&
-    actor.wcaId &&
-    (await isCompetitionOrganizer(db, board.competitionId, actor.wcaId))
+    (await isCompetitionOrganizer(db, board.competitionId, actor.id))
   ) {
     await notifyHechoReview({
       boardId: input.boardId,

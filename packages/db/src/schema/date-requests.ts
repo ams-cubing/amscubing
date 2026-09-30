@@ -28,9 +28,9 @@ export const dateRequests = pgTable("date_request", {
     .references(() => states.id),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  requestedBy: text("requested_by")
+  requestedByUserId: text("requested_by_user_id")
     .notNull()
-    .references(() => user.wcaId),
+    .references(() => user.id),
   proposedDelegateWcaId: text("proposed_delegate_wca_id").references(
     () => user.wcaId,
   ),

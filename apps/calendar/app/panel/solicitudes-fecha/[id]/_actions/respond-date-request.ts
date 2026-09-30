@@ -102,7 +102,7 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
           actorId: session.user.id,
           city: request.city,
           stateId: request.stateId,
-          requestedBy: request.requestedBy,
+          requestedByUserId: request.requestedByUserId,
           startDate: request.startDate,
           endDate: request.endDate,
           delegateWcaId: wcaId,

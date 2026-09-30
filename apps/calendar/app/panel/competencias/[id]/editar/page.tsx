@@ -34,8 +34,15 @@ async function PageContent({
         status: d.status,
       })),
     organizers: competition.organizers.map((o) => ({
-      organizerWcaId: o.organizerWcaId,
+      organizerUserId: o.organizerUserId,
       isPrimary: o.isPrimary,
+      organizer: {
+        id: o.organizer.id,
+        name: o.organizer.name,
+        wcaId: o.organizer.wcaId,
+        email: o.organizer.email,
+        image: o.organizer.image,
+      },
     })),
   };
 

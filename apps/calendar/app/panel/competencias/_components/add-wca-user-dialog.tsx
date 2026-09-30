@@ -14,11 +14,12 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { fetchAndCreateWCAUser } from "../_actions/wca-users";
 import { toast } from "sonner";
+import type { OrganizerOption } from "./organizer-combobox";
 
 type AddWCAUserDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUserAdded: (user: { wcaId: string; name: string }) => void;
+  onUserAdded: (user: OrganizerOption) => void;
 };
 
 export function AddWCAUserDialog({
@@ -40,8 +41,11 @@ export function AddWCAUserDialog({
         if (result.success && result.user) {
           toast.success(result.message);
           onUserAdded({
+            id: result.user.id,
             wcaId: result.user.wcaId,
             name: result.user.name,
+            email: result.user.email,
+            image: result.user.image,
           });
           setWcaId("");
           onOpenChange(false);

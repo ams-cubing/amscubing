@@ -86,8 +86,8 @@ export default async function DateRequestDetailPage({
           {request.requester && (
             <p className="flex items-center gap-1.5 text-muted-foreground text-sm">
               <User className="size-4 shrink-0" />
-              Solicitada por {request.requester.name} ({request.requester.wcaId}
-              )
+              Solicitada por {request.requester.name}
+              {request.requester.wcaId && ` (${request.requester.wcaId})`}
             </p>
           )}
         </div>

@@ -59,25 +59,11 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
 
   const wcaId = session.user.wcaId;
 
-  if (!wcaId) {
-    return (
-      <main className="p-4 md:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-muted-foreground">
-            Tu cuenta WCA aún no tiene un WCA ID. Cuando compitas por primera
-            vez, se vinculará automáticamente al iniciar sesión y aquí verás tus
-            competencias.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
   const [organizerCompetitionIds, delegateAssignments, dateRequestRows] =
     await Promise.all([
-      getUserOrganizerCompetitionIds(wcaId),
-      getUserDelegateAssignments(wcaId),
-      getUserDateRequests(wcaId),
+      getUserOrganizerCompetitionIds(session.user.id),
+      wcaId ? getUserDelegateAssignments(wcaId) : [],
+      getUserDateRequests(session.user.id),
     ]);
 
   const organizerIds = new Set(organizerCompetitionIds);
@@ -243,8 +229,9 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
                           </span>{" "}
                           <span className="text-muted-foreground">
                             {compOrganizers.map((o, i) => (
-                              <span key={o.organizerWcaId}>
-                                {o.organizerName} ({o.organizerWcaId})
+                              <span key={o.organizerUserId}>
+                                {o.organizerName}
+                                {o.organizerWcaId && ` (${o.organizerWcaId})`}
                                 {o.isPrimary && " ★"}
                                 {i < compOrganizers.length - 1 && ", "}
                               </span>

@@ -169,10 +169,10 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 Permitir login/registro sin OAuth WCA para gente que solo quiere participar en la web pública (blog, comentarios y similares). No sustituye a la WCA como identidad de competidor; la complementa.
 
-- [x] Hacer `user.wcaId` nullable en schema + Better Auth (`additionalFields`); FKs de calendario/tableros que apuntan a `wcaId` se quedan (solo aplican a usuarios ya vinculados). Cuentas WCA sin WCA ID (nunca han competido) ya pueden iniciar sesión; el WCA ID se rellena en un login posterior y, si calendario ya creó un stub con ese WCA ID, la fila previa se fusiona en el stub (`mergeUserIntoStub`).
+- [x] Hacer `user.wcaId` nullable en schema + Better Auth (`additionalFields`); organizadores y solicitantes (competencias y solicitudes de fecha) ahora se guardan por `user.id`, así que cuentas sin WCA ID pueden organizar y solicitar fechas; delegados y disponibilidad siguen por `wcaId`. Cuentas WCA sin WCA ID (nunca han competido) ya pueden iniciar sesión; el WCA ID se rellena en un login posterior y, si calendario ya creó un stub con ese WCA ID, la fila previa se fusiona en el stub (`mergeUserIntoStub`).
 - [ ] Habilitar método(s) Better Auth sin WCA (p. ej. email/password y/o magic link) junto al OAuth WCA existente.
 - [ ] Helpers de sesión: `requireSession` para web; `requireWcaUser` (o equivalente) en calendario/tableros; `requireDelegate` sigue implicando cuenta con WCA.
-- [ ] UX en `/cuenta` e `/iniciar-sesion`: flujo email vs “Entrar con WCA”; sin WCA, ocultar o bloquear mis competencias / panel / tableros con CTA “Conectar WCA”.
+- [ ] UX en `/cuenta` e `/iniciar-sesion`: flujo email vs “Entrar con WCA”; sin WCA, ocultar o bloquear el panel de delegados con CTA “Conectar WCA” (mis competencias, solicitar fecha y tableros ya funcionan por `user.id`).
 - [ ] Vincular WCA después (`account linking`): rellenar `wcaId` / rol / avatar sin duplicar usuarios; resolver colisiones si el WCA ID ya existe.
 - [ ] E2E: cuenta solo-web puede comentar en blog; misma sesión sin `wcaId` no entra a calendario/tableros; tras vincular WCA, sí.
 

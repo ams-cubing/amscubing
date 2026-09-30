@@ -64,7 +64,7 @@ export const competitions = pgTable("competition", {
     .notNull()
     .references(() => states.id),
 
-  requestedBy: text("requested_by").references(() => user.wcaId),
+  requestedByUserId: text("requested_by_user_id").references(() => user.id),
 
   trelloUrl: text("trello_url"),
   wcaCompetitionUrl: text("wca_competition_url"),
@@ -123,9 +123,9 @@ export const competitionOrganizers = pgTable("competition_organizer", {
   competitionId: serial("competition_id")
     .notNull()
     .references(() => competitions.id, { onDelete: "cascade" }),
-  organizerWcaId: text("organizer_wca_id")
+  organizerUserId: text("organizer_user_id")
     .notNull()
-    .references(() => user.wcaId, { onDelete: "cascade" }),
+    .references(() => user.id, { onDelete: "cascade" }),
   isPrimary: boolean("is_primary").default(false).notNull(),
 });
 

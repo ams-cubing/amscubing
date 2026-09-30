@@ -178,7 +178,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
                 '[]'::json
               )
             `,
-          requestedBy: competitions.requestedBy,
+          requestedByUserId: competitions.requestedByUserId,
           trelloUrl: competitions.trelloUrl,
           boardId: competitions.boardId,
           wcaCompetitionUrl: competitions.wcaCompetitionUrl,

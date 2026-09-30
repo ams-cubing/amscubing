@@ -75,10 +75,10 @@ export const createCompetitionSchema = z
     // delegates are optional; if any are provided, a primary must be selected
     delegateWcaIds: z.array(z.string()).optional().default([]),
     primaryDelegateWcaId: z.string().optional().or(z.literal("")),
-    organizerWcaIds: z
+    organizerUserIds: z
       .array(z.string())
       .min(1, "Selecciona al menos un organizador"),
-    primaryOrganizerWcaId: z
+    primaryOrganizerUserId: z
       .string()
       .min(1, "Selecciona un organizador principal"),
     notes: z.string().optional().or(z.literal("")),
@@ -103,9 +103,9 @@ export const createCompetitionSchema = z
       path: ["primaryDelegateWcaId"],
     },
   )
-  .refine((data) => data.organizerWcaIds.includes(data.primaryOrganizerWcaId), {
+  .refine((data) => data.organizerUserIds.includes(data.primaryOrganizerUserId), {
     message: "El organizador principal debe estar en la lista de organizadores",
-    path: ["primaryOrganizerWcaId"],
+    path: ["primaryOrganizerUserId"],
   })
   .refine(
     (data) =>
@@ -155,10 +155,10 @@ export const updateCompetitionSchema = z
     ]),
     delegateWcaIds: z.array(z.string()).optional().default([]),
     primaryDelegateWcaId: z.string().optional().or(z.literal("")),
-    organizerWcaIds: z
+    organizerUserIds: z
       .array(z.string())
       .min(1, "Selecciona al menos un organizador"),
-    primaryOrganizerWcaId: z
+    primaryOrganizerUserId: z
       .string()
       .min(1, "Selecciona un organizador principal"),
     notes: z.string().optional().or(z.literal("")),
@@ -182,9 +182,9 @@ export const updateCompetitionSchema = z
       path: ["primaryDelegateWcaId"],
     },
   )
-  .refine((data) => data.organizerWcaIds.includes(data.primaryOrganizerWcaId), {
+  .refine((data) => data.organizerUserIds.includes(data.primaryOrganizerUserId), {
     message: "El organizador principal debe estar en la lista de organizadores",
-    path: ["primaryOrganizerWcaId"],
+    path: ["primaryOrganizerUserId"],
   })
   .refine(
     (data) =>

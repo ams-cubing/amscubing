@@ -35,6 +35,9 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   delegatedCompetitions: many(competitionDelegates),
   organizedCompetitions: many(competitionOrganizers),
+  requestedCompetitions: many(competitions, {
+    relationName: "competitionRequester",
+  }),
   requestedDateRequests: many(dateRequests, {
     relationName: "dateRequestRequester",
   }),
@@ -100,6 +103,11 @@ export const competitionsRelations = relations(
       fields: [competitions.stateId],
       references: [states.id],
     }),
+    requester: one(user, {
+      fields: [competitions.requestedByUserId],
+      references: [user.id],
+      relationName: "competitionRequester",
+    }),
     delegates: many(competitionDelegates),
     organizers: many(competitionOrganizers),
     dateRequests: many(dateRequests),
@@ -116,8 +124,8 @@ export const dateRequestsRelations = relations(dateRequests, ({ one }) => ({
     references: [states.id],
   }),
   requester: one(user, {
-    fields: [dateRequests.requestedBy],
-    references: [user.wcaId],
+    fields: [dateRequests.requestedByUserId],
+    references: [user.id],
     relationName: "dateRequestRequester",
   }),
   proposedDelegate: one(user, {
@@ -272,8 +280,8 @@ export const competitionOrganizersRelations = relations(
       references: [competitions.id],
     }),
     organizer: one(user, {
-      fields: [competitionOrganizers.organizerWcaId],
-      references: [user.wcaId],
+      fields: [competitionOrganizers.organizerUserId],
+      references: [user.id],
     }),
   }),
 );

@@ -15,13 +15,13 @@ vi.mock("@workspace/db", () => ({
 }));
 
 vi.mock("@workspace/db/schema", () => ({
-  competitionOrganizers: { organizerWcaId: "organizer_wca_id" },
+  competitionOrganizers: { organizerUserId: "organizer_user_id" },
   boardMembers: { userId: "user_id" },
 }));
 
 import { canAccessBoardsApp } from "./boards-access";
 
-const organizer = { id: "user-1", role: "user", wcaId: "2016AREL01" };
+const organizer = { id: "user-1", role: "user" };
 
 describe("canAccessBoardsApp", () => {
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe("canAccessBoardsApp", () => {
 
   it("is true for delegates without querying the database", async () => {
     await expect(
-      canAccessBoardsApp({ id: "d1", role: "delegate", wcaId: "2010DEL01" }),
+      canAccessBoardsApp({ id: "d1", role: "delegate" }),
     ).resolves.toBe(true);
     expect(findOrganizer).not.toHaveBeenCalled();
     expect(findMember).not.toHaveBeenCalled();
@@ -58,11 +58,10 @@ describe("canAccessBoardsApp", () => {
     await expect(canAccessBoardsApp(organizer)).resolves.toBe(false);
   });
 
-  it("skips the organizer lookup for users without a WCA ID", async () => {
-    await expect(
-      canAccessBoardsApp({ id: "u2", role: "user", wcaId: null }),
-    ).resolves.toBe(false);
-    expect(findOrganizer).not.toHaveBeenCalled();
-    expect(findMember).toHaveBeenCalled();
+  it("looks up organizers by user id, so users without a WCA ID can organize", async () => {
+    findOrganizer.mockResolvedValue({ competitionId: 7 });
+    const withoutWcaId = { id: "u2", role: "user", wcaId: null };
+    await expect(canAccessBoardsApp(withoutWcaId)).resolves.toBe(true);
+    expect(findOrganizer).toHaveBeenCalled();
   });
 });

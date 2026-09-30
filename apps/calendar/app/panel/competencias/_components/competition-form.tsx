@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,9 +38,12 @@ import { es } from "react-day-picker/locale";
 import type { DateRange } from "react-day-picker";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { useRouter } from "next/navigation";
-import { OrganizerCombobox } from "./organizer-combobox";
+import {
+  OrganizerCombobox,
+  organizerSubtitle,
+  type OrganizerOption,
+} from "./organizer-combobox";
 import { BoardAssignControls } from "./board-assign-controls";
-import { searchUsers } from "../_actions/wca-users";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
 import { Competition } from "@workspace/db/schema";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -109,10 +112,10 @@ const competitionSchema = z
     // delegates are optional; if any are provided, a primary must be selected
     delegateWcaIds: z.array(z.string()).optional().default([]),
     primaryDelegateWcaId: z.string().optional().or(z.literal("")),
-    organizerWcaIds: z
+    organizerUserIds: z
       .array(z.string())
       .min(1, "Selecciona al menos un organizador"),
-    primaryOrganizerWcaId: z
+    primaryOrganizerUserId: z
       .string()
       .min(1, "Selecciona un organizador principal"),
     assignBoard: z.boolean().optional().default(false),
@@ -136,9 +139,9 @@ const competitionSchema = z
       path: ["primaryDelegateWcaId"],
     },
   )
-  .refine((data) => data.organizerWcaIds.includes(data.primaryOrganizerWcaId), {
+  .refine((data) => data.organizerUserIds.includes(data.primaryOrganizerUserId), {
     message: "El organizador principal debe estar en la lista de organizadores",
-    path: ["primaryOrganizerWcaId"],
+    path: ["primaryOrganizerUserId"],
   })
   .refine(
     (data) =>
@@ -179,8 +182,9 @@ interface FullCompetition extends Competition {
     status?: "pending" | "accepted" | "declined";
   }[];
   organizers: {
-    organizerWcaId: string;
+    organizerUserId: string;
     isPrimary: boolean;
+    organizer: OrganizerOption;
   }[];
 }
 
@@ -193,8 +197,8 @@ export function CompetitionForm({
 }) {
   const [pending, startTransition] = useTransition();
   const [selectedOrganizers, setSelectedOrganizers] = useState<
-    { wcaId: string; name: string }[]
-  >([]);
+    OrganizerOption[]
+  >(() => competition?.organizers.map((o) => o.organizer) ?? []);
   const isEditing = !!competition;
   const minDate = addWeeks(new Date(), 5);
 
@@ -227,9 +231,11 @@ export function CompetitionForm({
           delegateWcaIds: competition.delegates.map((d) => d.delegateWcaId),
           primaryDelegateWcaId:
             competition.delegates.find((d) => d.isPrimary)?.delegateWcaId || "",
-          organizerWcaIds: competition.organizers.map((o) => o.organizerWcaId),
-          primaryOrganizerWcaId:
-            competition.organizers.find((o) => o.isPrimary)?.organizerWcaId ||
+          organizerUserIds: competition.organizers.map(
+            (o) => o.organizerUserId,
+          ),
+          primaryOrganizerUserId:
+            competition.organizers.find((o) => o.isPrimary)?.organizerUserId ||
             "",
         }
       : {
@@ -246,59 +252,31 @@ export function CompetitionForm({
           notes: "",
           delegateWcaIds: [],
           primaryDelegateWcaId: "",
-          organizerWcaIds: [],
-          primaryOrganizerWcaId: "",
+          organizerUserIds: [],
+          primaryOrganizerUserId: "",
           assignBoard: true,
         },
   });
 
-  useEffect(() => {
-    if (competition && competition.organizers.length > 0) {
-      const loadOrganizers = async () => {
-        const organizerDetails = await Promise.all(
-          competition.organizers.map(async (org) => {
-            const users = await searchUsers(org.organizerWcaId);
-            const user = users.find((u) => u.wcaId === org.organizerWcaId);
-            return user
-              ? { wcaId: user.wcaId, name: user.name }
-              : { wcaId: org.organizerWcaId, name: org.organizerWcaId };
-          }),
-        );
-        setSelectedOrganizers(organizerDetails);
-      };
-      loadOrganizers();
-    }
-  }, [competition]);
-
-  const handleAddOrganizer = async (wcaId: string) => {
-    const current = form.getValues("organizerWcaIds") || [];
-    if (!current.includes(wcaId)) {
-      form.setValue("organizerWcaIds", [...current, wcaId]);
-
-      // Fetch organizer details
-      const users = await searchUsers(wcaId);
-      const user = users.find((u) => u.wcaId === wcaId);
-
-      if (user) {
-        setSelectedOrganizers((prev) => [
-          ...prev,
-          { wcaId: user.wcaId, name: user.name },
-        ]);
-      }
+  const handleAddOrganizer = (organizer: OrganizerOption) => {
+    const current = form.getValues("organizerUserIds") || [];
+    if (!current.includes(organizer.id)) {
+      form.setValue("organizerUserIds", [...current, organizer.id]);
+      setSelectedOrganizers((prev) => [...prev, organizer]);
     }
   };
 
-  const handleRemoveOrganizer = (wcaId: string) => {
-    const current = form.getValues("organizerWcaIds") || [];
+  const handleRemoveOrganizer = (userId: string) => {
+    const current = form.getValues("organizerUserIds") || [];
     form.setValue(
-      "organizerWcaIds",
-      current.filter((id) => id !== wcaId),
+      "organizerUserIds",
+      current.filter((id) => id !== userId),
     );
-    setSelectedOrganizers((prev) => prev.filter((org) => org.wcaId !== wcaId));
+    setSelectedOrganizers((prev) => prev.filter((org) => org.id !== userId));
 
     // Clear primary organizer if it was the removed one
-    if (form.getValues("primaryOrganizerWcaId") === wcaId) {
-      form.setValue("primaryOrganizerWcaId", "");
+    if (form.getValues("primaryOrganizerUserId") === userId) {
+      form.setValue("primaryOrganizerUserId", "");
     }
   };
 
@@ -627,7 +605,7 @@ export function CompetitionForm({
 
         <FormField
           control={form.control}
-          name="organizerWcaIds"
+          name="organizerUserIds"
           render={() => (
             <FormItem>
               <FormLabel>Organizadores</FormLabel>
@@ -637,25 +615,28 @@ export function CompetitionForm({
               </FormDescription>
               <OrganizerCombobox
                 value=""
-                onValueChange={handleAddOrganizer}
-                selectedOrganizers={form.watch("organizerWcaIds") || []}
+                onSelect={handleAddOrganizer}
+                selectedOrganizers={form.watch("organizerUserIds") || []}
                 placeholder="Buscar organizador..."
               />
               {selectedOrganizers.length > 0 && (
                 <div className="space-y-2 mt-4 border rounded-md p-3">
                   {selectedOrganizers.map((organizer) => (
                     <div
-                      key={organizer.wcaId}
+                      key={organizer.id}
                       className="flex items-center justify-between p-2 bg-secondary/50 rounded-md"
                     >
                       <span className="text-sm">
-                        {organizer.name} ({organizer.wcaId})
+                        {organizer.name}
+                        {organizerSubtitle(organizer)
+                          ? ` (${organizerSubtitle(organizer)})`
+                          : ""}
                       </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveOrganizer(organizer.wcaId)}
+                        onClick={() => handleRemoveOrganizer(organizer.id)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -670,7 +651,7 @@ export function CompetitionForm({
 
         <FormField
           control={form.control}
-          name="primaryOrganizerWcaId"
+          name="primaryOrganizerUserId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Organizador principal</FormLabel>
@@ -682,7 +663,7 @@ export function CompetitionForm({
                 </FormControl>
                 <SelectContent>
                   {selectedOrganizers.map((organizer) => (
-                    <SelectItem key={organizer.wcaId} value={organizer.wcaId}>
+                    <SelectItem key={organizer.id} value={organizer.id}>
                       {organizer.name}
                     </SelectItem>
                   ))}

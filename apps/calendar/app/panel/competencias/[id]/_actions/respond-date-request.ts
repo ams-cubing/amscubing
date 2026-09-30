@@ -42,7 +42,7 @@ async function getPrimaryOrganizer(competitionId: number) {
       role: user.role,
     })
     .from(competitionOrganizers)
-    .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
+    .innerJoin(user, eq(user.id, competitionOrganizers.organizerUserId))
     .where(
       and(
         eq(competitionOrganizers.competitionId, competitionId),
@@ -91,7 +91,7 @@ export async function acceptDateRequest(competitionId: number): Promise<{
       });
 
       const organizer = await getPrimaryOrganizer(competitionId);
-      if (organizer?.id && organizer.wcaId) {
+      if (organizer) {
         await insertNotifications(tx, [
           competitionNotificationRow({
             recipient: {

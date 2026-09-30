@@ -8,6 +8,7 @@ import {
 import {
   competitionNotificationRow,
   insertNotifications,
+  notificationUsersByIds,
   userIdsByWcaIds,
 } from "@workspace/db/notifications";
 import {
@@ -98,7 +99,7 @@ export async function createCompetition(
           name: validatedData.name || null,
           city: validatedData.city,
           stateId: validatedData.stateId,
-          requestedBy: null,
+          requestedByUserId: null,
           trelloUrl: validatedData.trelloUrl || null,
           wcaCompetitionUrl:
             announcedSocial?.wcaCompetitionUrl ||
@@ -134,11 +135,11 @@ export async function createCompetition(
         }
       }
 
-      const organizerAssignments = validatedData.organizerWcaIds.map(
-        (wcaId) => ({
+      const organizerAssignments = validatedData.organizerUserIds.map(
+        (userId) => ({
           competitionId: newCompetitionId,
-          organizerWcaId: wcaId,
-          isPrimary: wcaId === validatedData.primaryOrganizerWcaId,
+          organizerUserId: userId,
+          isPrimary: userId === validatedData.primaryOrganizerUserId,
         }),
       );
 
@@ -154,9 +155,9 @@ export async function createCompetition(
         details: validatedData,
       });
 
-      const usersByWca = await userIdsByWcaIds(tx, [
-        ...validatedData.delegateWcaIds,
-        ...validatedData.organizerWcaIds,
+      const [usersByWca, organizersById] = await Promise.all([
+        userIdsByWcaIds(tx, validatedData.delegateWcaIds),
+        notificationUsersByIds(tx, validatedData.organizerUserIds),
       ]);
       const urls = notificationAppUrls();
       await insertNotifications(tx, [
@@ -174,8 +175,8 @@ export async function createCompetition(
             }),
           ];
         }),
-        ...validatedData.organizerWcaIds.flatMap((wcaId) => {
-          const recipient = usersByWca.get(wcaId);
+        ...validatedData.organizerUserIds.flatMap((userId) => {
+          const recipient = organizersById.get(userId);
           if (!recipient) return [];
           return [
             competitionNotificationRow({
@@ -219,7 +220,7 @@ export async function createCompetition(
     try {
       const organizers = await db.query.user.findMany({
         where: (u, { inArray }) =>
-          inArray(u.wcaId, validatedData.organizerWcaIds),
+          inArray(u.id, validatedData.organizerUserIds),
         columns: { email: true, name: true },
       });
 

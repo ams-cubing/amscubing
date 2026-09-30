@@ -5,7 +5,7 @@ import { db } from "@workspace/db";
 import {
   competitionNotificationRow,
   insertNotifications,
-  userIdsByWcaIds,
+  notificationUsersByIds,
 } from "@workspace/db/notifications";
 import {
   competitionOrganizers,
@@ -63,20 +63,20 @@ export async function sendUltimatum(
 
       const organizerRows = await tx
         .select({
-          organizerWcaId: competitionOrganizers.organizerWcaId,
+          organizerUserId: competitionOrganizers.organizerUserId,
         })
         .from(competitionOrganizers)
         .where(
           eq(competitionOrganizers.competitionId, validatedData.competitionId),
         );
-      const usersByWca = await userIdsByWcaIds(
+      const organizersById = await notificationUsersByIds(
         tx,
-        organizerRows.map((row) => row.organizerWcaId),
+        organizerRows.map((row) => row.organizerUserId),
       );
       const urls = notificationAppUrls();
       await insertNotifications(
         tx,
-        [...usersByWca.values()].map((recipient) =>
+        [...organizersById.values()].map((recipient) =>
           competitionNotificationRow({
             recipient,
             actorId: session.user.id,
@@ -94,7 +94,7 @@ export async function sendUltimatum(
         email: user.email,
       })
       .from(competitionOrganizers)
-      .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
+      .innerJoin(user, eq(user.id, competitionOrganizers.organizerUserId))
       .where(
         and(
           eq(competitionOrganizers.competitionId, validatedData.competitionId),

@@ -27,6 +27,9 @@ export async function getCompetitionWithRelations(id: number) {
           organizer: true,
         },
       },
+      requester: {
+        columns: { name: true, wcaId: true },
+      },
     },
   });
 }
