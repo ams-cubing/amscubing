@@ -87,3 +87,9 @@ export {
   markCompetitionSocialPublishedManually,
   type CompetitionSocialMutationResult,
 } from "./social-publish-recovery";
+export {
+  claimCompetitionSocialPublish,
+  releaseCompetitionSocialPublish,
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
+  SOCIAL_PUBLISH_CLAIM_TTL_MINUTES,
+} from "./social-publish-claim";

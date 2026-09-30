@@ -2,7 +2,17 @@ import { NextResponse } from "next/server";
 
 import { buildAnnouncementPreview } from "@workspace/social";
 
+import { requireSession } from "@/lib/session";
+
 export async function POST(request: Request) {
+  const authResult = await requireSession();
+  if (!authResult.ok) {
+    return NextResponse.json(
+      { ok: false, message: authResult.message },
+      { status: 401 },
+    );
+  }
+
   try {
     const body = (await request.json()) as {
       wcaCompetitionUrl?: string | null;

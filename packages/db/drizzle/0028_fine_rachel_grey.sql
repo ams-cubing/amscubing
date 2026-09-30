@@ -1,0 +1,1 @@
+ALTER TABLE "competition" ADD COLUMN "social_publish_claimed_at" timestamp;

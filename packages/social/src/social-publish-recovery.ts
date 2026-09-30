@@ -8,6 +8,11 @@ import {
   publishCompetitionSocialAnnouncement,
 } from "./announce-and-publish";
 import { refreshTorneoDeRubikCoverBestEffort } from "./refresh-cover";
+import {
+  claimCompetitionSocialPublish,
+  releaseCompetitionSocialPublish,
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
+} from "./social-publish-claim";
 
 export type CompetitionSocialMutationResult =
   | { ok: true; message: string }
@@ -72,20 +77,33 @@ export async function retryCompetitionSocialPublish(
     };
   }
 
-  const published = await publishCompetitionSocialAnnouncement({
-    wcaCompetitionUrl: competition.wcaCompetitionUrl,
-    city: competition.city,
-    stateName: competition.state?.name ?? null,
-    name: competition.name,
-    startDate: competition.startDate,
-    endDate: competition.endDate,
-    capacity: competition.capacity,
-    socialCustomText: competition.socialCustomText ?? "",
-    socialTags: competition.socialTags,
-    socialFlyerUrl: competition.socialFlyerUrl,
-  });
+  if (!(await claimCompetitionSocialPublish(competitionId))) {
+    return { ok: false, message: SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE };
+  }
+
+  let published: Awaited<
+    ReturnType<typeof publishCompetitionSocialAnnouncement>
+  >;
+  try {
+    published = await publishCompetitionSocialAnnouncement({
+      wcaCompetitionUrl: competition.wcaCompetitionUrl,
+      city: competition.city,
+      stateName: competition.state?.name ?? null,
+      name: competition.name,
+      startDate: competition.startDate,
+      endDate: competition.endDate,
+      capacity: competition.capacity,
+      socialCustomText: competition.socialCustomText ?? "",
+      socialTags: competition.socialTags,
+      socialFlyerUrl: competition.socialFlyerUrl,
+    });
+  } catch (err) {
+    await releaseCompetitionSocialPublish(competitionId);
+    throw err;
+  }
 
   if (!published.ok) {
+    await releaseCompetitionSocialPublish(competitionId);
     return { ok: false, message: published.message };
   }
 
@@ -96,6 +114,7 @@ export async function retryCompetitionSocialPublish(
       facebookPostId: published.facebookPostId,
       instagramMediaId: published.instagramMediaId,
       socialPublishedManually: false,
+      socialPublishClaimedAt: null,
       announcedPostedAt: new Date(),
       updatedAt: new Date(),
     })

@@ -15,17 +15,18 @@ export default async function BoardsHomePage() {
   const session = await requireSessionOrUnauthorized();
   const user = session.user;
 
-  if (!(await canAccessBoardsApp(user))) {
-    return <BoardsAccessDenied />;
-  }
-
   const isDelegate = user.role === "delegate";
 
-  const [boards, templates, archived] = await Promise.all([
+  const [canAccessApp, boards, templates, archived] = await Promise.all([
+    canAccessBoardsApp(user),
     listAccessibleBoards(user),
     isDelegate ? listTemplates(user) : Promise.resolve([]),
     listArchivedBoards(user),
   ]);
+
+  if (!canAccessApp && boards.length === 0 && archived.length === 0) {
+    return <BoardsAccessDenied />;
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 space-y-10 p-6">

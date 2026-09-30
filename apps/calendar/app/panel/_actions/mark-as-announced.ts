@@ -10,8 +10,11 @@ import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
+  claimCompetitionSocialPublish,
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
+  releaseCompetitionSocialPublish,
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
 } from "@workspace/social";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
@@ -24,12 +27,16 @@ export async function markAsAnnounced(
 ): Promise<{
   success: boolean;
   message: string;
+  /** The row changed since the client loaded it; the caller should refresh. */
+  stale?: boolean;
 }> {
   const authResult = await requireDelegate();
   if (!authResult.ok) {
     return { success: false, message: authResult.message };
   }
   const { session } = authResult;
+
+  let claimed = false;
 
   try {
     const competition = await db.query.competitions.findFirst({
@@ -44,6 +51,8 @@ export async function markAsAnnounced(
         statusInternal: true,
         wcaCompetitionUrl: true,
         announcedPostedAt: true,
+        facebookPostId: true,
+        instagramMediaId: true,
         socialCustomText: true,
         socialTags: true,
         socialFlyerUrl: true,
@@ -63,29 +72,75 @@ export async function markAsAnnounced(
         statusInternal: competition.statusInternal,
       });
     } catch (err) {
-      return { success: false, message: getErrorMessage(err) };
+      return { success: false, message: getErrorMessage(err), stale: true };
     }
 
-    const wcaCompetitionUrl =
-      options?.wcaCompetitionUrl?.trim() ||
-      competition.wcaCompetitionUrl?.trim() ||
-      "";
+    let social: {
+      wcaCompetitionUrl: string | null;
+      facebookPostId: string;
+      instagramMediaId: string | null;
+    };
 
-    const published = await publishCompetitionSocialAnnouncement({
-      wcaCompetitionUrl,
-      city: competition.city,
-      stateName: competition.state?.name ?? null,
-      name: competition.name,
-      startDate: competition.startDate,
-      endDate: competition.endDate,
-      capacity: competition.capacity,
-      socialCustomText: competition.socialCustomText ?? "",
-      socialTags: competition.socialTags,
-      socialFlyerUrl: competition.socialFlyerUrl,
-    });
+    if (competition.facebookPostId) {
+      // A previous attempt already posted but never finished the transition.
+      social = {
+        wcaCompetitionUrl: competition.wcaCompetitionUrl,
+        facebookPostId: competition.facebookPostId,
+        instagramMediaId: competition.instagramMediaId,
+      };
+    } else {
+      claimed = await claimCompetitionSocialPublish(competitionId);
+      if (!claimed) {
+        return {
+          success: false,
+          message: SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
+          stale: true,
+        };
+      }
 
-    if (!published.ok) {
-      return { success: false, message: published.message };
+      const wcaCompetitionUrl =
+        options?.wcaCompetitionUrl?.trim() ||
+        competition.wcaCompetitionUrl?.trim() ||
+        "";
+
+      const published = await publishCompetitionSocialAnnouncement({
+        wcaCompetitionUrl,
+        city: competition.city,
+        stateName: competition.state?.name ?? null,
+        name: competition.name,
+        startDate: competition.startDate,
+        endDate: competition.endDate,
+        capacity: competition.capacity,
+        socialCustomText: competition.socialCustomText ?? "",
+        socialTags: competition.socialTags,
+        socialFlyerUrl: competition.socialFlyerUrl,
+      });
+
+      if (!published.ok) {
+        await releaseCompetitionSocialPublish(competitionId);
+        claimed = false;
+        return { success: false, message: published.message };
+      }
+
+      social = {
+        wcaCompetitionUrl: published.wcaCompetitionUrl,
+        facebookPostId: published.facebookPostId,
+        instagramMediaId: published.instagramMediaId,
+      };
+
+      // Persist post ids before the transition so a later failure can't cause a repost.
+      await db
+        .update(competitions)
+        .set({
+          wcaCompetitionUrl: social.wcaCompetitionUrl,
+          facebookPostId: social.facebookPostId,
+          instagramMediaId: social.instagramMediaId,
+          announcedPostedAt: new Date(),
+          socialPublishClaimedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(competitions.id, competitionId));
+      claimed = false;
     }
 
     const applied = await db.transaction(async (tx) =>
@@ -96,14 +151,14 @@ export async function markAsAnnounced(
         source: "calendar",
         urls: notificationAppUrls(),
         patch: {
-          wcaCompetitionUrl: published.wcaCompetitionUrl,
-          announcedPostedAt: new Date(),
-          facebookPostId: published.facebookPostId,
-          instagramMediaId: published.instagramMediaId,
+          wcaCompetitionUrl: social.wcaCompetitionUrl,
+          announcedPostedAt: competition.announcedPostedAt ?? new Date(),
+          facebookPostId: social.facebookPostId,
+          instagramMediaId: social.instagramMediaId,
         },
         extraLogDetails: {
-          facebookPostId: published.facebookPostId,
-          instagramMediaId: published.instagramMediaId,
+          facebookPostId: social.facebookPostId,
+          instagramMediaId: social.instagramMediaId,
         },
       }),
     );
@@ -142,12 +197,19 @@ export async function markAsAnnounced(
 
     return {
       success: true,
-      message: published.instagramMediaId
+      message: social.instagramMediaId
         ? "Competencia anunciada y publicada en Facebook e Instagram"
         : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)",
     };
   } catch (error) {
     console.error("Error marking competition as announced:", error);
+    if (claimed) {
+      try {
+        await releaseCompetitionSocialPublish(competitionId);
+      } catch (releaseError) {
+        console.error("Error releasing social publish claim:", releaseError);
+      }
+    }
     return { success: false, message: getErrorMessage(error) };
   }
 }

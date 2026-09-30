@@ -17,9 +17,7 @@ import {
   getOrganizersForCompetitions,
 } from "./_lib/queries";
 import Loading from "./loading";
-import { canAccessBoardsApp } from "@/lib/boards";
 import { getBoardsUrl } from "@/lib/urls";
-import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 function dateRequestStatusLabel(status: "open" | "accepted" | "exhausted") {
   switch (status) {
@@ -43,8 +41,6 @@ async function PageContent() {
     unauthorized();
   }
 
-  const user = toSessionUser(session.user as RawSessionUser);
-  const canSeeBoards = await canAccessBoardsApp(user);
   const wcaId = session.user.wcaId;
 
   if (!wcaId) {
@@ -248,7 +244,7 @@ async function PageContent() {
                         </span>
                       </div>
 
-                      {canSeeBoards && comp.boardId ? (
+                      {comp.boardId ? (
                         <a
                           href={`${getBoardsUrl()}/boards/${comp.boardId}`}
                           target="_blank"
@@ -257,17 +253,19 @@ async function PageContent() {
                         >
                           Ver tablero AMS
                         </a>
+                      ) : comp.trelloUrl ? (
+                        <a
+                          href={comp.trelloUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver en Trello
+                        </a>
                       ) : (
-                        comp.trelloUrl && (
-                          <a
-                            href={comp.trelloUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                          >
-                            Ver en Trello
-                          </a>
-                        )
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Tablero aún no asignado
+                        </p>
                       )}
                     </div>
                   );

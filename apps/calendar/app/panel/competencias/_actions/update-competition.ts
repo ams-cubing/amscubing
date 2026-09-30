@@ -30,8 +30,11 @@ import {
   sendOrganizerRemovedEmail,
 } from "@/lib/calendar-emails";
 import {
+  claimCompetitionSocialPublish,
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
+  releaseCompetitionSocialPublish,
+  SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
 } from "@workspace/social";
 import {
   holdAvailability,
@@ -163,20 +166,39 @@ export async function updateCompetition(
       instagramMediaId: string | null;
     } | null = null;
 
-    if (transitioningToAnnounced && !existingCompetition?.announcedPostedAt) {
-      const published = await publishCompetitionSocialAnnouncement({
-        wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
-        city: validatedData.city,
-        stateName: existingCompetition?.state?.name ?? null,
-        name: validatedData.name || null,
-        startDate: startDateStr!,
-        endDate: endDateStr!,
-        capacity: validatedData.capacity ?? existingCompetition?.capacity ?? 50,
-        socialCustomText: existingCompetition?.socialCustomText ?? "",
-        socialTags: existingCompetition?.socialTags,
-        socialFlyerUrl: existingCompetition?.socialFlyerUrl,
-      });
+    if (
+      transitioningToAnnounced &&
+      !existingCompetition?.announcedPostedAt &&
+      !existingCompetition?.facebookPostId
+    ) {
+      const claimed = await claimCompetitionSocialPublish(competitionId);
+      if (!claimed) {
+        return { success: false, message: SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE };
+      }
+
+      let published: Awaited<
+        ReturnType<typeof publishCompetitionSocialAnnouncement>
+      >;
+      try {
+        published = await publishCompetitionSocialAnnouncement({
+          wcaCompetitionUrl: validatedData.wcaCompetitionUrl || "",
+          city: validatedData.city,
+          stateName: existingCompetition?.state?.name ?? null,
+          name: validatedData.name || null,
+          startDate: startDateStr!,
+          endDate: endDateStr!,
+          capacity:
+            validatedData.capacity ?? existingCompetition?.capacity ?? 50,
+          socialCustomText: existingCompetition?.socialCustomText ?? "",
+          socialTags: existingCompetition?.socialTags,
+          socialFlyerUrl: existingCompetition?.socialFlyerUrl,
+        });
+      } catch (err) {
+        await releaseCompetitionSocialPublish(competitionId);
+        throw err;
+      }
       if (!published.ok) {
+        await releaseCompetitionSocialPublish(competitionId);
         return { success: false, message: published.message };
       }
       announcedSocial = {
@@ -184,6 +206,18 @@ export async function updateCompetition(
         facebookPostId: published.facebookPostId,
         instagramMediaId: published.instagramMediaId,
       };
+
+      // Persist post ids before the main transaction so a later failure can't cause a repost.
+      await db
+        .update(competitions)
+        .set({
+          facebookPostId: announcedSocial.facebookPostId,
+          instagramMediaId: announcedSocial.instagramMediaId,
+          announcedPostedAt: new Date(),
+          socialPublishClaimedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(competitions.id, competitionId));
     }
 
     // Use a transaction for all DB changes
