@@ -218,6 +218,20 @@
       "when": 1790800594858,
       "tag": "0030_late_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790803748578,
+      "tag": "0031_magical_captain_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790803991591,
+      "tag": "0032_stale_tarot",
+      "breakpoints": true
     }
   ]
 }

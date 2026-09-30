@@ -96,6 +96,7 @@ vi.mock("@workspace/db/notifications", () => ({
   formatInternalStatusLabel: vi.fn((s: string) => s),
   formatPublicStatusLabel: vi.fn((s: string) => s),
   userIdsByWcaIds: vi.fn().mockResolvedValue(new Map()),
+  notificationUsersByIds: vi.fn().mockResolvedValue(new Map()),
 }));
 
 vi.mock("@/lib/calendar-emails", () => ({
@@ -171,7 +172,7 @@ describe("updateCompetition pending preservation", () => {
       state: { name: "Jalisco" },
     });
 
-    findManyOrganizers.mockResolvedValue([{ organizerWcaId: "2016ORG01" }]);
+    findManyOrganizers.mockResolvedValue([{ organizerUserId: "organizer-1" }]);
   });
 
   it("keeps pending status for unchanged delegates and restores removed", async () => {
@@ -230,8 +231,8 @@ describe("updateCompetition pending preservation", () => {
       notes: "",
       delegateWcaIds: ["2010DEL01"],
       primaryDelegateWcaId: "2010DEL01",
-      organizerWcaIds: ["2016ORG01"],
-      primaryOrganizerWcaId: "2016ORG01",
+      organizerUserIds: ["organizer-1"],
+      primaryOrganizerUserId: "organizer-1",
     });
 
     expect(result.success).toBe(true);
@@ -301,8 +302,8 @@ describe("updateCompetition pending preservation", () => {
       notes: "",
       delegateWcaIds: ["2010DEL01", "2012DEL03"],
       primaryDelegateWcaId: "2010DEL01",
-      organizerWcaIds: ["2016ORG01"],
-      primaryOrganizerWcaId: "2016ORG01",
+      organizerUserIds: ["organizer-1"],
+      primaryOrganizerUserId: "organizer-1",
     });
 
     expect(result.success).toBe(true);

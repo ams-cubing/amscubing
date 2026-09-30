@@ -57,21 +57,14 @@ export async function submitDateRequest(
       };
     }
 
-    if (!session.user.wcaId) {
-      return {
-        success: false,
-        message: "Usuario sin WCA ID",
-      };
-    }
-
     const validatedData = dateRequestSchema.parse(data);
     const startDateStr = toDateOnlyString(validatedData.startDate);
     const endDateStr = toDateOnlyString(validatedData.endDate);
-    const requesterWcaId = session.user.wcaId;
+    const requesterUserId = session.user.id;
 
     const recentRequests = await db.query.dateRequests.findMany({
       where: and(
-        eq(dateRequests.requestedBy, requesterWcaId),
+        eq(dateRequests.requestedByUserId, requesterUserId),
         gte(
           dateRequests.createdAt,
           new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -111,7 +104,7 @@ export async function submitDateRequest(
           .values({
             city: validatedData.city,
             stateId: validatedData.stateId,
-            requestedBy: requesterWcaId,
+            requestedByUserId: requesterUserId,
             startDate: startDateStr,
             endDate: endDateStr,
             proposedDelegateWcaId: proposed.wcaId,

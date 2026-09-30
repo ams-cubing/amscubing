@@ -183,21 +183,23 @@ export async function assertUserAssignableToBoard(
   });
   if (asBoardMember) return;
 
-  if (!board.competitionId || !memberUser.wcaId) {
+  if (!board.competitionId) {
     throw new Error("El miembro debe haber sido invitado al tablero");
   }
 
   const [asDelegate, asOrganizer] = await Promise.all([
-    db.query.competitionDelegates.findFirst({
-      where: and(
-        eq(competitionDelegates.competitionId, board.competitionId),
-        eq(competitionDelegates.delegateWcaId, memberUser.wcaId),
-      ),
-    }),
+    memberUser.wcaId
+      ? db.query.competitionDelegates.findFirst({
+          where: and(
+            eq(competitionDelegates.competitionId, board.competitionId),
+            eq(competitionDelegates.delegateWcaId, memberUser.wcaId),
+          ),
+        })
+      : undefined,
     db.query.competitionOrganizers.findFirst({
       where: and(
         eq(competitionOrganizers.competitionId, board.competitionId),
-        eq(competitionOrganizers.organizerWcaId, memberUser.wcaId),
+        eq(competitionOrganizers.organizerUserId, memberUser.id),
       ),
     }),
   ]);

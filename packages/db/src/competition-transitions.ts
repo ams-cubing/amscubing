@@ -401,7 +401,7 @@ export async function createCompetitionFromDateRequestAccept(
     actorId: string;
     city: string;
     stateId: string;
-    requestedBy: string;
+    requestedByUserId: string;
     startDate: string;
     endDate: string;
     delegateWcaId: string;
@@ -413,7 +413,7 @@ export async function createCompetitionFromDateRequestAccept(
     .values({
       city: input.city,
       stateId: input.stateId,
-      requestedBy: input.requestedBy,
+      requestedByUserId: input.requestedByUserId,
       startDate: input.startDate,
       endDate: input.endDate,
       capacity: input.capacity ?? 50,
@@ -433,7 +433,7 @@ export async function createCompetitionFromDateRequestAccept(
 
   await tx.insert(competitionOrganizers).values({
     competitionId,
-    organizerWcaId: input.requestedBy,
+    organizerUserId: input.requestedByUserId,
     isPrimary: true,
   });
 

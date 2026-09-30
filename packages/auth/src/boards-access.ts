@@ -9,7 +9,7 @@ import { boardMembers, competitionOrganizers } from "@workspace/db/schema";
  * separately by the boards app.
  */
 export async function canAccessBoardsApp(
-  user: { id: string; role: string; wcaId: string | null } | null | undefined,
+  user: { id: string; role: string } | null | undefined,
 ): Promise<boolean> {
   if (!user) {
     return false;
@@ -20,12 +20,10 @@ export async function canAccessBoardsApp(
   }
 
   const [organizer, member] = await Promise.all([
-    user.wcaId
-      ? db.query.competitionOrganizers.findFirst({
-          where: eq(competitionOrganizers.organizerWcaId, user.wcaId),
-          columns: { competitionId: true },
-        })
-      : Promise.resolve(undefined),
+    db.query.competitionOrganizers.findFirst({
+      where: eq(competitionOrganizers.organizerUserId, user.id),
+      columns: { competitionId: true },
+    }),
     db.query.boardMembers.findFirst({
       where: eq(boardMembers.userId, user.id),
       columns: { boardId: true },

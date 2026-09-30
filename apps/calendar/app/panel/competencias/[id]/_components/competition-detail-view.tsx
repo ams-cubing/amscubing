@@ -191,7 +191,7 @@ export function CompetitionDetailView({
             <ul className="space-y-2">
               {competition.organizers.map((row) => (
                 <li
-                  key={row.organizerWcaId}
+                  key={row.organizerUserId}
                   className="flex items-center gap-2"
                 >
                   <Avatar className="size-8">
@@ -208,7 +208,7 @@ export function CompetitionDetailView({
                       )}
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {row.organizerWcaId}
+                      {row.organizer?.wcaId ?? row.organizer?.email}
                     </div>
                   </div>
                 </li>
@@ -229,7 +229,11 @@ export function CompetitionDetailView({
           </div>
           <div>
             <dt className="text-muted-foreground">Solicitada por</dt>
-            <dd className="font-medium">{competition.requestedBy || "—"}</dd>
+            <dd className="font-medium">
+              {competition.requester
+                ? `${competition.requester.name}${competition.requester.wcaId ? ` (${competition.requester.wcaId})` : ""}`
+                : "—"}
+            </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Tablero asignado</dt>

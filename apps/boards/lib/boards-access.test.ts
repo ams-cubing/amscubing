@@ -43,6 +43,18 @@ describe("canAccessBoard", () => {
     await expect(canAccessBoard(organizer, 5)).resolves.toBe(true);
   });
 
+  it("lets an organizer without a WCA ID open the board", async () => {
+    query.boardMembers.findFirst.mockResolvedValue(undefined);
+    query.competitionOrganizers.findFirst.mockResolvedValue({
+      competitionId: 42,
+    });
+
+    await expect(
+      canAccessBoard({ ...organizer, wcaId: null } as User, 5),
+    ).resolves.toBe(true);
+    expect(query.competitionDelegates.findFirst).not.toHaveBeenCalled();
+  });
+
   it("denies users unrelated to the board's competition", async () => {
     query.boardMembers.findFirst.mockResolvedValue(undefined);
     query.competitionDelegates.findFirst.mockResolvedValue(undefined);

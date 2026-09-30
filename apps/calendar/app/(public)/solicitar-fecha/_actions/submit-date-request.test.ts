@@ -45,7 +45,7 @@ vi.mock("@workspace/db", () => ({
 
 vi.mock("@workspace/db/schema", () => ({
   dateRequests: {
-    requestedBy: "requested_by",
+    requestedByUserId: "requested_by_user_id",
     createdAt: "created_at",
   },
 }));
@@ -168,11 +168,11 @@ describe("submitDateRequest", () => {
     expect(holdAvailability).not.toHaveBeenCalled();
   });
 
-  it("holds availability when a delegate is proposed", async () => {
+  it("holds availability when a delegate is proposed, even without a requester WCA ID", async () => {
     getSession.mockResolvedValue({
       user: {
         id: "u1",
-        wcaId: "2016ORG01",
+        wcaId: null,
         email: "org@example.com",
         name: "Org",
       },
@@ -212,6 +212,9 @@ describe("submitDateRequest", () => {
     });
 
     expect(result.success).toBe(true);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({ requestedByUserId: "u1" }),
+    );
     expect(holdAvailability).toHaveBeenCalledWith(
       expect.anything(),
       "2010DEL01",

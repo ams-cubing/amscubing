@@ -15,7 +15,7 @@ vi.mock("@workspace/db", () => ({
 }));
 
 vi.mock("@workspace/db/schema", () => ({
-  competitionOrganizers: { organizerWcaId: "organizer_wca_id" },
+  competitionOrganizers: { organizerUserId: "organizer_user_id" },
   boardMembers: { userId: "user_id" },
 }));
 

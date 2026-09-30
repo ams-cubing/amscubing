@@ -291,6 +291,30 @@ export async function userIdsByWcaIds(
   return map;
 }
 
+export async function notificationUsersByIds(
+  dbOrTx: DbOrTx,
+  userIds: string[],
+): Promise<Map<string, NotificationUser>> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  const map = new Map<string, NotificationUser>();
+  if (unique.length === 0) return map;
+
+  const rows = await dbOrTx
+    .select({
+      id: user.id,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(user)
+    .where(inArray(user.id, unique));
+
+  for (const row of rows) {
+    map.set(row.id, row);
+  }
+
+  return map;
+}
+
 export async function competitionTeamUsers(
   dbOrTx: DbOrTx,
   competitionId: number,
@@ -317,7 +341,7 @@ export async function competitionTeamUsers(
       wcaId: user.wcaId,
     })
     .from(competitionOrganizers)
-    .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
+    .innerJoin(user, eq(user.id, competitionOrganizers.organizerUserId))
     .where(eq(competitionOrganizers.competitionId, competitionId));
 
   const byId = new Map<string, NotificationUser>();
@@ -431,7 +455,7 @@ export async function competitionOrganizersOnly(
       wcaId: user.wcaId,
     })
     .from(competitionOrganizers)
-    .innerJoin(user, eq(user.wcaId, competitionOrganizers.organizerWcaId))
+    .innerJoin(user, eq(user.id, competitionOrganizers.organizerUserId))
     .where(eq(competitionOrganizers.competitionId, competitionId));
 
   return rows;
@@ -470,14 +494,14 @@ export async function boardTeamByRole(dbOrTx: DbOrTx, boardId: number) {
 export async function isCompetitionOrganizer(
   dbOrTx: DbOrTx,
   competitionId: number,
-  wcaId: string,
+  userId: string,
 ) {
   const row = await dbOrTx.query.competitionOrganizers.findFirst({
     where: and(
       eq(competitionOrganizers.competitionId, competitionId),
-      eq(competitionOrganizers.organizerWcaId, wcaId),
+      eq(competitionOrganizers.organizerUserId, userId),
     ),
-    columns: { organizerWcaId: true },
+    columns: { organizerUserId: true },
   });
   return Boolean(row);
 }

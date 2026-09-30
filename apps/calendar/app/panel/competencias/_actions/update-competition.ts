@@ -10,6 +10,7 @@ import {
   formatInternalStatusLabel,
   formatPublicStatusLabel,
   insertNotifications,
+  notificationUsersByIds,
   userIdsByWcaIds,
 } from "@workspace/db/notifications";
 import {
@@ -116,18 +117,18 @@ export async function updateCompetition(
     const existingOrganizersRows =
       await db.query.competitionOrganizers.findMany({
         where: (co, { eq }) => eq(co.competitionId, competitionId),
-        columns: { organizerWcaId: true },
+        columns: { organizerUserId: true },
       });
 
-    const previousOrganizerWcaIds = existingOrganizersRows.map(
-      (r) => r.organizerWcaId,
+    const previousOrganizerUserIds = existingOrganizersRows.map(
+      (r) => r.organizerUserId,
     );
-    const newOrganizerWcaIds = validatedData.organizerWcaIds;
-    const addedOrganizerWcaIds = newOrganizerWcaIds.filter(
-      (id) => !previousOrganizerWcaIds.includes(id),
+    const newOrganizerUserIds = validatedData.organizerUserIds;
+    const addedOrganizerUserIds = newOrganizerUserIds.filter(
+      (id) => !previousOrganizerUserIds.includes(id),
     );
-    const removedOrganizerWcaIds = previousOrganizerWcaIds.filter(
-      (id) => !newOrganizerWcaIds.includes(id),
+    const removedOrganizerUserIds = previousOrganizerUserIds.filter(
+      (id) => !newOrganizerUserIds.includes(id),
     );
 
     const publicChanged =
@@ -330,11 +331,11 @@ export async function updateCompetition(
         .where(eq(competitionOrganizers.competitionId, competitionId));
 
       // Insert new organizer assignments
-      const organizerAssignments = validatedData.organizerWcaIds.map(
-        (wcaId) => ({
+      const organizerAssignments = validatedData.organizerUserIds.map(
+        (userId) => ({
           competitionId: competitionId,
-          organizerWcaId: wcaId,
-          isPrimary: wcaId === validatedData.primaryOrganizerWcaId,
+          organizerUserId: userId,
+          isPrimary: userId === validatedData.primaryOrganizerUserId,
         }),
       );
 
@@ -350,13 +351,17 @@ export async function updateCompetition(
         details: validatedData,
       });
 
-      const usersByWca = await userIdsByWcaIds(tx, [
-        ...addedDelegateWcaIds,
-        ...removedDelegateWcaIds,
-        ...addedOrganizerWcaIds,
-        ...removedOrganizerWcaIds,
-        ...newDelegateWcaIds,
-        ...newOrganizerWcaIds,
+      const [delegatesByWcaId, organizersById] = await Promise.all([
+        userIdsByWcaIds(tx, [
+          ...addedDelegateWcaIds,
+          ...removedDelegateWcaIds,
+          ...newDelegateWcaIds,
+        ]),
+        notificationUsersByIds(tx, [
+          ...addedOrganizerUserIds,
+          ...removedOrganizerUserIds,
+          ...newOrganizerUserIds,
+        ]),
       ]);
       const urls = notificationAppUrls();
       const assignedRecipientIds = new Set<string>();
@@ -364,14 +369,14 @@ export async function updateCompetition(
 
       const assignmentRows = (
         [
-          [addedDelegateWcaIds, "delegate_added"],
-          [removedDelegateWcaIds, "delegate_removed"],
-          [addedOrganizerWcaIds, "organizer_added"],
-          [removedOrganizerWcaIds, "organizer_removed"],
+          [addedDelegateWcaIds, delegatesByWcaId, "delegate_added"],
+          [removedDelegateWcaIds, delegatesByWcaId, "delegate_removed"],
+          [addedOrganizerUserIds, organizersById, "organizer_added"],
+          [removedOrganizerUserIds, organizersById, "organizer_removed"],
         ] as const
-      ).flatMap(([wcaIds, type]) =>
-        wcaIds.flatMap((wcaId) => {
-          const recipient = usersByWca.get(wcaId);
+      ).flatMap(([keys, recipients, type]) =>
+        keys.flatMap((key) => {
+          const recipient = recipients.get(key);
           if (!recipient) return [];
           assignedRecipientIds.add(recipient.id);
           return [
@@ -389,12 +394,14 @@ export async function updateCompetition(
 
       const statusChanged = !("noop" in statusResolution);
       const statusRows = statusChanged
-        ? [...new Set([...newDelegateWcaIds, ...newOrganizerWcaIds])].flatMap(
-            (wcaId) => {
-              const recipient = usersByWca.get(wcaId);
+        ? [
+            ...newDelegateWcaIds.map((wcaId) => delegatesByWcaId.get(wcaId)),
+            ...newOrganizerUserIds.map((userId) => organizersById.get(userId)),
+          ].flatMap((recipient) => {
               if (!recipient || assignedRecipientIds.has(recipient.id)) {
                 return [];
               }
+              assignedRecipientIds.add(recipient.id);
               const statusLabel =
                 existingCompetition?.statusPublic !==
                 resolvedStatuses.statusPublic
@@ -472,9 +479,9 @@ export async function updateCompetition(
         }
       }
 
-      if (addedOrganizerWcaIds.length > 0) {
+      if (addedOrganizerUserIds.length > 0) {
         const addedUsers = await db.query.user.findMany({
-          where: (u, { inArray }) => inArray(u.wcaId, addedOrganizerWcaIds),
+          where: (u, { inArray }) => inArray(u.id, addedOrganizerUserIds),
           columns: { email: true, name: true },
         });
 
@@ -497,9 +504,9 @@ export async function updateCompetition(
         }
       }
 
-      if (removedOrganizerWcaIds.length > 0) {
+      if (removedOrganizerUserIds.length > 0) {
         const removedUsers = await db.query.user.findMany({
-          where: (u, { inArray }) => inArray(u.wcaId, removedOrganizerWcaIds),
+          where: (u, { inArray }) => inArray(u.id, removedOrganizerUserIds),
           columns: { email: true, name: true },
         });
 
@@ -527,13 +534,13 @@ export async function updateCompetition(
           existingCompetition?.statusPublic !== resolvedStatuses.statusPublic
             ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
             : formatInternalStatusLabel(resolvedStatuses.statusInternal);
-        const statusOrganizerWcaIds = newOrganizerWcaIds.filter(
-          (id) => !addedOrganizerWcaIds.includes(id),
+        const statusOrganizerUserIds = newOrganizerUserIds.filter(
+          (id) => !addedOrganizerUserIds.includes(id),
         );
 
-        if (statusOrganizerWcaIds.length > 0) {
+        if (statusOrganizerUserIds.length > 0) {
           const statusUsers = await db.query.user.findMany({
-            where: (u, { inArray }) => inArray(u.wcaId, statusOrganizerWcaIds),
+            where: (u, { inArray }) => inArray(u.id, statusOrganizerUserIds),
             columns: { email: true, name: true },
           });
 

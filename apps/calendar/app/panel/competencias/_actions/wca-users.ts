@@ -2,8 +2,7 @@
 
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
-import { hasWcaId } from "@workspace/db/utils";
-import { eq, ilike, isNotNull, or } from "drizzle-orm";
+import { eq, ilike, or } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
 
@@ -50,8 +49,8 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
 
     const data: WCAPerson = await response.json();
 
-    // Stub row so competition_organizer/delegate FKs can reference user.wcaId
-    // before the person has logged in. First WCA OAuth login claims this row
+    // Stub row so the person can be assigned as organizer/delegate before they
+    // have logged in. First WCA OAuth login claims this row
     // (replaces the placeholder email) via claimWcaStubUser in @workspace/auth.
     const [newUser] = await db
       .insert(user)
@@ -86,33 +85,30 @@ export async function searchUsers(query: string) {
       return [];
     }
 
-    if (!query) {
-      const allUsers = await db
-        .select({
-          wcaId: user.wcaId,
-          name: user.name,
-          image: user.image,
-        })
-        .from(user)
-        .where(isNotNull(user.wcaId))
-        .limit(5);
+    const columns = {
+      id: user.id,
+      wcaId: user.wcaId,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    };
 
-      return allUsers.filter(hasWcaId);
+    if (!query) {
+      return await db.select(columns).from(user).limit(5);
     }
 
-    const searchResults = await db
-      .select({
-        wcaId: user.wcaId,
-        name: user.name,
-        image: user.image,
-      })
+    const pattern = `%${query}%`;
+    return await db
+      .select(columns)
       .from(user)
       .where(
-        or(ilike(user.name, `%${query}%`), ilike(user.wcaId, `%${query}%`)),
+        or(
+          ilike(user.name, pattern),
+          ilike(user.wcaId, pattern),
+          ilike(user.email, pattern),
+        ),
       )
       .limit(5);
-
-    return searchResults.filter(hasWcaId);
   } catch (error) {
     console.error("Error searching users:", error);
     return [];
