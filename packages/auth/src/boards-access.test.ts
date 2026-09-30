@@ -1,97 +1,34 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst } = vi.hoisted(() => ({
-  findFirst: vi.fn(),
+const { findOrganizer, findMember } = vi.hoisted(() => ({
+  findOrganizer: vi.fn(),
+  findMember: vi.fn(),
 }));
 
 vi.mock("@workspace/db", () => ({
   db: {
     query: {
-      boardsOrganizerAllowlist: {
-        findFirst,
-      },
+      competitionOrganizers: { findFirst: findOrganizer },
+      boardMembers: { findFirst: findMember },
     },
   },
 }));
 
 vi.mock("@workspace/db/schema", () => ({
-  boardsOrganizerAllowlist: {
-    wcaId: "wca_id",
-  },
+  competitionOrganizers: { organizerWcaId: "organizer_wca_id" },
+  boardMembers: { userId: "user_id" },
 }));
 
-import {
-  canAccessBoardsApp,
-  getBoardsOrganizerAllowlist,
-  isWcaIdOnBoardsAllowlist,
-} from "./boards-access";
+import { canAccessBoardsApp } from "./boards-access";
 
-function resetEnv() {
-  vi.unstubAllEnvs();
-}
-
-describe("getBoardsOrganizerAllowlist", () => {
-  beforeEach(() => {
-    resetEnv();
-  });
-
-  afterEach(() => {
-    resetEnv();
-  });
-
-  it("returns an empty set when unset or blank", () => {
-    expect(getBoardsOrganizerAllowlist().size).toBe(0);
-
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "  ");
-    expect(getBoardsOrganizerAllowlist().size).toBe(0);
-  });
-
-  it("parses comma-separated WCA IDs case-insensitively", () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016toro03, 2017ABCD01 ,");
-    expect([...getBoardsOrganizerAllowlist()].sort()).toEqual([
-      "2016TORO03",
-      "2017ABCD01",
-    ]);
-  });
-});
-
-describe("isWcaIdOnBoardsAllowlist", () => {
-  beforeEach(() => {
-    resetEnv();
-    findFirst.mockReset();
-    findFirst.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    resetEnv();
-  });
-
-  it("is true when the WCA ID is in the env override", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016toro03");
-    await expect(isWcaIdOnBoardsAllowlist("2016TORO03")).resolves.toBe(true);
-    expect(findFirst).not.toHaveBeenCalled();
-  });
-
-  it("is true when the WCA ID is in the DB table", async () => {
-    findFirst.mockResolvedValue({ wcaId: "2016TORO03" });
-    await expect(isWcaIdOnBoardsAllowlist("2016toro03")).resolves.toBe(true);
-    expect(findFirst).toHaveBeenCalled();
-  });
-
-  it("is false when neither env nor DB lists the WCA ID", async () => {
-    await expect(isWcaIdOnBoardsAllowlist("2018OUT01")).resolves.toBe(false);
-  });
-});
+const organizer = { id: "user-1", role: "user", wcaId: "2016AREL01" };
 
 describe("canAccessBoardsApp", () => {
   beforeEach(() => {
-    resetEnv();
-    findFirst.mockReset();
-    findFirst.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    resetEnv();
+    findOrganizer.mockReset();
+    findOrganizer.mockResolvedValue(undefined);
+    findMember.mockReset();
+    findMember.mockResolvedValue(undefined);
   });
 
   it("is false for anonymous users", async () => {
@@ -99,43 +36,25 @@ describe("canAccessBoardsApp", () => {
     await expect(canAccessBoardsApp(undefined)).resolves.toBe(false);
   });
 
-  it("is true for delegates even when the allowlist is empty", async () => {
+  it("is true for delegates without querying the database", async () => {
     await expect(
-      canAccessBoardsApp({ role: "delegate", wcaId: "2010DEL01" }),
+      canAccessBoardsApp({ id: "d1", role: "delegate", wcaId: "2010DEL01" }),
     ).resolves.toBe(true);
+    expect(findOrganizer).not.toHaveBeenCalled();
+    expect(findMember).not.toHaveBeenCalled();
   });
 
-  it("is true for delegates even when not on a non-empty allowlist", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016TORO03");
-    await expect(
-      canAccessBoardsApp({ role: "delegate", wcaId: "2010DEL01" }),
-    ).resolves.toBe(true);
+  it("is true for organizers of any competition", async () => {
+    findOrganizer.mockResolvedValue({ competitionId: 42 });
+    await expect(canAccessBoardsApp(organizer)).resolves.toBe(true);
   });
 
-  it("is false for organizers when the allowlist is empty", async () => {
-    await expect(
-      canAccessBoardsApp({ role: "user", wcaId: "2018ANY01" }),
-    ).resolves.toBe(false);
+  it("is true for board members who organize nothing", async () => {
+    findMember.mockResolvedValue({ boardId: 5 });
+    await expect(canAccessBoardsApp(organizer)).resolves.toBe(true);
   });
 
-  it("is true for env-allowlisted organizers", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016toro03,2017ABCD01");
-    await expect(
-      canAccessBoardsApp({ role: "user", wcaId: "2016TORO03" }),
-    ).resolves.toBe(true);
-  });
-
-  it("is true for DB-allowlisted organizers", async () => {
-    findFirst.mockResolvedValue({ wcaId: "2016TORO03" });
-    await expect(
-      canAccessBoardsApp({ role: "user", wcaId: "2016TORO03" }),
-    ).resolves.toBe(true);
-  });
-
-  it("is false for organizers not on the allowlist", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016TORO03");
-    await expect(
-      canAccessBoardsApp({ role: "user", wcaId: "2018OUT01" }),
-    ).resolves.toBe(false);
+  it("is false for users who neither organize nor belong to a board", async () => {
+    await expect(canAccessBoardsApp(organizer)).resolves.toBe(false);
   });
 });

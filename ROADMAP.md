@@ -41,7 +41,7 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 - [ ] Moderar comentarios.
 - [ ] Comprobación de roles (delegado / editor de contenido — ampliar roles si hace falta).
 - [ ] Biblioteca de medios / subidas.
-- [x] Allowlist piloto de Tableros en `/admin/tableros` (tabla `boards_organizer_allowlist` + override temporal `BOARDS_ORGANIZER_ALLOWLIST`). **Teardown cuando Tableros abra a todos:** borrar `/admin/tableros` + acciones/nav, abrir `canAccessBoardsApp` a cualquier usuario autenticado (o quitar el gate), dropear la tabla y la env var.
+- [x] Allowlist piloto de Tableros retirada: `/admin/tableros`, sus acciones, la tabla `boards_organizer_allowlist` y la env `BOARDS_ORGANIZER_ALLOWLIST` se eliminaron. `canAccessBoardsApp` permite delegados, organizadores de cualquier competencia y miembros de tableros.
 
 **Datos**
 
@@ -189,15 +189,16 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 
 ## Registro de decisiones
 
-| Fecha      | Decisión                      | Notas                                                                                                                                             |
-| ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-09-17 | Redes al marcar **anunciada** | Revierte 2026-08-20/18: publicar en FB/IG AMS al anunciar (no al celebrar); logo opcional; hook en `markAsAnnounced` / `statusPublic = announced` |
-| 2026-09-10 | Allowlist Tableros en admin   | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal                    |
-| 2026-09-10 | Host de auth = web            | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`                                |
-| 2026-09-10 | Cuentas sin WCA (futuro)      | Better Auth puede tener usuarios sin `wcaId` solo para web (blog/comentarios); calendario/tableros exigen WCA vinculado                           |
-| TBD        | Enfoque de CMS                | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                                              |
-| 2026-08-18 | Los cursos no van en la web   | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                                       |
-| 2026-08-18 | Comps en web = `announced`    | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                                          |
-| 2026-08-20 | ~~Redes al marcar celebrada~~ | Superado el 2026-09-17: el post social va al anunciar, no al celebrar                                                                             |
-| 2026-08-18 | ~~Anunciada ≠ post en redes~~ | Superado el 2026-09-17: anunciar en sitio y en redes es el mismo disparador (`announced`)                                                         |
-| 2026-08-28 | Auditoría de plataforma       | CI, tests, deduplicación y tipos de auth documentados en sección **Plataforma**; priorizar quality gates antes de más features                    |
+| Fecha      | Decisión                         | Notas                                                                                                                                             |
+| ---------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-30 | Tableros abierto a organizadores | Tableros abierto a delegados + organizadores (y miembros invitados); allowlist eliminada (tabla, env y `/admin/tableros`)                         |
+| 2026-09-17 | Redes al marcar **anunciada**    | Revierte 2026-08-20/18: publicar en FB/IG AMS al anunciar (no al celebrar); logo opcional; hook en `markAsAnnounced` / `statusPublic = announced` |
+| 2026-09-10 | Allowlist Tableros en admin      | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal                    |
+| 2026-09-10 | Host de auth = web               | OAuth + `/api/auth` canónicos en `apps/web`; calendario/tableros consumen cookies y redirigen login con `returnTo`                                |
+| 2026-09-10 | Cuentas sin WCA (futuro)         | Better Auth puede tener usuarios sin `wcaId` solo para web (blog/comentarios); calendario/tableros exigen WCA vinculado                           |
+| TBD        | Enfoque de CMS                   | BD + UI de admin vs archivos MDX — preferir BD para blog/comentarios                                                                              |
+| 2026-08-18 | Los cursos no van en la web      | LMS de WordPress en `cursos.amscubing.org` primero; después una app dedicada, no `apps/web`                                                       |
+| 2026-08-18 | Comps en web = `announced`       | El calendario es dueño del ciclo de vida; la web solo lista filas futuras con `statusPublic = announced`                                          |
+| 2026-08-20 | ~~Redes al marcar celebrada~~    | Superado el 2026-09-17: el post social va al anunciar, no al celebrar                                                                             |
+| 2026-08-18 | ~~Anunciada ≠ post en redes~~    | Superado el 2026-09-17: anunciar en sitio y en redes es el mismo disparador (`announced`)                                                         |
+| 2026-08-28 | Auditoría de plataforma          | CI, tests, deduplicación y tipos de auth documentados en sección **Plataforma**; priorizar quality gates antes de más features                    |

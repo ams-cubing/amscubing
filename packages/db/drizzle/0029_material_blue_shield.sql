@@ -1,0 +1,1 @@
+DROP TABLE "boards_organizer_allowlist" CASCADE;

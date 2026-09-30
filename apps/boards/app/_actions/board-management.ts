@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
 
-import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { db } from "@workspace/db";
 import {
   formatNotificationTitle,
@@ -213,12 +212,6 @@ export async function removeBoardMember(input: {
 export async function acceptBoardInvite(token: string) {
   const session = await requireSessionOrUnauthorized();
   const currentUser = session.user;
-
-  if (!(await canAccessBoardsApp(currentUser))) {
-    throw new Error(
-      "Tableros AMS está en piloto. No tienes acceso para unirte a este tablero.",
-    );
-  }
 
   const invite = await db.query.boardInvites.findFirst({
     where: eq(boardInvites.token, token),

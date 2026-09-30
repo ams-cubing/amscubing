@@ -11,8 +11,9 @@ export function BoardsAccessDenied() {
         Acceso restringido
       </h1>
       <p className="text-muted-foreground">
-        Tableros AMS está en piloto. Solo delegados y organizadores autorizados
-        pueden entrar por ahora.
+        Tableros AMS es para delegados y organizadores de competencias. Si
+        organizas una competencia, pide a tu delegado que te agregue como
+        organizador.
       </p>
       <Link
         href={calendarUrl}

@@ -6,7 +6,6 @@ import {
   boardLists,
   boardMembers,
   boards,
-  boardsOrganizerAllowlist,
   cardAttachments,
   cardComments,
   cardLabels,
@@ -46,7 +45,6 @@ export const userRelations = relations(user, ({ one, many }) => ({
   activityLogs: many(logs),
   cardMemberships: many(cardMembers),
   cardComments: many(cardComments),
-  boardsOrganizerAllowlistEntries: many(boardsOrganizerAllowlist),
   receivedNotifications: many(notifications, {
     relationName: "notificationRecipient",
   }),
@@ -154,16 +152,6 @@ export const boardMembersRelations = relations(boardMembers, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-export const boardsOrganizerAllowlistRelations = relations(
-  boardsOrganizerAllowlist,
-  ({ one }) => ({
-    createdBy: one(user, {
-      fields: [boardsOrganizerAllowlist.createdByUserId],
-      references: [user.id],
-    }),
-  }),
-);
 
 export const boardInvitesRelations = relations(boardInvites, ({ one }) => ({
   board: one(boards, {

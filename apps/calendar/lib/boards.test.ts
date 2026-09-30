@@ -1,40 +1,34 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst } = vi.hoisted(() => ({
-  findFirst: vi.fn(),
+const { findOrganizer, findMember } = vi.hoisted(() => ({
+  findOrganizer: vi.fn(),
+  findMember: vi.fn(),
 }));
 
 vi.mock("@workspace/db", () => ({
   db: {
     query: {
-      boardsOrganizerAllowlist: {
-        findFirst,
-      },
+      competitionOrganizers: { findFirst: findOrganizer },
+      boardMembers: { findFirst: findMember },
     },
   },
 }));
 
 vi.mock("@workspace/db/schema", () => ({
-  boardsOrganizerAllowlist: {
-    wcaId: "wca_id",
-  },
+  competitionOrganizers: { organizerWcaId: "organizer_wca_id" },
+  boardMembers: { userId: "user_id" },
 }));
 
 import { canSeeBoardsNav } from "./boards";
 
-function resetEnv() {
-  vi.unstubAllEnvs();
-}
+const user = { id: "user-1", role: "user", wcaId: "2016AREL01" };
 
 describe("canSeeBoardsNav", () => {
   beforeEach(() => {
-    resetEnv();
-    findFirst.mockReset();
-    findFirst.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    resetEnv();
+    findOrganizer.mockReset();
+    findOrganizer.mockResolvedValue(undefined);
+    findMember.mockReset();
+    findMember.mockResolvedValue(undefined);
   });
 
   it("is false for anonymous users", async () => {
@@ -42,36 +36,23 @@ describe("canSeeBoardsNav", () => {
     await expect(canSeeBoardsNav(undefined)).resolves.toBe(false);
   });
 
-  it("is true for delegates when the allowlist is empty", async () => {
+  it("is true for delegates", async () => {
     await expect(
-      canSeeBoardsNav({ role: "delegate", wcaId: "2010DEL01" }),
+      canSeeBoardsNav({ id: "d1", role: "delegate", wcaId: "2010DEL01" }),
     ).resolves.toBe(true);
   });
 
-  it("is true for delegates when not on a non-empty allowlist", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016TORO03");
-    await expect(
-      canSeeBoardsNav({ role: "delegate", wcaId: "2010DEL01" }),
-    ).resolves.toBe(true);
+  it("is true for organizers", async () => {
+    findOrganizer.mockResolvedValue({ competitionId: 42 });
+    await expect(canSeeBoardsNav(user)).resolves.toBe(true);
   });
 
-  it("is true for allowlisted organizers", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016toro03,2017ABCD01");
-    await expect(
-      canSeeBoardsNav({ role: "user", wcaId: "2016TORO03" }),
-    ).resolves.toBe(true);
+  it("is true for board members", async () => {
+    findMember.mockResolvedValue({ boardId: 5 });
+    await expect(canSeeBoardsNav(user)).resolves.toBe(true);
   });
 
-  it("is false for organizers not on the allowlist", async () => {
-    vi.stubEnv("BOARDS_ORGANIZER_ALLOWLIST", "2016TORO03");
-    await expect(
-      canSeeBoardsNav({ role: "user", wcaId: "2018OUT01" }),
-    ).resolves.toBe(false);
-  });
-
-  it("is false for organizers when the allowlist is empty", async () => {
-    await expect(
-      canSeeBoardsNav({ role: "user", wcaId: "2018ANY01" }),
-    ).resolves.toBe(false);
+  it("is false for users with no competitions or boards", async () => {
+    await expect(canSeeBoardsNav(user)).resolves.toBe(false);
   });
 });

@@ -25,8 +25,8 @@ const boardListWith = {
 } as const;
 
 /**
- * Per-board access does not depend on the pilot allowlist: any member, organizer
- * or delegate of the board's competition may open it.
+ * Delegates can open any board; everyone else needs to be a board member or an
+ * organizer/delegate of the board's competition.
  */
 export async function canAccessBoard(user: User, boardId: number) {
   if (user.role === "delegate") {

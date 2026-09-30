@@ -33,7 +33,7 @@ describe("canAccessBoard", () => {
     });
   });
 
-  it("lets a competition organizer open the board without the pilot allowlist", async () => {
+  it("lets a competition organizer open the board", async () => {
     query.boardMembers.findFirst.mockResolvedValue(undefined);
     query.competitionDelegates.findFirst.mockResolvedValue(undefined);
     query.competitionOrganizers.findFirst.mockResolvedValue({
