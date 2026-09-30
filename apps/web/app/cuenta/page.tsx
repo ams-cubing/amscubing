@@ -22,17 +22,18 @@ import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 export const metadata: Metadata = {
   title: "Cuenta | Asociación Mexicana de Speedcubing",
   description:
-    "Acceso con WCA ID y centro de acciones para competidores, delegados y editores de AMS.",
+    "Acceso con cuenta WCA y centro de acciones para competidores, delegados y editores de AMS.",
+};
+
+const myCompetitionsAction = {
+  title: "Mis competencias",
+  description:
+    "Revisa solicitudes, registros y seguimiento de competencias vinculadas a tu WCA ID.",
+  href: `${getCalendarUrl()}/mis-competencias`,
+  icon: CalendarDays,
 };
 
 const publicActions = [
-  {
-    title: "Mis competencias",
-    description:
-      "Revisa solicitudes, registros y seguimiento de competencias vinculadas a tu WCA ID.",
-    href: `${getCalendarUrl()}/mis-competencias`,
-    icon: CalendarDays,
-  },
   {
     title: "Comentar en el blog",
     description:
@@ -95,9 +96,9 @@ export default function CuentaPage() {
     <main>
       <SiteNav />
       <PageHero
-        eyebrow="WCA ID"
+        eyebrow="Cuenta WCA"
         title="Cuenta AMS"
-        description="Inicia sesión con tu WCA ID para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
+        description="Inicia sesión con tu cuenta WCA para acceder a herramientas, cursos, blog y espacios de organización según tus permisos."
       />
       <section className="bg-white py-16 md:py-20">
         <div className="ams-container max-w-280">
@@ -127,7 +128,13 @@ async function CuentaBody() {
     ? "Delegado WCA"
     : isEditor
       ? "Editor de contenido"
-      : "Competidor";
+      : user?.wcaId
+        ? "Competidor"
+        : "Miembro";
+  const actions =
+    !user || user.wcaId
+      ? [myCompetitionsAction, ...publicActions]
+      : publicActions;
 
   return (
     <>
@@ -154,7 +161,8 @@ async function CuentaBody() {
                 {user.name}
               </h2>
               <p className="ams-heading mt-1 text-sm text-black/55">
-                {user.wcaId}
+                {user.wcaId ??
+                  "Aún no tienes WCA ID; se vinculará automáticamente tras tu primera competencia."}
               </p>
             </div>
           </div>
@@ -166,7 +174,7 @@ async function CuentaBody() {
             Acceso único
           </p>
           <h2 className="ams-display max-w-2xl text-[clamp(2rem,5vw,3.5rem)] leading-none">
-            Entra con tu WCA ID
+            Entra con tu cuenta WCA
           </h2>
           <p className="ams-copy my-6 max-w-2xl text-base leading-7 text-white/75">
             La sesión se comparte con calendario y tableros para que AMS pueda
@@ -176,13 +184,15 @@ async function CuentaBody() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {publicActions.map((action) => (
+      <div
+        className={`grid gap-6 ${actions.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
+      >
+        {actions.map((action) => (
           <ActionCard key={action.title} action={action} />
         ))}
       </div>
 
-      {user ? (
+      {isDelegate || isEditor ? (
         <div className="mt-14">
           <p className="ams-heading mb-2 text-sm font-bold uppercase tracking-[0.12em] text-ams-red">
             Permisos de organización
@@ -196,20 +206,11 @@ async function CuentaBody() {
                 <ActionCard key={action.title} action={action} compact />
               ))}
             </div>
-          ) : isEditor ? (
+          ) : (
             <div className="grid gap-6 lg:grid-cols-3">
               {editorActions.map((action) => (
                 <ActionCard key={action.title} action={action} compact />
               ))}
-            </div>
-          ) : (
-            <div className="rounded-5.5 border border-black/10 bg-white p-7 shadow-[0_14px_34px_rgba(1,11,25,0.08)]">
-              <p className="ams-copy max-w-3xl text-base leading-7 text-black/65">
-                Estas acciones aparecen cuando tu WCA ID tiene permisos de
-                delegado o de editor de contenido. Los delegados administran el
-                panel; los editores podrán publicar en el blog cuando el CMS
-                esté listo.
-              </p>
             </div>
           )}
         </div>

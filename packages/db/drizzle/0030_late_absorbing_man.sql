@@ -1,0 +1,1 @@
+ALTER TABLE "user" ALTER COLUMN "wca_id" DROP NOT NULL;

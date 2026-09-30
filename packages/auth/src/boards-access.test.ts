@@ -57,4 +57,12 @@ describe("canAccessBoardsApp", () => {
   it("is false for users who neither organize nor belong to a board", async () => {
     await expect(canAccessBoardsApp(organizer)).resolves.toBe(false);
   });
+
+  it("skips the organizer lookup for users without a WCA ID", async () => {
+    await expect(
+      canAccessBoardsApp({ id: "u2", role: "user", wcaId: null }),
+    ).resolves.toBe(false);
+    expect(findOrganizer).not.toHaveBeenCalled();
+    expect(findMember).toHaveBeenCalled();
+  });
 });

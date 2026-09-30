@@ -9,7 +9,7 @@ import { boardMembers, competitionOrganizers } from "@workspace/db/schema";
  * separately by the boards app.
  */
 export async function canAccessBoardsApp(
-  user: { id: string; role: string; wcaId: string } | null | undefined,
+  user: { id: string; role: string; wcaId: string | null } | null | undefined,
 ): Promise<boolean> {
   if (!user) {
     return false;

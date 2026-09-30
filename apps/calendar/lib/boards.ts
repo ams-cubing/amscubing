@@ -8,7 +8,7 @@ export { canAccessBoardsApp } from "@workspace/auth/boards-access";
  * Do not import this module from client components — use `@/lib/urls` for getBoardsUrl.
  */
 export async function canSeeBoardsNav(
-  user: { id: string; role: string; wcaId: string } | null | undefined,
+  user: { id: string; role: string; wcaId: string | null } | null | undefined,
 ): Promise<boolean> {
   return canAccessBoardsApp(user);
 }

@@ -30,7 +30,7 @@ import {
 type BoardMemberRow = {
   userId: string;
   name: string;
-  wcaId: string;
+  wcaId: string | null;
 };
 
 export function BoardDelegateControls({
@@ -270,10 +270,13 @@ function InviteBoardDialog({
                     className="flex items-center justify-between gap-2 text-sm"
                   >
                     <span>
-                      {member.name}{" "}
-                      <span className="text-muted-foreground">
-                        ({member.wcaId})
-                      </span>
+                      {member.name}
+                      {member.wcaId ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          ({member.wcaId})
+                        </span>
+                      ) : null}
                     </span>
                     <Button
                       type="button"

@@ -94,9 +94,7 @@ export async function getUserCompetitions(
       ),
     )
     .orderBy(
-      includePast
-        ? desc(competitions.startDate)
-        : asc(competitions.startDate),
+      includePast ? desc(competitions.startDate) : asc(competitions.startDate),
     );
 }
 

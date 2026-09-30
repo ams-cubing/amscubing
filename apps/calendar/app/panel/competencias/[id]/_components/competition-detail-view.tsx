@@ -128,7 +128,10 @@ export function CompetitionDetailView({
 
       <CompetitionSocialStatusSection
         competitionId={competition.id}
+        city={competition.city}
+        wcaCompetitionUrl={competition.wcaCompetitionUrl}
         statusPublic={competition.statusPublic}
+        statusInternal={competition.statusInternal}
         facebookPostId={competition.facebookPostId}
         instagramMediaId={competition.instagramMediaId}
         socialPublishedManually={competition.socialPublishedManually}

@@ -15,7 +15,7 @@ export type RawSessionUser = {
   image?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  wcaId: string;
+  wcaId?: string | null;
   role: string;
   regionId?: string | null;
   delegateTitle?: string | null;
@@ -56,7 +56,7 @@ export function toSessionUser(raw: RawSessionUser): SessionUser {
     image: raw.image ?? null,
     createdAt: asDate(raw.createdAt, now),
     updatedAt: asDate(raw.updatedAt, now),
-    wcaId: raw.wcaId,
+    wcaId: raw.wcaId ?? null,
     role: raw.role === "delegate" || raw.role === "editor" ? raw.role : "user",
     regionId: raw.regionId ?? null,
     delegateTitle: raw.delegateTitle ?? null,

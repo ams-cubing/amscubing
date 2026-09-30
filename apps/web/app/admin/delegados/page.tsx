@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { MEXICO_REGIONS } from "@workspace/db/data/mexico";
 import { user } from "@workspace/db/schema";
+import { hasWcaId } from "@workspace/db/utils";
 
 import {
   AddDelegateForm,
@@ -16,18 +17,20 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDelegadosPage() {
-  const delegates = await db.query.user.findMany({
-    where: eq(user.role, "delegate"),
-    orderBy: (t, { asc }) => [asc(t.name)],
-    columns: {
-      wcaId: true,
-      name: true,
-      email: true,
-      delegateTitle: true,
-      delegateLocation: true,
-      regionId: true,
-    },
-  });
+  const delegates = (
+    await db.query.user.findMany({
+      where: eq(user.role, "delegate"),
+      orderBy: (t, { asc }) => [asc(t.name)],
+      columns: {
+        wcaId: true,
+        name: true,
+        email: true,
+        delegateTitle: true,
+        delegateLocation: true,
+        regionId: true,
+      },
+    })
+  ).filter(hasWcaId);
 
   const regions = MEXICO_REGIONS.map((region) => ({
     id: region.id,

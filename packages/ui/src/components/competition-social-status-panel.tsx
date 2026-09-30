@@ -38,6 +38,7 @@ export type CompetitionSocialStatusPanelProps = {
   canRetry?: boolean;
   readOnlyHint?: string | null;
   className?: string;
+  actions?: React.ReactNode;
   onRetry?: () => Promise<CompetitionSocialActionResult>;
   onCompleteInstagram?: () => Promise<CompetitionSocialActionResult>;
   onMarkManual?: () => Promise<CompetitionSocialActionResult>;
@@ -54,6 +55,7 @@ export function CompetitionSocialStatusPanel({
   canRetry = false,
   readOnlyHint,
   className,
+  actions,
   onRetry,
   onCompleteInstagram,
   onMarkManual,
@@ -161,8 +163,9 @@ export function CompetitionSocialStatusPanel({
         </div>
       </div>
 
-      {showRetry || showCompleteIg || showMarkManual ? (
+      {actions || showRetry || showCompleteIg || showMarkManual ? (
         <div className="flex flex-wrap gap-2">
+          {actions}
           {showRetry ? (
             <Button
               type="button"

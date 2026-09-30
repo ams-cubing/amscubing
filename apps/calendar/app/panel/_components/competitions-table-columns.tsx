@@ -45,6 +45,7 @@ import {
   getInternalStatusColor,
   getPublicStatusColor,
 } from "@/lib/utils";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -120,7 +121,10 @@ export function getCompetitionsTableColumns({
       ),
       cell: ({ row }) => {
         return (
-          <div className="flex items-center gap-2">
+          <Link
+            href={`/panel/competencias/${row.original.id}`}
+            className="flex items-center gap-2 hover:underline"
+          >
             {row.getValue("name") ? (
               <span className="max-w-125 truncate font-medium xl:max-w-none">
                 {row.getValue("name")}
@@ -128,7 +132,7 @@ export function getCompetitionsTableColumns({
             ) : (
               <span className="text-muted-foreground text-sm">Sin nombre</span>
             )}
-          </div>
+          </Link>
         );
       },
       meta: {
@@ -438,6 +442,22 @@ export function getCompetitionsTableColumns({
         ) : (
           <span className="text-muted-foreground text-sm">Sin notas</span>
         ),
+    },
+    {
+      id: "updatedAt",
+      accessorKey: "updatedAt",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Última actualización" />
+      ),
+      cell: ({ row }) => (
+        <div className="font-mono">
+          {new Date(row.original.updatedAt).toLocaleString("es-MX", {
+            timeZone: "America/Mexico_City",
+            dateStyle: "short",
+            timeStyle: "short",
+          })}
+        </div>
+      ),
     },
     {
       id: "actions",

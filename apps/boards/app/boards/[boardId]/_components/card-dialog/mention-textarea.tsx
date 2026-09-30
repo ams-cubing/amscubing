@@ -32,9 +32,17 @@ export function MentionTextarea({
   const [resetKey, setResetKey] = React.useState(0);
   const prevValueRef = React.useRef(value);
 
-  const teamByWcaId = React.useMemo(
-    () => new Map(team.map((person) => [person.wcaId, person])),
+  const mentionable = React.useMemo(
+    () =>
+      team.filter(
+        (person): person is TeamPerson & { wcaId: string } =>
+          person.wcaId !== null,
+      ),
     [team],
+  );
+  const teamByWcaId = React.useMemo(
+    () => new Map(mentionable.map((person) => [person.wcaId, person])),
+    [mentionable],
   );
 
   React.useEffect(() => {
@@ -107,7 +115,7 @@ export function MentionTextarea({
               </span>
             </MentionItem>
           ))}
-          {team.map((person) => (
+          {mentionable.map((person) => (
             <MentionItem
               key={person.userId}
               value={person.wcaId}

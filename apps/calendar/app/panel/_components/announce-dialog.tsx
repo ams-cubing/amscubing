@@ -86,6 +86,7 @@ export function AnnounceDialog({
         if (res.success) {
           toast.success(res.message);
           setOpen(false);
+          router.refresh();
           return;
         }
         toast.error(res.message || "Error al anunciar");

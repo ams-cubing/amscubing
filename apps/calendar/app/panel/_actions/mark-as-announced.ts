@@ -190,6 +190,7 @@ export async function markAsAnnounced(
     revalidateTag("competition-public-status-counts", "days");
     revalidateTag("competition-status-internal-counts", "days");
     revalidatePath("/panel/competencias");
+    revalidatePath(`/panel/competencias/${competitionId}`);
     revalidatePath("/panel");
     revalidatePath("/");
 

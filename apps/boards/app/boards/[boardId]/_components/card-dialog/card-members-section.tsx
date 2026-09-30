@@ -14,7 +14,7 @@ import type { BoardCard } from "../../_lib/types";
 
 export type TeamPerson = {
   userId: string;
-  wcaId: string;
+  wcaId: string | null;
   name: string;
   image: string | null;
   isPrimary: boolean;

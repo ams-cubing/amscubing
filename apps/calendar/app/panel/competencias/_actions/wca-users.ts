@@ -2,7 +2,8 @@
 
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
-import { eq, ilike, or } from "drizzle-orm";
+import { hasWcaId } from "@workspace/db/utils";
+import { eq, ilike, isNotNull, or } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
 
@@ -31,7 +32,7 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
     if (existingUser) {
       return {
         success: true,
-        user: existingUser,
+        user: { ...existingUser, wcaId },
         message: "Usuario ya existe en la base de datos",
       };
     }
@@ -66,7 +67,7 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
 
     return {
       success: true,
-      user: newUser,
+      user: newUser ? { ...newUser, wcaId: data.person.wca_id } : undefined,
       message: `Organizador ${data.person.name} añadido exitosamente`,
     };
   } catch (error) {
@@ -93,9 +94,10 @@ export async function searchUsers(query: string) {
           image: user.image,
         })
         .from(user)
+        .where(isNotNull(user.wcaId))
         .limit(5);
 
-      return allUsers;
+      return allUsers.filter(hasWcaId);
     }
 
     const searchResults = await db
@@ -110,7 +112,7 @@ export async function searchUsers(query: string) {
       )
       .limit(5);
 
-    return searchResults;
+    return searchResults.filter(hasWcaId);
   } catch (error) {
     console.error("Error searching users:", error);
     return [];

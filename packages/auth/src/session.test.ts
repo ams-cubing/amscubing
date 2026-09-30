@@ -82,6 +82,24 @@ describe("toSessionUser", () => {
     expect(user.updatedAt).toBeInstanceOf(Date);
   });
 
+  it("normalizes a missing wcaId to null", () => {
+    const withoutField = toSessionUser({
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      role: "user",
+    });
+    const withNull = toSessionUser({
+      id: "user-1",
+      name: "Test User",
+      email: "test@example.com",
+      wcaId: null,
+      role: "user",
+    });
+    expect(withoutField.wcaId).toBeNull();
+    expect(withNull.wcaId).toBeNull();
+  });
+
   it("maps unknown roles to user", () => {
     const user = toSessionUser({
       id: "user-1",

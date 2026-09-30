@@ -13,7 +13,7 @@ import { SignInRedirect } from "./_components/sign-in-redirect";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión | Asociación Mexicana de Speedcubing",
-  description: "Acceso con WCA ID para la cuenta AMS.",
+  description: "Acceso con cuenta WCA para la cuenta AMS.",
 };
 
 export default function IniciarSesionPage({
@@ -53,7 +53,7 @@ async function IniciarSesionContent({
     <main>
       <SiteNav />
       <PageHero
-        eyebrow="WCA ID"
+        eyebrow="Cuenta WCA"
         title="Iniciar sesión"
         description={missingMessage}
       />
@@ -86,9 +86,9 @@ function IniciarSesionFallback() {
     <main>
       <SiteNav />
       <PageHero
-        eyebrow="WCA ID"
+        eyebrow="Cuenta WCA"
         title="Iniciar sesión"
-        description="Preparando el acceso con WCA ID…"
+        description="Preparando el acceso con tu cuenta WCA…"
       />
       <section className="bg-white py-16 md:py-20">
         <div className="ams-container max-w-3xl">

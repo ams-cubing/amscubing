@@ -52,7 +52,7 @@ export async function canAccessBoard(user: User, boardId: number) {
     return true;
   }
 
-  if (!board.competitionId) {
+  if (!board.competitionId || !user.wcaId) {
     return false;
   }
 
@@ -83,13 +83,18 @@ export async function isBoardArchived(boardId: number) {
 }
 
 async function competitionIdsForUser(user: User) {
+  const wcaId = user.wcaId;
+  if (!wcaId) {
+    return [];
+  }
+
   const [delegateRows, organizerRows] = await Promise.all([
     db.query.competitionDelegates.findMany({
-      where: eq(competitionDelegates.delegateWcaId, user.wcaId),
+      where: eq(competitionDelegates.delegateWcaId, wcaId),
       columns: { competitionId: true },
     }),
     db.query.competitionOrganizers.findMany({
-      where: eq(competitionOrganizers.organizerWcaId, user.wcaId),
+      where: eq(competitionOrganizers.organizerWcaId, wcaId),
       columns: { competitionId: true },
     }),
   ]);

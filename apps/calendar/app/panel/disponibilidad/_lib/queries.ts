@@ -2,10 +2,11 @@ import "server-only";
 
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
+import { hasWcaId } from "@workspace/db/utils";
 import { eq, asc } from "drizzle-orm";
 
 export async function getDelegatesForAvailability() {
-  return db.query.user.findMany({
+  const rows = await db.query.user.findMany({
     where: eq(user.role, "delegate"),
     columns: {
       wcaId: true,
@@ -27,4 +28,5 @@ export async function getDelegatesForAvailability() {
     },
     orderBy: [asc(user.name)],
   });
+  return rows.filter(hasWcaId);
 }

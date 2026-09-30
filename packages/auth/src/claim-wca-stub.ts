@@ -7,7 +7,7 @@ import type { AmsRole } from "./wca-role";
 export type ClaimableUser = {
   id: string;
   email: string;
-  wcaId: string;
+  wcaId: string | null;
   role: string;
   regionId: string | null;
   delegateTitle: string | null;
@@ -30,7 +30,7 @@ export class WcaEmailCollisionError extends Error {
   readonly code = "wca_email_collision" as const;
 
   constructor(
-    readonly wcaId: string,
+    readonly wcaId: string | null,
     readonly email: string,
   ) {
     super(
