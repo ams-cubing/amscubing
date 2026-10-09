@@ -43,7 +43,7 @@ La rama de trabajo para esta pasada es `codex/ams-web-redesign`.
 - Inicio de sesión: la web es el host canónico de auth. Usa `apps/web/app/iniciar-sesion/page.tsx` y `apps/web/app/api/auth/[...all]/route.ts`. Para probar local, `BETTER_AUTH_URL` debe ser `http://localhost:3000` y el callback WCA debe ser `http://localhost:3000/api/auth/callback/wca`.
 - Estilos de marca de la web: `apps/web/app/web.css`.
 - Contenido editorial corto: `apps/web/lib/content.ts`.
-- Delegados públicos: `apps/web/lib/delegates.ts`, renderizados dentro de `apps/web/components/quienes-somos.tsx`.
+- Delegados públicos: `apps/web/lib/delegates.ts`, renderizados dentro de `apps/web/components/about-us.tsx`.
 - Competencias públicas: `apps/web/lib/competitions.ts`.
 - Ranking nacional: `apps/web/lib/rankings.ts`, toma rankings nacionales de `https://api.cubingmexico.net/rank/{single|average}/{evento}` (`personId`, `personName`, `best`, `rank.country`, `stateId`) y resuelve nombres de estado con `https://api.cubingmexico.net/states`.
 - Selector de categorías del ranking: usa `@cubing/icons` con clases `cubing-icon event-{eventId}` para mostrar iconos oficiales de eventos WCA en lugar de botones largos con texto.

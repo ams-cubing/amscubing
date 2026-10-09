@@ -76,6 +76,31 @@ export function LoginForm({
     "mt-2 w-full rounded-md border border-ams-navy/20 bg-white p-3 text-ams-navy";
   return (
     <div className="rounded-3xl bg-ams-soft p-8 ams-copy">
+      {wcaEnabled && (
+        <>
+          <button
+            type="button"
+            onClick={() => void wca()}
+            disabled={busy}
+            className="flex w-full items-center justify-center gap-3 rounded-md bg-ams-navy px-6 py-4 font-bold text-white disabled:opacity-50"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/source/wca-logo.svg"
+              alt=""
+              aria-hidden
+              width={28}
+              height={28}
+            />
+            Continuar con WCA
+          </button>
+          <div className="my-7 flex items-center gap-4 text-sm text-ams-navy/60">
+            <span className="h-px flex-1 bg-ams-navy/15" />
+            o usa tu correo
+            <span className="h-px flex-1 bg-ams-navy/15" />
+          </div>
+        </>
+      )}
       <div className="mb-7 flex flex-wrap gap-3">
         {(["login", "register"] as const).map((v) => (
           <button
@@ -186,21 +211,6 @@ export function LoginForm({
         >
           Volver al inicio de sesión
         </button>
-      )}
-      {wcaEnabled && (
-        <>
-          <p className="my-6 text-center text-sm text-ams-navy/60">
-            También puedes usar tu cuenta WCA
-          </p>
-          <button
-            type="button"
-            onClick={() => void wca()}
-            disabled={busy}
-            className="w-full rounded-md bg-ams-navy px-6 py-4 font-bold text-white disabled:opacity-50"
-          >
-            Continuar con WCA ↗
-          </button>
-        </>
       )}
       <p className="mt-6 text-sm text-ams-navy/65">
         Verifica tu correo para comentar y recuperar el historial de tus cursos

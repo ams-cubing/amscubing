@@ -8,7 +8,7 @@ import {
 } from "./wca-competition";
 import {
   buildAnnouncementCaption,
-  buildProximasCompetenciasCaption,
+  buildUpcomingCompetitionsCaption,
   facebookPostUrl,
 } from "./meta-publish";
 import { resolveAnnouncementBodyText } from "./announce-and-publish";
@@ -208,9 +208,9 @@ describe("formatUpcomingListDateRangeEs", () => {
   });
 });
 
-describe("buildProximasCompetenciasCaption", () => {
+describe("buildUpcomingCompetitionsCaption", () => {
   it("builds a multi-competition cover caption without registro or info tags", () => {
-    const caption = buildProximasCompetenciasCaption([
+    const caption = buildUpcomingCompetitionsCaption([
       {
         name: "Cubing Express Buenavista 2025",
         city: "Ciudad de México",
@@ -253,7 +253,7 @@ describe("buildProximasCompetenciasCaption", () => {
   });
 
   it("skips empty venue and events lines", () => {
-    const caption = buildProximasCompetenciasCaption([
+    const caption = buildUpcomingCompetitionsCaption([
       {
         name: "Solo Nombre 2026",
         city: "Tepic",
@@ -274,7 +274,7 @@ describe("buildProximasCompetenciasCaption", () => {
   });
 
   it("uses capacity fallback when competitor limit is missing", () => {
-    const caption = buildProximasCompetenciasCaption([
+    const caption = buildUpcomingCompetitionsCaption([
       {
         name: "Fallback Cupo 2026",
         city: "Puebla",

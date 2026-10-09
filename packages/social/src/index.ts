@@ -22,7 +22,7 @@ export {
   getMetaConfig,
   getMetaPageConfig,
   buildAnnouncementCaption,
-  buildProximasCompetenciasCaption,
+  buildUpcomingCompetitionsCaption,
   facebookPostUrl,
   publishToTorneoDeRubik,
   publishInstagramOnly,
@@ -32,7 +32,7 @@ export {
   type PublishAnnouncementInput,
   type PublishAnnouncementResult,
   type BuildAnnouncementCaptionInput,
-  type ProximasCompetenciasCaptionItem,
+  type UpcomingCompetitionsCaptionItem,
 } from "./meta-publish";
 export {
   publishCompetitionSocialAnnouncement,

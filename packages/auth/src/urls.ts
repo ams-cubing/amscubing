@@ -34,7 +34,12 @@ export function getCoursesUrl() {
 }
 
 export function getBlogUrl() {
-  return stripTrailingSlash(process.env.NEXT_PUBLIC_BLOG_URL ?? (process.env.NODE_ENV === "production" ? "https://blog.amscubing.org" : "http://localhost:3004"));
+  return stripTrailingSlash(
+    process.env.NEXT_PUBLIC_BLOG_URL ??
+      (process.env.NODE_ENV === "production"
+        ? "https://blog.amscubing.org"
+        : "http://localhost:3004"),
+  );
 }
 
 /** Canonical auth host (OAuth callbacks + auth API). Defaults to the public web app. */

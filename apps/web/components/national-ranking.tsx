@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import type { EventRanking, RankingType } from "@/lib/rankings";
 
-export function RankingNacional({ rankings }: { rankings: EventRanking[] }) {
+export function NationalRanking({ rankings }: { rankings: EventRanking[] }) {
   const [eventId, setEventId] = useState(rankings[0]?.event.id ?? "333");
   const [type, setType] = useState<RankingType>("single");
 

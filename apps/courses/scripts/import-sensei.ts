@@ -22,7 +22,7 @@ import {
 import { safeUrl } from "../lib/content";
 
 // No credentials: consume the official Sensei exports downloaded by an admin.
-// Run from apps/cursos: pnpm import:sensei ../../.codex/migration/sensei
+// Run from apps/courses: pnpm import:sensei ../../.codex/migration/sensei
 const directory = resolve(process.argv[2] ?? "../../.codex/migration/sensei");
 const load = (name: string) =>
   readCsv(readFileSync(resolve(directory, name), "utf8"));
@@ -208,13 +208,10 @@ await db.transaction(async (tx) => {
       completedAt,
       certificateUrl,
     };
-    await tx
-      .insert(courseLegacyRecords)
-      .values(values)
-      .onConflictDoUpdate({
-        target: courseLegacyRecords.sourceKey,
-        set: values,
-      });
+    await tx.insert(courseLegacyRecords).values(values).onConflictDoUpdate({
+      target: courseLegacyRecords.sourceKey,
+      set: values,
+    });
     summary.enrollments++;
     if (complete) summary.completedCourses++;
   }
@@ -253,13 +250,10 @@ await db.transaction(async (tx) => {
         completedAt,
         score: Number.isFinite(grade) ? Math.round(grade) : null,
       };
-      await tx
-        .insert(courseLegacyRecords)
-        .values(values)
-        .onConflictDoUpdate({
-          target: courseLegacyRecords.sourceKey,
-          set: values,
-        });
+      await tx.insert(courseLegacyRecords).values(values).onConflictDoUpdate({
+        target: courseLegacyRecords.sourceKey,
+        set: values,
+      });
       summary.lessonRecords++;
     }
   }

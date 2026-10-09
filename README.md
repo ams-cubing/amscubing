@@ -13,7 +13,7 @@ Ver [ROADMAP.md](ROADMAP.md) para el trabajo planeado (auth en web, paridad de C
 | Web                | `apps/web`      | 3000   | Portada de la Asociación Mexicana de Speedcubing                     |
 | Calendario Público | `apps/calendar` | 3001   | Calendario público de competencias de speedcubing en México          |
 | Tableros AMS       | `apps/boards`   | 3002   | Tableros de organización estilo Trello ligados a competencias        |
-| Cursos AMS         | `apps/cursos`   | 3003   | Cursos, lecciones, evaluaciones y progreso con cuenta AMS o WCA      |
+| Cursos AMS         | `apps/courses`  | 3003   | Cursos, lecciones, evaluaciones y progreso con cuenta AMS o WCA      |
 | Blog AMS           | `apps/blog`     | 3004   | Entradas, editor visual y comentarios moderados con cuenta AMS o WCA |
 
 ## Paquetes
@@ -44,7 +44,7 @@ cp .env.example .env.local
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/calendar/.env.local.example apps/calendar/.env.local
 cp apps/boards/.env.local.example apps/boards/.env.local
-cp apps/cursos/.env.local.example apps/cursos/.env.local
+cp apps/courses/.env.local.example apps/courses/.env.local
 cp apps/blog/.env.local.example apps/blog/.env.local
 # Completar claves de WCA, auth y Resend (el mismo secret sirve para las cinco apps)
 ```
@@ -94,7 +94,7 @@ pnpm --filter web dev
 Para cursos, mantener la web encendida (host de registro e inicio de sesión) y ejecutar:
 
 ```sh
-pnpm --filter cursos dev
+pnpm --filter courses dev
 ```
 
 `NEXT_PUBLIC_COURSES_URL=http://localhost:3003` configura los enlaces y el regreso
@@ -102,7 +102,7 @@ después del inicio de sesión. En producción usar `https://cursos.amscubing.or
 y compartir `AUTH_COOKIE_DOMAIN=.amscubing.org` y `BETTER_AUTH_SECRET` entre apps.
 El callback WCA sigue siendo `http://localhost:3000/api/auth/callback/wca`.
 
-Ver [apps/cursos/README.md](apps/cursos/README.md) para permisos y migración Sensei.
+Ver [apps/courses/README.md](apps/courses/README.md) para permisos y migración Sensei.
 
 ## Comandos de base de datos
 

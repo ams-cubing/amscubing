@@ -8,11 +8,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type DelegatePanelBadgeKey = "solicitudesFecha" | "competencias";
+export type DelegatePanelBadgeKey = "dateRequests" | "competitions";
 
 export type DelegatePanelBadges = {
-  solicitudesFecha: number;
-  competencias: number;
+  dateRequests: number;
+  competitions: number;
   total: number;
 };
 
@@ -28,13 +28,13 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     name: "Competencias",
     href: "/panel/competencias",
     icon: Trophy,
-    badgeKey: "competencias",
+    badgeKey: "competitions",
   },
   {
     name: "Solicitudes de fecha",
     href: "/panel/solicitudes-fecha",
     icon: Inbox,
-    badgeKey: "solicitudesFecha",
+    badgeKey: "dateRequests",
   },
   {
     name: "Nueva competencia",

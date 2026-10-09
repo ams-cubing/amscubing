@@ -106,14 +106,12 @@ try {
     })
     .returning();
   postId = post!.id;
-  await db
-    .insert(blogComments)
-    .values({
-      postId: postId!,
-      authorId: userId!,
-      authorName: "Prueba",
-      content: "Historial local",
-    });
+  await db.insert(blogComments).values({
+    postId: postId!,
+    authorId: userId!,
+    authorName: "Prueba",
+    content: "Historial local",
+  });
   const [course] = await db
     .insert(courses)
     .values({ slug: `link-${suffix}`, title: "Curso temporal" })

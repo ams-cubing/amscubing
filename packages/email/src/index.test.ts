@@ -106,7 +106,7 @@ describe("email templates escape HTML", () => {
       city: "CDMX &",
       startDate: "2026-01-01",
       endDate: "2026-01-02",
-      misCompetenciasUrl: "https://example.com/?q=1",
+      myCompetitionsUrl: "https://example.com/?q=1",
     });
 
     expect(html).not.toContain("<script>");
@@ -120,7 +120,7 @@ describe("email templates escape HTML", () => {
       city: "City",
       startDate: "2026-01-01",
       endDate: "2026-01-02",
-      misCompetenciasUrl: "https://example.com",
+      myCompetitionsUrl: "https://example.com",
     });
 
     expect(html).toContain("A&lt;b&gt;");
@@ -131,7 +131,7 @@ describe("email templates escape HTML", () => {
       recipientName: "Ana",
       city: "León & Co",
       statusLabel: 'Anunciada "ya"',
-      misCompetenciasUrl: "https://example.com",
+      myCompetitionsUrl: "https://example.com",
     });
 
     expect(html).toContain("León &amp; Co");

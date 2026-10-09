@@ -12,7 +12,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function Delegados({ delegates }: { delegates: PublicDelegate[] }) {
+export function Delegates({ delegates }: { delegates: PublicDelegate[] }) {
   return (
     <section
       id="delegados"

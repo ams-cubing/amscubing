@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { aboutIntro } from "@/lib/content";
 
-export function HomeSobreNosotros() {
+export function HomeAbout() {
   return (
     <section className="bg-white py-24 md:py-28">
       <div className="ams-container grid items-center gap-12 lg:grid-cols-2 lg:gap-16">

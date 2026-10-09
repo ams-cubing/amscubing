@@ -2,7 +2,7 @@ import { Mail, Send } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CONTACT_EMAIL } from "@/lib/content";
 
-export function Contacto() {
+export function Contact() {
   return (
     <section id="contacto" className="bg-white py-20">
       <div className="ams-container flex flex-col items-start justify-between gap-8 border-l-4 border-ams-green bg-ams-soft p-7 md:flex-row md:items-center md:p-10">

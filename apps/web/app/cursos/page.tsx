@@ -34,7 +34,7 @@ const courseTracks = [
   },
 ];
 
-export default function CursosPage() {
+export default function CoursesPage() {
   return (
     <main>
       <SiteNav active="Cursos" />

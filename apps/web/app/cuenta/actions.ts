@@ -185,15 +185,13 @@ export async function setPermission(
           target: courseStaff.userId,
           set: { role: role as "administrator" | "developer" | "instructor" },
         });
-    await tx
-      .insert(permissionAudit)
-      .values({
-        actorId: member.id,
-        targetId: target.id,
-        scope,
-        previousRole: before?.role ?? null,
-        nextRole: role === "none" ? null : role,
-      });
+    await tx.insert(permissionAudit).values({
+      actorId: member.id,
+      targetId: target.id,
+      scope,
+      previousRole: before?.role ?? null,
+      nextRole: role === "none" ? null : role,
+    });
     return true;
   });
   if (!changed)

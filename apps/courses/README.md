@@ -7,7 +7,7 @@ Next.js en el puerto 3003, con PostgreSQL compartido y sesión WCA emitida por
 ## Desarrollo
 
 Desde la raíz: `pnpm db:up`, `pnpm db:migrate`, `pnpm --filter web dev` y, en otra
-terminal, `pnpm --filter cursos dev`. Copiar `.env.local.example` a `.env.local`
+terminal, `pnpm --filter courses dev`. Copiar `.env.local.example` a `.env.local`
 y usar el mismo `BETTER_AUTH_SECRET` que la web. La base de datos es obligatoria.
 
 ## Funcionalidad
@@ -38,7 +38,7 @@ Todas las acciones verifican sesión y permisos en servidor. Para asignar el
 primer administrador o desarrollador, después de su primer login WCA:
 
 ```sh
-pnpm --filter cursos staff:grant correo@example.com developer
+pnpm --filter courses staff:grant correo@example.com developer
 ```
 
 No se importan roles ni contraseñas de WordPress. Las personas sin WCA ID pueden
@@ -61,8 +61,8 @@ descarta las copias de respaldo y lecciones no asociadas. Detecta duplicados
 inconsistentes, lecciones faltantes e identidades ambiguas.
 
 ```sh
-pnpm --filter cursos exec tsx scripts/migrate-media.ts ../../.codex/migration/sensei
-pnpm --filter cursos import:sensei ../../.codex/migration/sensei
+pnpm --filter courses exec tsx scripts/migrate-media.ts ../../.codex/migration/sensei
+pnpm --filter courses import:sensei ../../.codex/migration/sensei
 ```
 
 La importación corre en una transacción y se puede repetir sin duplicar datos.
@@ -111,10 +111,10 @@ fuera del repositorio. Los videos de YouTube mantienen sus enlaces originales.
 ## Verificación
 
 ```sh
-pnpm --filter cursos test
-pnpm --filter cursos check-types
-pnpm --filter cursos build
-pnpm --filter cursos exec tsx scripts/smoke-local.ts
+pnpm --filter courses test
+pnpm --filter courses check-types
+pnpm --filter courses build
+pnpm --filter courses exec tsx scripts/smoke-local.ts
 ```
 
 La prueba completa requiere Cursos encendido en el puerto 3003. Crea usuarios,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
-import { QuienesSomos } from "@/components/quienes-somos";
+import { AboutUs } from "@/components/about-us";
 import { SiteCta } from "@/components/site-cta";
 import { SiteFooter } from "@/components/site-footer";
 import { getPublicDelegates } from "@/lib/delegates";
@@ -11,13 +11,13 @@ export const metadata: Metadata = {
     "Conoce a la Asociación Mexicana de Speedcubing, sus objetivos, planes y delegados WCA en México.",
 };
 
-export default async function NosotrosPage() {
+export default async function AboutPage() {
   const delegates = await getPublicDelegates();
 
   return (
     <main>
       <SiteNav active="Nosotros" />
-      <QuienesSomos delegates={delegates} />
+      <AboutUs delegates={delegates} />
       <SiteCta />
       <SiteFooter />
     </main>
