@@ -40,7 +40,7 @@ export async function sendCompetitionStatusChangedEmail(input: {
 }) {
   if (!isDeliverableEmail(input.to)) return;
 
-  const misCompetenciasUrl = `${getCalendarUrl().replace(/\/$/, "")}/mis-competencias`;
+  const myCompetitionsUrl = `${getCalendarUrl().replace(/\/$/, "")}/mis-competencias`;
 
   await sendEmail({
     to: input.to,
@@ -49,7 +49,7 @@ export async function sendCompetitionStatusChangedEmail(input: {
       recipientName: input.recipientName,
       city: input.city,
       statusLabel: input.statusLabel,
-      misCompetenciasUrl,
+      myCompetitionsUrl,
     }),
   });
 }

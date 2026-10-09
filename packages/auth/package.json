@@ -10,6 +10,7 @@
     "test:watch": "vitest"
   },
   "exports": {
+    "./mail": "./src/mail.ts",
     ".": "./src/auth.ts",
     "./boards-access": "./src/boards-access.ts",
     "./client": "./src/client.ts",
@@ -21,6 +22,7 @@
     "next": "catalog:"
   },
   "dependencies": {
+    "@workspace/email": "workspace:*",
     "@workspace/db": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:"

@@ -21,7 +21,7 @@ async function PanelGuard({ children }: { children: React.ReactNode }) {
 
   const badges = session.user.wcaId
     ? await getDelegatePanelBadges(session.user.wcaId)
-    : { solicitudesFecha: 0, competencias: 0, total: 0 };
+    : { dateRequests: 0, competitions: 0, total: 0 };
 
   return (
     <>

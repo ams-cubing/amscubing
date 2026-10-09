@@ -6,3 +6,6 @@ export * from "./date-requests";
 export * from "./notifications";
 export * from "./social";
 export * from "./relations";
+export * from "./courses";
+export * from "./blog";
+export * from "./profiles";

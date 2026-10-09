@@ -91,7 +91,7 @@ export type BuildAnnouncementCaptionInput = {
   capacityFallback?: number | null;
 };
 
-export type ProximasCompetenciasCaptionItem = {
+export type UpcomingCompetitionsCaptionItem = {
   name: string;
   city: string;
   stateName?: string | null;
@@ -147,8 +147,8 @@ export function buildAnnouncementCaption(
 }
 
 /** Multi-competition caption for the Torneo de Rubik cover feed post. */
-export function buildProximasCompetenciasCaption(
-  competitions: ProximasCompetenciasCaptionItem[],
+export function buildUpcomingCompetitionsCaption(
+  competitions: UpcomingCompetitionsCaptionItem[],
 ): string {
   const lines: string[] = ["PRÓXIMAS COMPETENCIAS:"];
 

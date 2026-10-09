@@ -106,20 +106,6 @@ export function Hero({
               <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <Button
-            asChild
-            size="lg"
-            variant="glass"
-            className="border-white/50 hover:bg-white hover:text-ams-navy"
-          >
-            <a
-              href={getCalendarUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Calendario completo
-            </a>
-          </Button>
         </div>
       </div>
 

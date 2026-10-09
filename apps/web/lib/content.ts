@@ -1,4 +1,5 @@
-export const COURSES_URL = "https://cursos.amscubing.org";
+import { getCoursesUrl, getBlogUrl } from "@workspace/auth/urls";
+export const COURSES_URL = getCoursesUrl();
 export const PRIVACY_URL = "/aviso-de-privacidad";
 export const CONTACT_EMAIL = "contacto@amscubing.org";
 
@@ -14,7 +15,7 @@ export const blogPosts = [
     date: "3 abril, 2026",
     excerpt:
       "Participar en tu primer competencia oficial es algo muy emocionante, pero también puede ser intimidante si no sabes cómo funciona...",
-    href: "https://amscubing.org/preparandome-para-mi-primera-competencia-oficial/",
+    href: `${getBlogUrl()}/entradas/preparandome-para-mi-primera-competencia-oficial`,
     image: "/source/photos/ponny-1.jpg",
   },
   {
@@ -22,7 +23,7 @@ export const blogPosts = [
     date: "4 septiembre, 2024",
     excerpt:
       "Este 2024 se celebra medio siglo desde que el cubo de Rubik vio la luz por primera vez, revolucionando el mundo de los rompecabezas...",
-    href: "https://amscubing.org/50-anos-del-cubo-rubik/",
+    href: `${getBlogUrl()}/entradas/50-anos-del-cubo-rubik`,
     image: "/source/photos/mexchamp-3.jpg",
   },
   {
@@ -30,7 +31,7 @@ export const blogPosts = [
     date: "8 marzo, 2024",
     excerpt:
       "El speedcubing es una disciplina que implica resolver el cubo de Rubik y otras variantes similares a alta velocidad. Sus...",
-    href: "https://amscubing.org/speedcubingmexico/",
+    href: `${getBlogUrl()}/entradas/speedcubingmexico`,
     image: "/source/photos/chalco-3.jpg",
   },
 ] as const;

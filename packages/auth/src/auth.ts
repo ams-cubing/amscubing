@@ -10,6 +10,7 @@ import { claimWcaStubUser } from "./claim-wca-stub";
 import { mergeUserIntoStub } from "./merge-wca-user";
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
 import { resolveWcaRole } from "./wca-role";
+import { sendAuthEmail } from "./mail";
 
 interface WCAProfile {
   me: {
@@ -28,6 +29,36 @@ interface WCAProfile {
     };
     email: string;
   };
+}
+
+async function syncLinkedWca(linked: {
+  providerId: string;
+  userId: string;
+  accessToken?: string | null;
+}) {
+  if (linked.providerId !== "wca" || !linked.accessToken) return;
+  const response = await fetch(
+    "https://www.worldcubeassociation.org/api/v0/me",
+    { headers: { Authorization: `Bearer ${linked.accessToken}` } },
+  );
+  if (!response.ok) throw new Error("No se pudo verificar la identidad WCA");
+  const data = (await response.json()) as WCAProfile;
+  const [member] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, linked.userId));
+  if (!member) throw new Error("Cuenta AMS no disponible");
+  await db
+    .update(user)
+    .set({
+      wcaId: data.me.wca_id || null,
+      role: resolveWcaRole({
+        delegateStatus: data.me.delegate_status,
+        existingRole: member.role,
+      }),
+      lastLogin: new Date(),
+    })
+    .where(eq(user.id, member.id));
 }
 
 async function findUserWithoutWcaIdByAccount(wcaAccountId: string) {
@@ -63,6 +94,48 @@ export function createAuth() {
     baseURL: authBaseUrl,
     secret,
     trustedOrigins: getTrustedOrigins,
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 12,
+      maxPasswordLength: 128,
+      requireEmailVerification: false,
+      sendResetPassword: async ({ user: member, url }) =>
+        sendAuthEmail({
+          userId: member.id,
+          email: member.email,
+          url,
+          kind: "reset",
+        }),
+      revokeSessionsOnPasswordReset: true,
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 3600,
+      sendVerificationEmail: async ({ user: member, url }) =>
+        sendAuthEmail({
+          userId: member.id,
+          email: member.email,
+          url,
+          kind: "verify",
+        }),
+    },
+    account: { accountLinking: { enabled: true, allowDifferentEmails: true } },
+    rateLimit: { enabled: true, storage: "database", window: 60, max: 30 },
+    databaseHooks: {
+      account: {
+        create: {
+          after: async (linked) => {
+            await syncLinkedWca(linked);
+          },
+        },
+        update: {
+          after: async (linked) => {
+            await syncLinkedWca(linked);
+          },
+        },
+      },
+    },
     advanced: {
       cookiePrefix: "ams",
       ...(cookieDomain
@@ -86,6 +159,7 @@ export function createAuth() {
           type: "string",
           required: false,
           unique: true,
+          input: false,
         },
         role: {
           type: ["delegate", "user", "editor"],
@@ -137,8 +211,20 @@ export function createAuth() {
                 },
               );
 
+              if (!response.ok)
+                throw new Error("No se pudo consultar el perfil WCA");
               const data = (await response.json()) as WCAProfile;
               const wcaId = data.me.wca_id || null;
+              const emailOwner = await db.query.user.findFirst({
+                where: eq(user.email, data.me.email.trim().toLowerCase()),
+              });
+              if (
+                emailOwner &&
+                !emailOwner.emailVerified &&
+                !emailOwner.email.includes("@ams.placeholder")
+              ) {
+                throw new Error("Verifica tu correo AMS antes de vincular WCA");
+              }
 
               // Prefer a seeded/stub row (matched by WCA ID) so region/title/role
               // survive login. Claim placeholders to the real email so Better Auth
@@ -163,22 +249,31 @@ export function createAuth() {
                 existingRole: existing?.role,
               });
 
-              const claimed = existing
-                ? await claimWcaStubUser(existing, {
-                    email: data.me.email,
-                    name: data.me.name,
-                    image: data.me.avatar?.thumb_url,
-                    role,
-                    regionId: existing.regionId,
-                    delegateTitle: existing.delegateTitle,
-                    delegateLocation: existing.delegateLocation,
+              const credential = existing
+                ? await db.query.account.findFirst({
+                    where: and(
+                      eq(account.userId, existing.id),
+                      eq(account.providerId, "credential"),
+                    ),
                   })
                 : null;
+              const claimed =
+                existing && !credential
+                  ? await claimWcaStubUser(existing, {
+                      email: data.me.email,
+                      name: data.me.name,
+                      image: data.me.avatar?.thumb_url,
+                      role,
+                      regionId: existing.regionId,
+                      delegateTitle: existing.delegateTitle,
+                      delegateLocation: existing.delegateLocation,
+                    })
+                  : null;
 
               return {
-                id: claimed?.id ?? String(data.me.id),
+                id: String(data.me.id),
                 name: claimed?.name ?? data.me.name,
-                email: claimed?.email ?? data.me.email,
+                email: data.me.email,
                 image: claimed?.image ?? data.me.avatar?.thumb_url,
                 emailVerified: true,
                 wcaId,
@@ -204,7 +299,7 @@ export function createAuth() {
                 delegateLocation: profile.delegateLocation as string | null,
               };
             },
-            overrideUserInfo: true,
+            overrideUserInfo: false,
           },
         ],
       }),

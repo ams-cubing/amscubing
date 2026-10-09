@@ -398,30 +398,29 @@ export async function updateCompetition(
             ...newDelegateWcaIds.map((wcaId) => delegatesByWcaId.get(wcaId)),
             ...newOrganizerUserIds.map((userId) => organizersById.get(userId)),
           ].flatMap((recipient) => {
-              if (!recipient || assignedRecipientIds.has(recipient.id)) {
-                return [];
-              }
-              assignedRecipientIds.add(recipient.id);
-              const statusLabel =
-                existingCompetition?.statusPublic !==
-                resolvedStatuses.statusPublic
-                  ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
-                  : formatInternalStatusLabel(resolvedStatuses.statusInternal);
-              return [
-                competitionNotificationRow({
-                  recipient,
-                  actorId: session.user.id,
-                  type: "competition_status_changed",
-                  urls,
-                  competitionId,
-                  city,
-                  statusLabel,
-                  statusPublic: resolvedStatuses.statusPublic,
-                  statusInternal: resolvedStatuses.statusInternal,
-                }),
-              ];
-            },
-          )
+            if (!recipient || assignedRecipientIds.has(recipient.id)) {
+              return [];
+            }
+            assignedRecipientIds.add(recipient.id);
+            const statusLabel =
+              existingCompetition?.statusPublic !==
+              resolvedStatuses.statusPublic
+                ? formatPublicStatusLabel(resolvedStatuses.statusPublic)
+                : formatInternalStatusLabel(resolvedStatuses.statusInternal);
+            return [
+              competitionNotificationRow({
+                recipient,
+                actorId: session.user.id,
+                type: "competition_status_changed",
+                urls,
+                competitionId,
+                city,
+                statusLabel,
+                statusPublic: resolvedStatuses.statusPublic,
+                statusInternal: resolvedStatuses.statusInternal,
+              }),
+            ];
+          })
         : [];
 
       await insertNotifications(tx, [...assignmentRows, ...statusRows]);

@@ -13,7 +13,7 @@ import type { DelegatePanelBadges } from "@/lib/delegate-panel-nav";
 export async function getDelegatePanelBadges(
   wcaId: string,
 ): Promise<DelegatePanelBadges> {
-  const [[solicitudesRow], [competenciasRow]] = await Promise.all([
+  const [[dateRequestsRow], [competitionsRow]] = await Promise.all([
     db
       .select({ value: count() })
       .from(dateRequests)
@@ -39,12 +39,12 @@ export async function getDelegatePanelBadges(
       ),
   ]);
 
-  const solicitudesFecha = Number(solicitudesRow?.value ?? 0);
-  const competencias = Number(competenciasRow?.value ?? 0);
+  const dateRequestCount = Number(dateRequestsRow?.value ?? 0);
+  const competitionCount = Number(competitionsRow?.value ?? 0);
 
   return {
-    solicitudesFecha,
-    competencias,
-    total: solicitudesFecha + competencias,
+    dateRequests: dateRequestCount,
+    competitions: competitionCount,
+    total: dateRequestCount + competitionCount,
   };
 }

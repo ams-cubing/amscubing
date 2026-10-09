@@ -37,7 +37,7 @@ function dateRequestPanelUrl(dateRequestId: number) {
   return `${getCalendarUrl()}/panel/solicitudes-fecha/${dateRequestId}`;
 }
 
-function misCompetenciasUrl() {
+function myCompetitionsUrl() {
   return `${getCalendarUrl()}/mis-competencias`;
 }
 
@@ -156,7 +156,7 @@ export async function sendDateRequestOrganizerEmail(input: {
       delegateName: input.delegateName,
       delegateEmail: input.delegateEmail,
       pendingConfirmation: input.pendingConfirmation,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }
@@ -182,7 +182,7 @@ export async function sendDateRequestAcceptedOrganizerEmail(input: {
       endDate: input.endDate,
       delegateName: input.delegateName,
       delegateEmail: input.delegateEmail,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }
@@ -206,7 +206,7 @@ export async function sendDateRequestDeclinedOrganizerEmail(input: {
       startDate: input.startDate,
       endDate: input.endDate,
       nextDelegateName: input.nextDelegateName,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }
@@ -228,7 +228,7 @@ export async function sendOrganizerAssignedEmail(input: {
       city: input.city,
       startDate: input.startDate,
       endDate: input.endDate,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }
@@ -250,7 +250,7 @@ export async function sendOrganizerRemovedEmail(input: {
       city: input.city,
       startDate: input.startDate,
       endDate: input.endDate,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }
@@ -270,7 +270,7 @@ export async function sendCompetitionStatusChangedEmail(input: {
       recipientName: input.recipientName,
       city: input.city,
       statusLabel: input.statusLabel,
-      misCompetenciasUrl: misCompetenciasUrl(),
+      myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });
 }

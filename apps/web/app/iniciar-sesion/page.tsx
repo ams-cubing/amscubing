@@ -1,98 +1,58 @@
 import { isAllowedReturnTo } from "@workspace/auth/urls";
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Suspense } from "react";
-import { Button } from "@workspace/ui/components/button";
-
 import { PageHero } from "@/components/page-hero";
-import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
-import { isAuthDatabaseReady } from "@/lib/auth-readiness";
-
-import { SignInRedirect } from "./_components/sign-in-redirect";
-
-export const metadata: Metadata = {
-  title: "Iniciar sesión | Asociación Mexicana de Speedcubing",
-  description: "Acceso con cuenta WCA para la cuenta AMS.",
+import { SiteFooter } from "@/components/site-footer";
+import { LoginForm } from "./_components/login-form";
+import { Suspense } from "react";
+export const metadata = {
+  title: "Iniciar sesión | AMS",
+  description: "Acceso con correo o cuenta WCA a la comunidad AMS.",
 };
-
-export default function IniciarSesionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ returnTo?: string }>;
+export default function Page(props: {
+  searchParams: Promise<{ returnTo?: string; error?: string }>;
 }) {
   return (
-    <Suspense fallback={<IniciarSesionFallback />}>
-      <IniciarSesionContent searchParams={searchParams} />
+    <Suspense
+      fallback={
+        <main className="ams-container py-20" aria-busy="true">
+          Cargando acceso…
+        </main>
+      }
+    >
+      <LoginPage {...props} />
     </Suspense>
   );
 }
-
-async function IniciarSesionContent({
+async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; error?: string }>;
 }) {
-  const { returnTo } = await searchParams;
+  const { returnTo, error } = await searchParams;
   const callbackURL =
     returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/cuenta";
-  const hasWcaConfig = Boolean(
-    process.env.WCA_CLIENT_ID && process.env.WCA_CLIENT_SECRET,
-  );
-  const databaseReady = hasWcaConfig ? await isAuthDatabaseReady() : false;
-
-  if (hasWcaConfig && databaseReady) {
-    return <SignInRedirect callbackURL={callbackURL} />;
-  }
-
-  const missingMessage = hasWcaConfig
-    ? "Las credenciales de WCA ya están cargadas, pero PostgreSQL local no está corriendo. Better Auth necesita la base para guardar el estado temporal del login."
-    : "El sitio ya tiene el flujo de cuenta listo, pero faltan las credenciales OAuth de WCA en el entorno local.";
-
   return (
     <main>
       <SiteNav />
       <PageHero
-        eyebrow="Cuenta WCA"
-        title="Iniciar sesión"
-        description={missingMessage}
+        eyebrow="COMUNIDAD AMS"
+        title="Tu cuenta AMS"
+        description="Toma cursos y participa en el blog con una cuenta de correo o WCA. Puedes vincular WCA más adelante sin perder tu historial."
       />
-      <section className="bg-white py-16 md:py-20">
-        <div className="ams-container max-w-3xl">
-          <div className="rounded-3xl bg-ams-soft p-8 md:p-10">
-            <h2 className="ams-display text-3xl leading-none text-ams-navy">
-              {hasWcaConfig
-                ? "Base local no disponible"
-                : "Configuración pendiente"}
-            </h2>
-            <p className="ams-copy mt-5 text-base leading-7 text-black/70">
-              {hasWcaConfig
-                ? "Arranca PostgreSQL y corre las migraciones antes de intentar entrar con WCA. El proyecto espera una base en postgresql://ams:ams@localhost:5432/amscubing."
-                : "Para probar login en localhost, configura `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `WCA_CLIENT_ID` y `WCA_CLIENT_SECRET` en `apps/web/.env.local`. El redirect URI registrado en WCA debe ser `http://localhost:3000/api/auth/callback/wca`."}
+      <section className="bg-white py-16">
+        <div className="ams-container max-w-2xl">
+          {error && (
+            <p className="ams-copy mb-5 text-ams-red">
+              No se pudo completar el acceso o la vinculación. Verifica tu
+              correo AMS y comprueba que WCA no esté vinculada a otra cuenta.
             </p>
-            <Button asChild size="lg" variant="destructive" className="mt-7">
-              <Link href="/cuenta">Volver a cuenta</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-      <SiteFooter />
-    </main>
-  );
-}
-
-function IniciarSesionFallback() {
-  return (
-    <main>
-      <SiteNav />
-      <PageHero
-        eyebrow="Cuenta WCA"
-        title="Iniciar sesión"
-        description="Preparando el acceso con tu cuenta WCA…"
-      />
-      <section className="bg-white py-16 md:py-20">
-        <div className="ams-container max-w-3xl">
-          <div className="h-56 animate-pulse rounded-3xl bg-ams-soft" />
+          )}
+          <LoginForm
+            callbackURL={callbackURL}
+            wcaEnabled={Boolean(
+              process.env.WCA_CLIENT_ID && process.env.WCA_CLIENT_SECRET,
+            )}
+          />
         </div>
       </section>
       <SiteFooter />
