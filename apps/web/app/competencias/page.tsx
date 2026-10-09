@@ -66,15 +66,9 @@ export default async function CompetenciasPage() {
                 WCA México
               </p>
               <h2 className="ams-display text-[clamp(2rem,5vw,3.5rem)] leading-none">
-                Competencias abiertas y anunciadas
+                Próximas competencias oficiales
               </h2>
             </div>
-            <Button asChild variant="brand" className="shrink-0">
-              <a href={calendarUrl}>
-                <CalendarDays className="size-4" />
-                Ver calendario completo
-              </a>
-            </Button>
           </div>
 
           {competitions.length === 0 ? (
@@ -134,7 +128,7 @@ export default async function CompetenciasPage() {
                       </span>
                     </div>
                     <span className="mt-6 inline-flex items-center gap-2 font-bold text-ams-green">
-                      Ver en WCA
+                      Ver detalles
                       <ExternalLink className="size-4" />
                     </span>
                   </div>

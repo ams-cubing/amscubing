@@ -32,7 +32,7 @@ export function SiteCta() {
             variant="glass"
             className="border-white/55 hover:bg-white hover:text-ams-red"
           >
-            <Link href="/nosotros">Únete a la comunidad</Link>
+            <Link href="/become-organizer">Organizar una competencia</Link>
           </Button>
         </div>
       </div>

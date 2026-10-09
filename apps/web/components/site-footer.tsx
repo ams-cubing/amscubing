@@ -78,11 +78,8 @@ export function SiteFooter() {
               Comunidad
             </h2>
             <div className="grid gap-3 text-sm">
-              <a href={calendarUrl} className="text-white/70 hover:text-white">
-                Ser voluntario
-              </a>
               <Link
-                href="/competencias"
+                href="/become-organizer"
                 className="text-white/70 hover:text-white"
               >
                 Organizar una competencia
@@ -105,6 +102,18 @@ export function SiteFooter() {
                 className="text-white/70 hover:text-white"
               >
                 Facebook
+              </a>
+              <a
+                href="https://www.instagram.com/amscubing/"
+                className="text-white/70 hover:text-white"
+              >
+                Instagram
+              </a>
+              <a
+                href="https://www.twitch.tv/amscubing"
+                className="text-white/70 hover:text-white"
+              >
+                Twitch
               </a>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}

@@ -28,7 +28,7 @@ export function HomeSobreNosotros() {
               variant="accent"
               className="ams-glass border border-white/35"
             >
-              <Link href="/nosotros">Conoce a la comunidad</Link>
+              <Link href="/nosotros">Aprende más sobre la AMS</Link>
             </Button>
           </div>
         </div>
