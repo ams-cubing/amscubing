@@ -208,13 +208,10 @@ await db.transaction(async (tx) => {
       completedAt,
       certificateUrl,
     };
-    await tx
-      .insert(courseLegacyRecords)
-      .values(values)
-      .onConflictDoUpdate({
-        target: courseLegacyRecords.sourceKey,
-        set: values,
-      });
+    await tx.insert(courseLegacyRecords).values(values).onConflictDoUpdate({
+      target: courseLegacyRecords.sourceKey,
+      set: values,
+    });
     summary.enrollments++;
     if (complete) summary.completedCourses++;
   }
@@ -253,13 +250,10 @@ await db.transaction(async (tx) => {
         completedAt,
         score: Number.isFinite(grade) ? Math.round(grade) : null,
       };
-      await tx
-        .insert(courseLegacyRecords)
-        .values(values)
-        .onConflictDoUpdate({
-          target: courseLegacyRecords.sourceKey,
-          set: values,
-        });
+      await tx.insert(courseLegacyRecords).values(values).onConflictDoUpdate({
+        target: courseLegacyRecords.sourceKey,
+        set: values,
+      });
       summary.lessonRecords++;
     }
   }

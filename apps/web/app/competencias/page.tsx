@@ -46,7 +46,7 @@ function statusClassName(label: string) {
   }
 }
 
-export default async function CompetenciasPage() {
+export default async function CompetitionsPage() {
   const competitions = await getPublicCompetitions();
   const calendarUrl = getCalendarUrl();
 

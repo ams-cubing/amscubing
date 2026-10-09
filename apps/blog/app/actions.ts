@@ -121,14 +121,12 @@ export async function addComment(form: FormData) {
     redirect(`${path}?aviso=comentario-invalido`);
   if (!(await consumeLimit(`comment:${viewer.id}`, 5, 600)))
     redirect(`${path}?aviso=demasiados-comentarios`);
-  await db
-    .insert(blogComments)
-    .values({
-      postId: id,
-      authorId: viewer.id,
-      authorName: viewer.name,
-      content,
-    });
+  await db.insert(blogComments).values({
+    postId: id,
+    authorId: viewer.id,
+    authorName: viewer.name,
+    content,
+  });
   revalidatePath(path);
   redirect(`${path}?aviso=comentario-enviado`);
 }

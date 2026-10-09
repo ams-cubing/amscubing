@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "Edita ubicaciones y perfiles públicos de delegados WCA.",
 };
 
-export default async function AdminDelegadosPage() {
+export default async function AdminDelegatesPage() {
   const delegates = (
     await db.query.user.findMany({
       where: eq(user.role, "delegate"),

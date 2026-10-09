@@ -139,10 +139,14 @@ const competitionSchema = z
       path: ["primaryDelegateWcaId"],
     },
   )
-  .refine((data) => data.organizerUserIds.includes(data.primaryOrganizerUserId), {
-    message: "El organizador principal debe estar en la lista de organizadores",
-    path: ["primaryOrganizerUserId"],
-  })
+  .refine(
+    (data) => data.organizerUserIds.includes(data.primaryOrganizerUserId),
+    {
+      message:
+        "El organizador principal debe estar en la lista de organizadores",
+      path: ["primaryOrganizerUserId"],
+    },
+  )
   .refine(
     (data) =>
       data.statusPublic !== "announced" ||

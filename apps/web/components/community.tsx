@@ -25,7 +25,7 @@ const testimonials = [
   },
 ] as const;
 
-export function Comunidad() {
+export function Community() {
   return (
     <section id="comunidad" className="bg-ams-soft py-24">
       <div className="ams-container">

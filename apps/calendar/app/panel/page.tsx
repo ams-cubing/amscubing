@@ -18,7 +18,7 @@ export default async function PanelHubPage() {
   const wcaId = session?.user?.wcaId;
   const badges = wcaId
     ? await getDelegatePanelBadges(wcaId)
-    : { solicitudesFecha: 0, competencias: 0, total: 0 };
+    : { dateRequests: 0, competitions: 0, total: 0 };
 
   return (
     <div className="space-y-6 md:space-y-8">

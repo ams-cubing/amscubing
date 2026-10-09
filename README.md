@@ -13,7 +13,7 @@ Ver [ROADMAP.md](ROADMAP.md) para el trabajo planeado (auth en web, paridad de C
 | Web                | `apps/web`      | 3000   | Portada de la Asociación Mexicana de Speedcubing                     |
 | Calendario Público | `apps/calendar` | 3001   | Calendario público de competencias de speedcubing en México          |
 | Tableros AMS       | `apps/boards`   | 3002   | Tableros de organización estilo Trello ligados a competencias        |
-| Cursos AMS         | `apps/courses`   | 3003   | Cursos, lecciones, evaluaciones y progreso con cuenta AMS o WCA      |
+| Cursos AMS         | `apps/courses`  | 3003   | Cursos, lecciones, evaluaciones y progreso con cuenta AMS o WCA      |
 | Blog AMS           | `apps/blog`     | 3004   | Entradas, editor visual y comentarios moderados con cuenta AMS o WCA |
 
 ## Paquetes

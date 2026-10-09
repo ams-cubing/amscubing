@@ -186,7 +186,7 @@ export function dateRequestOrganizerEmail(input: {
   delegateName: string | null;
   delegateEmail: string | null;
   pendingConfirmation: boolean;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   const delegateParagraph = input.pendingConfirmation
     ? emailParagraph(
@@ -207,7 +207,7 @@ export function dateRequestOrganizerEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa los detalles aquí",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }
@@ -227,7 +227,7 @@ export function dateRequestAcceptedOrganizerEmail(input: {
   endDate: string;
   delegateName: string;
   delegateEmail: string;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   return renderEmailLayout({
     previewText: `Delegado confirmado en ${input.city}`,
@@ -242,7 +242,7 @@ export function dateRequestAcceptedOrganizerEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa los detalles aquí",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }
@@ -257,7 +257,7 @@ export function dateRequestDeclinedOrganizerEmail(input: {
   startDate: string;
   endDate: string;
   nextDelegateName: string | null;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   const followUp = input.nextDelegateName
     ? emailParagraph(
@@ -278,7 +278,7 @@ export function dateRequestDeclinedOrganizerEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa los detalles aquí",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }
@@ -292,7 +292,7 @@ export function organizerAssignedEmail(input: {
   city: string;
   startDate: string;
   endDate: string;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   return renderEmailLayout({
     previewText: `Asignación como organizador: ${input.city}`,
@@ -304,7 +304,7 @@ export function organizerAssignedEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa tus competencias para más detalles",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }
@@ -322,7 +322,7 @@ export function organizerRemovedEmail(input: {
   city: string;
   startDate: string;
   endDate: string;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   return renderEmailLayout({
     previewText: `Remoción como organizador: ${input.city}`,
@@ -334,7 +334,7 @@ export function organizerRemovedEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa tus competencias para más detalles",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }
@@ -351,7 +351,7 @@ export function competitionStatusChangedEmail(input: {
   recipientName: string;
   city: string;
   statusLabel: string;
-  misCompetenciasUrl: string;
+  myCompetitionsUrl: string;
 }) {
   return renderEmailLayout({
     previewText: `Estatus: ${input.statusLabel} — ${input.city}`,
@@ -363,7 +363,7 @@ export function competitionStatusChangedEmail(input: {
     ].join(""),
     cta: {
       label: "Revisa los detalles aquí",
-      href: input.misCompetenciasUrl,
+      href: input.myCompetitionsUrl,
     },
   });
 }

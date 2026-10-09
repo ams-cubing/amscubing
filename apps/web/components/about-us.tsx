@@ -57,7 +57,7 @@ const communityPhotos = [
   "/source/photos/guelaguetza-1.jpg",
 ];
 
-export function QuienesSomos({ delegates }: { delegates: PublicDelegate[] }) {
+export function AboutUs({ delegates }: { delegates: PublicDelegate[] }) {
   return (
     <section id="quienes-somos" className="bg-white">
       <div className="relative overflow-hidden bg-ams-navy px-0 py-20 text-white md:py-24">

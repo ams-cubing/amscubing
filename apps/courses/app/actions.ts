@@ -260,7 +260,9 @@ export async function grantStaff(data: FormData) {
     .from(user)
     .where(sql`lower(${user.email}) = ${email}`);
   if (!target || !target.emailVerified)
-    throw new Error("La persona debe registrarse y verificar su correo primero");
+    throw new Error(
+      "La persona debe registrarse y verificar su correo primero",
+    );
   if (target.id === viewer.id)
     throw new Error(
       "No puedes cambiar tus propios permisos desde este formulario",

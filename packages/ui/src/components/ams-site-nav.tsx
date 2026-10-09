@@ -44,7 +44,7 @@ export function AmsSiteNav({
   actions?: ReactNode;
 }) {
   const homeHref = joinUrl(webUrl, "/");
-  const competenciasHref = joinUrl(webUrl, "/competencias");
+  const competitionsHref = joinUrl(webUrl, "/competencias");
 
   return (
     <header className="sticky inset-x-0 top-0 z-50 border-b-[3px] border-ams-red bg-ams-navy">
@@ -82,7 +82,7 @@ export function AmsSiteNav({
             asChild
             className="ams-glass hidden border border-white/25 md:inline-flex"
           >
-            <a href={competenciasHref}>Próximas competencias</a>
+            <a href={competitionsHref}>Próximas competencias</a>
           </Button>
           {actions}
           {account}
@@ -124,7 +124,7 @@ export function AmsSiteNav({
                       asChild
                       className="ams-glass border border-white/25"
                     >
-                      <a href={competenciasHref}>
+                      <a href={competitionsHref}>
                         Regístrate a una competencia
                       </a>
                     </Button>

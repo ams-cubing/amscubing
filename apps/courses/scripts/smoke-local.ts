@@ -295,16 +295,14 @@ try {
       name: "Historial temporal",
     })
     .returning();
-  await db
-    .insert(courseLegacyRecords)
-    .values({
-      studentId: legacy!.id,
-      courseId: course!.id,
-      lessonId: null,
-      sourceKey: `test-${suffix}`,
-      status: "Completado",
-      completedAt: new Date(),
-    });
+  await db.insert(courseLegacyRecords).values({
+    studentId: legacy!.id,
+    courseId: course!.id,
+    lessonId: null,
+    sourceKey: `test-${suffix}`,
+    status: "Completado",
+    completedAt: new Date(),
+  });
   await claimLegacyProgress({ id: studentId, email, emailVerified: false });
   let [staged] = await db
     .select()

@@ -18,9 +18,9 @@ import {
   type CoverStatus,
 } from "./cover-fingerprint";
 import {
-  buildProximasCompetenciasCaption,
+  buildUpcomingCompetitionsCaption,
   updateFacebookPageCover,
-  type ProximasCompetenciasCaptionItem,
+  type UpcomingCompetitionsCaptionItem,
 } from "./meta-publish";
 import { fetchWcaCompetition } from "./wca-competition";
 
@@ -90,7 +90,7 @@ function toCoverSlotInput(row: CoverCompetitionRow): CoverSlotInput {
 
 function toCaptionItem(
   row: CoverCompetitionRow,
-): ProximasCompetenciasCaptionItem {
+): UpcomingCompetitionsCaptionItem {
   return {
     name: row.name,
     city: row.city,
@@ -264,7 +264,7 @@ export async function generateTorneoDeRubikCoverPng(): Promise<
       inputs,
       competitions,
       inputsFingerprint: coverInputsFingerprint(inputs),
-      caption: buildProximasCompetenciasCaption(
+      caption: buildUpcomingCompetitionsCaption(
         competitions.map(toCaptionItem),
       ),
     };

@@ -114,7 +114,7 @@ const editorActions = [
   },
 ];
 
-export default function CuentaPage() {
+export default function AccountPage() {
   return (
     <main>
       <SiteNav />
@@ -125,8 +125,8 @@ export default function CuentaPage() {
       />
       <section className="bg-white py-16 md:py-20">
         <div className="ams-container max-w-280">
-          <Suspense fallback={<CuentaBodyFallback />}>
-            <CuentaBody />
+          <Suspense fallback={<AccountBodyFallback />}>
+            <AccountBody />
           </Suspense>
         </div>
       </section>
@@ -135,7 +135,7 @@ export default function CuentaPage() {
   );
 }
 
-async function CuentaBody() {
+async function AccountBody() {
   const requestHeaders = await headers();
   const session = process.env.BETTER_AUTH_SECRET
     ? await import("@/lib/auth").then(({ auth }) =>
@@ -586,7 +586,7 @@ async function CuentaBody() {
   );
 }
 
-function CuentaBodyFallback() {
+function AccountBodyFallback() {
   return (
     <div className="space-y-10" aria-hidden>
       <div className="h-40 animate-pulse rounded-5.5 bg-ams-soft" />

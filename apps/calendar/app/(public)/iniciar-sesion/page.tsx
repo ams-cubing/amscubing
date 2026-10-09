@@ -6,7 +6,7 @@ import {
   isAllowedReturnTo,
 } from "@/lib/urls";
 
-export default async function IniciarSesionPage({
+export default async function SignInPage({
   searchParams,
 }: {
   searchParams: Promise<{ returnTo?: string }>;

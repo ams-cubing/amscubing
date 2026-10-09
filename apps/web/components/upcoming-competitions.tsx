@@ -64,7 +64,7 @@ function statusVariant(
   }
 }
 
-export function ProximasCompetencias({
+export function UpcomingCompetitions({
   competitions,
 }: {
   competitions: PublicCompetition[];
