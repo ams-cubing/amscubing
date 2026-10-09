@@ -5,6 +5,7 @@ import { cleanHtml } from "@/lib/content";
 import { Curriculum } from "@/components/curriculum";
 import { Submit } from "@/components/submit";
 import { enroll } from "@/app/actions";
+import { formatCourseScore } from "@/lib/course-score";
 
 export default async function CoursePage({
   params,
@@ -78,6 +79,22 @@ export default async function CoursePage({
                 {done.length} de {course.lessons.length} lecciones completadas
               </p>
             </>
+          )}
+          {p?.enrollment?.completedAt && (
+            <div className="course-result">
+              <span className="eyebrow">Puntuación del curso</span>
+              <p className="course-score">{formatCourseScore(p.result)}</p>
+              <p className="small">
+                Promedio de las evaluaciones aprobadas. Las lecturas no cuentan
+                para la nota.
+              </p>
+              <a
+                className="btn secondary full-width"
+                href={`/cursos/${encodeURIComponent(slug)}/certificado`}
+              >
+                Descargar certificado PDF ↓
+              </a>
+            </div>
           )}
           {p?.enrollment && next ? (
             <Link

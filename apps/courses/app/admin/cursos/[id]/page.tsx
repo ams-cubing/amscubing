@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { db } from "@workspace/db";
-import { courses, courseEnrollments, user } from "@workspace/db/schema";
+import {
+  courses,
+  courseEnrollments,
+  courseProgress,
+  courseLessons,
+  user,
+} from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { requireManager } from "@/lib/auth";
@@ -8,6 +14,7 @@ import { getCourse } from "@/lib/data";
 import { CourseEditor } from "@/components/course-editor";
 import { Submit } from "@/components/submit";
 import { saveModule } from "@/app/actions";
+import { calculateCourseScore, formatCourseScore } from "@/lib/course-score";
 
 export default async function EditCourse({
   params,
@@ -27,6 +34,8 @@ export default async function EditCourse({
   const students = await db
     .select({
       name: user.name,
+      userId: user.id,
+      certificate: courseEnrollments.certificate,
       enrolledAt: courseEnrollments.enrolledAt,
       completedAt: courseEnrollments.completedAt,
     })
@@ -34,6 +43,15 @@ export default async function EditCourse({
     .innerJoin(user, eq(user.id, courseEnrollments.userId))
     .where(eq(courseEnrollments.courseId, course.id))
     .orderBy(desc(courseEnrollments.enrolledAt));
+  const progress = await db
+    .select({
+      userId: courseProgress.userId,
+      lessonId: courseProgress.lessonId,
+      score: courseProgress.score,
+    })
+    .from(courseProgress)
+    .innerJoin(courseLessons, eq(courseProgress.lessonId, courseLessons.id))
+    .where(eq(courseLessons.courseId, course.id));
   return (
     <section className="shell section">
       <div className="breadcrumb">
@@ -140,6 +158,7 @@ export default async function EditCourse({
                 <th>Alumno</th>
                 <th>Inscripción</th>
                 <th>Estado</th>
+                <th>Puntuación</th>
               </tr>
             </thead>
             <tbody>
@@ -148,6 +167,17 @@ export default async function EditCourse({
                   <td>{s.name}</td>
                   <td>{s.enrolledAt.toLocaleDateString("es-MX")}</td>
                   <td>{s.completedAt ? "Completado" : "En progreso"}</td>
+                  <td>
+                    {s.completedAt
+                      ? formatCourseScore(
+                          s.certificate ??
+                            calculateCourseScore(
+                              course.lessons,
+                              progress.filter((p) => p.userId === s.userId),
+                            ),
+                        )
+                      : "Pendiente"}
+                  </td>
                 </tr>
               ))}
             </tbody>

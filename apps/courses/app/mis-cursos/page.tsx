@@ -24,6 +24,8 @@ export default async function MyCourses() {
       const p = await getProgress(course.id, viewer.id);
       return {
         course,
+        result: p.result,
+        hasCertificate: !!enrollment.completedAt,
         count: data.lessons.length,
         completed: enrollment.completedAt
           ? data.lessons.length
