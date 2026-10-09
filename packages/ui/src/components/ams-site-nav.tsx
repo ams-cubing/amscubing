@@ -82,7 +82,7 @@ export function AmsSiteNav({
             asChild
             className="ams-glass hidden border border-white/25 md:inline-flex"
           >
-            <a href={competenciasHref}>Regístrate a una competencia</a>
+            <a href={competenciasHref}>Próximas competencias</a>
           </Button>
           {actions}
           {account}

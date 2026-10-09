@@ -29,7 +29,20 @@ vi.mock("@workspace/db/schema", () => ({
   logs: { name: "log", actorId: "actor_id" },
   boardInvites: { name: "board_invite", createdByUserId: "created_by_user_id" },
   cardComments: { name: "card_comment", authorId: "author_id" },
+  courses: { name: "course", createdBy: "created_by" },
+  blogPosts: { name: "blog_post", authorId: "author_id" },
+  blogComments: { name: "blog_comment", authorId: "author_id" },
+  courseQuizAttempts: { name: "course_quiz_attempt", userId: "user_id" },
+  courseLegacyStudents: {
+    name: "course_legacy_student",
+    claimedBy: "claimed_by",
+  },
   user: { name: "user", id: "id" },
+  permissionAudit: {
+    name: "permission_audit",
+    actorId: "actor_id",
+    targetId: "target_id",
+  },
 }));
 
 import { mergeUserIntoStub } from "./merge-wca-user";
@@ -53,10 +66,13 @@ describe("mergeUserIntoStub", () => {
     expect(set).toHaveBeenCalledWith({ actorId: "stub-id" });
     expect(set).toHaveBeenCalledWith({ createdByUserId: "stub-id" });
     expect(set).toHaveBeenCalledWith({ authorId: "stub-id" });
-    expect(update).toHaveBeenCalledTimes(7);
-    expect(execute).toHaveBeenCalledTimes(2);
+    expect(set).toHaveBeenCalledWith({ createdBy: "stub-id" });
+    expect(set).toHaveBeenCalledWith({ claimedBy: "stub-id" });
+    expect(set).toHaveBeenCalledWith({ targetId: "stub-id" });
+    expect(update).toHaveBeenCalledTimes(14);
+    expect(execute).toHaveBeenCalledTimes(10);
     expect(del).toHaveBeenCalledTimes(1);
     expect(deleteWhere).toHaveBeenCalledTimes(1);
-    expect(where).toHaveBeenCalledTimes(7);
+    expect(where).toHaveBeenCalledTimes(14);
   });
 });

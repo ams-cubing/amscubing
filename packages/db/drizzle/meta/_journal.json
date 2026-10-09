@@ -232,6 +232,41 @@
       "when": 1790803991591,
       "tag": "0032_stale_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791514974623,
+      "tag": "0033_unusual_prodigy",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791515285079,
+      "tag": "0034_military_caretaker",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791517063355,
+      "tag": "0035_glamorous_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791517381895,
+      "tag": "0036_thick_domino",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791519141924,
+      "tag": "0037_bored_ikaris",
+      "breakpoints": true
     }
   ]
 }

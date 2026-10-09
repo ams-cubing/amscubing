@@ -24,6 +24,19 @@ export function getBoardsUrl() {
   );
 }
 
+export function getCoursesUrl() {
+  return stripTrailingSlash(
+    process.env.NEXT_PUBLIC_COURSES_URL ??
+      (process.env.NODE_ENV === "production"
+        ? "https://cursos.amscubing.org"
+        : "http://localhost:3003"),
+  );
+}
+
+export function getBlogUrl() {
+  return stripTrailingSlash(process.env.NEXT_PUBLIC_BLOG_URL ?? (process.env.NODE_ENV === "production" ? "https://blog.amscubing.org" : "http://localhost:3004"));
+}
+
 /** Canonical auth host (OAuth callbacks + auth API). Defaults to the public web app. */
 export function getAuthBaseUrl() {
   return stripTrailingSlash(
@@ -38,6 +51,8 @@ export function getTrustedOrigins() {
     getWebUrl(),
     getCalendarUrl(),
     getBoardsUrl(),
+    getCoursesUrl(),
+    getBlogUrl(),
     getAuthBaseUrl(),
   ];
 
@@ -47,6 +62,8 @@ export function getTrustedOrigins() {
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:3002",
+      "http://localhost:3003",
+      "http://localhost:3004",
     );
   }
 

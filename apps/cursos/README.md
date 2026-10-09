@@ -1,0 +1,100 @@
+# Cursos AMS
+
+Next.js en el puerto 3003, con PostgreSQL compartido y sesión WCA emitida por
+`apps/web` en el puerto 3000. Diseño basado en el header compartido, recursos de
+`apps/web` y el manual de identidad AMS: Gaming Sporty, Unbounded y Saira.
+
+## Desarrollo
+
+Desde la raíz: `pnpm db:up`, `pnpm db:migrate`, `pnpm --filter web dev` y, en otra
+terminal, `pnpm --filter cursos dev`. Copiar `.env.local.example` a `.env.local`
+y usar el mismo `BETTER_AUTH_SECRET` que la web. La base de datos es obligatoria.
+
+## Funcionalidad
+
+- Catálogo de cursos publicados, inscripción WCA y página Mi aprendizaje.
+- Módulos y lecciones ordenadas con contenido HTML sanitizado, imágenes y videos.
+- Preguntas de opción múltiple, verdadero/falso y respuesta corta; calificación
+  en servidor y umbral de aprobación configurable. Banco de preguntas con
+  selección aleatoria por intento y formulario firmado por alumno/lección.
+- Progreso por usuario, historial de intentos y finalización de cursos.
+- Panel `/admin`: cursos, módulos, lecciones, evaluaciones, alumnos y permisos.
+- Publicación, borradores y archivado. Borradores nunca accesibles a alumnos.
+
+## Permisos
+
+Los roles globales siguen siendo `user`, `delegate` y `editor`.
+`course_staff` agrega permisos limitados a Cursos:
+
+| Permiso                 | Gestionar cursos | Asignar permisos |
+| ----------------------- | ---------------- | ---------------- |
+| Delegado AMS            | Sí               | No               |
+| Instructor              | Sí               | No               |
+| Administrador           | Sí               | Sí               |
+| Desarrollador           | Sí               | Sí               |
+| Alumno / editor de blog | No               | No               |
+
+Todas las acciones verifican sesión y permisos en servidor. Para asignar el
+primer administrador o desarrollador, después de su primer login WCA:
+
+```sh
+pnpm --filter cursos staff:grant correo@example.com developer
+```
+
+No se importan roles ni contraseñas de WordPress. Las personas sin WCA ID pueden
+tomar cursos con su cuenta WCA.
+
+## Migración del curso AMS desde Sensei
+
+Usar las herramientas oficiales de WordPress/Sensei para descargar:
+
+1. Export Content: cursos, lecciones y preguntas (ZIP con tres CSV).
+2. Reports: todos los alumnos (`user-overview.csv`).
+3. Reports > Capacitación de Staff > alumnos
+   (`capacitacion-de-staff-users-overview.csv`).
+4. Un reporte de alumnos por cada lección y `lesson-reports.json` con objetos
+   `{ "lessonId": 209, "file": "que-es-la-wca-y-la-ams-learners-overview.csv" }`.
+
+Conservar estos archivos dentro de `.codex/migration/sensei`, excluido de Git.
+El importador selecciona el curso publicado 206, conserva el orden original y
+descarta las copias de respaldo y lecciones no asociadas. Detecta duplicados
+inconsistentes, lecciones faltantes e identidades ambiguas.
+
+```sh
+pnpm --filter cursos exec tsx scripts/migrate-media.ts ../../.codex/migration/sensei
+pnpm --filter cursos import:sensei ../../.codex/migration/sensei
+```
+
+La importación corre en una transacción y se puede repetir sin duplicar datos.
+Una repetición actualiza el contenido importado desde WordPress, por lo que debe
+hacerse antes de editar ese contenido en el nuevo panel.
+
+Los historiales se conservan en `course_legacy_student` y `course_legacy_record`.
+Cuando un alumno inicia sesión, su correo verificado se vincula al historial,
+sin transferir contraseñas ni crear cuentas con acceso falso. Los nombres de
+los reportes por lección solo se resuelven cuando corresponden a una identidad
+única del export de alumnos. Cualquier excepción queda en `unresolved.json`.
+
+La copia local verificada contiene: 1 curso, 7 módulos, 39 lecciones, 66 preguntas,
+220 identidades, 216 inscripciones (186 completadas) y 7,442 registros por lección.
+El resumen está en `import-summary.json`. Incluye referencias a certificados
+históricos; no se regeneran certificados oficiales de WordPress.
+
+Los medios del curso se copian a `public/media/wordpress`. El MP4 de 123 MiB está
+excluido de Git por tamaño: para despliegue, copiarlo a almacenamiento persistente
+o CDN y actualizar sus URLs. Conservar también una copia segura de los exports
+fuera del repositorio. Los videos de YouTube mantienen sus enlaces originales.
+
+## Verificación
+
+```sh
+pnpm --filter cursos test
+pnpm --filter cursos check-types
+pnpm --filter cursos build
+pnpm --filter cursos exec tsx scripts/smoke-local.ts
+```
+
+La prueba completa requiere Cursos encendido en el puerto 3003. Crea usuarios,
+sesiones y cursos temporales para comprobar permisos, inscripción, evaluaciones,
+finalización y vinculación verificada. Elimina únicamente sus propios datos al
+terminar; nunca imprime tokens ni credenciales.

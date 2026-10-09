@@ -36,12 +36,14 @@ export async function sendEmail(input: {
   }
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: FROM,
       to: input.to,
       subject: input.subject,
       html: input.html,
     });
+    if (result.error)
+      return { ok: false as const, reason: "send_failed" as const };
     return { ok: true as const };
   } catch (err) {
     console.error("Error sending email via Resend:", err);

@@ -113,7 +113,9 @@ describe("getTrustedOrigins", () => {
         "https://boards.example",
       ]),
     );
-    expect(origins.length).toBe(3);
+    expect(origins).toContain("https://cursos.amscubing.org");
+    expect(origins).toContain("https://blog.amscubing.org");
+    expect(origins.length).toBe(5);
   });
 
   it("includes localhost ports in non-production", () => {
@@ -122,6 +124,7 @@ describe("getTrustedOrigins", () => {
     expect(origins).toContain("http://localhost:3000");
     expect(origins).toContain("http://localhost:3001");
     expect(origins).toContain("http://localhost:3002");
+    expect(origins).toContain("http://localhost:3003");
   });
 });
 
