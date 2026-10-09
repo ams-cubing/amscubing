@@ -121,12 +121,24 @@ export const courseEnrollments = pgTable(
     enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
     source: text("source").notNull().default("ams"),
+    certificate: jsonb("certificate").$type<CourseCertificate>(),
   },
   (t) => [
     unique("course_enrollment_user_unique").on(t.courseId, t.userId),
     index("course_enrollment_user_idx").on(t.userId),
   ],
 );
+
+export type CourseCertificate = {
+  folio: string;
+  name: string;
+  wcaId: string | null;
+  courseTitle: string;
+  completedAt: string;
+  issuedAt: string;
+  score: number | null;
+  scoreStatus: "scored" | "unavailable" | "ungraded";
+};
 
 export const courseProgress = pgTable(
   "course_progress",

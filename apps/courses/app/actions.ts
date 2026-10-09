@@ -234,6 +234,10 @@ export async function completeLesson(data: FormData) {
       );
     }
   });
+  if (passed) {
+    const { issueCertificate } = await import("@/lib/certificates");
+    await issueCertificate(course.id, viewer.id);
+  }
   revalidatePath("/", "layout");
   redirect(
     `/cursos/${course.slug}/lecciones/${lesson.id}?${passed ? "completada=1" : "reintentar=1"}${score !== null ? `&nota=${score}` : ""}`,

@@ -1,17 +1,22 @@
 import Link from "next/link";
 import type { courses } from "@workspace/db/schema";
 import { cleanHtml } from "@/lib/content";
+import { formatCourseScore, type CourseScore } from "@/lib/course-score";
 
 export function CourseCard({
   course,
   count,
   completed,
   enrolled,
+  result,
+  hasCertificate,
 }: {
   course: typeof courses.$inferSelect;
   count: number;
   completed?: number;
   enrolled?: boolean;
+  result?: CourseScore;
+  hasCertificate?: boolean;
 }) {
   const description = cleanHtml(course.description)
     .replace(/<[^>]*>/g, " ")
@@ -69,6 +74,19 @@ export function CourseCard({
             {enrolled ? "Continuar" : "Ver curso"} →
           </Link>
         </div>
+        {hasCertificate && result && (
+          <div className="course-result">
+            <p className="small">
+              Puntuación: <strong>{formatCourseScore(result)}</strong>
+            </p>
+            <a
+              className="text-link"
+              href={`/cursos/${encodeURIComponent(course.slug)}/certificado`}
+            >
+              Descargar certificado PDF ↓
+            </a>
+          </div>
+        )}
       </div>
     </article>
   );

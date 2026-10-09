@@ -78,7 +78,30 @@ los reportes por lección solo se resuelven cuando corresponden a una identidad
 La copia local verificada contiene: 1 curso, 7 módulos, 39 lecciones, 66 preguntas,
 220 identidades, 216 inscripciones (186 completadas) y 7,442 registros por lección.
 El resumen está en `import-summary.json`. Incluye referencias a certificados
-históricos; no se regeneran certificados oficiales de WordPress.
+históricos; los documentos originales de WordPress se conservan como referencias.
+
+## Puntuaciones y certificados AMS
+
+La página del curso, Mis cursos y la lista de alumnos en administración muestran
+la puntuación final sobre 100: promedio con el mismo peso de las notas guardadas
+de las evaluaciones aprobadas. Las lecturas no afectan la nota. Si falta una
+calificación requerida, se muestra "Puntuación no disponible"; los cursos sin
+evaluaciones muestran "Sin evaluación numérica".
+
+Al finalizar un curso se guarda un certificado con nombre, título del curso,
+fecha de finalización, puntuación y folio único en `course_enrollment.certificate`.
+La descarga `/cursos/[slug]/certificado` requiere sesión y la inscripción
+completada de esa misma cuenta; los permisos administrativos no permiten descargar
+certificados de otros alumnos. El PDF conserva los datos de su primera emisión,
+incluso si después cambia el nombre o se edita el curso.
+
+Los alumnos con historial importado completo también pueden descargar un nuevo
+certificado AMS. Se emite al descargarlo por primera vez, utilizando las notas
+disponibles; no se inventan notas ni se reemplazan los certificados históricos.
+
+Antes de desplegar esta versión, ejecutar `pnpm --filter @workspace/db db:migrate`
+con la conexión de producción (migración 0038). El PDF utiliza los logos locales,
+Gaming Sporty y Saira; la licencia OFL de Saira está en `public/fonts/Saira-OFL.txt`.
 
 Los medios del curso se copian a `public/media/wordpress`. El MP4 de 123 MiB está
 excluido de Git por tamaño: para despliegue, copiarlo a almacenamiento persistente
