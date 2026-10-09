@@ -1,4 +1,15 @@
 @import "@workspace/ui/globals.css";
+.course-result {
+  margin-block: 20px;
+  padding-block: 16px;
+  border-top: 1px solid var(--line);
+}
+.course-score {
+  font-size: 28px;
+  font-weight: 700;
+  margin-block: 8px;
+  color: var(--red);
+}
 :root {
   --navy: var(--ams-navy);
   --red: var(--ams-red);

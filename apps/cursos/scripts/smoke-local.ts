@@ -278,6 +278,31 @@ try {
       ),
     );
   assert(enrollment?.completedAt);
+  assert.equal(enrollment.certificate?.score, 100);
+  assert.equal(enrollment.certificate?.name, "Prueba Cursos Student");
+  const certificatePath = `/cursos/${course!.slug}/certificado`;
+  const downloaded = await get(certificatePath, studentToken);
+  assert.equal(downloaded.status, 200);
+  assert.equal(downloaded.headers.get("content-type"), "application/pdf");
+  assert.equal(downloaded.headers.get("cache-control"), "private, no-store");
+  assert.equal(
+    Buffer.from(await downloaded.arrayBuffer())
+      .subarray(0, 5)
+      .toString(),
+    "%PDF-",
+  );
+  assert.equal((await get(certificatePath)).status, 401);
+  assert.equal((await get(certificatePath, managerToken)).status, 403);
+  const downloadedAgain = await get(certificatePath, studentToken);
+  assert.equal(
+    downloadedAgain.headers.get("content-disposition"),
+    downloaded.headers.get("content-disposition"),
+  );
+  const completedPage = await (
+    await get(`/cursos/${course!.slug}`, studentToken)
+  ).text();
+  assert(completedPage.includes("100/100"));
+  assert(completedPage.includes("Descargar certificado PDF"));
   assert.equal(
     (
       await db
@@ -295,16 +320,14 @@ try {
       name: "Historial temporal",
     })
     .returning();
-  await db
-    .insert(courseLegacyRecords)
-    .values({
-      studentId: legacy!.id,
-      courseId: course!.id,
-      lessonId: null,
-      sourceKey: `test-${suffix}`,
-      status: "Completado",
-      completedAt: new Date(),
-    });
+  await db.insert(courseLegacyRecords).values({
+    studentId: legacy!.id,
+    courseId: course!.id,
+    lessonId: null,
+    sourceKey: `test-${suffix}`,
+    status: "Completado",
+    completedAt: new Date(),
+  });
   await claimLegacyProgress({ id: studentId, email, emailVerified: false });
   let [staged] = await db
     .select()

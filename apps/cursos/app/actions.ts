@@ -234,6 +234,10 @@ export async function completeLesson(data: FormData) {
       );
     }
   });
+  if (passed) {
+    const { issueCertificate } = await import("@/lib/certificates");
+    await issueCertificate(course.id, viewer.id);
+  }
   revalidatePath("/", "layout");
   redirect(
     `/cursos/${course.slug}/lecciones/${lesson.id}?${passed ? "completada=1" : "reintentar=1"}${score !== null ? `&nota=${score}` : ""}`,
@@ -260,7 +264,9 @@ export async function grantStaff(data: FormData) {
     .from(user)
     .where(sql`lower(${user.email}) = ${email}`);
   if (!target || !target.emailVerified)
-    throw new Error("La persona debe registrarse y verificar su correo primero");
+    throw new Error(
+      "La persona debe registrarse y verificar su correo primero",
+    );
   if (target.id === viewer.id)
     throw new Error(
       "No puedes cambiar tus propios permisos desde este formulario",

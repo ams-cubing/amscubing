@@ -8,6 +8,7 @@ import {
 } from "@workspace/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import { calculateCourseScore } from "./course-score";
 
 export async function getCourse(slug: string, manager = false) {
   const [course] = await db
@@ -52,5 +53,11 @@ export async function getProgress(courseId: number, userId: string) {
         eq(courseLessons.courseId, courseId),
       ),
     );
-  return { enrollment, progress };
+  const lessons = await db
+    .select({ id: courseLessons.id, quiz: courseLessons.quiz })
+    .from(courseLessons)
+    .where(eq(courseLessons.courseId, courseId));
+  const result =
+    enrollment?.certificate ?? calculateCourseScore(lessons, progress);
+  return { enrollment, progress, result };
 }
