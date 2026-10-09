@@ -22,7 +22,7 @@ import {
 import { safeUrl } from "../lib/content";
 
 // No credentials: consume the official Sensei exports downloaded by an admin.
-// Run from apps/cursos: pnpm import:sensei ../../.codex/migration/sensei
+// Run from apps/courses: pnpm import:sensei ../../.codex/migration/sensei
 const directory = resolve(process.argv[2] ?? "../../.codex/migration/sensei");
 const load = (name: string) =>
   readCsv(readFileSync(resolve(directory, name), "utf8"));
