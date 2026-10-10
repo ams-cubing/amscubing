@@ -33,6 +33,7 @@ import {
   assertUserAssignableToBoard,
   requireBoardAccess,
 } from "../_lib/board-access";
+import { log } from "@workspace/server/log";
 
 export async function moveCardAction(input: {
   boardId: number;
@@ -222,7 +223,7 @@ export async function toggleCardMemberAction(input: {
             ctaHref: boardHref,
           });
         } catch (err) {
-          console.error("Error sending card assignment email via Resend:", err);
+          log.error("boards.card_assignment_email_failed", { error: err });
         }
       }
     }

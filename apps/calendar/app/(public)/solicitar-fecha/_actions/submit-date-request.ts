@@ -5,6 +5,7 @@ import {
   dateRequestNotificationRow,
   insertNotifications,
 } from "@workspace/db/notifications";
+import { consumeRateLimit } from "@workspace/db/rate-limit";
 import { dateRequests } from "@workspace/db/schema";
 import { and, eq, gte } from "drizzle-orm";
 import { z } from "zod";
@@ -19,7 +20,17 @@ import {
 import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
-import { MAX_DATE_REQUESTS_PER_WEEK } from "../_lib/constants";
+import {
+  DATE_REQUEST_IP_LIMIT,
+  DATE_REQUEST_USER_LIMIT,
+  MAX_DATE_REQUESTS_PER_WEEK,
+} from "../_lib/constants";
+import { log } from "@workspace/server/log";
+
+function getClientIp(headersList: Headers) {
+  const forwarded = headersList.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || headersList.get("x-real-ip") || null;
+}
 
 const dateRequestSchema = z
   .object({
@@ -54,6 +65,29 @@ export async function submitDateRequest(
       return {
         success: false,
         message: "No autenticado",
+      };
+    }
+
+    const ip = getClientIp(headersList);
+    const limits = await Promise.all([
+      consumeRateLimit({
+        key: `calendar:date-request:user:${session.user.id}`,
+        ...DATE_REQUEST_USER_LIMIT,
+      }),
+      ...(ip
+        ? [
+            consumeRateLimit({
+              key: `calendar:date-request:ip:${ip}`,
+              ...DATE_REQUEST_IP_LIMIT,
+            }),
+          ]
+        : []),
+    ]);
+
+    if (limits.some((limit) => !limit.allowed)) {
+      return {
+        success: false,
+        message: "Demasiadas solicitudes. Intenta de nuevo en unos minutos.",
       };
     }
 
@@ -136,7 +170,7 @@ export async function submitDateRequest(
       proposedDelegate = result.proposed;
       newRequest = result.request;
     } catch (err) {
-      console.error("Transaction failed:", err);
+      log.error("calendar.date_request_transaction_failed", { error: err });
       throw err;
     }
 
@@ -158,7 +192,7 @@ export async function submitDateRequest(
         dateRequestId: newRequest.id,
       });
     } catch (err) {
-      console.error("Error sending delegate email via Resend:", err);
+      log.error("calendar.delegate_email_failed", { error: err });
     }
 
     try {
@@ -175,7 +209,7 @@ export async function submitDateRequest(
         });
       }
     } catch (err) {
-      console.error("Error sending organizer email via Resend:", err);
+      log.error("calendar.organizer_email_failed", { error: err });
     }
 
     return {
@@ -183,7 +217,7 @@ export async function submitDateRequest(
       message: `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`,
     };
   } catch (error) {
-    console.error("Error submitting date request:", error);
+    log.error("calendar.date_request_submit_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

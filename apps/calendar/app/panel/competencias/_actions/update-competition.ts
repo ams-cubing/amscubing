@@ -46,6 +46,7 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 import { updateCompetitionSchema } from "../../_lib/validations";
+import { log } from "@workspace/server/log";
 
 export async function updateCompetition(
   competitionId: number,
@@ -445,10 +446,7 @@ export async function updateCompetition(
               endDate: endDateStr!,
             });
           } catch (err) {
-            console.error(
-              "Error sending added delegate email via Resend:",
-              err,
-            );
+            log.error("calendar.added_delegate_email_failed", { error: err });
           }
         }
       }
@@ -470,10 +468,7 @@ export async function updateCompetition(
               endDate: endDateStr!,
             });
           } catch (err) {
-            console.error(
-              "Error sending removed delegate email via Resend:",
-              err,
-            );
+            log.error("calendar.removed_delegate_email_failed", { error: err });
           }
         }
       }
@@ -495,10 +490,7 @@ export async function updateCompetition(
               endDate: endDateStr!,
             });
           } catch (err) {
-            console.error(
-              "Error sending added organizer email via Resend:",
-              err,
-            );
+            log.error("calendar.added_organizer_email_failed", { error: err });
           }
         }
       }
@@ -520,10 +512,9 @@ export async function updateCompetition(
               endDate: endDateStr!,
             });
           } catch (err) {
-            console.error(
-              "Error sending removed organizer email via Resend:",
-              err,
-            );
+            log.error("calendar.removed_organizer_email_failed", {
+              error: err,
+            });
           }
         }
       }
@@ -553,16 +544,15 @@ export async function updateCompetition(
                 statusLabel,
               });
             } catch (err) {
-              console.error(
-                "Error sending organizer status email via Resend:",
-                err,
-              );
+              log.error("calendar.organizer_status_email_failed", {
+                error: err,
+              });
             }
           }
         }
       }
     } catch (err) {
-      console.error("Error notifying competition team:", err);
+      log.error("calendar.notify_competition_team_failed", { error: err });
     }
 
     revalidateTag(`competition-${competitionId}`, "days");
@@ -585,7 +575,7 @@ export async function updateCompetition(
       message: "Competencia actualizada exitosamente",
     };
   } catch (error) {
-    console.error("Error updating competition:", error);
+    log.error("calendar.update_competition_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

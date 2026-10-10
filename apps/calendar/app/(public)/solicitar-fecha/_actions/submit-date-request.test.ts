@@ -9,7 +9,11 @@ const {
   insertNotifications,
   sendDateRequestDelegateEmail,
   sendDateRequestOrganizerEmail,
+  consumeRateLimit,
+  requestHeaders,
 } = vi.hoisted(() => ({
+  consumeRateLimit: vi.fn(),
+  requestHeaders: { current: new Headers() },
   getSession: vi.fn(),
   transaction: vi.fn(),
   findMany: vi.fn(),
@@ -21,7 +25,11 @@ const {
 }));
 
 vi.mock("next/headers", () => ({
-  headers: vi.fn(async () => new Headers()),
+  headers: vi.fn(async () => requestHeaders.current),
+}));
+
+vi.mock("@workspace/db/rate-limit", () => ({
+  consumeRateLimit,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -94,6 +102,60 @@ describe("submitDateRequest", () => {
     sendDateRequestDelegateEmail.mockReset();
     sendDateRequestOrganizerEmail.mockReset();
     findMany.mockResolvedValue([]);
+    consumeRateLimit.mockReset();
+    consumeRateLimit.mockResolvedValue({ allowed: true, count: 1 });
+    requestHeaders.current = new Headers();
+  });
+
+  it("rejects bursts before touching the database", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "u1", wcaId: null, email: "org@example.com", name: "Org" },
+    });
+    requestHeaders.current = new Headers({
+      "x-forwarded-for": "203.0.113.7, 10.0.0.1",
+    });
+    consumeRateLimit.mockImplementation(async ({ key }: { key: string }) => ({
+      allowed: !key.includes(":ip:"),
+      count: 11,
+    }));
+
+    const result = await submitDateRequest({
+      city: "Guadalajara",
+      stateId: "JAL",
+      startDate: new Date(2026, 5, 1),
+      endDate: new Date(2026, 5, 2),
+    });
+
+    expect(result).toEqual({
+      success: false,
+      message: "Demasiadas solicitudes. Intenta de nuevo en unos minutos.",
+    });
+    expect(consumeRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "calendar:date-request:user:u1" }),
+    );
+    expect(consumeRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "calendar:date-request:ip:203.0.113.7" }),
+    );
+    expect(findMany).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("only applies the per-user limit when no client IP is known", async () => {
+    getSession.mockResolvedValue({
+      user: { id: "u1", wcaId: null, email: "org@example.com", name: "Org" },
+    });
+    consumeRateLimit.mockResolvedValue({ allowed: false, count: 4 });
+
+    const result = await submitDateRequest({
+      city: "Guadalajara",
+      stateId: "JAL",
+      startDate: new Date(2026, 5, 1),
+      endDate: new Date(2026, 5, 2),
+    });
+
+    expect(result.success).toBe(false);
+    expect(consumeRateLimit).toHaveBeenCalledTimes(1);
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it("rejects when unauthenticated", async () => {
@@ -108,6 +170,7 @@ describe("submitDateRequest", () => {
 
     expect(result.success).toBe(false);
     expect(transaction).not.toHaveBeenCalled();
+    expect(consumeRateLimit).not.toHaveBeenCalled();
   });
 
   it("rejects when weekly rate limit is exceeded", async () => {

@@ -9,6 +9,7 @@ import { holidays } from "@workspace/db/schema";
 
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
+import { log } from "@workspace/server/log";
 
 const holidaySchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(200),
@@ -36,7 +37,7 @@ export async function createHoliday(data: z.infer<typeof holidaySchema>) {
 
     return { success: true, message: "Feriado creado" };
   } catch (error) {
-    console.error("Error creating holiday:", error);
+    log.error("calendar.create_holiday_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }
@@ -67,7 +68,7 @@ export async function updateHoliday(
 
     return { success: true, message: "Feriado actualizado" };
   } catch (error) {
-    console.error("Error updating holiday:", error);
+    log.error("calendar.update_holiday_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }
@@ -86,7 +87,7 @@ export async function deleteHoliday(id: number) {
 
     return { success: true, message: "Feriado eliminado" };
   } catch (error) {
-    console.error("Error deleting holiday:", error);
+    log.error("calendar.delete_holiday_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }

@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
 import { emailParagraph, renderEmailLayout } from "./layout";
+import { log } from "@workspace/server/log";
 
 export { AMS_EMAIL, renderEmailLayout } from "./layout";
 
@@ -31,7 +32,7 @@ export async function sendEmail(input: {
 }) {
   const resend = getResend();
   if (!resend) {
-    console.warn("RESEND_API_KEY not set; skipping email send");
+    log.warn("email.skipped_missing_api_key");
     return { ok: false as const, reason: "missing_api_key" as const };
   }
 
@@ -46,7 +47,7 @@ export async function sendEmail(input: {
       return { ok: false as const, reason: "send_failed" as const };
     return { ok: true as const };
   } catch (err) {
-    console.error("Error sending email via Resend:", err);
+    log.error("email.send_failed", { error: err });
     return { ok: false as const, reason: "send_failed" as const };
   }
 }

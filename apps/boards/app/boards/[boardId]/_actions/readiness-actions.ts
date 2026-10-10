@@ -14,6 +14,7 @@ import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { sendCompetitionStatusChangedEmail } from "@/lib/board-emails";
 import { requireDelegate } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
+import { log } from "@workspace/server/log";
 
 async function requireDelegateBoardAccess(boardId: number) {
   const delegateResult = await requireDelegate();
@@ -92,11 +93,11 @@ export async function applyReadinessSuggestionAction(input: {
           statusLabel: applied.statusLabel,
         });
       } catch (err) {
-        console.error("Error sending organizer status email via Resend:", err);
+        log.error("boards.organizer_status_email_failed", { error: err });
       }
     }
   } catch (err) {
-    console.error("Error notifying organizers:", err);
+    log.error("boards.notify_organizers_failed", { error: err });
   }
 
   revalidatePath(`/boards/${input.boardId}`);

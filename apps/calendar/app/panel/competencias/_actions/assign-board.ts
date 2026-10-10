@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function assignBoardToCompetitionById(competitionId: number) {
   const competition = await db.query.competitions.findFirst({
@@ -50,7 +51,7 @@ export async function assignBoardToCompetitionById(competitionId: number) {
 
     return { boardId: board.id };
   } catch (error) {
-    console.error(error);
+    log.error("calendar.assign_board_failed", { error });
     return {
       error: getErrorMessage(error),
     };

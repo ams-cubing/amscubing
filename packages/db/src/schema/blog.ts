@@ -116,10 +116,3 @@ export const blogComments = pgTable(
     index("blog_comment_post_idx").on(t.postId, t.status),
   ],
 );
-
-// Atomic PostgreSQL counters shared across processes, used for comments and uploads.
-export const blogRateLimits = pgTable("blog_rate_limit", {
-  key: text("key").primaryKey(),
-  count: integer("count").notNull(),
-  resetsAt: timestamp("resets_at").notNull(),
-});

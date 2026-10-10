@@ -10,9 +10,9 @@ import {
   courseStaff,
   courses,
   courseEnrollments,
-  blogRateLimits,
+  rateLimit,
 } from "@workspace/db/schema";
-import { and, eq, inArray, like } from "drizzle-orm";
+import { and, eq, inArray, like, or } from "drizzle-orm";
 process.loadEnvFile(".env.local");
 if (process.env.NODE_ENV === "production") throw new Error("Solo local");
 const web = "http://localhost:3000",
@@ -308,12 +308,6 @@ try {
       ),
     );
   assert(enrollment, "Cuenta local puede tomar cursos");
-  const blockedUpload = await fetch(`${blog}/api/media`, {
-    method: "POST",
-    headers: { Cookie: readerCookie, Origin: blog },
-    body: new FormData(),
-  });
-  assert.equal(blockedUpload.status, 403);
   console.log(
     "OK: registro local, verificación privada, aislamiento de permisos, comentarios moderados, borradores privados, marca protegida, concurrencia y cursos sin WCA.",
   );
@@ -322,8 +316,8 @@ try {
   if (courseId) await db.delete(courses).where(eq(courses.id, courseId));
   if (ids.length) {
     await db
-      .delete(blogRateLimits)
-      .where(like(blogRateLimits.key, `%${suffix}%`));
+      .delete(rateLimit)
+      .where(or(...ids.map((id) => like(rateLimit.key, `blog:%:${id}`))));
     await db.delete(user).where(inArray(user.id, ids));
   }
 }

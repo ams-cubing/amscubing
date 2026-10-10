@@ -7,32 +7,39 @@
     "dev": "next dev --turbopack -p 3004",
     "build": "next build",
     "start": "next start -p 3004",
+    "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "import:wordpress": "tsx scripts/import-wordpress.ts",
     "staff:grant": "tsx scripts/grant-staff.ts"
   },
   "dependencies": {
+    "@uploadthing/react": "^7.3.3",
+    "@uploadthing/shared": "^7.1.10",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/server": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "cheerio": "^1.1.2",
+    "drizzle-orm": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "drizzle-orm": "catalog:",
-    "zod": "catalog:",
     "sanitize-html": "^2.17.0",
-    "cheerio": "^1.1.2"
+    "uploadthing": "^7.7.4",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@workspace/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/sanitize-html": "^2.16.0",
+    "@workspace/eslint-config": "workspace:^",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "tsx": "^4.20.6",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsx": "^4.20.6"
+    "vitest": "catalog:"
   }
 }

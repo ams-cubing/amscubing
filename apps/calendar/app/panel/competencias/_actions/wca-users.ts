@@ -5,6 +5,7 @@ import { user } from "@workspace/db/schema";
 import { eq, ilike, or } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
+import { log } from "@workspace/server/log";
 
 type WCAPerson = {
   person: {
@@ -70,7 +71,7 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
       message: `Organizador ${data.person.name} añadido exitosamente`,
     };
   } catch (error) {
-    console.error("Error fetching WCA person:", error);
+    log.error("calendar.wca_person_fetch_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),
@@ -110,7 +111,7 @@ export async function searchUsers(query: string) {
       )
       .limit(5);
   } catch (error) {
-    console.error("Error searching users:", error);
+    log.error("calendar.user_search_failed", { error });
     return [];
   }
 }

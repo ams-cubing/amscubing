@@ -16,11 +16,7 @@
     "NEXT_PUBLIC_COURSES_URL",
     "NEXT_PUBLIC_BLOG_URL",
     "AUTH_DEV_MAIL_DIR",
-    "BLOG_MEDIA_DIR",
-    "AUTH_COOKIE_DOMAIN",
-    "META_PAGE_ID",
-    "META_PAGE_ACCESS_TOKEN",
-    "META_IG_USER_ID"
+    "AUTH_COOKIE_DOMAIN"
   ],
   "tasks": {
     "build": {

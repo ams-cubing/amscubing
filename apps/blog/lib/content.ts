@@ -164,7 +164,9 @@ export function videoEmbed(value: string) {
       const match = /(?:^\/|\/video\/)(\d+)/.exec(url.pathname);
       if (match) return `https://player.vimeo.com/video/${match[1]}`;
     }
-  } catch {}
+  } catch {
+    return null;
+  }
   return null;
 }
 export function slugify(value: string) {

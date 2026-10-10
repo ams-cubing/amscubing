@@ -6,7 +6,7 @@ export function AmsStatusPage({
   description,
   children,
 }: {
-  code: "404" | "401";
+  code: "404" | "401" | "500";
   title: string;
   description: string;
   children?: ReactNode;

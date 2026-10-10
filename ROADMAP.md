@@ -29,7 +29,8 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 **Público**
 
 - [x] Próximas competencias en la web desde `@workspace/db`: `statusPublic = announced`, fechas futuras, lista corta + enlace a `calendario.*`. El mismo patrón que delegados (`getPublicDelegates`). Enrichment WCA para nombre/registro/cupo.
-- [ ] Blog: listado, detalle de post, categorías/etiquetas, SEO (títulos, OG, sitemap).
+- [x] Blog en `apps/blog` (`blog.amscubing.org`): listado, detalle de post, categorías/etiquetas, sitemap; `apps/web/blog` redirige ahí.
+- [ ] Blog: SEO completo (OG por entrada) y verificación de paridad con WordPress.
 - [ ] Comentarios en posts: auth obligatorio con cuenta AMS (WCA o, cuando exista, cuenta sin WCA). Identidad de comentario por `user.id`; badge/WCA ID opcional si está vinculado.
 - [ ] Mantener misión, visión, delegados y contacto sincronizados con el CMS o la BD donde haga falta. (parcial: `/nosotros` + delegados desde BD; misión/visión/contacto aún en `content.ts`)
 - [x] Enlace en nav / teaser a `cursos.amscubing.org` (no reconstruir el LMS en la web).
@@ -37,16 +38,17 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 
 **Admin / gestión (panel en web)**
 
-- [ ] CRUD de posts del blog (borrador/publicar, texto enriquecido o MDX, imagen de portada vía Blob o similar).
-- [ ] Moderar comentarios.
+- [x] CRUD de posts del blog en `apps/blog/admin` (borrador/publicar/archivar, editor visual por secciones, portada e imágenes en UploadThing).
+- [x] Moderar comentarios (`apps/blog/admin/comentarios`).
 - [ ] Comprobación de roles (delegado / editor de contenido — ampliar roles si hace falta).
-- [ ] Biblioteca de medios / subidas.
+- [x] Subidas de imágenes del blog a UploadThing (ruta `blogImage`, solo staff, rate limit compartido).
+- [ ] Biblioteca de medios (listar/reutilizar/borrar subidas). Base lista: cada subida de blog y tableros queda registrada en `uploaded_file` (`recordUpload` de `@workspace/db/uploads`); falta UI y limpieza de huérfanos.
 - [x] Allowlist piloto de Tableros retirada: `/admin/tableros`, sus acciones, la tabla `boards_organizer_allowlist` y la env `BOARDS_ORGANIZER_ALLOWLIST` se eliminaron. `canAccessBoardsApp` permite delegados, organizadores de cualquier competencia y miembros de tableros.
 
 **Datos**
 
-- [ ] Esquema en `@workspace/db`: `post`, `post_comment` (nombres por definir). Sin tablas de cursos hasta migrar fuera de WordPress.
-- [ ] Migraciones + seed del contenido del **blog** de WordPress si se migra el historial.
+- [x] Esquema en `@workspace/db`: `blog_post`, `blog_comment`, `blog_staff` y tablas de cursos (`course`, módulos, lecciones, inscripciones, `course_staff`).
+- [x] Importación del **blog** de WordPress (`pnpm --filter blog import:wordpress`) y de cursos Sensei (`pnpm --filter courses import:sensei`).
 
 ### Aislar cursos en WordPress
 
@@ -79,6 +81,7 @@ Al confirmar **Marcar como anunciada** (dialog previo) o al pasar `statusPublic`
 - [x] Admin web `/admin/redes`: listado, preview, reintento y completar Instagram.
 - [x] Tarjeta de tablero «Publicación redes Torneo de Rubik» con texto, tags y flyer (UploadThing); caption rico desde WCA.
 - [ ] Configurar en producción `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`, `META_IG_USER_ID` (Torneo de Rubik) en calendar y web; `UPLOADTHING_TOKEN` en boards.
+- [ ] Configurar `UPLOADTHING_TOKEN` en producción para blog (subidas del editor).
 
 ### Plataforma
 
@@ -86,7 +89,7 @@ Mejoras de ingeniería del monorepo (auditoría 2026-08-28). Priorizar CI y test
 
 #### CI/CD y quality gates
 
-Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No hay CI para build, lint, typecheck ni tests.
+`.github/workflows/ci.yml` corre lint, typecheck, tests y build en PRs y pushes; en push a `development`/`main` el job `migrate` solo corre si ese job pasa.
 
 - [x] Workflow de CI en PRs: `build`, `lint`, `check-types`, `test` en todas las apps y paquetes.
 - [x] Scripts `lint` en **cada** app y paquete (hoy solo `@workspace/ui` lo define; `pnpm lint` en la raíz casi no hace nada).
@@ -97,7 +100,7 @@ Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No
 
 #### Testing
 
-Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 0). No hay E2E.
+Unos 35 archivos de test unitarios (calendar 8, auth 6, boards 5, web 4, db 4, courses 2, blog 2, social 2, email 1); `@workspace/ui` sin tests. Hay un smoke local de blog/cursos (`apps/blog/scripts/smoke-local.ts`), pero no E2E en CI.
 
 - [x] Tests unitarios en `@workspace/auth` (tipos, URLs, cookie domain).
 - [x] Tests en `apps/boards` — empezar por server actions (`board-actions.ts`, ~700 líneas sin cobertura).
@@ -139,17 +142,23 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 #### Observabilidad y ops
 
 - [ ] Error tracking en producción (p. ej. Sentry) en las tres apps.
-- [ ] Logging estructurado en server actions críticas.
-- [ ] Rate limiting en formularios públicos y envíos de email (p. ej. solicitar fecha).
+- [x] Logging estructurado en server actions críticas (`@workspace/server/log`, una línea JSON por evento; `console` solo en scripts CLI y componentes cliente).
+- [x] Páginas `error.tsx` en todas las apps y `not-found.tsx` en blog.
+- [x] Validación de variables de entorno al arrancar (`instrumentation.ts` + `@workspace/server/env`): obligatorias fallan, opcionales avisan.
+- [x] Rate limiting en solicitar fecha: ventana corta por usuario e IP (`@workspace/db/rate-limit` sobre la tabla `rate_limit`), además del tope semanal.
+- [x] Comentarios y subidas del blog usan el mismo helper (`blog:comment:user:<id>`, `blog:upload:user:<id>`); tabla `blog_rate_limit` eliminada.
+- [ ] Rate limiting en el resto de formularios públicos y envíos de email (inscripción a cursos, etc.).
 
 #### Documentación de entorno
 
-- [ ] `.env.example` raíz más completo (hoy solo `DATABASE_URL`).
+- [x] `.env.example` raíz completo, agrupado por app.
 - [x] `apps/web/.env.local.example` antes de mover auth a web.
-- [ ] Referencia única de variables por app (`BETTER_AUTH_*`, `WCA_*`, `RESEND_*`, URLs públicas, cookie domain).
+- [x] Referencia única de variables por app: `.env.example` raíz + specs en `apps/*/instrumentation.ts`; `turbo.json` por app declara las variables propias del build.
 
 #### Seguridad
 
+- [x] Cabeceras de seguridad en las cinco apps (`@workspace/server/security-headers`): `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS en producción.
+- [ ] Pasar la CSP de `Report-Only` a modo estricto tras revisar violaciones en producción.
 - [ ] Documentar que `apps/calendar/proxy.ts` no valida auth de forma segura (checks por ruta/página — intencional).
 - [ ] Respuestas tipadas forbidden/unauthorized en server actions en lugar de `throw new Error(...)` genérico donde aplique.
 
@@ -158,7 +167,8 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 ## Después
 
 - [ ] Dar de baja WordPress de **blog/portada** cuando las redirecciones y la paridad de contenido estén verificadas. Conservar `cursos.*` hasta reemplazar el LMS.
-- [ ] App de cursos en el monorepo (`apps/courses` o similar): catálogo, módulos, inscripción, cookies `ams.*` compartidas. El esquema (`course`, `course_module`, `enrollment`) llega entonces.
+- [x] App de cursos en el monorepo (`apps/courses`, puerto 3003): catálogo, módulos, lecciones, evaluaciones, inscripción y progreso con cookies `ams.*` compartidas. Esquema `course`, `course_module`, `course_lesson`, `course_enrollment`, `course_progress`, `course_staff`.
+- [ ] Desplegar `apps/courses` en `cursos.amscubing.org` y retirar el LMS de WordPress.
 - [ ] Certificados de curso / insignias de finalización.
 - [ ] Pulir copy/plantilla del post de anuncio (hashtags, tono) si hace falta tras probar en producción.
 - [ ] Newsletter o resúmenes de anuncios.
@@ -191,6 +201,9 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 
 | Fecha      | Decisión                         | Notas                                                                                                                                             |
 | ---------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-09 | CSP en modo Report-Only          | Cabeceras básicas se aplican ya; la CSP se publica como `Content-Security-Policy-Report-Only` hasta revisar violaciones reales                    |
+| 2026-10-09 | Registro de subidas UploadThing  | Tabla `uploaded_file` con la `key` de cada subida (blog y tableros) como base para limpiar huérfanos y la biblioteca de medios                    |
+| 2026-10-09 | Blog media en UploadThing        | Subidas del editor del blog pasan de disco local a UploadThing (como tableros); rate limit unificado en `@workspace/db/rate-limit`                |
 | 2026-09-30 | Tableros abierto a organizadores | Tableros abierto a delegados + organizadores (y miembros invitados); allowlist eliminada (tabla, env y `/admin/tableros`)                         |
 | 2026-09-17 | Redes al marcar **anunciada**    | Revierte 2026-08-20/18: publicar en FB/IG AMS al anunciar (no al celebrar); logo opcional; hook en `markAsAnnounced` / `statusPublic = announced` |
 | 2026-09-10 | Allowlist Tableros en admin      | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal                    |
