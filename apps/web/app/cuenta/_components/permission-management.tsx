@@ -81,7 +81,7 @@ export function PermissionManagement({
           href="/admin"
           className="mt-6 inline-block text-sm font-bold text-ams-red underline"
         >
-          Gestionar delegados y editores de la Web ↗
+          Gestionar delegados de la Web ↗
         </a>
       )}
       {audit.length > 0 && (

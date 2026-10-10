@@ -5,6 +5,8 @@ import { formatDistance } from "date-fns";
 import { es } from "date-fns/locale";
 import { headers } from "next/headers";
 import { Mail } from "lucide-react";
+import { AmsSignInPrompt } from "@workspace/ui/components/ams-sign-in-prompt";
+import { getCalendarUrl, getCrossAppSignInUrl } from "@/lib/urls";
 import { MAX_DATE_REQUESTS_PER_WEEK } from "./_lib/constants";
 import {
   getRecentRequestsCount,
@@ -13,6 +15,13 @@ import {
   getRegionForState,
 } from "./_lib/queries";
 import Loading from "./loading";
+import {
+  BrandCallout,
+  PublicPageShell,
+} from "../_components/public-page-shell";
+
+const PAGE_DESCRIPTION =
+  "Completa el formulario para solicitar una fecha para tu competencia. Se propondrá un delegado según la ubicación; la asignación queda pendiente de su confirmación.";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -31,17 +40,24 @@ async function PageContent({
     headers: headersList,
   });
 
+  const resolvedSearchParams = await searchParams;
+  const stateFilter = resolvedSearchParams?.estado;
+
   if (!session) {
+    const returnTo = new URL(`${getCalendarUrl()}/solicitar-fecha`);
+    if (stateFilter) returnTo.searchParams.set("estado", stateFilter);
     return (
-      <main className="p-4 md:p-6 lg:p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 md:p-5 shadow-sm">
-            <p className="text-sm md:text-base text-blue-800 dark:text-blue-200 font-medium">
-              Inicia sesión para solicitar una fecha de competencia.
-            </p>
-          </div>
-        </div>
-      </main>
+      <PublicPageShell
+        title="Solicitar fecha"
+        description={PAGE_DESCRIPTION}
+        width="narrow"
+      >
+        <AmsSignInPrompt
+          title="Inicia sesión para solicitar una fecha"
+          description="Puedes entrar con tu cuenta AMS o WCA; no necesitas WCA ID para organizar. Al iniciar sesión volverás a este formulario."
+          signInHref={getCrossAppSignInUrl(returnTo.toString())}
+        />
+      </PublicPageShell>
     );
   }
 
@@ -50,43 +66,30 @@ async function PageContent({
 
   if (!canSubmit) {
     return (
-      <main className="p-4 md:p-6 lg:p-8">
-        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">
-              Solicitar Fecha de Competencia
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm md:text-base">
-              Complete el formulario para solicitar una fecha para su
-              competencia. Se propondrá un delegado según la ubicación; la
-              asignación queda pendiente de su confirmación.
-            </p>
-          </div>
-          <div className="bg-yellow-50 border border-yellow-200 dark:border-yellow-700 dark:bg-yellow-900/20 rounded-lg p-4 md:p-5 shadow-sm">
-            <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 font-medium">
-              Has alcanzado el límite de solicitudes por semana (
-              {MAX_DATE_REQUESTS_PER_WEEK}). Por favor, intenta nuevamente en{" "}
-              {formatDistance(
-                new Date(
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-                  recentRequestsCount[0]?.createdAt?.getTime()! +
-                    7 * 24 * 60 * 60 * 1000,
-                ),
-                new Date(),
-                {
-                  locale: es,
-                },
-              )}
-              .
-            </p>
-          </div>
-        </div>
-      </main>
+      <PublicPageShell
+        title="Solicitar fecha"
+        description={PAGE_DESCRIPTION}
+        width="narrow"
+      >
+        <BrandCallout tone="warning">
+          Has alcanzado el límite de solicitudes por semana (
+          {MAX_DATE_REQUESTS_PER_WEEK}). Por favor, intenta nuevamente en{" "}
+          {formatDistance(
+            new Date(
+              // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+              recentRequestsCount[0]?.createdAt?.getTime()! +
+                7 * 24 * 60 * 60 * 1000,
+            ),
+            new Date(),
+            {
+              locale: es,
+            },
+          )}
+          .
+        </BrandCallout>
+      </PublicPageShell>
     );
   }
-
-  const resolvedSearchParams = await searchParams;
-  const stateFilter = resolvedSearchParams?.estado;
 
   const delegates = stateFilter ? await getDelegatesForState(stateFilter) : [];
 
@@ -97,74 +100,67 @@ async function PageContent({
   const regionName = stateFilter ? await getRegionForState(stateFilter) : null;
 
   return (
-    <main className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Solicitar Fecha de Competencia
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm md:text-base">
-            Complete el formulario para solicitar una fecha para su competencia.
-            Se propondrá un delegado según la ubicación; la asignación queda
-            pendiente de su confirmación.
-          </p>
-        </div>
-        <DateRequestForm availability={availabilityData} />
-        {stateFilter && (
-          <section className="bg-card border rounded-lg p-5 md:p-6 shadow-sm">
-            <h2 className="text-base md:text-lg font-semibold mb-3">
-              Región:{" "}
-              <span className="font-normal text-muted-foreground">
-                {regionName ?? "—"}
-              </span>
-            </h2>
+    <PublicPageShell
+      title="Solicitar fecha"
+      description={PAGE_DESCRIPTION}
+      width="narrow"
+    >
+      <DateRequestForm availability={availabilityData} />
+      {stateFilter && (
+        <section className="rounded-3xl bg-ams-soft p-5 md:p-6">
+          <h2 className="ams-display mb-3 text-2xl leading-none">
+            Región:{" "}
+            <span className="ams-copy text-lg font-normal normal-case text-black/60">
+              {regionName ?? "—"}
+            </span>
+          </h2>
 
-            {delegates.length > 0 ? (
-              <div>
-                {availabilityData.length === 0 && stateFilter ? (
-                  <div className="text-sm text-destructive mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md">
+          {delegates.length > 0 ? (
+            <div>
+              {availabilityData.length === 0 && stateFilter ? (
+                <div className="mb-4">
+                  <BrandCallout tone="danger">
                     No hay fechas disponibles para la región seleccionada. Por
                     favor, contacta a un delegado directamente.
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Mostrando fechas disponibles de los delegados de dicha
-                    región:
-                  </p>
-                )}
+                  </BrandCallout>
+                </div>
+              ) : (
+                <p className="ams-copy mb-4 text-sm text-black/60">
+                  Mostrando fechas disponibles de los delegados de dicha región:
+                </p>
+              )}
 
-                <ul className="grid gap-3">
-                  {delegates.map((delegate) => (
-                    <li
-                      key={delegate.email}
-                      className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-3 transition-all hover:shadow-sm hover:border-gray-300 dark:hover:border-slate-600"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {delegate.name}
-                        </div>
-                        <a
-                          href={`mailto:${delegate.email}`}
-                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Mail className="h-3.5 w-3.5" />
-                          <span>Haz clic aquí para contactar</span>
-                        </a>
+              <ul className="grid gap-3">
+                {delegates.map((delegate) => (
+                  <li
+                    key={delegate.email}
+                    className="rounded-2xl bg-white px-4 py-3 transition-shadow hover:shadow-[0_10px_24px_rgba(1,11,25,0.08)]"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="ams-heading font-bold text-ams-navy">
+                        {delegate.name}
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-md">
-                No hay delegados disponibles para esta región, se mostrarán las
-                fechas disponibles de todos los delegados.
-              </div>
-            )}
-          </section>
-        )}
-      </div>
-    </main>
+                      <a
+                        href={`mailto:${delegate.email}`}
+                        className="ams-copy inline-flex items-center gap-1.5 text-xs text-black/60 transition-colors hover:text-ams-green"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>Haz clic aquí para contactar</span>
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <BrandCallout>
+              No hay delegados disponibles para esta región, se mostrarán las
+              fechas disponibles de todos los delegados.
+            </BrandCallout>
+          )}
+        </section>
+      )}
+    </PublicPageShell>
   );
 }
 

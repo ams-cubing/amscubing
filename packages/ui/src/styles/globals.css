@@ -183,4 +183,28 @@
     letter-spacing: 0;
     text-transform: uppercase;
   }
+
+  .ams-heading {
+    font-family: var(--font-sans), sans-serif;
+    letter-spacing: 0;
+  }
+
+  .ams-copy {
+    font-family: var(--font-copy), sans-serif;
+  }
+
+  .ams-slash-card {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 10% 100%, 0 91%);
+  }
+
+  .ams-slash-card-right {
+    clip-path: polygon(0 0, 100% 0, 100% 91%, 90% 100%, 0 100%);
+  }
+
+  /* Each app must ship /source/textura-sm.png in its public folder. */
+  .ams-texture {
+    background-image: url("/source/textura-sm.png");
+    background-repeat: repeat;
+    background-size: 300px;
+  }
 }

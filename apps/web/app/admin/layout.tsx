@@ -28,8 +28,8 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             Panel AMS
           </h1>
           <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-white/75">
-            Gestiona perfiles públicos de delegados, roles editoriales y las
-            publicaciones en redes.
+            Gestiona perfiles públicos de delegados y las publicaciones en
+            redes.
           </p>
           <nav className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -37,12 +37,6 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
               className="ams-heading rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20"
             >
               Delegados
-            </Link>
-            <Link
-              href="/admin/editores"
-              className="ams-heading rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20"
-            >
-              Editores
             </Link>
             <Link
               href="/admin/redes"

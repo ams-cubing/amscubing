@@ -4,65 +4,13 @@ import { ArrowRight, Users } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import type { PublicCompetition } from "@/lib/competitions";
+import {
+  formatCompetitionDate,
+  formatDate,
+  isRegistrationOpen,
+  statusVariant,
+} from "@/lib/competition-format";
 import { getCalendarUrl } from "@/lib/urls";
-
-const monthNames = [
-  "ENE",
-  "FEB",
-  "MAR",
-  "ABR",
-  "MAY",
-  "JUN",
-  "JUL",
-  "AGO",
-  "SEP",
-  "OCT",
-  "NOV",
-  "DIC",
-];
-
-function formatDate(dateString: string | null) {
-  if (!dateString) {
-    return "-";
-  }
-
-  // WCA returns ISO datetimes (`2026-07-27T02:00:00.000Z`); competition
-  // dates from the DB are `YYYY-MM-DD`. Take the calendar date either way.
-  const cleanDate = dateString.split(/[T\s]/)[0] ?? dateString;
-  const [year, month, day] = cleanDate.split("-").map(Number);
-
-  if (!year || !month || !day) {
-    return "-";
-  }
-
-  return `${String(day).padStart(2, "0")} ${monthNames[month - 1]}`;
-}
-
-function formatCompetitionDate(startDate: string, endDate: string) {
-  if (startDate === endDate) {
-    return formatDate(startDate);
-  }
-
-  return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-}
-
-function statusVariant(
-  label: string,
-): "default" | "destructive" | "accent" | "brand" | "outline" {
-  switch (label) {
-    case "Inscripciones abiertas":
-      return "default";
-    case "Lleno":
-      return "destructive";
-    case "Casi lleno":
-      return "accent";
-    case "Cerrado":
-      return "brand";
-    case "Próximamente":
-    default:
-      return "outline";
-  }
-}
 
 export function UpcomingCompetitions({
   competitions,
@@ -104,57 +52,68 @@ export function UpcomingCompetitions({
       ) : (
         <div className="overflow-x-hidden overflow-y-visible py-7">
           <div className="ams-marquee-track flex w-max gap-6 px-4">
-            {trackItems.map((competition, index) => (
-              <a
-                key={`${competition.id}-${index}`}
-                href={competition.wcaCompetitionUrl ?? getCalendarUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ams-slash-card ams-glass group relative block w-[min(84vw,380px)] flex-none overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.13)] hover:scale-[1.04] hover:shadow-[0_24px_40px_rgba(1,11,25,0.24)]"
-              >
-                <div className="relative h-50 bg-ams-soft">
-                  <Image
-                    src={competition.image}
-                    alt={competition.name}
-                    fill
-                    className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
-                    sizes="380px"
-                  />
-                  <Badge
-                    variant={statusVariant(competition.label)}
-                    className="ams-heading absolute left-0 top-0 rounded-none px-3 py-2 text-[11px] uppercase tracking-[0.04em] [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]"
-                  >
-                    {competition.label}
-                  </Badge>
-                </div>
-
-                <div className="p-5.5">
-                  <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">
-                    {formatCompetitionDate(
-                      competition.startDate,
-                      competition.endDate,
-                    )}{" "}
-                    · {competition.state || "México"}
-                  </p>
-                  <h3 className="ams-display mt-2 text-[22px] leading-none text-ams-navy">
-                    {competition.name}
-                  </h3>
-                  <p className="ams-heading mt-3 text-sm font-bold text-black/55">
-                    {competition.city}
-                  </p>
-                  <div className="mt-5 grid gap-2 text-sm font-semibold text-black/62">
-                    <span>
-                      Registro: {formatDate(competition.registrationOpen)} -{" "}
-                      {formatDate(competition.registrationClose)}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <Users className="size-4 text-ams-green" />
-                      {competition.registered ?? "-"} / {competition.capacity}
-                    </span>
+            {trackItems.map((competition, index) => {
+              const isDuplicate = index >= competitions.length;
+              return (
+                <a
+                  key={`${competition.id}-${index}`}
+                  href={competition.wcaCompetitionUrl ?? getCalendarUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-hidden={isDuplicate || undefined}
+                  tabIndex={isDuplicate ? -1 : undefined}
+                  className="ams-slash-card ams-glass group relative block w-[min(84vw,380px)] flex-none overflow-hidden bg-white shadow-[0_16px_34px_rgba(1,11,25,0.13)] hover:scale-[1.04] hover:shadow-[0_24px_40px_rgba(1,11,25,0.24)]"
+                >
+                  <div className="relative h-50 bg-ams-soft">
+                    <Image
+                      src={competition.image}
+                      alt={competition.name}
+                      fill
+                      className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
+                      sizes="380px"
+                    />
+                    <Badge
+                      variant={statusVariant(competition.label)}
+                      className="ams-heading absolute left-0 top-0 rounded-none px-3 py-2 text-[11px] uppercase tracking-[0.04em] [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]"
+                    >
+                      {competition.label}
+                    </Badge>
                   </div>
-                </div>
-              </a>
-            ))}
+
+                  <div className="p-5.5">
+                    <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">
+                      {formatCompetitionDate(
+                        competition.startDate,
+                        competition.endDate,
+                      )}{" "}
+                      · {competition.state || "México"}
+                    </p>
+                    <h3 className="ams-display mt-2 text-[22px] leading-none text-ams-navy">
+                      {competition.name}
+                    </h3>
+                    <p className="ams-heading mt-3 text-sm font-bold text-black/55">
+                      {competition.city}
+                    </p>
+                    <div className="mt-5 grid gap-2 text-sm font-semibold text-black/62">
+                      <span>
+                        Registro: {formatDate(competition.registrationOpen)} -{" "}
+                        {formatDate(competition.registrationClose)}
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <Users className="size-4 text-ams-green" />
+                        {competition.registered ?? "-"} / {competition.capacity}
+                      </span>
+                    </div>
+                    {isRegistrationOpen(competition.label) && (
+                      <span className="mt-5 inline-flex items-center gap-2 rounded-md bg-ams-green px-4 py-2 text-sm font-bold text-white">
+                        Inscribirme
+                        <ArrowRight className="size-4" />
+                      </span>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

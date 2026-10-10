@@ -1,17 +1,33 @@
 "use client";
 import { useState } from "react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { ResendVerificationButton } from "@/components/resend-verification-button";
+
+export type LoginMode = "login" | "register" | "reset";
+
+const MIN_PASSWORD_LENGTH = 12;
+
 export function LoginForm({
   callbackURL,
   wcaEnabled,
+  initialMode = "login",
 }: {
   callbackURL: string;
   wcaEnabled: boolean;
+  initialMode?: LoginMode;
 }) {
-  const [mode, setMode] = useState<"login" | "register" | "reset">("login");
+  const [mode, setMode] = useState<LoginMode>(initialMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+
+  const errorCallbackURL = () =>
+    `${window.location.origin}/iniciar-sesion?returnTo=${encodeURIComponent(callbackURL)}`;
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -19,7 +35,6 @@ export function LoginForm({
     setMessage("");
     const data = new FormData(e.currentTarget);
     const email = String(data.get("email")).trim().toLowerCase();
-    const password = String(data.get("password") ?? "");
     try {
       const result =
         mode === "register"
@@ -49,6 +64,10 @@ export function LoginForm({
         );
         return;
       }
+      if (mode === "register") {
+        setRegisteredEmail(email);
+        return;
+      }
       window.location.assign(callbackURL);
     } catch {
       setError("No se pudo conectar. Inténtalo nuevamente.");
@@ -63,7 +82,7 @@ export function LoginForm({
       const result = await authClient.signIn.oauth2({
         providerId: "wca",
         callbackURL,
-        errorCallbackURL: `${window.location.origin}/iniciar-sesion`,
+        errorCallbackURL: errorCallbackURL(),
       });
       if (result.error) setError("No se pudo iniciar el acceso con WCA.");
     } catch {
@@ -72,6 +91,44 @@ export function LoginForm({
       setBusy(false);
     }
   }
+  function switchMode(next: LoginMode) {
+    setMode(next);
+    setError("");
+    setMessage("");
+    setPassword("");
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className="rounded-3xl bg-ams-soft p-8 ams-copy" role="status">
+        <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-ams-green text-white">
+          <MailCheck className="size-6" aria-hidden />
+        </div>
+        <h2 className="ams-heading text-xl font-bold">
+          Revisa tu correo para verificar tu cuenta
+        </h2>
+        <p className="mt-3 text-ams-navy/75">
+          Enviamos un enlace de verificación a{" "}
+          <strong className="text-ams-navy">{registeredEmail}</strong>.
+          Verificar tu correo te permite comentar en el blog y recuperar tu
+          historial de cursos.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <a
+            href={callbackURL}
+            className="rounded-md bg-ams-red px-6 py-3 font-bold text-white"
+          >
+            Continuar
+          </a>
+          <ResendVerificationButton
+            email={registeredEmail}
+            className="rounded-md bg-white px-5 py-3 text-sm font-bold text-ams-navy disabled:opacity-50"
+          />
+        </div>
+      </div>
+    );
+  }
+
   const field =
     "mt-2 w-full rounded-md border border-ams-navy/20 bg-white p-3 text-ams-navy";
   return (
@@ -107,11 +164,7 @@ export function LoginForm({
             key={v}
             type="button"
             aria-pressed={mode === v}
-            onClick={() => {
-              setMode(v);
-              setError("");
-              setMessage("");
-            }}
+            onClick={() => switchMode(v)}
             className={`rounded-md px-5 py-3 text-sm font-bold ${mode === v ? "bg-ams-navy text-white" : "bg-white text-ams-navy"}`}
           >
             {v === "login" ? "Iniciar sesión" : "Crear cuenta"}
@@ -161,25 +214,56 @@ export function LoginForm({
           />
         </label>
         {mode !== "reset" && (
-          <label className="block">
-            Contraseña
-            <input
-              name="password"
-              type="password"
-              autoComplete={
-                mode === "register" ? "new-password" : "current-password"
-              }
-              minLength={mode === "register" ? 12 : 1}
-              maxLength={128}
-              required
-              className={field}
-            />
+          <div>
+            <label htmlFor="password" className="block">
+              Contraseña
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={
+                  mode === "register" ? "new-password" : "current-password"
+                }
+                minLength={mode === "register" ? MIN_PASSWORD_LENGTH : 1}
+                maxLength={128}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-describedby={
+                  mode === "register" ? "password-hint" : undefined
+                }
+                className={`${field} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 mt-1 -translate-y-1/2 rounded p-2 text-ams-navy/60 hover:text-ams-navy"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-5" aria-hidden />
+                ) : (
+                  <Eye className="size-5" aria-hidden />
+                )}
+              </button>
+            </div>
             {mode === "register" && (
-              <span className="text-sm text-ams-navy/65">
-                Usa al menos 12 caracteres.
+              <span
+                id="password-hint"
+                aria-live="polite"
+                className={`mt-1 block text-sm ${password.length >= MIN_PASSWORD_LENGTH ? "text-ams-green" : "text-ams-navy/65"}`}
+              >
+                {Math.min(password.length, MIN_PASSWORD_LENGTH)}/
+                {MIN_PASSWORD_LENGTH} caracteres mínimos
+                {password.length >= MIN_PASSWORD_LENGTH ? " ✓" : ""}
               </span>
             )}
-          </label>
+          </div>
         )}
         <button
           disabled={busy}
@@ -198,7 +282,7 @@ export function LoginForm({
         <button
           type="button"
           className="mt-5 text-sm underline"
-          onClick={() => setMode("reset")}
+          onClick={() => switchMode("reset")}
         >
           Olvidé mi contraseña
         </button>
@@ -207,7 +291,7 @@ export function LoginForm({
         <button
           type="button"
           className="mt-5 text-sm underline"
-          onClick={() => setMode("login")}
+          onClick={() => switchMode("login")}
         >
           Volver al inicio de sesión
         </button>

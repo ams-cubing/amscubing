@@ -131,6 +131,6 @@ El acceso canónico en la web permite registro con correo y contraseña, verific
 
 `/cuenta` permite editar nombre, ciudad y presentación privada, consultar el nivel y los permisos por aplicación, verificar correo, vincular WCA, cambiar contraseña y cerrar otras sesiones. La desvinculación WCA exige correo verificado y una contraseña AMS para conservar el acceso.
 
-La gestión central de Blog y Cursos conserva sus tablas independientes. Administradores y desarrolladores gestionan su propia aplicación; delegados pueden gestionar ambas. El destinatario debe verificar su correo y los cambios sobre la propia cuenta están bloqueados. Los cambios hechos desde el perfil se registran en `permission_audit`. La Web conserva su panel de delegados y editores; Calendario y Tableros siguen sujetos a las competencias y membresías asignadas.
+La gestión central de Blog y Cursos conserva sus tablas independientes. Administradores y desarrolladores gestionan su propia aplicación; delegados pueden gestionar ambas. El destinatario debe verificar su correo y los cambios sobre la propia cuenta están bloqueados. Los cambios hechos desde el perfil se registran en `permission_audit`. La Web conserva su panel de delegados; Calendario y Tableros siguen sujetos a las competencias y membresías asignadas.
 
 Los datos privados se guardan en `user_profile` (migración 0037). No se muestran en páginas públicas. El WCA ID y los roles no son campos editables del perfil.

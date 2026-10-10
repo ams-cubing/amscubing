@@ -1,6 +1,6 @@
 import {
-  BookOpen,
   CalendarDays,
+  CalendarPlus,
   GraduationCap,
   LayoutDashboard,
   MessageSquareText,
@@ -19,102 +19,107 @@ export type AccountAction = {
   icon: typeof CalendarDays;
 };
 
-export const myCompetitionsAction: AccountAction = {
-  title: "Mis competencias",
-  description:
-    "Revisa solicitudes y seguimiento de competencias vinculadas a tu cuenta AMS.",
-  href: `${getCalendarUrl()}/mis-competencias`,
-  icon: CalendarDays,
+export type AccountSections = {
+  member: AccountAction[];
+  organization: AccountAction[];
 };
 
-export const publicActions: AccountAction[] = [
-  {
-    title: "Comentar en el blog",
-    description:
-      "Lee publicaciones de AMS y participa con tu cuenta AMS o WCA.",
-    href: getBlogUrl(),
-    icon: MessageSquareText,
-  },
-  {
-    title: "Tomar cursos",
-    description:
-      "Aprende con las lecciones y evaluaciones de AMS y conserva tu avance.",
-    href: COURSES_URL,
-    icon: GraduationCap,
-  },
-];
-
-export const delegateActions: AccountAction[] = [
-  {
-    title: "Panel de administración",
-    description:
-      "Edita delegados públicos, ubicaciones y contenido del sitio AMS.",
-    href: "/admin",
-    icon: Newspaper,
-  },
-  {
-    title: "Crear competencias",
-    description:
-      "Abre el calendario de AMS para solicitar fechas, revisar procesos y administrar competencias.",
-    href: `${getCalendarUrl()}/panel/competencias/nueva`,
-    icon: ShieldCheck,
-  },
-  {
-    title: "Tableros de organización",
-    description:
-      "Coordina tareas, checklist, comentarios y responsables para competencias asignadas.",
-    href: getBoardsUrl(),
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Crear cursos",
-    description:
-      "Entrada al LMS dedicado para administrar material de capacitación y rutas de aprendizaje.",
-    href: COURSES_URL,
-    icon: BookOpen,
-  },
-];
-
-export const editorActions: AccountAction[] = [
-  {
-    title: "Explorar Blog",
-    description:
-      "Lee las publicaciones de AMS. La gestión editorial tiene permisos propios, separados de Cursos.",
-    href: getBlogUrl(),
-    icon: Newspaper,
-  },
-];
-
-export function getScopedActions({
+export function getAccountSections({
   isDelegate,
   hasBlogPermission,
   hasCoursePermission,
+  hasCompetitionActivity,
 }: {
   isDelegate: boolean;
   hasBlogPermission: boolean;
   hasCoursePermission: boolean;
-}): AccountAction[] {
-  return [
-    ...(isDelegate || hasBlogPermission
-      ? [
-          {
-            title: "Administrar Blog",
-            description:
-              "Crea entradas, organiza bloques y modera comentarios.",
-            href: `${getBlogUrl()}/admin`,
-            icon: Newspaper,
-          },
-        ]
-      : []),
-    ...(isDelegate || hasCoursePermission
-      ? [
-          {
-            title: "Administrar Cursos",
-            description: "Crea cursos, lecciones y evaluaciones.",
-            href: `${COURSES_URL}/admin`,
-            icon: GraduationCap,
-          },
-        ]
-      : []),
+  hasCompetitionActivity: boolean;
+}): AccountSections {
+  const calendarUrl = getCalendarUrl();
+  const blogUrl = getBlogUrl();
+
+  const member: AccountAction[] = [
+    hasCompetitionActivity
+      ? {
+          title: "Mis competencias",
+          description:
+            "Revisa tus solicitudes de fecha y las competencias que organizas.",
+          href: `${calendarUrl}/mis-competencias`,
+          icon: CalendarDays,
+        }
+      : {
+          title: "Solicitar una fecha",
+          description:
+            "¿Quieres organizar una competencia? Solicita una fecha y te asignamos un delegado.",
+          href: `${calendarUrl}/solicitar-fecha`,
+          icon: CalendarPlus,
+        },
+    {
+      title: "Blog",
+      description:
+        "Lee publicaciones de AMS y participa con tu cuenta AMS o WCA.",
+      href: blogUrl,
+      icon: MessageSquareText,
+    },
+    {
+      title: "Mis cursos",
+      description:
+        "Aprende con las lecciones y evaluaciones de AMS y conserva tu avance.",
+      href: `${COURSES_URL}/mis-cursos`,
+      icon: GraduationCap,
+    },
   ];
+
+  const organization: AccountAction[] = [];
+  if (isDelegate) {
+    organization.push(
+      {
+        title: "Panel de administración",
+        description:
+          "Edita delegados públicos, ubicaciones y contenido del sitio AMS.",
+        href: "/admin",
+        icon: Newspaper,
+      },
+      {
+        title: "Crear competencias",
+        description:
+          "Abre el calendario para revisar solicitudes y administrar competencias.",
+        href: `${calendarUrl}/panel/competencias/nueva`,
+        icon: ShieldCheck,
+      },
+      {
+        title: "Tableros de organización",
+        description:
+          "Coordina tareas, checklist, comentarios y responsables por competencia.",
+        href: getBoardsUrl(),
+        icon: LayoutDashboard,
+      },
+    );
+  }
+  if (isDelegate || hasBlogPermission) {
+    organization.push({
+      title: "Administrar Blog",
+      description: "Crea entradas, organiza bloques y modera comentarios.",
+      href: `${blogUrl}/admin`,
+      icon: Newspaper,
+    });
+  }
+  if (isDelegate || hasCoursePermission) {
+    organization.push({
+      title: "Administrar Cursos",
+      description: "Crea cursos, lecciones y evaluaciones.",
+      href: `${COURSES_URL}/admin`,
+      icon: GraduationCap,
+    });
+  }
+
+  const seen = new Set<string>();
+  const unique = (actions: AccountAction[]) =>
+    actions.filter((action) => {
+      if (seen.has(action.href)) return false;
+      seen.add(action.href);
+      return true;
+    });
+
+  return { organization: unique(organization), member: unique(member) };
 }
