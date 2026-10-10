@@ -56,7 +56,7 @@ export function SemaphoreLegend() {
               <TableCell
                 className={cn(
                   r.color,
-                  "text-center font-semibold p-3 md:p-4 w-[30%] md:w-[25%]",
+                  "text-center font-semibold p-3 md:p-4 w-[30%] md:w-1/4",
                 )}
               >
                 {r.label}

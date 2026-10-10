@@ -19,7 +19,7 @@ export function AmsPageHero({
     >
       <div className="ams-texture absolute inset-0 opacity-25" />
       <div
-        className={`absolute rotate-[10deg] bg-ams-red opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)] ${compact ? "-right-24 -top-40 h-[18rem] w-[18rem]" : "-right-28 -top-36 h-[26rem] w-[26rem]"}`}
+        className={`absolute rotate-10 bg-ams-red opacity-85 [clip-path:polygon(50%_0%,100%_40%,80%_100%,20%_90%)] ${compact ? "-right-24 -top-40 h-72 w-72" : "-right-28 -top-36 h-104 w-104"}`}
       />
       <div className="ams-container relative">
         <p className="ams-heading mb-3 text-sm font-bold uppercase tracking-[0.12em] text-ams-orange">

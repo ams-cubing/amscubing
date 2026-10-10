@@ -8,13 +8,13 @@ export default function ForbiddenPage() {
     <AmsStatusPage
       code="403"
       title="Sin permiso"
-      description="Tu cuenta no tiene permiso para gestionar el blog. Si crees que es un error, pide acceso a un delegado o administrador."
+      description="Tu cuenta no tiene permiso para ver esta página. Si crees que es un error, pide acceso a un delegado o administrador."
     >
       <Link
         href="/"
         className={buttonVariants({ variant: "destructive", size: "lg" })}
       >
-        Volver al blog
+        Volver al inicio
       </Link>
     </AmsStatusPage>
   );

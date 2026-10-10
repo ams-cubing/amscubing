@@ -12,7 +12,7 @@ export const tdClass =
 
 /** Lesson and course descriptions are stored as HTML, so their elements are styled from the wrapper. */
 export const proseClass =
-  "ams-copy text-base leading-[1.9] [overflow-wrap:anywhere] [&_a]:text-ams-red [&_a]:underline [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_iframe]:aspect-video [&_iframe]:h-auto [&_iframe]:w-full [&_iframe]:rounded-xl [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_li]:ml-6 [&_ol]:mb-4.5 [&_ol]:list-decimal [&_p]:mb-4.5 [&_table]:block [&_table]:w-full [&_table]:overflow-auto [&_table]:border-collapse [&_td]:border [&_td]:border-ams-navy/10 [&_td]:p-2 [&_th]:border [&_th]:border-ams-navy/10 [&_th]:p-2 [&_ul]:mb-4.5 [&_ul]:list-disc [&_video]:h-auto [&_video]:max-w-full [&_video]:rounded-xl";
+  "ams-copy text-base leading-[1.9] wrap-anywhere [&_a]:text-ams-red [&_a]:underline [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_iframe]:aspect-video [&_iframe]:h-auto [&_iframe]:w-full [&_iframe]:rounded-xl [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_li]:ml-6 [&_ol]:mb-4.5 [&_ol]:list-decimal [&_p]:mb-4.5 [&_table]:block [&_table]:w-full [&_table]:overflow-auto [&_table]:border-collapse [&_td]:border [&_td]:border-ams-navy/10 [&_td]:p-2 [&_th]:border [&_th]:border-ams-navy/10 [&_th]:p-2 [&_ul]:mb-4.5 [&_ul]:list-disc [&_video]:h-auto [&_video]:max-w-full [&_video]:rounded-xl";
 
 export function Eyebrow({
   children,
