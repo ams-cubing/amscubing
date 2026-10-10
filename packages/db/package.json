@@ -11,6 +11,7 @@
     "./board-readiness": "./src/board-readiness.ts",
     "./competition-transitions": "./src/competition-transitions.ts",
     "./utils": "./src/utils.ts",
+    "./rate-limit": "./src/rate-limit.ts",
     "./data/mexico": "./src/data/mexico.ts",
     "./data/delegates": "./src/data/delegates.ts",
     "./data/ams-board-template": "./src/data/ams-board-template.ts",

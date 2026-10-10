@@ -86,7 +86,7 @@ Mejoras de ingeniería del monorepo (auditoría 2026-08-28). Priorizar CI y test
 
 #### CI/CD y quality gates
 
-Hoy solo existe el workflow de migraciones (`.github/workflows/migrate.yml`). No hay CI para build, lint, typecheck ni tests.
+`.github/workflows/ci.yml` corre lint, typecheck, tests y build en PRs y pushes; en push a `development`/`main` el job `migrate` solo corre si ese job pasa.
 
 - [x] Workflow de CI en PRs: `build`, `lint`, `check-types`, `test` en todas las apps y paquetes.
 - [x] Scripts `lint` en **cada** app y paquete (hoy solo `@workspace/ui` lo define; `pnpm lint` en la raíz casi no hace nada).
@@ -140,7 +140,8 @@ Solo hay 6 archivos de test (`packages/db`: 2, `calendar`: 4; `boards` y `web`: 
 
 - [ ] Error tracking en producción (p. ej. Sentry) en las tres apps.
 - [ ] Logging estructurado en server actions críticas.
-- [ ] Rate limiting en formularios públicos y envíos de email (p. ej. solicitar fecha).
+- [x] Rate limiting en solicitar fecha: ventana corta por usuario e IP (`@workspace/db/rate-limit` sobre la tabla `rate_limit`), además del tope semanal.
+- [ ] Rate limiting en otros formularios públicos y envíos de email (comentarios del blog, etc.).
 
 #### Documentación de entorno
 
