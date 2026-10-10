@@ -7,8 +7,15 @@ import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { CalendarAppNav } from "@/components/calendar-app-nav";
-import { HeaderNotifications } from "@/components/header-notifications";
-import { CalendarAmsNav } from "@/components/ams-site-nav";
+import { AmsAppNav } from "@workspace/ui/components/ams-app-nav";
+import { AmsHeaderNotifications } from "@workspace/ui/components/ams-header-notifications";
+import { getCoursesUrl } from "@workspace/auth/urls";
+import { signOutAction } from "@/app/_actions/auth";
+import {
+  getNotificationInbox,
+  markAllNotificationsReadAction,
+  markNotificationReadAction,
+} from "@/app/_actions/notifications";
 import { Toaster } from "sonner";
 import { Footer } from "@/components/footer";
 import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
@@ -87,6 +94,17 @@ async function CalendarAppNavWrapper() {
   );
 }
 
+function calendarNavUrls() {
+  const calendarUrl = getCalendarUrl();
+  return {
+    webUrl: getWebUrl(),
+    calendarUrl,
+    boardsUrl: getBoardsUrl(),
+    coursesUrl: getCoursesUrl(),
+    signInHref: getCrossAppSignInUrl(calendarUrl),
+  };
+}
+
 async function CalendarAmsNavWrapper() {
   const headersList = await headers();
   const session = await auth.api.getSession({
@@ -97,12 +115,8 @@ async function CalendarAmsNavWrapper() {
     ? toSessionUser(session.user as RawSessionUser)
     : null;
 
-  const webUrl = getWebUrl();
-  const calendarUrl = getCalendarUrl();
-  const boardsUrl = getBoardsUrl();
-
   return (
-    <CalendarAmsNav
+    <AmsAppNav
       user={
         normalizedUser
           ? {
@@ -115,15 +129,15 @@ async function CalendarAmsNavWrapper() {
       showBoardsLink={await canSeeBoardsNav(normalizedUser)}
       actions={
         normalizedUser != null ? (
-          <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
-            <HeaderNotifications />
-          </div>
+          <AmsHeaderNotifications
+            getInbox={getNotificationInbox}
+            onMarkRead={markNotificationReadAction}
+            onMarkAllRead={markAllNotificationsReadAction}
+          />
         ) : null
       }
-      signInHref={getCrossAppSignInUrl(calendarUrl)}
-      webUrl={webUrl}
-      calendarUrl={calendarUrl}
-      boardsUrl={boardsUrl}
+      urls={calendarNavUrls()}
+      onSignOut={signOutAction}
     />
   );
 }
@@ -143,15 +157,7 @@ export default function RootLayout({
             <PreviewBanner productionHost="calendario.amscubing.org" />
           </Suspense>
           <Suspense
-            fallback={
-              <CalendarAmsNav
-                user={null}
-                signInHref={getCrossAppSignInUrl(getCalendarUrl())}
-                webUrl={getWebUrl()}
-                calendarUrl={getCalendarUrl()}
-                boardsUrl={getBoardsUrl()}
-              />
-            }
+            fallback={<AmsAppNav user={null} urls={calendarNavUrls()} />}
           >
             <CalendarAmsNavWrapper />
           </Suspense>

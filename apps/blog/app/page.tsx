@@ -1,7 +1,6 @@
 import { db } from "@workspace/db";
 import { blogPosts } from "@workspace/db/schema";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { AmsNotice } from "@workspace/ui/components/ams-field";
 import { AmsPageHero } from "@workspace/ui/components/ams-page-hero";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -14,7 +13,6 @@ export default async function Page({
     q?: string;
     categoria?: string;
     pagina?: string;
-    aviso?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -56,9 +54,6 @@ export default async function Page({
         description="Guías, novedades y experiencias para disfrutar el speedcubing y construir juntos la comunidad de México."
       />
       <section className="ams-container max-w-295 py-14">
-        {params.aviso === "sin-permiso" && (
-          <AmsNotice>Tu cuenta no tiene permiso de gestión de Blog.</AmsNotice>
-        )}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="ams-heading text-[clamp(1.3rem,2.6vw,2rem)] font-bold">
             El blog de AMS

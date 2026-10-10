@@ -5,17 +5,13 @@ import {
   courseEnrollments,
   courseLegacyRecords,
   courseLegacyStudents,
-  courseStaff,
-  user,
 } from "@workspace/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 import { requireManager } from "@/lib/auth";
 import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { NativeSelect } from "@workspace/ui/components/native-select";
-import { AmsField } from "@workspace/ui/components/ams-field";
+import { getWebUrl } from "@workspace/auth/urls";
+import { canGrantPermission } from "@workspace/auth/permissions";
 import { cn } from "@workspace/ui/lib/utils";
-import { Submit } from "@/components/submit";
 import {
   Callout,
   Eyebrow,
@@ -27,7 +23,6 @@ import {
   textLinkClass,
   thClass,
 } from "@/components/ui";
-import { grantStaff } from "@/app/actions";
 
 export default async function AdminPage() {
   const viewer = await requireManager();
@@ -45,12 +40,6 @@ export default async function AdminPage() {
     })
     .from(courseLegacyRecords)
     .where(sql`${courseLegacyRecords.lessonId} is null`);
-  const staff = viewer.canManageStaff
-    ? await db
-        .select({ name: user.name, role: courseStaff.role })
-        .from(courseStaff)
-        .innerJoin(user, eq(user.id, courseStaff.userId))
-    : [];
   const [pending] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(courseLegacyStudents)
@@ -65,9 +54,16 @@ export default async function AdminPage() {
             Crea experiencias de aprendizaje para la comunidad.
           </p>
         </div>
-        <Button asChild variant="destructive">
-          <Link href="/admin/cursos/nuevo">+ Crear curso</Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          {canGrantPermission(viewer.role, viewer.staffRole) && (
+            <Button asChild variant="outline">
+              <a href={`${getWebUrl()}/admin/permisos`}>Gestionar permisos ↗</a>
+            </Button>
+          )}
+          <Button asChild variant="destructive">
+            <Link href="/admin/cursos/nuevo">+ Crear curso</Link>
+          </Button>
+        </div>
       </div>
       <div className="mb-6 grid gap-4.5 sm:grid-cols-3">
         {[
@@ -126,49 +122,6 @@ export default async function AdminPage() {
         {pending?.count ?? 0} historiales esperan vincularse cuando sus alumnos
         inicien sesión con el mismo correo verificado en AMS o WCA.
       </Callout>
-      {viewer.canManageStaff && (
-        <section className={cn(panelClass, "mt-8")}>
-          <h2 className="ams-heading mb-3 text-2xl font-bold">
-            Permisos del equipo
-          </h2>
-          <p className={cn(smallClass, "mb-4")}>
-            Los delegados pueden gestionar cursos automáticamente.
-            Administradores y desarrolladores pueden además asignar permisos. El
-            rol editorial del blog no concede acceso a Cursos.
-          </p>
-          <ul className="mb-5 list-disc pl-6">
-            {staff.map((s) => (
-              <li key={s.name}>
-                {s.name} · {s.role}
-              </li>
-            ))}
-          </ul>
-          <form action={grantStaff}>
-            <div className="grid gap-x-4.5 sm:grid-cols-2">
-              <AmsField label="Correo de la cuenta AMS">
-                <Input type="email" name="email" required />
-              </AmsField>
-              <AmsField label="Permiso">
-                <NativeSelect name="role">
-                  <option value="instructor">
-                    Instructor: gestionar cursos
-                  </option>
-                  <option value="administrator">
-                    Administrador: gestionar cursos y permisos
-                  </option>
-                  <option value="developer">
-                    Desarrollador: gestionar cursos y permisos
-                  </option>
-                  <option value="none">
-                    Retirar permiso específico de Cursos
-                  </option>
-                </NativeSelect>
-              </AmsField>
-            </div>
-            <Submit>Actualizar permisos</Submit>
-          </form>
-        </section>
-      )}
     </section>
   );
 }

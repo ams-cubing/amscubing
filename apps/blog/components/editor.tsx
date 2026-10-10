@@ -2,7 +2,9 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { BlogSection, BlogBlock, blogPosts } from "@workspace/db/schema";
-import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
+import { toast } from "sonner";
+import { ActionForm } from "@workspace/ui/components/action-form";
+import { AmsField } from "@workspace/ui/components/ams-field";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { NativeSelect } from "@workspace/ui/components/native-select";
@@ -67,7 +69,6 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
   const [preview, setPreview] = useState(false);
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
-  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const { startUpload } = useUploadThing("blogImage");
   const dragging = useRef<{ section: string; block?: string } | null>(null);
@@ -146,7 +147,6 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
   }
   async function upload(file: File, sid?: string, bid?: string) {
     setBusy(true);
-    setMessage("");
     try {
       const [uploaded] = (await startUpload([file])) ?? [];
       const url = uploaded?.serverData.url;
@@ -159,7 +159,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
         if (input) input.value = url;
       }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Error de carga");
+      toast.error(e instanceof Error ? e.message : "Error de carga");
     } finally {
       setBusy(false);
     }
@@ -190,7 +190,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
     setSections((ss) => [...ss, intro, middle]);
   }
   return (
-    <form action={savePost}>
+    <ActionForm action={savePost}>
       <input type="hidden" name="id" value={post?.id ?? ""} />
       <input type="hidden" name="revision" value={post?.revision ?? 0} />
       <input type="hidden" name="sections" value={JSON.stringify(sections)} />
@@ -215,7 +215,6 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
           <Submit />
         </div>
       </div>
-      {message && <AmsNotice role="status">{message}</AmsNotice>}
       <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="rounded-3xl bg-white p-5 sm:p-8 lg:sticky lg:top-4">
           <AmsField label="Título">
@@ -544,11 +543,14 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                                 }}
                               />
                               {b.url && (
-                                <img
-                                  src={b.url}
-                                  alt={b.text}
-                                  className="mt-3 h-auto max-w-full rounded-sm"
-                                />
+                                <>
+                                  {/* eslint-disable-next-line @next/next/no-img-element -- preview of any pasted URL */}
+                                  <img
+                                    src={b.url}
+                                    alt={b.text}
+                                    className="mt-3 h-auto max-w-full rounded-sm"
+                                  />
+                                </>
                               )}
                             </AmsField>
                           )}
@@ -620,6 +622,6 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
           )}
         </div>
       </div>
-    </form>
+    </ActionForm>
   );
 }

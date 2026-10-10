@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
+import { AmsHeaderNotifications } from "@workspace/ui/components/ams-header-notifications";
 
 import {
   getNotificationInbox,
@@ -21,23 +21,11 @@ async function isSignedIn() {
 export async function HeaderNotifications() {
   if (!(await isSignedIn())) return null;
 
-  let inbox: Awaited<ReturnType<typeof getNotificationInbox>>;
-  try {
-    inbox = await getNotificationInbox();
-  } catch {
-    // Database unavailable in local/static fallbacks.
-    return null;
-  }
-
   return (
-    <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
-      <NotificationInbox
-        items={inbox.items}
-        unreadCount={inbox.unreadCount}
-        onMarkRead={markNotificationReadAction}
-        onMarkAllRead={markAllNotificationsReadAction}
-        onRefresh={getNotificationInbox}
-      />
-    </div>
+    <AmsHeaderNotifications
+      getInbox={getNotificationInbox}
+      onMarkRead={markNotificationReadAction}
+      onMarkAllRead={markAllNotificationsReadAction}
+    />
   );
 }

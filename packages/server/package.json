@@ -15,7 +15,11 @@
     "./security-headers": {
       "types": "./src/security-headers.d.mts",
       "default": "./src/security-headers.mjs"
-    }
+    },
+    "./action": "./src/action.ts"
+  },
+  "peerDependencies": {
+    "next": "catalog:"
   },
   "dependencies": {
     "zod": "catalog:"
@@ -25,6 +29,7 @@
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "catalog:",
+    "next": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

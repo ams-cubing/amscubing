@@ -6,13 +6,15 @@ import { Analytics } from "@vercel/analytics/next";
 
 import "@workspace/ui/globals.css";
 
-import { NotificationInbox } from "@workspace/ui/components/notification-inbox";
+import { AmsAppNav } from "@workspace/ui/components/ams-app-nav";
+import { AmsHeaderNotifications } from "@workspace/ui/components/ams-header-notifications";
+import { getCoursesUrl } from "@workspace/auth/urls";
+import { signOutAction } from "@/app/_actions/auth";
 
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { AppProviders } from "@workspace/ui/components/app-providers";
 import { PreviewBanner } from "@workspace/ui/components/preview-banner";
-import { BoardsAmsNav } from "@/components/ams-site-nav";
 import { auth } from "@/lib/auth";
 import {
   getBoardsUrl,
@@ -69,6 +71,7 @@ function boardsNavUrls() {
     webUrl: getWebUrl(),
     calendarUrl: getCalendarUrl(),
     boardsUrl: getBoardsUrl(),
+    coursesUrl: getCoursesUrl(),
     signInHref: getCrossAppSignInUrl(getBoardsUrl()),
   };
 }
@@ -86,13 +89,15 @@ async function BoardsAmsNavWrapper() {
   const urls = boardsNavUrls();
   const actions =
     user != null ? (
-      <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
-        <BoardsNavNotifications />
-      </div>
+      <AmsHeaderNotifications
+        getInbox={getNotificationInbox}
+        onMarkRead={markNotificationReadAction}
+        onMarkAllRead={markAllNotificationsReadAction}
+      />
     ) : null;
 
   return (
-    <BoardsAmsNav
+    <AmsAppNav
       user={
         user
           ? {
@@ -104,21 +109,8 @@ async function BoardsAmsNavWrapper() {
       }
       showBoardsLink={showBoardsLink}
       actions={actions}
-      {...urls}
-    />
-  );
-}
-
-async function BoardsNavNotifications() {
-  const inbox = await getNotificationInbox();
-
-  return (
-    <NotificationInbox
-      items={inbox.items}
-      unreadCount={inbox.unreadCount}
-      onMarkRead={markNotificationReadAction}
-      onMarkAllRead={markAllNotificationsReadAction}
-      onRefresh={getNotificationInbox}
+      urls={urls}
+      onSignOut={signOutAction}
     />
   );
 }
@@ -141,7 +133,7 @@ export default function RootLayout({
               <Suspense fallback={null}>
                 <PreviewBanner productionHost="tablero.amscubing.org" />
               </Suspense>
-              <Suspense fallback={<BoardsAmsNav user={null} {...urls} />}>
+              <Suspense fallback={<AmsAppNav user={null} urls={urls} />}>
                 <BoardsAmsNavWrapper />
               </Suspense>
             </div>

@@ -8,7 +8,7 @@ import {
   user as userTable,
 } from "@workspace/db/schema";
 
-import type { PermissionScope } from "@/lib/profile-permissions";
+import type { PermissionScope } from "@workspace/auth/permissions";
 
 export type PermissionsData = Awaited<ReturnType<typeof loadPermissionsData>>;
 export type TeamMember =

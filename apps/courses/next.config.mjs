@@ -1,20 +1,42 @@
 import { securityHeaders } from "@workspace/server/security-headers";
 
 /** @type {import('next').NextConfig} */
-export default {
+const nextConfig = {
+  cacheComponents: true,
   transpilePackages: [
-    "@workspace/auth",
-    "@workspace/db",
-    "@workspace/server",
     "@workspace/ui",
+    "@workspace/db",
+    "@workspace/auth",
+    "@workspace/server",
+    "@workspace/social",
   ],
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders() }];
+  },
+  serverExternalPackages: ["sharp", "@resvg/resvg-js"],
   outputFileTracingIncludes: {
     "/cursos/*/certificado": [
       "./public/fonts/*.ttf",
       "./public/source/imagotipo-sm.png",
     ],
   },
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders() }];
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      { protocol: "https", hostname: "utfs.io", pathname: "/**" },
+      { protocol: "https", hostname: "*.utfs.io", pathname: "/**" },
+      { protocol: "https", hostname: "ufs.sh", pathname: "/**" },
+      { protocol: "https", hostname: "*.ufs.sh", pathname: "/**" },
+      {
+        protocol: "https",
+        hostname: "amscubing.org",
+        pathname: "/wp-content/uploads/**",
+      },
+    ],
+  },
+  experimental: {
+    authInterrupts: true,
   },
 };
+
+export default nextConfig;

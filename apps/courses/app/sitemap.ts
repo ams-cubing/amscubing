@@ -2,11 +2,11 @@ import type { MetadataRoute } from "next";
 import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { courses } from "@workspace/db/schema";
+import { connection } from "next/server";
 import { getCoursesUrl } from "@workspace/auth/urls";
 
-export const dynamic = "force-dynamic";
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const baseUrl = getCoursesUrl();
   const published = await db
     .select({ slug: courses.slug, updatedAt: courses.updatedAt })

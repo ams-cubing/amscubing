@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { BlogSection } from "@workspace/db/schema";
 import { buttonVariants } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -56,12 +57,13 @@ export function Sections({ sections }: { sections: BlogSection[] }) {
                     {b.caption && <cite>{b.caption}</cite>}
                   </blockquote>
                 )}
-                {b.type === "image" && (
+                {b.type === "image" && b.url && (
                   <figure>
-                    <img
+                    <Image
                       src={b.url}
                       alt={b.text}
-                      loading="lazy"
+                      width={1200}
+                      height={800}
                       className="h-auto max-w-full rounded-sm"
                     />
                     {b.caption && (

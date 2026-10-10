@@ -1,3 +1,4 @@
+import { ActionForm } from "@workspace/ui/components/action-form";
 import type { courseLessons, courseModules } from "@workspace/db/schema";
 import { saveLesson } from "@/app/actions";
 import { Input } from "@workspace/ui/components/input";
@@ -19,7 +20,7 @@ export function LessonEditor({
   position: number;
 }) {
   return (
-    <form action={saveLesson}>
+    <ActionForm action={saveLesson}>
       <input type="hidden" name="courseId" value={courseId} />
       {lesson && <input type="hidden" name="lessonId" value={lesson.id} />}
       <AmsField label="Nombre de la lección">
@@ -87,6 +88,6 @@ export function LessonEditor({
         />{" "}
       </AmsField>
       <Submit>Guardar lección</Submit>
-    </form>
+    </ActionForm>
   );
 }

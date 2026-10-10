@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { blogPosts } from "@workspace/db/schema";
 import { Tag } from "./tag";
@@ -8,10 +9,11 @@ export function PostCard({ post }: { post: typeof blogPosts.$inferSelect }) {
       className="block overflow-hidden rounded-3xl bg-white shadow-[0_8px_32px_rgba(1,11,25,0.05)] transition-transform hover:-translate-y-1"
     >
       {post.coverUrl && (
-        <img
+        <Image
           src={post.coverUrl}
           alt=""
-          loading="lazy"
+          width={800}
+          height={460}
           className="h-57.5 w-full object-cover"
         />
       )}

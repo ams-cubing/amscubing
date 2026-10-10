@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { db } from "@workspace/db";
 import { blogPosts, blogComments } from "@workspace/db/schema";
 import { and, eq, desc } from "drizzle-orm";
@@ -5,6 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getWebUrl } from "@workspace/auth/urls";
 import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tag } from "@/components/tag";
@@ -36,13 +38,10 @@ export async function generateMetadata({
 }
 export default async function Page({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ aviso?: string }>;
 }) {
   const { slug } = await params;
-  const { aviso } = await searchParams;
   const viewer = await getViewer();
   const [post] = await db
     .select()
@@ -98,10 +97,13 @@ export default async function Page({
             </Button>
           )}
           {post.coverUrl && (
-            <img
+            <Image
               className="mt-8 block max-h-127.5 w-full rounded-3xl object-cover"
               src={post.coverUrl}
               alt={post.title}
+              width={1600}
+              height={900}
+              priority
             />
           )}
         </div>
@@ -120,20 +122,6 @@ export default async function Page({
         <h2 className="ams-heading mb-4 text-[clamp(1.3rem,2.6vw,2rem)] font-bold">
           La conversación
         </h2>
-        {aviso && (
-          <AmsNotice role="status">
-            {{
-              "comentario-enviado":
-                "Gracias. Tu comentario se publicará después de revisarlo.",
-              "verifica-correo":
-                "Verifica tu correo desde tu cuenta para comentar.",
-              "demasiados-comentarios":
-                "Espera unos minutos antes de enviar otro comentario.",
-              "comentarios-cerrados": "La conversación está cerrada.",
-              "comentario-invalido": "Escribe entre 3 y 2000 caracteres.",
-            }[aviso] ?? "Revisa tu comentario."}
-          </AmsNotice>
-        )}
         {comments.map((c) => (
           <div className="border-t border-ams-navy/10 py-5.5" key={c.id}>
             <strong>{c.authorName}</strong>{" "}
@@ -151,7 +139,7 @@ export default async function Page({
         {post.commentsEnabled && post.status === "published" ? (
           viewer ? (
             viewer.emailVerified ? (
-              <form
+              <ActionForm
                 action={addComment}
                 className="mt-6 rounded-3xl bg-white p-5 sm:p-8"
               >
@@ -170,7 +158,7 @@ export default async function Page({
                   Los comentarios se revisan antes de publicarse.
                 </p>
                 <Button variant="destructive">Enviar comentario</Button>
-              </form>
+              </ActionForm>
             ) : (
               <AmsNotice>
                 <a className="underline" href={`${getWebUrl()}/cuenta`}>

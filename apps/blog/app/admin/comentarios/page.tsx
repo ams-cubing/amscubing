@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { blogComments, blogPosts } from "@workspace/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { Button } from "@workspace/ui/components/button";
 import { requireManager } from "@/lib/auth";
 import { moderateComment } from "@/app/actions";
@@ -18,7 +19,9 @@ export default async function Page() {
       <h1 className="ams-display text-[clamp(2.4rem,5vw,4.8rem)] leading-[1.08]">
         Comentarios
       </h1>
-      <p className="mb-6">Revisa las conversaciones antes de hacerlas públicas.</p>
+      <p className="mb-6">
+        Revisa las conversaciones antes de hacerlas públicas.
+      </p>
       {comments.map(({ comment: c, post }) => (
         <div key={c.id} className="mb-6 rounded-3xl bg-white p-5 sm:p-8">
           <Tag>{c.status}</Tag>
@@ -28,7 +31,10 @@ export default async function Page() {
             {c.createdAt.toLocaleDateString("es-MX")}
           </p>
           <p className="mb-4 whitespace-pre-wrap">{c.content}</p>
-          <form action={moderateComment} className="flex flex-wrap gap-1.5">
+          <ActionForm
+            action={moderateComment}
+            className="flex flex-wrap gap-1.5"
+          >
             <input name="id" type="hidden" value={c.id} />
             <Button
               size="sm"
@@ -44,7 +50,7 @@ export default async function Page() {
             <Button size="sm" variant="brand" name="status" value="pending">
               Pendiente
             </Button>
-          </form>
+          </ActionForm>
         </div>
       ))}
     </section>

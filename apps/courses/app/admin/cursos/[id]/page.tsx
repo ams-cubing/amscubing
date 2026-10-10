@@ -12,7 +12,10 @@ import { notFound } from "next/navigation";
 import { requireManager } from "@/lib/auth";
 import { getCourse } from "@/lib/data";
 import { CourseEditor } from "@/components/course-editor";
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { Button } from "@workspace/ui/components/button";
+import { SearchParamToast } from "@workspace/ui/components/search-param-toast";
+import { Suspense } from "react";
 import { Input } from "@workspace/ui/components/input";
 import { AmsField } from "@workspace/ui/components/ams-field";
 import { cn } from "@workspace/ui/lib/utils";
@@ -85,6 +88,15 @@ export default async function EditCourse({
   );
   return (
     <section className="ams-container max-w-295 py-12">
+      <Suspense fallback={null}>
+        <SearchParamToast
+          param="aviso"
+          messages={{
+            guardado: "Curso guardado.",
+            "leccion-guardada": "Lección guardada.",
+          }}
+        />
+      </Suspense>
       <div className="mb-6 text-[13px] text-ams-navy/60">
         <Link href="/admin" className="hover:text-ams-red">
           Administrar
@@ -109,21 +121,21 @@ export default async function EditCourse({
               <summary className={summaryClass}>
                 {m.position + 1}. {m.title}
               </summary>
-              <form action={saveModule} className="pt-4">
+              <ActionForm action={saveModule} className="pt-4">
                 <input type="hidden" name="courseId" value={course.id} />
                 <input type="hidden" name="moduleId" value={m.id} />
                 {moduleFields(m.title, m.position)}
                 <Submit>Guardar módulo</Submit>
-              </form>
+              </ActionForm>
             </details>
           ))}
           <details className={cn(detailsClass, "mt-6")}>
             <summary className={summaryClass}>+ Agregar módulo</summary>
-            <form action={saveModule} className="pt-4">
+            <ActionForm action={saveModule} className="pt-4">
               <input type="hidden" name="courseId" value={course.id} />
               {moduleFields(undefined, course.modules.length)}
               <Submit>Agregar módulo</Submit>
-            </form>
+            </ActionForm>
           </details>
         </section>
         <section className={panelClass}>

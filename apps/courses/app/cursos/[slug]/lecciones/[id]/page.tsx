@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { AmsField } from "@workspace/ui/components/ams-field";
@@ -135,7 +136,7 @@ export default async function LessonPage({
             </p>
           )}
           {!lesson.requiresReview && p.enrollment && (
-            <form
+            <ActionForm
               action={completeLesson}
               className="mt-8 border-t border-ams-navy/10 pt-7"
             >
@@ -190,7 +191,7 @@ export default async function LessonPage({
                     ? "Guardar y continuar"
                     : "Marcar como completada"}
               </Submit>
-            </form>
+            </ActionForm>
           )}
           {!p.enrollment && (
             <p className={cn(smallClass, "mt-6")}>

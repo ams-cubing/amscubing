@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { courses } from "@workspace/db/schema";
 import { cleanHtml } from "@/lib/content";
@@ -33,10 +34,12 @@ export function CourseCard({
         aria-label={course.title}
       >
         {course.coverUrl ? (
-          <img
+          <Image
             src={course.coverUrl}
             alt=""
-            className="h-full w-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+            className="object-cover"
           />
         ) : (
           <span className="ams-display px-6 py-4.5 text-2xl">

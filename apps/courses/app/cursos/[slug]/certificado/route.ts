@@ -1,18 +1,15 @@
 import { db } from "@workspace/db";
 import { courses } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { getViewer } from "@/lib/auth";
+import { getLearner } from "@/lib/auth";
 import { issueCertificate } from "@/lib/certificates";
 import { createCertificatePdf } from "@/lib/certificate-pdf";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const viewer = await getViewer();
+  const viewer = await getLearner();
   if (!viewer)
     return new Response("Inicia sesión para descargar tu certificado", {
       status: 401,

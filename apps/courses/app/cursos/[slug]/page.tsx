@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { getViewer, signInUrl } from "@/lib/auth";
+import { getLearner, signInUrl } from "@/lib/auth";
 import { getCourse, getProgress } from "@/lib/data";
 import { cleanHtml } from "@/lib/content";
 import { Curriculum } from "@/components/curriculum";
 import { Submit } from "@/components/submit";
 import { enroll } from "@/app/actions";
 import { formatCourseScore } from "@/lib/course-score";
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import {
@@ -25,7 +26,7 @@ export default async function CoursePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const viewer = await getViewer();
+  const viewer = await getLearner();
   const course = await getCourse(slug, viewer?.canManage);
   const p = viewer ? await getProgress(course.id, viewer.id) : null;
   const done = p?.enrollment?.completedAt
@@ -124,10 +125,10 @@ export default async function CoursePage({
               </Link>
             </Button>
           ) : viewer && course.status === "published" ? (
-            <form action={enroll}>
+            <ActionForm action={enroll}>
               <input type="hidden" name="courseId" value={course.id} />
               <Submit className="w-full">Tomar curso →</Submit>
-            </form>
+            </ActionForm>
           ) : !viewer ? (
             <Button asChild variant="destructive" className="w-full">
               <a href={signInUrl(`/cursos/${slug}`)}>

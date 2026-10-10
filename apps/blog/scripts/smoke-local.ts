@@ -36,6 +36,33 @@ async function get(url: string, cookie?: string) {
     redirect: "manual",
   });
 }
+function hiddenFields(form: string) {
+  const decode = (value: string) =>
+    value
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&");
+  return [...form.matchAll(/<input\b[^>]*type="hidden"[^>]*>/g)].flatMap(
+    ([tag]) => {
+      const name = tag.match(/name="([^"]*)"/)?.[1];
+      if (!name) return [];
+      const field: [string, string] = [
+        decode(name),
+        decode(tag.match(/value="([^"]*)"/)?.[1] ?? ""),
+      ];
+      return [field];
+    },
+  );
+}
+async function pageStatus(response: Response) {
+  if (response.status !== 200) return response.status;
+  const html = await response.text();
+  const redirect = html.match(/NEXT_REDIRECT;[^;]*;[^;]*;(\d+)/)?.[1];
+  const fallback = html.match(/NEXT_HTTP_ERROR_FALLBACK;(\d+)/)?.[1];
+  return Number(redirect ?? fallback ?? 200);
+}
 async function action(
   url: string,
   html: string,
@@ -47,10 +74,13 @@ async function action(
     .map((m) => m[0])
     .find((f) => f.includes(match));
   assert(form, "Formulario encontrado");
-  const action = form.match(/name="(\$ACTION_ID_[^"]+)"/);
-  assert(action, "Acción encontrada");
+  const hidden = hiddenFields(form);
+  assert(
+    hidden.some(([name]) => name.startsWith("$ACTION")),
+    "Acción encontrada",
+  );
   const data = new FormData();
-  data.set(action[1]!, "");
+  for (const [k, v] of hidden) data.append(k, v);
   for (const [k, v] of Object.entries(fields)) data.set(k, v);
   return fetch(url, {
     method: "POST",
@@ -103,8 +133,11 @@ try {
   assert.equal(reader?.role, "user");
   assert.equal(reader?.wcaId, null);
   assert.equal(reader?.emailVerified, false);
-  assert.equal((await get(`${blog}/admin`, readerCookie)).status, 307);
-  assert.equal((await get(`${course}/admin`, readerCookie)).status, 307);
+  assert.equal(await pageStatus(await get(`${blog}/admin`, readerCookie)), 403);
+  assert.equal(
+    await pageStatus(await get(`${course}/admin`, readerCookie)),
+    403,
+  );
   const editorId = `blog-editor-${suffix}`,
     teacherId = `blog-teacher-${suffix}`;
   ids.push(editorId, teacherId);
@@ -147,8 +180,14 @@ try {
   const editorCookie = signed(editorToken),
     teacherCookie = signed(teacherToken);
   assert.equal((await get(`${blog}/admin`, editorCookie)).status, 200);
-  assert.equal((await get(`${course}/admin`, editorCookie)).status, 307);
-  assert.equal((await get(`${blog}/admin`, teacherCookie)).status, 307);
+  assert.equal(
+    await pageStatus(await get(`${course}/admin`, editorCookie)),
+    403,
+  );
+  assert.equal(
+    await pageStatus(await get(`${blog}/admin`, teacherCookie)),
+    403,
+  );
   assert.equal((await get(`${course}/admin`, teacherCookie)).status, 200);
   const [post] = await db
     .insert(blogPosts)
@@ -179,7 +218,16 @@ try {
     readerCookie,
     'name="postId"',
   );
-  assert(response.headers.get("location")?.includes("verifica-correo"));
+  assert.equal(response.status, 200);
+  assert.equal(
+    (
+      await db
+        .select()
+        .from(blogComments)
+        .where(eq(blogComments.authorId, info.user.id))
+    ).length,
+    0,
+  );
   const inbox = await get(`${web}/api/cuenta/verificacion-local`, readerCookie);
   assert.equal(inbox.status, 200);
   const mail = await inbox.json();
@@ -199,7 +247,7 @@ try {
     readerCookie,
     'name="postId"',
   );
-  assert.equal(response.status, 303);
+  assert.equal(response.status, 200);
   const [comment] = await db
     .select()
     .from(blogComments)
@@ -222,7 +270,7 @@ try {
     editorCookie,
     `value="${comment!.id}"`,
   );
-  assert.equal(response.status, 303);
+  assert.equal(response.status, 200);
   assert(
     (await (await get(postUrl)).text()).includes("Un comentario temporal"),
   );
@@ -248,7 +296,7 @@ try {
     readerCookie,
     'name="sections"',
   );
-  assert(response.headers.get("location")?.includes("sin-permiso"));
+  assert.equal(response.status, 403);
   response = await action(
     editUrl,
     editHtml,
@@ -261,7 +309,7 @@ try {
     editorCookie,
     'name="sections"',
   );
-  assert(response.headers.get("location")?.includes("error=bloques"));
+  assert.equal(response.status, 200);
   response = await action(
     editUrl,
     editHtml,
@@ -270,7 +318,7 @@ try {
     'name="sections"',
   );
   assert.equal(response.status, 303);
-  assert.equal((await get(postUrl)).status, 404);
+  assert.equal(await pageStatus(await get(postUrl)), 404);
   response = await action(
     editUrl,
     editHtml,
@@ -278,7 +326,12 @@ try {
     editorCookie,
     'name="sections"',
   );
-  assert(response.headers.get("location")?.includes("error=conflicto"));
+  assert.equal(response.status, 200);
+  const [afterConflict] = await db
+    .select()
+    .from(blogPosts)
+    .where(eq(blogPosts.id, postId!));
+  assert.equal(afterConflict?.revision, 2);
   const [learning] = await db
     .insert(courses)
     .values({

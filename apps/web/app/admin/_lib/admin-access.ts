@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
 import {
   canGrantPermission,
   type PermissionScope,
-} from "@/lib/profile-permissions";
+} from "@workspace/auth/permissions";
 
 export type AdminAccess = {
   isDelegate: boolean;

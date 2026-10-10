@@ -1,3 +1,4 @@
+import { ActionForm } from "@workspace/ui/components/action-form";
 import { saveCourse } from "@/app/actions";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -12,7 +13,7 @@ export function CourseEditor({
   course?: typeof courses.$inferSelect;
 }) {
   return (
-    <form action={saveCourse}>
+    <ActionForm action={saveCourse}>
       {course && <input type="hidden" name="courseId" value={course.id} />}
       <div className="grid gap-x-4.5 sm:grid-cols-2">
         <AmsField label="Nombre del curso">
@@ -59,6 +60,6 @@ export function CourseEditor({
         </AmsField>
       </div>
       <Submit>Guardar curso</Submit>
-    </form>
+    </ActionForm>
   );
 }

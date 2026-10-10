@@ -7,20 +7,22 @@ import {
   courseEnrollments,
   courseProgress,
   courseQuizAttempts,
-  courseStaff,
-  user,
 } from "@workspace/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import {
+  ActionError,
+  runAction,
+  type ActionResult,
+} from "@workspace/server/action";
 import { requireViewer, requireManager } from "@/lib/auth";
 import { cleanHtml, safeUrl } from "@/lib/content";
 import { gradeQuiz } from "@/lib/grading";
 import {
   notifyCourseCompleted,
   notifyCoursePublished,
-  notifyCourseStaffChanged,
 } from "@/lib/notifications";
 import { verifyQuizSession } from "@/lib/quiz-session";
 
@@ -48,7 +50,14 @@ const questionSchema = z
       });
   });
 
-export async function saveCourse(data: FormData) {
+export async function saveCourse(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(() => saveCourseData(data));
+}
+
+async function saveCourseData(data: FormData) {
   const viewer = await requireManager();
   const values = {
     title: text(data, "title"),
@@ -61,7 +70,7 @@ export async function saveCourse(data: FormData) {
     updatedAt: new Date(),
   };
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug))
-    throw new Error(
+    throw new ActionError(
       "El enlace solo admite letras minúsculas, números y guiones",
     );
   let courseId: number;
@@ -72,14 +81,23 @@ export async function saveCourse(data: FormData) {
       .select()
       .from(courses)
       .where(eq(courses.id, courseId));
-    if (!existing) throw new Error("Curso inexistente");
+    if (!existing) throw new ActionError("El curso ya no existe.");
     wasPublished = existing.status === "published";
-    await db.update(courses).set(values).where(eq(courses.id, courseId));
+    try {
+      await db.update(courses).set(values).where(eq(courses.id, courseId));
+    } catch {
+      throw new ActionError("Ese enlace ya lo usa otro curso.");
+    }
   } else {
-    const [created] = await db
-      .insert(courses)
-      .values({ ...values, createdBy: viewer.id })
-      .returning();
+    let created;
+    try {
+      [created] = await db
+        .insert(courses)
+        .values({ ...values, createdBy: viewer.id })
+        .returning();
+    } catch {
+      throw new ActionError("Ese enlace ya lo usa otro curso.");
+    }
     courseId = created!.id;
   }
   if (values.status === "published" && !wasPublished)
@@ -91,7 +109,14 @@ export async function saveCourse(data: FormData) {
   redirect(`/admin/cursos/${courseId}?aviso=guardado`);
 }
 
-export async function saveModule(data: FormData) {
+export async function saveModule(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(() => saveModuleData(data));
+}
+
+async function saveModuleData(data: FormData): Promise<ActionResult> {
   await requireManager();
   const courseId = id(data, "courseId");
   const values = {
@@ -111,9 +136,17 @@ export async function saveModule(data: FormData) {
       );
   else await db.insert(courseModules).values(values);
   revalidatePath("/", "layout");
+  return { ok: true, message: "Módulo guardado." };
 }
 
-export async function saveLesson(data: FormData) {
+export async function saveLesson(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(() => saveLessonData(data));
+}
+
+async function saveLessonData(data: FormData) {
   await requireManager();
   const courseId = id(data, "courseId");
   const moduleId = data.get("moduleId") ? id(data, "moduleId") : null;
@@ -127,14 +160,14 @@ export async function saveLesson(data: FormData) {
           eq(courseModules.courseId, courseId),
         ),
       );
-    if (!module) throw new Error("Módulo ajeno al curso");
+    if (!module) throw new ActionError("Elige un módulo de este curso.");
   }
   const quiz = z
     .array(questionSchema)
     .max(100)
     .parse(JSON.parse(String(data.get("quiz") || "[]")));
   if (new Set(quiz.map((q) => q.id)).size !== quiz.length)
-    throw new Error("Las preguntas deben tener identificadores únicos");
+    throw new ActionError("Las preguntas deben tener identificadores únicos.");
   const values = {
     courseId,
     moduleId,
@@ -172,14 +205,21 @@ export async function saveLesson(data: FormData) {
   redirect(`/admin/cursos/${courseId}?aviso=leccion-guardada`);
 }
 
-export async function enroll(data: FormData) {
+export async function enroll(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(() => enrollData(data));
+}
+
+async function enrollData(data: FormData) {
   const viewer = await requireViewer();
   const courseId = id(data, "courseId");
   const [course] = await db
     .select()
     .from(courses)
     .where(and(eq(courses.id, courseId), eq(courses.status, "published")));
-  if (!course) throw new Error("Curso no disponible");
+  if (!course) throw new ActionError("Este curso ya no está disponible.");
   await db
     .insert(courseEnrollments)
     .values({ courseId, userId: viewer.id })
@@ -188,7 +228,14 @@ export async function enroll(data: FormData) {
   redirect(`/cursos/${course.slug}`);
 }
 
-export async function completeLesson(data: FormData) {
+export async function completeLesson(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(() => completeLessonData(data));
+}
+
+async function completeLessonData(data: FormData) {
   const viewer = await requireViewer();
   const lessonId = id(data, "lessonId");
   const [row] = await db
@@ -199,7 +246,7 @@ export async function completeLesson(data: FormData) {
       and(eq(courseLessons.id, lessonId), eq(courses.status, "published")),
     );
   if (!row || row.lesson.requiresReview)
-    throw new Error("Lección no disponible");
+    throw new ActionError("Esta lección ya no está disponible.");
   const { lesson, course } = row;
   let score: number | null = null;
   let passed = true;
@@ -216,15 +263,22 @@ export async function completeLesson(data: FormData) {
       )
       .for("update");
     if (!enrollment)
-      throw new Error("Inscríbete al curso antes de guardar progreso");
+      throw new ActionError("Inscríbete al curso antes de guardar progreso.");
     if (lesson.quiz.length) {
-      const selected = verifyQuizSession(
-        String(data.get("quizToken") ?? ""),
-        lesson.quiz,
-        lesson.quizQuestionCount,
-        lessonId,
-        viewer.id,
-      );
+      let selected;
+      try {
+        selected = verifyQuizSession(
+          String(data.get("quizToken") ?? ""),
+          lesson.quiz,
+          lesson.quizQuestionCount,
+          lessonId,
+          viewer.id,
+        );
+      } catch {
+        throw new ActionError(
+          "La evaluación cambió o expiró. Recarga la lección e inténtalo de nuevo.",
+        );
+      }
       const answers: Record<string, string[]> = Object.fromEntries(
         selected.map((q) => [
           q.id,
@@ -258,46 +312,4 @@ export async function completeLesson(data: FormData) {
   redirect(
     `/cursos/${course.slug}/lecciones/${lesson.id}?${passed ? "completada=1" : "reintentar=1"}${score !== null ? `&nota=${score}` : ""}`,
   );
-}
-
-export async function grantStaff(data: FormData) {
-  const viewer = await requireManager();
-  if (!viewer.canManageStaff)
-    throw new Error(
-      "Solo administradores y desarrolladores pueden asignar permisos",
-    );
-  const email = z
-    .string()
-    .email()
-    .parse(data.get("email"))
-    .trim()
-    .toLowerCase();
-  const role = z
-    .enum(["administrator", "developer", "instructor", "none"])
-    .parse(data.get("role"));
-  const [target] = await db
-    .select()
-    .from(user)
-    .where(sql`lower(${user.email}) = ${email}`);
-  if (!target || !target.emailVerified)
-    throw new Error(
-      "La persona debe registrarse y verificar su correo primero",
-    );
-  if (target.id === viewer.id)
-    throw new Error(
-      "No puedes cambiar tus propios permisos desde este formulario",
-    );
-  if (role === "none")
-    await db.delete(courseStaff).where(eq(courseStaff.userId, target.id));
-  else
-    await db
-      .insert(courseStaff)
-      .values({ userId: target.id, role })
-      .onConflictDoUpdate({ target: courseStaff.userId, set: { role } });
-  await notifyCourseStaffChanged({
-    recipientId: target.id,
-    actorId: viewer.id,
-    role,
-  });
-  revalidatePath("/admin");
 }

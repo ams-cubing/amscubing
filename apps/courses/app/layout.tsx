@@ -1,95 +1,178 @@
-import Link from "next/link";
-import { Saira, Unbounded } from "next/font/google";
+import { Geist_Mono, Saira, Unbounded } from "next/font/google";
+import { Suspense } from "react";
+import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
+
+import "@workspace/ui/globals.css";
+
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
+import { AmsAppNav } from "@workspace/ui/components/ams-app-nav";
+import { AmsAppSubnav } from "@workspace/ui/components/ams-app-subnav";
+import { AmsHeaderNotifications } from "@workspace/ui/components/ams-header-notifications";
+import { AmsSiteFooter } from "@workspace/ui/components/ams-site-footer";
+import { AppProviders } from "@workspace/ui/components/app-providers";
+import { PreviewBanner } from "@workspace/ui/components/preview-banner";
+import { signOutAction } from "@/app/_actions/auth";
 import {
+  getNotificationInbox,
+  markAllNotificationsReadAction,
+  markNotificationReadAction,
+} from "@/app/_actions/notifications";
+import { getViewer, signInUrl } from "@/lib/auth";
+import {
+  getBlogUrl,
   getBoardsUrl,
   getCalendarUrl,
   getCoursesUrl,
   getWebUrl,
-} from "@workspace/auth/urls";
-import { CoursesAmsNav } from "@/components/ams-site-nav";
-import { HeaderNotifications } from "@/components/header-notifications";
-import { getViewer, signInUrl } from "@/lib/auth";
-import "@workspace/ui/globals.css";
+} from "@/lib/urls";
 
-const heading = Unbounded({
+const fontSans = Unbounded({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["400", "500", "700", "900"],
 });
-const copy = Saira({
+
+const fontCopy = Saira({
   subsets: ["latin"],
   variable: "--font-copy",
   weight: ["400", "500", "600", "700"],
 });
 
-export const dynamic = "force-dynamic";
+const fontMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
+const description =
+  "Aprende, participa y fortalece la comunidad de speedcubing en México.";
+
 export const metadata = {
+  metadataBase: new URL(getCoursesUrl()),
   title: { default: "Cursos AMS", template: "%s | Cursos AMS" },
-  description:
-    "Aprende, participa y fortalece la comunidad de speedcubing en México.",
+  description,
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_MX",
+    siteName: "Cursos AMS",
+    title: "Cursos AMS",
+    description,
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "AMS" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Cursos AMS",
+  },
 };
 
-export default async function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function navUrls() {
+  return {
+    webUrl: getWebUrl(),
+    calendarUrl: getCalendarUrl(),
+    boardsUrl: getBoardsUrl(),
+    coursesUrl: getCoursesUrl(),
+    signInHref: signInUrl(),
+  };
+}
+
+const publicLinks = [{ label: "Explorar", href: "/" }];
+
+async function CoursesNav() {
   const viewer = await getViewer();
   return (
-    <html lang="es">
+    <AmsAppNav
+      active="Cursos"
+      user={
+        viewer
+          ? { name: viewer.name, image: viewer.image, email: viewer.email }
+          : null
+      }
+      showBoardsLink={await canAccessBoardsApp(viewer)}
+      actions={
+        viewer ? (
+          <AmsHeaderNotifications
+            getInbox={getNotificationInbox}
+            onMarkRead={markNotificationReadAction}
+            onMarkAllRead={markAllNotificationsReadAction}
+          />
+        ) : null
+      }
+      urls={navUrls()}
+      onSignOut={signOutAction}
+    />
+  );
+}
+
+async function CoursesSubnav() {
+  const viewer = await getViewer();
+  return (
+    <AmsAppSubnav
+      title="Cursos AMS"
+      label="Navegación de cursos"
+      links={[
+        ...publicLinks,
+        ...(viewer ? [{ label: "Mi aprendizaje", href: "/mis-cursos" }] : []),
+        ...(viewer?.canManage
+          ? [{ label: "Administrar", href: "/admin" }]
+          : []),
+      ]}
+    />
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es" suppressHydrationWarning>
       <body
-        className={`${heading.variable} ${copy.variable} ams-copy bg-ams-soft text-base text-ams-navy antialiased`}
+        className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} ams-copy bg-ams-soft text-base text-ams-navy antialiased`}
       >
-        <CoursesAmsNav
-          user={
-            viewer
-              ? { name: viewer.name, image: viewer.image, email: viewer.email }
-              : null
-          }
-          showBoardsLink={await canAccessBoardsApp(viewer)}
-          actions={viewer ? <HeaderNotifications /> : null}
-          urls={{
-            webUrl: getWebUrl(),
-            calendarUrl: getCalendarUrl(),
-            boardsUrl: getBoardsUrl(),
-            coursesUrl: getCoursesUrl(),
-            signInHref: signInUrl(),
-          }}
-        />
-        <div className="ams-heading border-b border-ams-navy/10 bg-white text-xs">
-          <div className="ams-container flex max-w-295 items-center justify-between gap-5 py-4.5">
-            <Link href="/" className="font-bold text-ams-red">
-              Cursos AMS
-            </Link>
-            <nav aria-label="Navegación de cursos" className="flex gap-6">
-              <Link href="/">Explorar</Link>
-              {viewer && <Link href="/mis-cursos">Mi aprendizaje</Link>}
-              {viewer?.canManage && <Link href="/admin">Administrar</Link>}
-            </nav>
-          </div>
-        </div>
-        <main>{children}</main>
-        <footer className="ams-container flex max-w-295 flex-col justify-between gap-5 border-t border-ams-navy/10 py-9 text-sm md:flex-row">
-          <div>
-            <strong className="ams-heading text-xs">
-              Aprender también es hacer comunidad.
-            </strong>
-            <p className="mt-2 text-xs text-ams-navy/60">
-              Asociación Mexicana de Speedcubing
-            </p>
-          </div>
-          <nav
-            className="flex flex-wrap gap-4 text-[13px] text-ams-navy/60"
-            aria-label="Navegación de AMS"
+        <AppProviders>
+          <Suspense fallback={null}>
+            <PreviewBanner productionHost="cursos.amscubing.org" />
+          </Suspense>
+          <Suspense
+            fallback={
+              <AmsAppNav active="Cursos" user={null} urls={navUrls()} />
+            }
           >
-            <a href={getWebUrl()}>Home</a>
-            <a href={`${getWebUrl()}/nosotros`}>Nosotros</a>
-            <a href={`${getWebUrl()}/competencias`}>Torneos</a>
-            <a href={`${getWebUrl()}/blog`}>Blog</a>
-            <Link href="/">Cursos</Link>
-          </nav>
-        </footer>
+            <CoursesNav />
+          </Suspense>
+          <Suspense
+            fallback={
+              <AmsAppSubnav
+                title="Cursos AMS"
+                label="Navegación de cursos"
+                links={publicLinks}
+              />
+            }
+          >
+            <CoursesSubnav />
+          </Suspense>
+          <main>{children}</main>
+          <AmsSiteFooter
+            webUrl={getWebUrl()}
+            calendarUrl={getCalendarUrl()}
+            blogUrl={getBlogUrl()}
+            coursesUrl={getCoursesUrl()}
+          />
+          <Analytics />
+          <Toaster />
+        </AppProviders>
       </body>
     </html>
   );
