@@ -1,0 +1,1 @@
+DROP TABLE "blog_rate_limit" CASCADE;

@@ -80,6 +80,12 @@ importers:
 
   apps/blog:
     dependencies:
+      '@uploadthing/react':
+        specifier: ^7.3.3
+        version: 7.3.3(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(uploadthing@7.7.4(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(tailwindcss@4.1.18))
+      '@uploadthing/shared':
+        specifier: ^7.1.10
+        version: 7.1.10
       '@workspace/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -107,6 +113,9 @@ importers:
       sanitize-html:
         specifier: ^2.17.0
         version: 2.18.0
+      uploadthing:
+        specifier: ^7.7.4
+        version: 7.7.4(next@16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(tailwindcss@4.1.18)
       zod:
         specifier: 'catalog:'
         version: 4.3.6

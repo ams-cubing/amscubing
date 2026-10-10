@@ -1,5 +1,6 @@
 "use server";
 import { db } from "@workspace/db";
+import { consumeRateLimit } from "@workspace/db/rate-limit";
 import { blogPosts, blogComments, blogStaff, user } from "@workspace/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -7,8 +8,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireManager, requireViewer } from "@/lib/auth";
 import { validateSections, safeUrl, slugify, plainText } from "@/lib/content";
-import { consumeLimit } from "@/lib/rate-limit";
-
 const postSchema = z.object({
   title: z.string().trim().min(3).max(200),
   slug: z
@@ -119,8 +118,12 @@ export async function addComment(form: FormData) {
   const content = String(form.get("content") ?? "").trim();
   if (content.length < 3 || content.length > 2000)
     redirect(`${path}?aviso=comentario-invalido`);
-  if (!(await consumeLimit(`comment:${viewer.id}`, 5, 600)))
-    redirect(`${path}?aviso=demasiados-comentarios`);
+  const { allowed } = await consumeRateLimit({
+    key: `blog:comment:user:${viewer.id}`,
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+  });
+  if (!allowed) redirect(`${path}?aviso=demasiados-comentarios`);
   await db.insert(blogComments).values({
     postId: id,
     authorId: viewer.id,

@@ -61,11 +61,12 @@ para AMS y abre comentarios con moderación previa. Usa IDs legados para no dupl
 datos; al guardar una entrada localmente deja de sobrescribirla en reimportaciones.
 También conserva las decisiones locales de moderación.
 
-Las imágenes migradas están en `public/media/wordpress`. Las cargas nuevas se
-guardan en `BLOG_MEDIA_DIR` (por defecto `public/media/uploads`, ignorado por Git)
-y se sirven por `/media/uploads/<nombre>`. En producción se requiere volumen
-persistente o adaptar esta capa a almacenamiento de objetos. Se admiten JPG, PNG
-y WebP de hasta 10 MB con validación de cabecera y límites de carga.
+Las imágenes migradas están en `public/media/wordpress`. Las cargas nuevas del
+editor (portada e imágenes de bloques) se suben a UploadThing mediante
+`/api/uploadthing` (ruta `blogImage` en `lib/uploadthing.ts`) y se guardan como
+URL pública. Requiere `UPLOADTHING_TOKEN`; solo el staff con permiso de edición
+puede subir, con imágenes de hasta 8 MB y un máximo de 30 cargas cada 10 minutos
+por usuario (`@workspace/db/rate-limit`).
 
 ## Cuentas con correo y WCA
 

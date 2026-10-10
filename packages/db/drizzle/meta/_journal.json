@@ -274,6 +274,13 @@
       "when": 1791571988616,
       "tag": "0038_easy_ozymandias",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791591441113,
+      "tag": "0039_drop_blog_rate_limit",
+      "breakpoints": true
     }
   ]
 }

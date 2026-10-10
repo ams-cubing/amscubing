@@ -6,6 +6,7 @@ import { brandColors, slugify } from "@/lib/content";
 import { Sections } from "./sections";
 import { RichText } from "./rich-text";
 import { savePost } from "@/app/actions";
+import { useUploadThing } from "@/lib/uploadthing-client";
 const labels: Record<BlogBlock["type"], string> = {
   heading: "Título",
   text: "Texto",
@@ -55,6 +56,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const { startUpload } = useUploadThing("blogImage");
   const dragging = useRef<{ section: string; block?: string } | null>(null);
   const updateSection = (id: string, patch: Partial<BlogSection>) =>
     setSections((ss) => ss.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -133,20 +135,15 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
     setBusy(true);
     setMessage("");
     try {
-      const data = new FormData();
-      data.set("file", file);
-      const response = await fetch("/api/media", {
-        method: "POST",
-        body: data,
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? "No se pudo cargar");
-      if (sid && bid) updateBlock(sid, bid, { url: result.url });
+      const [uploaded] = (await startUpload([file])) ?? [];
+      const url = uploaded?.serverData.url;
+      if (!url) throw new Error("No se pudo cargar");
+      if (sid && bid) updateBlock(sid, bid, { url });
       else {
         const input = document.querySelector<HTMLInputElement>(
           'input[name="coverUrl"]',
         );
-        if (input) input.value = result.url;
+        if (input) input.value = url;
       }
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Error de carga");

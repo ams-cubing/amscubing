@@ -41,4 +41,3 @@ npm-debug.log*
 
 # Large migrated course videos are local assets; copy to object storage for deployment.
 apps/courses/public/media/wordpress/*.mp4
-apps/blog/public/media/uploads/

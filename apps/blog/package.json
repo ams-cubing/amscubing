@@ -14,28 +14,31 @@
     "staff:grant": "tsx scripts/grant-staff.ts"
   },
   "dependencies": {
+    "@uploadthing/react": "^7.3.3",
+    "@uploadthing/shared": "^7.1.10",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "cheerio": "^1.1.2",
+    "drizzle-orm": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "drizzle-orm": "catalog:",
-    "zod": "catalog:",
     "sanitize-html": "^2.17.0",
-    "cheerio": "^1.1.2"
+    "uploadthing": "^7.7.4",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@workspace/eslint-config": "workspace:^",
-    "@workspace/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.1.11",
-    "eslint": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/sanitize-html": "^2.16.0",
+    "@workspace/eslint-config": "workspace:^",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "tsx": "^4.20.6",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsx": "^4.20.6"
+    "vitest": "catalog:"
   }
 }

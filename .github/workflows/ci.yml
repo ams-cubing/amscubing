@@ -76,7 +76,6 @@ jobs:
           NEXT_PUBLIC_BOARDS_URL: http://localhost:3002
           NEXT_PUBLIC_COURSES_URL: http://localhost:3003
           NEXT_PUBLIC_BLOG_URL: http://localhost:3004
-          BLOG_MEDIA_DIR: ${{ runner.temp }}/blog-media
           WCA_CLIENT_ID: ci
           WCA_CLIENT_SECRET: ci
           RESEND_API_KEY: ci
