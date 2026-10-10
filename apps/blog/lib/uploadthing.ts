@@ -1,6 +1,8 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { consumeRateLimit } from "@workspace/db/rate-limit";
+import { recordUpload } from "@workspace/db/uploads";
+import { log } from "@workspace/server/log";
 import { getViewer } from "@/lib/auth";
 
 const f = createUploadthing();
@@ -24,8 +26,25 @@ export const blogFileRouter = {
         throw new UploadThingError("Demasiadas cargas. Espera unos minutos.");
       return { userId: viewer.id };
     })
-    .onUploadComplete(async ({ file }) => {
-      return { url: file.ufsUrl ?? file.url };
+    .onUploadComplete(async ({ metadata, file }) => {
+      const url = file.ufsUrl ?? file.url;
+      try {
+        await recordUpload({
+          key: file.key,
+          url,
+          name: file.name,
+          app: "blog",
+          route: "blogImage",
+          userId: metadata.userId,
+        });
+      } catch (error) {
+        log.error("upload.record_failed", {
+          app: "blog",
+          key: file.key,
+          error,
+        });
+      }
+      return { url };
     }),
 } satisfies FileRouter;
 

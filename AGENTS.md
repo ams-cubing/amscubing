@@ -33,6 +33,11 @@ La home sigue la estructura visual del rediseño: hero, próximos torneos, ranki
   - `@workspace/ui`: componentes UI compartidos. Chrome global AMS (`AmsSiteNav` + `AmsAccountMenu`) vive aquí; Competencias es ruta de `apps/web` (`/competencias`) con enlace al calendario.
   - `@workspace/email`: envío de correos (Resend).
   - `@workspace/social`: publicación en Facebook/Instagram al anunciar competencias.
+  - `@workspace/server`: utilidades solo de servidor compartidas por todas las apps:
+    - `@workspace/server/log`: logger estructurado (`log.info/warn/error(evento, campos)`, una línea JSON). Usarlo en server actions y paquetes en lugar de `console.*`; los scripts CLI (`seed`, `migrate`, importadores) pueden seguir con `console`.
+    - `@workspace/server/env`: validación de variables de entorno. Cada app la ejecuta en `instrumentation.ts` al arrancar; si agregas una variable nueva, declárala ahí, en el `turbo.json` de la app y en `.env.example`.
+    - `@workspace/server/security-headers`: cabeceras de seguridad para `next.config.mjs`. La CSP va en modo `Report-Only`; si integras un host externo nuevo (scripts, fetch desde el cliente, iframes), agrégalo antes de pasar a modo estricto.
+- Subidas a UploadThing: cada `onUploadComplete` debe llamar a `recordUpload` de `@workspace/db/uploads` para registrar la `key` en la tabla `uploaded_file` (base para limpiar huérfanos y la biblioteca de medios).
 - Rate limiting: `consumeRateLimit` de `@workspace/db/rate-limit` (contador de ventana fija sobre la tabla `rate_limit` de Better Auth). Las llaves deben ir con namespace `<app>:<acción>:<ámbito>:<id>`, p. ej. `blog:comment:user:<id>` o `calendar:date-request:ip:<ip>`. No crear tablas de rate limit por app.
 
 ## Web actual
@@ -114,4 +119,4 @@ Si no hay `DATABASE_URL` o la BD no responde, `apps/web` tiene fallback estátic
 
 ## Cuidado con credenciales
 
-Nunca guardar credenciales de WordPress, tokens ni contraseñas en el repo, en `agents.md`, en commits o en logs compartidos. Si hace falta usarlas, tratarlas como secreto temporal de la sesión.
+Nunca guardar credenciales de WordPress, tokens ni contraseñas en el repo, en `AGENTS.md`, en commits o en logs compartidos. Si hace falta usarlas, tratarlas como secreto temporal de la sesión.

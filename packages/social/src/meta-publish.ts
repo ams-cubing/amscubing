@@ -1,13 +1,28 @@
-import { plainTextFromWcaMarkup } from "./wca-competition";
+import { log } from "@workspace/server/log";
 
-const GRAPH_API_VERSION = "v21.0";
-const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+import {
+  getMetaConfig,
+  getMetaPageConfig,
+  type MetaConfig,
+} from "./meta-config";
+import {
+  GRAPH_BASE,
+  graphDelete,
+  graphPost,
+  graphPostMultipart,
+} from "./meta-graph";
 
-export type MetaConfig = {
-  pageId: string;
-  pageAccessToken: string;
-  igUserId: string;
-};
+export {
+  getMetaConfig,
+  getMetaPageConfig,
+  type MetaConfig,
+} from "./meta-config";
+export {
+  buildAnnouncementCaption,
+  buildUpcomingCompetitionsCaption,
+  type BuildAnnouncementCaptionInput,
+  type UpcomingCompetitionsCaptionItem,
+} from "./meta-captions";
 
 export type PublishAnnouncementInput = {
   caption: string;
@@ -26,280 +41,8 @@ export type PublishAnnouncementResult =
     }
   | { ok: false; message: string };
 
-export function getMetaConfig():
-  | { ok: true; config: MetaConfig }
-  | { ok: false; message: string } {
-  const pageId = process.env.META_PAGE_ID?.trim();
-  const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
-  const igUserId = process.env.META_IG_USER_ID?.trim();
-
-  if (!pageId || !pageAccessToken || !igUserId) {
-    return {
-      ok: false,
-      message:
-        "Falta la configuración de Meta (META_PAGE_ID, META_PAGE_ACCESS_TOKEN, META_IG_USER_ID). No se puede publicar en redes.",
-    };
-  }
-
-  return {
-    ok: true,
-    config: { pageId, pageAccessToken, igUserId },
-  };
-}
-
-/** Page token only — enough for cover photo updates (IG id not required). */
-export function getMetaPageConfig():
-  | { ok: true; config: Pick<MetaConfig, "pageId" | "pageAccessToken"> }
-  | { ok: false; message: string } {
-  const pageId = process.env.META_PAGE_ID?.trim();
-  const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
-
-  if (!pageId || !pageAccessToken) {
-    return {
-      ok: false,
-      message:
-        "Falta la configuración de Meta (META_PAGE_ID, META_PAGE_ACCESS_TOKEN). No se puede actualizar la portada.",
-    };
-  }
-
-  return {
-    ok: true,
-    config: { pageId, pageAccessToken },
-  };
-}
-
-import {
-  formatDateRangeEs,
-  formatEventLabels,
-  formatUpcomingListDateRangeEs,
-} from "./format";
-
-export type BuildAnnouncementCaptionInput = {
-  name: string;
-  city: string;
-  stateName?: string | null;
-  startDate: string;
-  endDate: string;
-  wcaUrl: string;
-  customText: string;
-  tags?: string | null;
-  venueName?: string | null;
-  venueAddress?: string | null;
-  venueDetails?: string | null;
-  eventIds?: string[];
-  competitorLimit?: number | null;
-  capacityFallback?: number | null;
-};
-
-export type UpcomingCompetitionsCaptionItem = {
-  name: string;
-  city: string;
-  stateName?: string | null;
-  startDate: string;
-  endDate: string;
-  venueName?: string | null;
-  venueAddress?: string | null;
-  venueDetails?: string | null;
-  eventIds?: string[];
-  competitorLimit?: number | null;
-  capacityFallback?: number | null;
-};
-
-const WCA_MX_COMPETITIONS_URL =
-  "https://www.worldcubeassociation.org/competitions?region=MX";
-
-export function buildAnnouncementCaption(
-  input: BuildAnnouncementCaptionInput,
-): string {
-  const customText = input.customText.trim();
-  const dateLabel = formatDateRangeEs(input.startDate, input.endDate);
-  const venueLine =
-    plainTextFromWcaMarkup(input.venueName) ||
-    plainTextFromWcaMarkup(input.venueDetails) ||
-    plainTextFromWcaMarkup(input.venueAddress) ||
-    null;
-  const cityLine = [input.city, input.stateName?.trim()]
-    .filter(Boolean)
-    .join(", ");
-  const events = formatEventLabels(input.eventIds ?? []);
-  const limit =
-    input.competitorLimit && input.competitorLimit > 0
-      ? input.competitorLimit
-      : input.capacityFallback && input.capacityFallback > 0
-        ? input.capacityFallback
-        : null;
-  const tags = input.tags?.trim() || null;
-
-  const lines: string[] = [];
-  if (customText) {
-    lines.push(customText, ``);
-  }
-  lines.push(`¡BIENVENIDOS A ${input.name.toUpperCase()}!`);
-  lines.push(`📅: ${dateLabel}`);
-  if (venueLine) lines.push(`📍: ${venueLine}`);
-  if (cityLine) lines.push(`🏙️: ${cityLine}`);
-  if (events) lines.push(`🔻: ${events}`);
-  if (limit) lines.push(`🎟️: ${limit} competidores`);
-  if (tags) lines.push(`ℹ️: ${tags}`);
-  lines.push(input.wcaUrl);
-
-  return lines.join("\n");
-}
-
-/** Multi-competition caption for the Torneo de Rubik cover feed post. */
-export function buildUpcomingCompetitionsCaption(
-  competitions: UpcomingCompetitionsCaptionItem[],
-): string {
-  const lines: string[] = ["PRÓXIMAS COMPETENCIAS:"];
-
-  for (const competition of competitions) {
-    const name = competition.name.trim();
-    if (!name) continue;
-
-    const venueLine =
-      plainTextFromWcaMarkup(competition.venueName) ||
-      plainTextFromWcaMarkup(competition.venueDetails) ||
-      plainTextFromWcaMarkup(competition.venueAddress) ||
-      null;
-    const cityLine = [competition.city.trim(), competition.stateName?.trim()]
-      .filter(Boolean)
-      .join(", ");
-    const events = formatEventLabels(competition.eventIds ?? []);
-    const limit =
-      competition.competitorLimit && competition.competitorLimit > 0
-        ? competition.competitorLimit
-        : competition.capacityFallback && competition.capacityFallback > 0
-          ? competition.capacityFallback
-          : null;
-
-    lines.push("");
-    lines.push(name);
-    lines.push(
-      `📅: ${formatUpcomingListDateRangeEs(competition.startDate, competition.endDate)}`,
-    );
-    if (venueLine) lines.push(`📍: ${venueLine}`);
-    if (cityLine) lines.push(`🏙️: ${cityLine}`);
-    if (events) lines.push(`🔻: ${events}`);
-    if (limit) lines.push(`🎟️: ${limit} competidores`);
-  }
-
-  lines.push("", "Toda la info:", WCA_MX_COMPETITIONS_URL);
-  return lines.join("\n");
-}
-
 export function facebookPostUrl(facebookPostId: string): string {
   return `https://www.facebook.com/${facebookPostId}`;
-}
-
-async function graphPost(
-  path: string,
-  params: Record<string, string>,
-): Promise<
-  { ok: true; data: Record<string, unknown> } | { ok: false; message: string }
-> {
-  try {
-    const response = await fetch(`${GRAPH_BASE}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(params),
-    });
-
-    const json = (await response.json()) as {
-      error?: { message?: string };
-      id?: string;
-      post_id?: string;
-    };
-
-    if (!response.ok || json.error) {
-      return {
-        ok: false,
-        message: json.error?.message ?? `Meta API error (${response.status})`,
-      };
-    }
-
-    return { ok: true, data: json as Record<string, unknown> };
-  } catch (error) {
-    console.error("Meta Graph POST failed:", error);
-    return { ok: false, message: "Error de red al publicar en Meta." };
-  }
-}
-
-async function graphPostMultipart(
-  path: string,
-  fields: Record<string, string>,
-  file: {
-    fieldName: string;
-    filename: string;
-    buffer: Buffer;
-    contentType: string;
-  },
-): Promise<
-  { ok: true; data: Record<string, unknown> } | { ok: false; message: string }
-> {
-  try {
-    const form = new FormData();
-    for (const [key, value] of Object.entries(fields)) {
-      form.append(key, value);
-    }
-    form.append(
-      file.fieldName,
-      new Blob([new Uint8Array(file.buffer)], { type: file.contentType }),
-      file.filename,
-    );
-
-    const response = await fetch(`${GRAPH_BASE}${path}`, {
-      method: "POST",
-      body: form,
-    });
-
-    const json = (await response.json()) as {
-      error?: { message?: string };
-      id?: string;
-      post_id?: string;
-    };
-
-    if (!response.ok || json.error) {
-      return {
-        ok: false,
-        message: json.error?.message ?? `Meta API error (${response.status})`,
-      };
-    }
-
-    return { ok: true, data: json as Record<string, unknown> };
-  } catch (error) {
-    console.error("Meta Graph multipart POST failed:", error);
-    return { ok: false, message: "Error de red al subir imagen a Meta." };
-  }
-}
-
-async function graphDelete(
-  path: string,
-  accessToken: string,
-): Promise<
-  { ok: true; data: Record<string, unknown> } | { ok: false; message: string }
-> {
-  try {
-    const url = new URL(`${GRAPH_BASE}${path}`);
-    url.searchParams.set("access_token", accessToken);
-
-    const response = await fetch(url.toString(), { method: "DELETE" });
-    const json = (await response.json().catch(() => ({}))) as {
-      error?: { message?: string };
-      success?: boolean;
-    };
-
-    if (!response.ok || json.error) {
-      return {
-        ok: false,
-        message: json.error?.message ?? `Meta API error (${response.status})`,
-      };
-    }
-
-    return { ok: true, data: json as Record<string, unknown> };
-  } catch (error) {
-    console.error("Meta Graph DELETE failed:", error);
-    return { ok: false, message: "Error de red al eliminar en Meta." };
-  }
 }
 
 async function publishFacebookPhoto(
@@ -365,11 +108,10 @@ async function deleteFacebookPost(
 ): Promise<void> {
   const result = await graphDelete(`/${postId}`, config.pageAccessToken);
   if (!result.ok) {
-    console.error(
-      "Failed to delete orphan Facebook post:",
+    log.error("meta.orphan_facebook_post_delete_failed", {
       postId,
-      result.message,
-    );
+      message: result.message,
+    });
   }
 }
 
@@ -498,7 +240,7 @@ export async function publishToTorneoDeRubik(
     };
   } catch (error) {
     await deleteFacebookPost(config, facebook.postId);
-    console.error("Instagram publish failed:", error);
+    log.error("meta.instagram_publish_failed", { error });
     return {
       ok: false,
       message:
@@ -531,7 +273,7 @@ export async function publishInstagramOnly(input: {
   try {
     return await publishInstagramPhoto(meta.config, input.caption, imageUrl);
   } catch (error) {
-    console.error("Instagram-only publish failed:", error);
+    log.error("meta.instagram_only_publish_failed", { error });
     return {
       ok: false,
       message:

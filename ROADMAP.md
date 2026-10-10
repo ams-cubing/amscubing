@@ -42,7 +42,7 @@ Paridad con la **portada y el blog** actuales de WordPress, y luego retirar Word
 - [x] Moderar comentarios (`apps/blog/admin/comentarios`).
 - [ ] Comprobación de roles (delegado / editor de contenido — ampliar roles si hace falta).
 - [x] Subidas de imágenes del blog a UploadThing (ruta `blogImage`, solo staff, rate limit compartido).
-- [ ] Biblioteca de medios (listar/reutilizar/borrar subidas).
+- [ ] Biblioteca de medios (listar/reutilizar/borrar subidas). Base lista: cada subida de blog y tableros queda registrada en `uploaded_file` (`recordUpload` de `@workspace/db/uploads`); falta UI y limpieza de huérfanos.
 - [x] Allowlist piloto de Tableros retirada: `/admin/tableros`, sus acciones, la tabla `boards_organizer_allowlist` y la env `BOARDS_ORGANIZER_ALLOWLIST` se eliminaron. `canAccessBoardsApp` permite delegados, organizadores de cualquier competencia y miembros de tableros.
 
 **Datos**
@@ -142,19 +142,23 @@ Unos 35 archivos de test unitarios (calendar 8, auth 6, boards 5, web 4, db 4, c
 #### Observabilidad y ops
 
 - [ ] Error tracking en producción (p. ej. Sentry) en las tres apps.
-- [ ] Logging estructurado en server actions críticas.
+- [x] Logging estructurado en server actions críticas (`@workspace/server/log`, una línea JSON por evento; `console` solo en scripts CLI y componentes cliente).
+- [x] Páginas `error.tsx` en todas las apps y `not-found.tsx` en blog.
+- [x] Validación de variables de entorno al arrancar (`instrumentation.ts` + `@workspace/server/env`): obligatorias fallan, opcionales avisan.
 - [x] Rate limiting en solicitar fecha: ventana corta por usuario e IP (`@workspace/db/rate-limit` sobre la tabla `rate_limit`), además del tope semanal.
 - [x] Comentarios y subidas del blog usan el mismo helper (`blog:comment:user:<id>`, `blog:upload:user:<id>`); tabla `blog_rate_limit` eliminada.
 - [ ] Rate limiting en el resto de formularios públicos y envíos de email (inscripción a cursos, etc.).
 
 #### Documentación de entorno
 
-- [ ] `.env.example` raíz más completo (hoy solo `DATABASE_URL`).
+- [x] `.env.example` raíz completo, agrupado por app.
 - [x] `apps/web/.env.local.example` antes de mover auth a web.
-- [ ] Referencia única de variables por app (`BETTER_AUTH_*`, `WCA_*`, `RESEND_*`, URLs públicas, cookie domain).
+- [x] Referencia única de variables por app: `.env.example` raíz + specs en `apps/*/instrumentation.ts`; `turbo.json` por app declara las variables propias del build.
 
 #### Seguridad
 
+- [x] Cabeceras de seguridad en las cinco apps (`@workspace/server/security-headers`): `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS en producción.
+- [ ] Pasar la CSP de `Report-Only` a modo estricto tras revisar violaciones en producción.
 - [ ] Documentar que `apps/calendar/proxy.ts` no valida auth de forma segura (checks por ruta/página — intencional).
 - [ ] Respuestas tipadas forbidden/unauthorized en server actions en lugar de `throw new Error(...)` genérico donde aplique.
 
@@ -197,7 +201,9 @@ Permitir login/registro sin OAuth WCA para gente que solo quiere participar en l
 
 | Fecha      | Decisión                         | Notas                                                                                                                                             |
 | ---------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-09 | Blog media en UploadThing        | Subidas del editor del blog pasan de disco local a UploadThing (como tableros); rate limit unificado en `@workspace/db/rate-limit`                 |
+| 2026-10-09 | CSP en modo Report-Only          | Cabeceras básicas se aplican ya; la CSP se publica como `Content-Security-Policy-Report-Only` hasta revisar violaciones reales                    |
+| 2026-10-09 | Registro de subidas UploadThing  | Tabla `uploaded_file` con la `key` de cada subida (blog y tableros) como base para limpiar huérfanos y la biblioteca de medios                    |
+| 2026-10-09 | Blog media en UploadThing        | Subidas del editor del blog pasan de disco local a UploadThing (como tableros); rate limit unificado en `@workspace/db/rate-limit`                |
 | 2026-09-30 | Tableros abierto a organizadores | Tableros abierto a delegados + organizadores (y miembros invitados); allowlist eliminada (tabla, env y `/admin/tableros`)                         |
 | 2026-09-17 | Redes al marcar **anunciada**    | Revierte 2026-08-20/18: publicar en FB/IG AMS al anunciar (no al celebrar); logo opcional; hook en `markAsAnnounced` / `statusPublic = announced` |
 | 2026-09-10 | Allowlist Tableros en admin      | Fuente primaria BD (`boards_organizer_allowlist` + `/admin/tableros`); env `BOARDS_ORGANIZER_ALLOWLIST` solo override temporal                    |

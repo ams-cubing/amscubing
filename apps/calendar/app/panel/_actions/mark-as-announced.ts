@@ -20,6 +20,7 @@ import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function markAsAnnounced(
   competitionId: number,
@@ -176,14 +177,11 @@ export async function markAsAnnounced(
             statusLabel: applied.statusLabel,
           });
         } catch (err) {
-          console.error(
-            "Error sending organizer status email via Resend:",
-            err,
-          );
+          log.error("calendar.organizer_status_email_failed", { error: err });
         }
       }
     } catch (err) {
-      console.error("Error notifying organizers:", err);
+      log.error("calendar.notify_organizers_failed", { error: err });
     }
 
     revalidateTag("competitions", "days");
@@ -203,12 +201,14 @@ export async function markAsAnnounced(
         : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)",
     };
   } catch (error) {
-    console.error("Error marking competition as announced:", error);
+    log.error("calendar.mark_announced_failed", { error });
     if (claimed) {
       try {
         await releaseCompetitionSocialPublish(competitionId);
       } catch (releaseError) {
-        console.error("Error releasing social publish claim:", releaseError);
+        log.error("calendar.social_claim_release_failed", {
+          error: releaseError,
+        });
       }
     }
     return { success: false, message: getErrorMessage(error) };

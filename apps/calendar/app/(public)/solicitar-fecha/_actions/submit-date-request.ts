@@ -25,6 +25,7 @@ import {
   DATE_REQUEST_USER_LIMIT,
   MAX_DATE_REQUESTS_PER_WEEK,
 } from "../_lib/constants";
+import { log } from "@workspace/server/log";
 
 function getClientIp(headersList: Headers) {
   const forwarded = headersList.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -169,7 +170,7 @@ export async function submitDateRequest(
       proposedDelegate = result.proposed;
       newRequest = result.request;
     } catch (err) {
-      console.error("Transaction failed:", err);
+      log.error("calendar.date_request_transaction_failed", { error: err });
       throw err;
     }
 
@@ -191,7 +192,7 @@ export async function submitDateRequest(
         dateRequestId: newRequest.id,
       });
     } catch (err) {
-      console.error("Error sending delegate email via Resend:", err);
+      log.error("calendar.delegate_email_failed", { error: err });
     }
 
     try {
@@ -208,7 +209,7 @@ export async function submitDateRequest(
         });
       }
     } catch (err) {
-      console.error("Error sending organizer email via Resend:", err);
+      log.error("calendar.organizer_email_failed", { error: err });
     }
 
     return {
@@ -216,7 +217,7 @@ export async function submitDateRequest(
       message: `Solicitud creada. Se propuso a ${proposedDelegate.name}; queda pendiente de su confirmación.`,
     };
   } catch (error) {
-    console.error("Error submitting date request:", error);
+    log.error("calendar.date_request_submit_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

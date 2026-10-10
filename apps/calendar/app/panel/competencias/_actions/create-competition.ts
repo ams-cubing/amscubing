@@ -33,6 +33,7 @@ import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 import { assignBoardToCompetitionById } from "./assign-board";
+import { log } from "@workspace/server/log";
 
 export async function createCompetition(
   data: z.infer<typeof createCompetitionSchema>,
@@ -210,11 +211,11 @@ export async function createCompetition(
             endDate: endDateStr!,
           });
         } catch (err) {
-          console.error("Error sending delegate email via Resend:", err);
+          log.error("calendar.delegate_email_failed", { error: err });
         }
       }
     } catch (err) {
-      console.error("Error fetching delegate emails:", err);
+      log.error("calendar.delegate_emails_fetch_failed", { error: err });
     }
 
     try {
@@ -235,11 +236,11 @@ export async function createCompetition(
             endDate: endDateStr!,
           });
         } catch (err) {
-          console.error("Error sending organizer email via Resend:", err);
+          log.error("calendar.organizer_email_failed", { error: err });
         }
       }
     } catch (err) {
-      console.error("Error fetching organizer emails:", err);
+      log.error("calendar.organizer_emails_fetch_failed", { error: err });
     }
 
     revalidateTag("competitions", "days");
@@ -272,7 +273,7 @@ export async function createCompetition(
       competitionId: newCompetitionId,
     };
   } catch (error) {
-    console.error("Error creating competition:", error);
+    log.error("calendar.create_competition_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

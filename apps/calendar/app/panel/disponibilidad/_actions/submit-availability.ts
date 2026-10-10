@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { requireDelegate } from "@/lib/session";
 import { getErrorMessage } from "@/lib/handle-error";
 import { toDateOnlyString } from "@/lib/availability-dates";
+import { log } from "@workspace/server/log";
 
 export async function submitAvailability(data: { dates: Date[] }) {
   try {
@@ -86,7 +87,7 @@ export async function submitAvailability(data: { dates: Date[] }) {
       message: "Disponibilidad actualizada exitosamente",
     };
   } catch (error) {
-    console.error("Error submitting availability:", error);
+    log.error("calendar.availability_submit_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

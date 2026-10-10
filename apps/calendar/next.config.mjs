@@ -1,3 +1,5 @@
+import { securityHeaders } from "@workspace/server/security-headers";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
@@ -5,8 +7,12 @@ const nextConfig = {
     "@workspace/ui",
     "@workspace/db",
     "@workspace/auth",
+    "@workspace/server",
     "@workspace/social",
   ],
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders() }];
+  },
   serverExternalPackages: ["sharp", "@resvg/resvg-js"],
   images: {
     unoptimized: true,
@@ -14,6 +20,6 @@ const nextConfig = {
   experimental: {
     authInterrupts: true,
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

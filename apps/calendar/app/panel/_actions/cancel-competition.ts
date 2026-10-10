@@ -11,6 +11,7 @@ import { restoreAvailability } from "@/lib/availability-dates";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function cancelCompetition(competitionId: number): Promise<{
   success: boolean;
@@ -73,14 +74,11 @@ export async function cancelCompetition(competitionId: number): Promise<{
             statusLabel: applied.statusLabel,
           });
         } catch (err) {
-          console.error(
-            "Error sending organizer status email via Resend:",
-            err,
-          );
+          log.error("calendar.organizer_status_email_failed", { error: err });
         }
       }
     } catch (err) {
-      console.error("Error notifying organizers:", err);
+      log.error("calendar.notify_organizers_failed", { error: err });
     }
 
     revalidateTag("competitions", "days");
@@ -92,7 +90,7 @@ export async function cancelCompetition(competitionId: number): Promise<{
 
     return { success: true, message: "Competencia cancelada exitosamente" };
   } catch (error) {
-    console.error("Error cancelling competition:", error);
+    log.error("calendar.cancel_competition_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }

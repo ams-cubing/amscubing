@@ -1,4 +1,5 @@
 import { extractFirstImageUrl } from "./competition-logo";
+import { log } from "@workspace/server/log";
 
 export type WcaCompetitionDetails = {
   id: string;
@@ -118,7 +119,7 @@ export async function fetchWcaCompetition(
       },
     };
   } catch (error) {
-    console.error("Error fetching WCA competition:", error);
+    log.error("social.wca_competition_fetch_failed", { error });
     return {
       ok: false,
       message: "Error al consultar la API de la WCA. Inténtalo de nuevo.",

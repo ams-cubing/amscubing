@@ -24,6 +24,7 @@
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/email": "workspace:*",
+    "@workspace/server": "workspace:*",
     "@workspace/social": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "catalog:",

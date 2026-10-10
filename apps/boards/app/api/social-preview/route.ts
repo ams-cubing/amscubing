@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { buildAnnouncementPreview } from "@workspace/social";
 
 import { requireSession } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function POST(request: Request) {
   const authResult = await requireSession();
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
       imageUrl: preview.imageUrl,
     });
   } catch (error) {
-    console.error("social-preview error:", error);
+    log.error("boards.social_preview_failed", { error });
     return NextResponse.json(
       { ok: false, message: "Error al generar preview" },
       { status: 500 },

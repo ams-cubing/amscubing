@@ -1,0 +1,41 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect } from "react";
+
+import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
+import { buttonVariants } from "@workspace/ui/components/button";
+
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("boards.error_boundary", error.digest ?? error.message);
+  }, [error]);
+
+  return (
+    <AmsStatusPage
+      code="500"
+      title="Algo salió mal"
+      description="No pudimos cargar el tablero. Intenta de nuevo en unos segundos."
+    >
+      <button
+        type="button"
+        onClick={reset}
+        className={buttonVariants({ variant: "default", size: "lg" })}
+      >
+        Intentar de nuevo
+      </button>
+      <Link
+        href="/"
+        className={buttonVariants({ variant: "outline", size: "lg" })}
+      >
+        Volver a mis tableros
+      </Link>
+    </AmsStatusPage>
+  );
+}

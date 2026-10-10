@@ -23,6 +23,7 @@ import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function acceptDateRequest(dateRequestId: number): Promise<{
   success: boolean;
@@ -146,7 +147,7 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
           delegateEmail: session.user.email,
         });
       } catch (err) {
-        console.error("Error sending accept email to organizer:", err);
+        log.error("calendar.accept_email_failed", { error: err });
       }
     }
 
@@ -166,7 +167,7 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
       competitionId,
     };
   } catch (error) {
-    console.error("Error accepting date request:", error);
+    log.error("calendar.date_request_accept_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }
@@ -324,7 +325,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           dateRequestId,
         });
       } catch (err) {
-        console.error("Error sending proposal email to next delegate:", err);
+        log.error("calendar.proposal_email_failed", { error: err });
       }
     }
 
@@ -339,7 +340,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           nextDelegateName: nextDelegate?.name ?? null,
         });
       } catch (err) {
-        console.error("Error sending decline email to organizer:", err);
+        log.error("calendar.decline_email_failed", { error: err });
       }
     }
 
@@ -356,7 +357,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
         : "Propuesta rechazada. No hay otro delegado disponible por ahora.",
     };
   } catch (error) {
-    console.error("Error declining date request:", error);
+    log.error("calendar.date_request_decline_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }

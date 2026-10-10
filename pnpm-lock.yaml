@@ -65,9 +65,6 @@ importers:
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
-      es-abstract:
-        specifier: 1.24.2
-        version: 1.24.2
       prettier:
         specifier: ^3.6.2
         version: 3.8.1
@@ -92,6 +89,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -198,6 +198,9 @@ importers:
       '@workspace/email':
         specifier: workspace:*
         version: link:../../packages/email
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@workspace/social':
         specifier: workspace:*
         version: link:../../packages/social
@@ -307,6 +310,9 @@ importers:
       '@workspace/email':
         specifier: workspace:*
         version: link:../../packages/email
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@workspace/social':
         specifier: workspace:*
         version: link:../../packages/social
@@ -398,6 +404,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -474,6 +483,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@workspace/social':
         specifier: workspace:*
         version: link:../../packages/social
@@ -606,6 +618,9 @@ importers:
 
   packages/email:
     dependencies:
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../server
       resend:
         specifier: ^6.8.0
         version: 6.9.2
@@ -671,6 +686,31 @@ importers:
         specifier: ^8.39.0
         version: 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
 
+  packages/server:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.33
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+
   packages/social:
     dependencies:
       '@resvg/resvg-js':
@@ -679,6 +719,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../db
+      '@workspace/server':
+        specifier: workspace:*
+        version: link:../server
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.44.7(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)
@@ -854,9 +897,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.7(@types/debug@4.1.13)(@types/node@20.19.33)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
 packages:
 

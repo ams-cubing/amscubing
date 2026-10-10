@@ -13,6 +13,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { restoreAvailability } from "@/lib/availability-dates";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function deleteCompetition(competitionId: number): Promise<{
   success: boolean;
@@ -84,7 +85,7 @@ export async function deleteCompetition(competitionId: number): Promise<{
       message: "Competencia eliminada",
     };
   } catch (error) {
-    console.error("Error deleting competition:", error);
+    log.error("calendar.delete_competition_failed", { error });
     return {
       success: false,
       message: getErrorMessage(error),

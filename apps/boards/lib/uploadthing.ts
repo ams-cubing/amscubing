@@ -9,9 +9,31 @@ import {
   assertCardBelongsToBoard,
   insertUploadedCardAttachment,
 } from "@/lib/uploadthing-attachments";
+import { recordUpload } from "@workspace/db/uploads";
 import type { User } from "@workspace/db/schema";
+import { log } from "@workspace/server/log";
 
 const f = createUploadthing();
+
+async function trackUpload(
+  route: "socialFlyer" | "cardAttachment",
+  userId: string,
+  file: { key: string; name: string },
+  url: string,
+) {
+  try {
+    await recordUpload({
+      key: file.key,
+      url,
+      name: file.name,
+      app: "boards",
+      route,
+      userId,
+    });
+  } catch (error) {
+    log.error("upload.record_failed", { app: "boards", key: file.key, error });
+  }
+}
 
 async function requireUploadUser(boardId: number) {
   const session = await auth.api.getSession({
@@ -41,11 +63,10 @@ export const boardsFileRouter = {
   })
     .input(z.object({ boardId: z.number().int().positive() }))
     .middleware(async ({ input }) => requireUploadUser(input.boardId))
-    .onUploadComplete(async ({ file }) => {
-      return {
-        url: file.ufsUrl ?? file.url,
-        name: file.name,
-      };
+    .onUploadComplete(async ({ metadata, file }) => {
+      const url = file.ufsUrl ?? file.url;
+      await trackUpload("socialFlyer", metadata.userId, file, url);
+      return { url, name: file.name };
     }),
 
   cardAttachment: f({
@@ -77,6 +98,7 @@ export const boardsFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       const url = file.ufsUrl ?? file.url;
+      await trackUpload("cardAttachment", metadata.userId, file, url);
       const saved = await insertUploadedCardAttachment({
         boardId: metadata.boardId,
         cardId: metadata.cardId,

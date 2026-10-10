@@ -8,6 +8,7 @@ import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export async function markAsCelebrated(competitionId: number): Promise<{
   success: boolean;
@@ -43,14 +44,11 @@ export async function markAsCelebrated(competitionId: number): Promise<{
             statusLabel: applied.statusLabel,
           });
         } catch (err) {
-          console.error(
-            "Error sending organizer status email via Resend:",
-            err,
-          );
+          log.error("calendar.organizer_status_email_failed", { error: err });
         }
       }
     } catch (err) {
-      console.error("Error notifying organizers:", err);
+      log.error("calendar.notify_organizers_failed", { error: err });
     }
 
     revalidateTag("competitions", "days");
@@ -62,7 +60,7 @@ export async function markAsCelebrated(competitionId: number): Promise<{
 
     return { success: true, message: "Competencia marcada como celebrada" };
   } catch (error) {
-    console.error("Error marking competition as celebrated:", error);
+    log.error("calendar.mark_celebrated_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }

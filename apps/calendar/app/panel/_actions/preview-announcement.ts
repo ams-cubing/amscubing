@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { buildAnnouncementPreview } from "@workspace/social";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { log } from "@workspace/server/log";
 
 export type AnnouncementPreview = {
   displayName: string;
@@ -75,7 +76,7 @@ export async function previewAnnouncement(
       },
     };
   } catch (error) {
-    console.error("Error building announcement preview:", error);
+    log.error("calendar.announcement_preview_failed", { error });
     return { success: false, message: getErrorMessage(error) };
   }
 }
