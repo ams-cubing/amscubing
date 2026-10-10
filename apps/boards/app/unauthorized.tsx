@@ -1,32 +1,25 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-
-import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
-import { Button } from "@workspace/ui/components/button";
-
-import { SignInButton } from "@/components/sign-in-button";
-import { auth } from "@/lib/auth";
 import Link from "next/link";
 
-export default async function UnauthorizedPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
+import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
+import { buttonVariants } from "@workspace/ui/components/button";
 
-  if (session?.user) {
-    redirect("/");
-  }
+import { getBoardsUrl, getCrossAppSignInUrl } from "@/lib/urls";
 
+export default function UnauthorizedPage() {
   return (
     <AmsStatusPage
       code="401"
       title="Inicia sesión"
-      description="Usa tu cuenta AMS o WCA para acceder a los tableros de organización de competencias AMS. Al entrar volverás a esta página."
+      description="Usa tu cuenta AMS o WCA para continuar. Al entrar volverás a esta página."
     >
-      <SignInButton />
-      <Button variant="outline" size="lg" asChild>
-        <Link href="/">Volver al inicio</Link>
-      </Button>
+      <AmsSignInLink href={getCrossAppSignInUrl(getBoardsUrl())} />
+      <Link
+        href="/"
+        className={buttonVariants({ variant: "outline", size: "lg" })}
+      >
+        Volver a los tableros
+      </Link>
     </AmsStatusPage>
   );
 }

@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 
 import { db } from "@workspace/db";
 import { boardInvites, boardMembers } from "@workspace/db/schema";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
 
 import { AcceptInviteButton } from "./_components/accept-invite-button";
-import { SignInButton } from "@/components/sign-in-button";
 import { auth } from "@/lib/auth";
+import { getBoardsUrl, getCrossAppSignInUrl } from "@/lib/urls";
 
 export default async function InvitePage({
   params,
@@ -85,7 +86,10 @@ export default async function InvitePage({
           <p className="text-sm text-muted-foreground">
             Inicia sesión con WCA para aceptar la invitación.
           </p>
-          <SignInButton />
+          <AmsSignInLink
+            href={getCrossAppSignInUrl(`${getBoardsUrl()}/invitar/${token}`)}
+            size="default"
+          />
         </div>
       )}
     </div>

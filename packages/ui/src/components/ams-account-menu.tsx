@@ -14,6 +14,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@workspace/ui/components/avatar";
+import { useSignInHref } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
@@ -54,6 +55,23 @@ function joinUrl(base: string, path = "") {
   return `${normalized}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function HeaderSignInButton({ href }: { href: string }) {
+  const resolved = useSignInHref(href);
+
+  return (
+    <Button
+      asChild
+      variant="destructive"
+      className="ams-glass shrink-0 border border-white/25 px-3 sm:px-4"
+    >
+      <a href={resolved}>
+        <span className="sm:hidden">Entrar</span>
+        <span className="hidden sm:inline">Iniciar sesión</span>
+      </a>
+    </Button>
+  );
+}
+
 export function AmsAccountMenu({
   user,
   isPending = false,
@@ -81,18 +99,7 @@ export function AmsAccountMenu({
   }
 
   if (!user) {
-    return (
-      <Button
-        asChild
-        variant="destructive"
-        className="ams-glass shrink-0 border border-white/25 px-3 sm:px-4"
-      >
-        <a href={urls.signInHref}>
-          <span className="sm:hidden">Entrar</span>
-          <span className="hidden sm:inline">Iniciar sesión</span>
-        </a>
-      </Button>
-    );
+    return <HeaderSignInButton href={urls.signInHref} />;
   }
 
   return (

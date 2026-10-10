@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { unauthorized } from "next/navigation";
+import { forbidden } from "next/navigation";
 
 import { PermissionBadge, PermissionForm } from "@/components/profile-forms";
 import { roleLabel } from "@workspace/auth/permissions";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default async function AdminPermissionsPage() {
   const access = await getAdminAccess();
-  if (!access) unauthorized();
+  if (!access) forbidden();
   const { managedScopes } = access;
   const { audit, blogTeam, courseTeam } =
     await loadPermissionsData(managedScopes);

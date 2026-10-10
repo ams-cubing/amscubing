@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { unauthorized } from "next/navigation";
+import { forbidden } from "next/navigation";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -14,7 +14,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   const access = await getAdminAccess();
 
   if (!access) {
-    unauthorized();
+    forbidden();
   }
 
   return (

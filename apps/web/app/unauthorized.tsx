@@ -1,26 +1,24 @@
 import Link from "next/link";
 
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
 import { buttonVariants } from "@workspace/ui/components/button";
+
+import { getCrossAppSignInUrl, getWebUrl } from "@/lib/urls";
 
 export default function UnauthorizedPage() {
   return (
     <AmsStatusPage
       code="401"
-      title="No autorizado"
-      description="Esta sección es solo para delegados. Inicia sesión con un WCA ID con permisos de delegado para continuar."
+      title="Inicia sesión"
+      description="Usa tu cuenta AMS o WCA para continuar. Al entrar volverás a esta página."
     >
-      <Link
-        href="/cuenta"
-        className={buttonVariants({ variant: "default", size: "lg" })}
-      >
-        Ir a cuenta
-      </Link>
+      <AmsSignInLink href={getCrossAppSignInUrl(getWebUrl())} />
       <Link
         href="/"
         className={buttonVariants({ variant: "outline", size: "lg" })}
       >
-        Inicio
+        Volver al inicio
       </Link>
     </AmsStatusPage>
   );

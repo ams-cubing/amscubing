@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getWebUrl } from "@workspace/auth/urls";
 import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
 import { ActionForm } from "@workspace/ui/components/action-form";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tag } from "@/components/tag";
@@ -168,11 +169,11 @@ export default async function Page({
               </AmsNotice>
             )
           ) : (
-            <Button asChild variant="destructive">
-              <a href={signInUrl(`/entradas/${post.slug}`)}>
-                Iniciar sesión o crear cuenta para comentar
-              </a>
-            </Button>
+            <AmsSignInLink
+              href={signInUrl(`/entradas/${post.slug}`)}
+              label="Iniciar sesión o crear cuenta para comentar"
+              size="default"
+            />
           )
         ) : (
           <p className="text-[13px] text-ams-navy/60">

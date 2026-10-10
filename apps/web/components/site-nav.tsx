@@ -9,12 +9,18 @@ import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
 import { HeaderNotifications } from "@/components/header-notifications";
 import { SiteNavAccount } from "@/components/site-nav-account";
-import { getBoardsUrl, getCalendarUrl, getWebUrl } from "@/lib/urls";
+import {
+  getBoardsUrl,
+  getCalendarUrl,
+  getCrossAppSignInUrl,
+  getWebUrl,
+} from "@/lib/urls";
 
 export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
   const webUrl = getWebUrl();
   const calendarUrl = getCalendarUrl();
   const boardsUrl = getBoardsUrl();
+  const signInHref = getCrossAppSignInUrl(webUrl);
 
   return (
     <>
@@ -39,6 +45,7 @@ export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
                 webUrl={webUrl}
                 calendarUrl={calendarUrl}
                 boardsUrl={boardsUrl}
+                signInHref={signInHref}
               />
             }
           >
@@ -46,6 +53,7 @@ export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
               webUrl={webUrl}
               calendarUrl={calendarUrl}
               boardsUrl={boardsUrl}
+              signInHref={signInHref}
             />
           </Suspense>
         }
@@ -59,10 +67,12 @@ async function SiteNavAccountFromSession({
   webUrl,
   calendarUrl,
   boardsUrl,
+  signInHref,
 }: {
   webUrl: string;
   calendarUrl: string;
   boardsUrl: string;
+  signInHref: string;
 }) {
   let showBoardsLink = false;
   let initialUser: {
@@ -98,6 +108,7 @@ async function SiteNavAccountFromSession({
       webUrl={webUrl}
       calendarUrl={calendarUrl}
       boardsUrl={boardsUrl}
+      signInHref={signInHref}
     />
   );
 }

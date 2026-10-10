@@ -1,4 +1,4 @@
-import { LogIn } from "lucide-react";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 
 export function AmsSignInPrompt({
   title = "Inicia sesión para continuar",
@@ -24,13 +24,7 @@ export function AmsSignInPrompt({
         <p className="ams-copy my-6 max-w-2xl text-base leading-7 text-white/75">
           {description}
         </p>
-        <a
-          href={signInHref}
-          className="inline-flex items-center gap-2 rounded-md bg-ams-red px-6 py-3 font-bold text-white transition-transform hover:-translate-y-0.5"
-        >
-          <LogIn className="size-4" />
-          {actionLabel}
-        </a>
+        <AmsSignInLink href={signInHref} label={actionLabel} />
       </div>
     </div>
   );

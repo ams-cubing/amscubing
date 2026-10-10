@@ -1,5 +1,7 @@
-import { AccountSignIn } from "@/components/account-sign-in";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
+
 import { AccountSignOut } from "@/components/account-sign-out";
+import { getCrossAppSignInUrl, getWebUrl } from "@/lib/urls";
 
 import type { AccountUser } from "../_lib/account-data";
 
@@ -25,7 +27,10 @@ export function AccountHeader({
           Regístrate con correo o entra con WCA. Tu sesión se comparte entre la
           web, Cursos, Blog, Calendario y Tableros.
         </p>
-        <AccountSignIn />
+        <AmsSignInLink
+          href={getCrossAppSignInUrl(`${getWebUrl()}/cuenta`)}
+          label="Iniciar sesión o crear cuenta"
+        />
       </div>
     );
   }
