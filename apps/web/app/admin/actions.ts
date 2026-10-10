@@ -29,7 +29,6 @@ function normalizeOptional(raw: string | null | undefined): string | null {
 function revalidateAdminAndDelegates() {
   revalidateTag("public-delegates", "hours");
   revalidatePath("/admin/delegados");
-  revalidatePath("/admin/editores");
   revalidatePath("/admin/redes");
   revalidatePath("/nosotros");
 }
@@ -191,79 +190,4 @@ export async function removeDelegate(input: {
 
   revalidateAdminAndDelegates();
   return { ok: true, message: "Delegado removido del listado público" };
-}
-
-export async function grantEditor(input: {
-  wcaId: string;
-}): Promise<AdminActionResult> {
-  const authResult = await requireDelegate();
-  if (!authResult.ok) {
-    return { ok: false, message: authResult.message };
-  }
-
-  const wcaId = normalizeWcaId(input.wcaId);
-  if (!wcaId) {
-    return { ok: false, message: "WCA ID inválido" };
-  }
-
-  const existing = await db.query.user.findFirst({
-    where: eq(user.wcaId, wcaId),
-    columns: { id: true, role: true, name: true },
-  });
-
-  if (!existing) {
-    return {
-      ok: false,
-      message:
-        "No hay cuenta AMS con ese WCA ID. La persona debe iniciar sesión primero.",
-    };
-  }
-
-  if (existing.role === "delegate") {
-    return {
-      ok: false,
-      message:
-        "Esa persona ya es delegado y tendrá acceso editorial al blog sin rol editor.",
-    };
-  }
-
-  if (existing.role === "editor") {
-    return { ok: false, message: "Esa persona ya es editora" };
-  }
-
-  await db.update(user).set({ role: "editor" }).where(eq(user.wcaId, wcaId));
-
-  revalidateAdminAndDelegates();
-  return {
-    ok: true,
-    message: `Rol editor otorgado a ${existing.name}`,
-  };
-}
-
-export async function revokeEditor(input: {
-  wcaId: string;
-}): Promise<AdminActionResult> {
-  const authResult = await requireDelegate();
-  if (!authResult.ok) {
-    return { ok: false, message: authResult.message };
-  }
-
-  const wcaId = normalizeWcaId(input.wcaId);
-  if (!wcaId) {
-    return { ok: false, message: "WCA ID inválido" };
-  }
-
-  const existing = await db.query.user.findFirst({
-    where: eq(user.wcaId, wcaId),
-    columns: { id: true, role: true },
-  });
-
-  if (!existing || existing.role !== "editor") {
-    return { ok: false, message: "No hay un editor con ese WCA ID" };
-  }
-
-  await db.update(user).set({ role: "user" }).where(eq(user.wcaId, wcaId));
-
-  revalidateAdminAndDelegates();
-  return { ok: true, message: "Rol editor revocado" };
 }
