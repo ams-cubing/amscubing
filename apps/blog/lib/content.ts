@@ -5,7 +5,7 @@ import type { BlogSection } from "@workspace/db/schema";
 export const brandColors = {
   white: "#ffffff",
   soft: "#f4f4f4",
-  navy: "#001733",
+  navy: "#010b19",
   red: "#ba0c2f",
   green: "#009a44",
   orange: "#fe5000",

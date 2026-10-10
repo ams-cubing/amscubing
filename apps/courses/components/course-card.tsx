@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { courses } from "@workspace/db/schema";
 import { cleanHtml } from "@/lib/content";
 import { formatCourseScore, type CourseScore } from "@/lib/course-score";
+import { Pill, ProgressBar, smallClass, textLinkClass } from "./ui";
 
 export function CourseCard({
   course,
@@ -23,64 +24,61 @@ export function CourseCard({
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 170);
+  const isComplete = completed === count && !!count;
   return (
-    <article className="card">
+    <article className="ams-slash-card overflow-hidden bg-white">
       <Link
         href={`/cursos/${course.slug}`}
-        className="card-cover"
+        className="relative flex h-45 items-center justify-center bg-[linear-gradient(90deg,rgba(1,11,25,0.65),rgba(1,11,25,0.2)),url(/source/photos/ponny-1.jpg)] bg-cover bg-center text-white"
         aria-label={course.title}
       >
         {course.coverUrl ? (
-          <img src={course.coverUrl} alt="" />
+          <img
+            src={course.coverUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         ) : (
-          <span className="cover-text">Aprende · Participa</span>
+          <span className="ams-display px-6 py-4.5 text-2xl">
+            Aprende · Participa
+          </span>
         )}
       </Link>
-      <div className="card-body">
-        <span
-          className={`pill ${completed === count && count ? "success" : ""}`}
-        >
-          {completed === count && count
-            ? "Completado"
-            : enrolled
-              ? "En curso"
-              : "Formación AMS"}
-        </span>
-        <h2>
+      <div className="p-6.5">
+        <Pill tone={isComplete ? "success" : "neutral"}>
+          {isComplete ? "Completado" : enrolled ? "En curso" : "Formación AMS"}
+        </Pill>
+        <h2 className="ams-heading my-3 text-[19px] leading-normal font-bold">
           <Link href={`/cursos/${course.slug}`}>{course.title}</Link>
         </h2>
-        <p>{description}…</p>
-        <div className="meta">
+        <p className="text-sm leading-[1.7] text-ams-navy/60">{description}…</p>
+        <div className="my-4.5 flex gap-4 text-[13px] text-ams-navy/60">
           <span>{count} lecciones</span>
           <span>◷ A tu ritmo</span>
         </div>
         {enrolled && (
           <>
-            <div className="progress">
-              <span
-                style={{
-                  width: `${count ? Math.round((100 * (completed ?? 0)) / count) : 0}%`,
-                }}
-              />
-            </div>
-            <p className="small">
+            <ProgressBar
+              percent={count ? Math.round((100 * (completed ?? 0)) / count) : 0}
+            />
+            <p className={smallClass}>
               {completed ?? 0} de {count} lecciones completadas
             </p>
           </>
         )}
-        <div className="card-bottom">
-          <span className="small">Con tu cuenta AMS o WCA</span>
-          <Link className="text-link" href={`/cursos/${course.slug}`}>
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-ams-navy/10 pt-5">
+          <span className={smallClass}>Con tu cuenta AMS o WCA</span>
+          <Link className={textLinkClass} href={`/cursos/${course.slug}`}>
             {enrolled ? "Continuar" : "Ver curso"} →
           </Link>
         </div>
         {hasCertificate && result && (
-          <div className="course-result">
-            <p className="small">
+          <div className="mt-5 border-t border-ams-navy/10 pt-4">
+            <p className={smallClass}>
               Puntuación: <strong>{formatCourseScore(result)}</strong>
             </p>
             <a
-              className="text-link"
+              className={textLinkClass}
               href={`/cursos/${encodeURIComponent(course.slug)}/certificado`}
             >
               Descargar certificado PDF ↓

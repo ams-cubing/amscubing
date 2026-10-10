@@ -11,7 +11,7 @@ import {
 import { BlogAmsNav } from "@/components/ams-site-nav";
 import { HeaderNotifications } from "@/components/header-notifications";
 import { getViewer, signInUrl } from "@/lib/auth";
-import "./globals.css";
+import "@workspace/ui/globals.css";
 const heading = Unbounded({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -36,7 +36,9 @@ export default async function Layout({
   const viewer = await getViewer();
   return (
     <html lang="es">
-      <body className={`${heading.variable} ${body.variable}`}>
+      <body
+        className={`${heading.variable} ${body.variable} ams-copy bg-ams-soft text-lg leading-relaxed text-ams-navy antialiased`}
+      >
         <BlogAmsNav
           user={
             viewer
@@ -53,22 +55,27 @@ export default async function Layout({
             signInHref: signInUrl(),
           }}
         />
-        <div className="subnav shell">
-          <Link href="/" className="wordmark">
+        <div className="ams-heading ams-container flex max-w-295 justify-between gap-6 py-4 text-xs font-bold">
+          <Link href="/" className="text-ams-red">
             Blog AMS
           </Link>
-          <nav aria-label="Blog">
+          <nav aria-label="Blog" className="flex flex-wrap gap-6">
             <Link href="/">Explorar</Link>
             {viewer?.canManage && <Link href="/admin">Administrar</Link>}
           </nav>
         </div>
         <main>{children}</main>
-        <footer className="shell footer">
+        <footer className="ams-container mt-10 flex max-w-295 flex-col justify-between gap-8 border-t-[3px] border-ams-red py-10 md:flex-row">
           <div>
-            <strong>Historias que hacen comunidad.</strong>
-            <p>Asociación Mexicana de Speedcubing</p>
+            <strong className="ams-heading text-[15px]">
+              Historias que hacen comunidad.
+            </strong>
+            <p className="mt-2 text-sm">Asociación Mexicana de Speedcubing</p>
           </div>
-          <nav aria-label="AMS">
+          <nav
+            aria-label="AMS"
+            className="ams-heading flex flex-wrap content-center gap-6 text-xs font-semibold"
+          >
             <a href={getWebUrl()}>Home</a>
             <a href={`${getWebUrl()}/nosotros`}>Nosotros</a>
             <a href={`${getWebUrl()}/competencias`}>Torneos</a>

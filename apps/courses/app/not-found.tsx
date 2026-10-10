@@ -1,14 +1,21 @@
 import Link from "next/link";
+
+import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
+import { buttonVariants } from "@workspace/ui/components/button";
+
 export default function NotFound() {
   return (
-    <section className="shell section">
-      <div className="panel">
-        <h1>No encontramos este contenido</h1>
-        <p>Puede que el curso todavía no esté publicado.</p>
-        <Link className="btn" href="/">
-          Explorar cursos
-        </Link>
-      </div>
-    </section>
+    <AmsStatusPage
+      code="404"
+      title="No encontramos este contenido"
+      description="Puede que el curso todavía no esté publicado."
+    >
+      <Link
+        href="/"
+        className={buttonVariants({ variant: "destructive", size: "lg" })}
+      >
+        Explorar cursos
+      </Link>
+    </AmsStatusPage>
   );
 }

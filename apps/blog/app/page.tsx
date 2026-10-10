@@ -1,6 +1,11 @@
 import { db } from "@workspace/db";
 import { blogPosts } from "@workspace/db/schema";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { AmsNotice } from "@workspace/ui/components/ams-field";
+import { AmsPageHero } from "@workspace/ui/components/ams-page-hero";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { NativeSelect } from "@workspace/ui/components/native-select";
 import { PostCard } from "@/components/post-card";
 export default async function Page({
   searchParams,
@@ -39,77 +44,82 @@ export default async function Page({
   const categories = [...new Set(all.flatMap((p) => p.categories))].sort();
   return (
     <>
-      <header className="hero">
-        <div className="shell">
-          <span className="eyebrow">VOCES DE LA COMUNIDAD</span>
-          <h1>
+      <AmsPageHero
+        eyebrow="Voces de la comunidad"
+        title={
+          <>
             Más que un cubo.
             <br />
             Historias que nos unen.
-          </h1>
-          <p>
-            Guías, novedades y experiencias para disfrutar el speedcubing y
-            construir juntos la comunidad de México.
-          </p>
-        </div>
-      </header>
-      <section className="section shell">
+          </>
+        }
+        description="Guías, novedades y experiencias para disfrutar el speedcubing y construir juntos la comunidad de México."
+      />
+      <section className="ams-container max-w-295 py-14">
         {params.aviso === "sin-permiso" && (
-          <p className="notice">
-            Tu cuenta no tiene permiso de gestión de Blog.
-          </p>
+          <AmsNotice>Tu cuenta no tiene permiso de gestión de Blog.</AmsNotice>
         )}
-        <div className="toolbar">
-          <h2>El blog de AMS</h2>
-          <form className="filter-form">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="ams-heading text-[clamp(1.3rem,2.6vw,2rem)] font-bold">
+            El blog de AMS
+          </h2>
+          <form className="flex flex-wrap gap-2.5">
             <label className="sr-only" htmlFor="search">
               Buscar entradas
             </label>
-            <input
+            <Input
               id="search"
               name="q"
               defaultValue={q}
               placeholder="Buscar una historia"
+              className="w-60 bg-white"
             />
             <label className="sr-only" htmlFor="category">
               Categoría
             </label>
-            <select id="category" name="categoria" defaultValue={category}>
+            <NativeSelect
+              id="category"
+              name="categoria"
+              defaultValue={category}
+              className="w-auto max-w-60"
+            >
               <option value="">Todas las categorías</option>
               {categories.map((c) => (
                 <option key={c}>{c}</option>
               ))}
-            </select>
-            <button className="button">Buscar</button>
+            </NativeSelect>
+            <Button variant="destructive">Buscar</Button>
           </form>
         </div>
         {posts.length ? (
-          <div className="cards">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.slice(0, 12).map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
         ) : (
-          <p className="empty">
+          <p className="rounded-3xl bg-white p-9">
             No hay entradas que coincidan con esta búsqueda.
           </p>
         )}
-        <div className="toolbar" style={{ marginTop: 30 }}>
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
           {page > 1 && (
-            <a
-              href={`/?pagina=${page - 1}&q=${encodeURIComponent(q)}&categoria=${encodeURIComponent(category)}`}
-              className="button secondary"
-            >
-              Anterior
-            </a>
+            <Button asChild variant="brand">
+              <a
+                href={`/?pagina=${page - 1}&q=${encodeURIComponent(q)}&categoria=${encodeURIComponent(category)}`}
+              >
+                Anterior
+              </a>
+            </Button>
           )}
           {posts.length > 12 && (
-            <a
-              href={`/?pagina=${page + 1}&q=${encodeURIComponent(q)}&categoria=${encodeURIComponent(category)}`}
-              className="button"
-            >
-              Siguiente
-            </a>
+            <Button asChild variant="destructive">
+              <a
+                href={`/?pagina=${page + 1}&q=${encodeURIComponent(q)}&categoria=${encodeURIComponent(category)}`}
+              >
+                Siguiente
+              </a>
+            </Button>
           )}
         </div>
       </section>

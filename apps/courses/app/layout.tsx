@@ -10,7 +10,7 @@ import {
 import { CoursesAmsNav } from "@/components/ams-site-nav";
 import { HeaderNotifications } from "@/components/header-notifications";
 import { getViewer, signInUrl } from "@/lib/auth";
-import "./globals.css";
+import "@workspace/ui/globals.css";
 
 const heading = Unbounded({
   subsets: ["latin"],
@@ -38,7 +38,9 @@ export default async function Layout({
   const viewer = await getViewer();
   return (
     <html lang="es">
-      <body className={`${heading.variable} ${copy.variable}`}>
+      <body
+        className={`${heading.variable} ${copy.variable} ams-copy bg-ams-soft text-base text-ams-navy antialiased`}
+      >
         <CoursesAmsNav
           user={
             viewer
@@ -55,12 +57,12 @@ export default async function Layout({
             signInHref: signInUrl(),
           }}
         />
-        <div className="course-nav">
-          <div className="shell">
-            <Link href="/" className="course-brand">
+        <div className="ams-heading border-b border-ams-navy/10 bg-white text-xs">
+          <div className="ams-container flex max-w-295 items-center justify-between gap-5 py-4.5">
+            <Link href="/" className="font-bold text-ams-red">
               Cursos AMS
             </Link>
-            <nav aria-label="Navegación de cursos">
+            <nav aria-label="Navegación de cursos" className="flex gap-6">
               <Link href="/">Explorar</Link>
               {viewer && <Link href="/mis-cursos">Mi aprendizaje</Link>}
               {viewer?.canManage && <Link href="/admin">Administrar</Link>}
@@ -68,12 +70,19 @@ export default async function Layout({
           </div>
         </div>
         <main>{children}</main>
-        <footer className="footer shell">
+        <footer className="ams-container flex max-w-295 flex-col justify-between gap-5 border-t border-ams-navy/10 py-9 text-sm md:flex-row">
           <div>
-            <strong>Aprender también es hacer comunidad.</strong>
-            <p>Asociación Mexicana de Speedcubing</p>
+            <strong className="ams-heading text-xs">
+              Aprender también es hacer comunidad.
+            </strong>
+            <p className="mt-2 text-xs text-ams-navy/60">
+              Asociación Mexicana de Speedcubing
+            </p>
           </div>
-          <nav className="footer-links" aria-label="Navegación de AMS">
+          <nav
+            className="flex flex-wrap gap-4 text-[13px] text-ams-navy/60"
+            aria-label="Navegación de AMS"
+          >
             <a href={getWebUrl()}>Home</a>
             <a href={`${getWebUrl()}/nosotros`}>Nosotros</a>
             <a href={`${getWebUrl()}/competencias`}>Torneos</a>

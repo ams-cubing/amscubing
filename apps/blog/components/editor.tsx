@@ -2,9 +2,20 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { BlogSection, BlogBlock, blogPosts } from "@workspace/db/schema";
+import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { NativeSelect } from "@workspace/ui/components/native-select";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { cn } from "@workspace/ui/lib/utils";
 import { brandColors, slugify } from "@/lib/content";
-import { Sections } from "./sections";
-import { RichText } from "./rich-text";
+import {
+  Sections,
+  sectionClass,
+  sectionColumnsClass,
+  sectionToneClass,
+} from "./sections";
+import { RichText, toolButtonClass } from "./rich-text";
 import { savePost } from "@/app/actions";
 import { useUploadThing } from "@/lib/uploadthing-client";
 const labels: Record<BlogBlock["type"], string> = {
@@ -17,6 +28,8 @@ const labels: Record<BlogBlock["type"], string> = {
   divider: "Separador",
   html: "Contenido importado",
 };
+const blockAdderClass =
+  "rounded-full border border-ams-navy/20 bg-white px-3 py-1.5 text-xs text-ams-navy hover:bg-ams-soft";
 const colorLabels = {
   white: "Blanco",
   soft: "Gris claro",
@@ -44,9 +57,9 @@ function newSection(): BlogSection {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button className="button" disabled={pending}>
+    <Button variant="destructive" disabled={pending}>
       {pending ? "Guardando…" : "Guardar entrada"}
-    </button>
+    </Button>
   );
 }
 export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
@@ -181,37 +194,32 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
       <input type="hidden" name="id" value={post?.id ?? ""} />
       <input type="hidden" name="revision" value={post?.revision ?? 0} />
       <input type="hidden" name="sections" value={JSON.stringify(sections)} />
-      <div className="toolbar">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontSize: 36, marginBottom: 8 }}>
+          <h1 className="ams-display mb-2 text-4xl leading-[1.08]">
             {post ? "Editar entrada" : "Nueva entrada"}
           </h1>
-          <p className="meta">
+          <p className="text-[13px] text-ams-navy/60">
             Arrastra las secciones y bloques, o usa las flechas para
             reordenarlos.
           </p>
         </div>
-        <div className="tool-buttons">
-          <button
+        <div className="flex flex-wrap gap-1.5">
+          <Button
             type="button"
-            className="button secondary"
+            variant="brand"
             onClick={() => setPreview(!preview)}
           >
             {preview ? "Volver al editor" : "Vista previa"}
-          </button>
+          </Button>
           <Submit />
         </div>
       </div>
-      {message && (
-        <p role="status" className="notice">
-          {message}
-        </p>
-      )}
-      <div className="editor-layout">
-        <aside className="panel editor-sidebar">
-          <label className="field">
-            <span>Título</span>
-            <input
+      {message && <AmsNotice role="status">{message}</AmsNotice>}
+      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="rounded-3xl bg-white p-5 sm:p-8 lg:sticky lg:top-4">
+          <AmsField label="Título">
+            <Input
               required
               name="title"
               maxLength={200}
@@ -221,39 +229,38 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                 setTitle(e.target.value);
               }}
             />
-          </label>
-          <label className="field">
-            <span>Enlace / slug</span>
-            <input
+          </AmsField>
+          <AmsField label="Enlace / slug">
+            <Input
               required
               name="slug"
               value={slug || slugify(title)}
               onChange={(e) => setSlug(e.target.value)}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
             />
-            <button
+            <Button
               type="button"
-              className="button small secondary"
+              size="sm"
+              variant="brand"
+              className="mt-2"
               onClick={() => setSlug(slugify(title))}
             >
               Usar título
-            </button>
-          </label>
-          <label className="field">
-            <span>Resumen</span>
-            <textarea
+            </Button>
+          </AmsField>
+          <AmsField label="Resumen">
+            <Textarea
               name="excerpt"
               defaultValue={post?.excerpt}
               maxLength={1000}
+              className="min-h-28"
             />
-          </label>
-          <label className="field">
-            <span>Portada (URL)</span>
-            <input name="coverUrl" defaultValue={post?.coverUrl ?? ""} />
-          </label>
-          <label className="field">
-            <span>Subir portada · JPG, PNG, WebP (10 MB)</span>
-            <input
+          </AmsField>
+          <AmsField label="Portada (URL)">
+            <Input name="coverUrl" defaultValue={post?.coverUrl ?? ""} />
+          </AmsField>
+          <AmsField label="Subir portada · JPG, PNG, WebP (10 MB)">
+            <Input
               type="file"
               accept="image/jpeg,image/png,image/webp"
               disabled={busy}
@@ -262,50 +269,49 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                 if (f) void upload(f);
               }}
             />
-          </label>
-          <label className="field">
-            <span>Categorías · separadas por coma</span>
-            <input
+          </AmsField>
+          <AmsField label="Categorías · separadas por coma">
+            <Input
               name="categories"
               defaultValue={post?.categories.join(", ")}
             />
-          </label>
-          <label className="field">
-            <span>Etiquetas · separadas por coma</span>
-            <input name="tags" defaultValue={post?.tags.join(", ")} />
-          </label>
-          <label className="field">
-            <span>Estado</span>
-            <select name="status" defaultValue={post?.status ?? "draft"}>
+          </AmsField>
+          <AmsField label="Etiquetas · separadas por coma">
+            <Input name="tags" defaultValue={post?.tags.join(", ")} />
+          </AmsField>
+          <AmsField label="Estado">
+            <NativeSelect name="status" defaultValue={post?.status ?? "draft"}>
               <option value="draft">Borrador</option>
               <option value="published">Publicada</option>
               <option value="archived">Archivada</option>
-            </select>
-          </label>
-          <label className="field">
+            </NativeSelect>
+          </AmsField>
+          <label className="mb-4 flex items-center gap-2 text-sm font-semibold">
             <input
               name="commentsEnabled"
               type="checkbox"
               defaultChecked={post?.commentsEnabled ?? true}
-            />{" "}
+            />
             Permitir comentarios
           </label>
-          <p className="meta">
+          <p className="text-[13px] text-ams-navy/60">
             La tipografía y los colores son los oficiales de AMS. El editor
             controla el contenido y su distribución.
           </p>
         </aside>
-        <div className="editor-canvas">
+        <div className="min-w-0">
           {preview ? (
             <>
-              <p className="preview-label">VISTA PREVIA DEL CONTENIDO</p>
+              <p className="ams-heading mb-6 text-xs font-bold">
+                VISTA PREVIA DEL CONTENIDO
+              </p>
               <Sections sections={sections} />
             </>
           ) : (
             <>
               {sections.map((s, si) => (
                 <div
-                  className="editor-section"
+                  className="mb-6 border border-ams-navy/20"
                   key={s.id}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
@@ -314,7 +320,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                     dropSection(s.id);
                   }}
                 >
-                  <div className="section-tools">
+                  <div className="flex flex-wrap items-center gap-2 bg-ams-soft p-3.5 text-xs text-ams-navy sm:gap-2.5">
                     <span
                       draggable
                       onDragStart={(e) => {
@@ -327,11 +333,12 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                     >
                       ⠿ Sección {si + 1}
                     </span>
-                    <div className="palette">
+                    <div className="flex gap-1.5">
                       {Object.entries(brandColors).map(([key, color]) => (
                         <button
                           key={key}
                           type="button"
+                          className="size-6 rounded-full border border-ams-navy/40 p-0 aria-pressed:outline-2 aria-pressed:outline-offset-2 aria-pressed:outline-ams-red"
                           title={colorLabels[key as keyof typeof colorLabels]}
                           aria-label={`Fondo ${colorLabels[key as keyof typeof colorLabels]}`}
                           aria-pressed={s.background === key}
@@ -344,9 +351,10 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                         />
                       ))}
                     </div>
-                    <select
+                    <NativeSelect
                       aria-label={`Columnas sección ${si + 1}`}
                       value={s.columns}
+                      className="h-8 w-auto max-w-45 text-xs md:text-xs"
                       onChange={(e) =>
                         updateSection(s.id, {
                           columns: Number(e.target.value) as 1 | 2 | 3,
@@ -356,10 +364,11 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                       <option value={1}>Una columna</option>
                       <option value={2}>Dos columnas</option>
                       <option value={3}>Tres columnas</option>
-                    </select>
-                    <div className="tool-buttons">
+                    </NativeSelect>
+                    <div className="flex gap-1.5">
                       <button
                         type="button"
+                        className={toolButtonClass}
                         aria-label="Subir sección"
                         onClick={() => moveSection(s.id, -1)}
                       >
@@ -367,6 +376,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                       </button>
                       <button
                         type="button"
+                        className={toolButtonClass}
                         aria-label="Bajar sección"
                         onClick={() => moveSection(s.id, 1)}
                       >
@@ -374,6 +384,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                       </button>
                       <button
                         type="button"
+                        className={toolButtonClass}
                         onClick={() =>
                           setSections((ss) => ss.filter((x) => x.id !== s.id))
                         }
@@ -383,7 +394,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                     </div>
                   </div>
                   <div
-                    className={`article-section tone-${s.background}`}
+                    className={cn(sectionClass, sectionToneClass[s.background])}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                       if (dragging.current?.block) {
@@ -393,10 +404,15 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                       }
                     }}
                   >
-                    <div className={`section-grid columns-${s.columns}`}>
+                    <div
+                      className={cn(
+                        "grid gap-6",
+                        sectionColumnsClass[s.columns],
+                      )}
+                    >
                       {s.blocks.map((b) => (
                         <div
-                          className="editor-block"
+                          className="mb-4 min-w-0 border border-dashed border-ams-navy/20 bg-white p-4 text-ams-navy focus-within:outline-2 focus-within:outline-ams-red"
                           key={b.id}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => {
@@ -405,7 +421,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                             dropBlock(s.id, b.id);
                           }}
                         >
-                          <div className="block-tools">
+                          <div className="mb-3 flex flex-wrap justify-between gap-2.5 text-xs">
                             <span
                               draggable
                               onDragStart={(e) => {
@@ -420,9 +436,10 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                             >
                               ⠿ {labels[b.type]}
                             </span>
-                            <div className="tool-buttons">
+                            <div className="flex gap-1.5">
                               <button
                                 type="button"
+                                className={toolButtonClass}
                                 aria-label="Subir bloque"
                                 onClick={() => moveBlock(s.id, b.id, -1)}
                               >
@@ -430,6 +447,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                               </button>
                               <button
                                 type="button"
+                                className={toolButtonClass}
                                 aria-label="Bajar bloque"
                                 onClick={() => moveBlock(s.id, b.id, 1)}
                               >
@@ -437,6 +455,7 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                               </button>
                               <button
                                 type="button"
+                                className={toolButtonClass}
                                 onClick={() =>
                                   updateSection(s.id, {
                                     blocks: s.blocks.filter(
@@ -450,16 +469,15 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                             </div>
                           </div>
                           {b.type !== "divider" && (
-                            <label className="field">
-                              <span>
-                                {b.type === "image"
+                            <AmsField
+                              label={
+                                b.type === "image"
                                   ? "Texto alternativo"
-                                  : b.type === "html"
-                                    ? "Contenido"
-                                    : b.type === "video"
-                                      ? "Título del video"
-                                      : "Contenido"}
-                              </span>
+                                  : b.type === "video"
+                                    ? "Título del video"
+                                    : "Contenido"
+                              }
+                            >
                               {b.type === "html" ? (
                                 <RichText
                                   value={b.text}
@@ -468,8 +486,9 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                                   }
                                 />
                               ) : (
-                                <textarea
+                                <Textarea
                                   value={b.text}
+                                  className="min-h-28 bg-white font-normal"
                                   onChange={(e) =>
                                     updateBlock(s.id, b.id, {
                                       text: e.target.value,
@@ -477,10 +496,10 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                                   }
                                 />
                               )}
-                            </label>
+                            </AmsField>
                           )}
                           {b.type === "heading" && (
-                            <select
+                            <NativeSelect
                               aria-label="Nivel de título"
                               value={b.level ?? 2}
                               onChange={(e) =>
@@ -491,67 +510,76 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                             >
                               <option value={2}>Título de sección</option>
                               <option value={3}>Subtítulo</option>
-                            </select>
+                            </NativeSelect>
                           )}
                           {["image", "video", "button"].includes(b.type) && (
-                            <label className="field">
-                              <span>
-                                {b.type === "video"
+                            <AmsField
+                              label={
+                                b.type === "video"
                                   ? "URL de YouTube o Vimeo"
-                                  : "URL"}
-                              </span>
-                              <input
+                                  : "URL"
+                              }
+                            >
+                              <Input
                                 value={b.url ?? ""}
+                                className="bg-white"
                                 onChange={(e) =>
                                   updateBlock(s.id, b.id, {
                                     url: e.target.value,
                                   })
                                 }
                               />
-                            </label>
+                            </AmsField>
                           )}
                           {b.type === "image" && (
-                            <label className="field">
-                              <span>Subir imagen</span>
-                              <input
+                            <AmsField label="Subir imagen">
+                              <Input
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
                                 disabled={busy}
+                                className="bg-white"
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
                                   if (f) void upload(f, s.id, b.id);
                                 }}
                               />
-                              {b.url && <img src={b.url} alt={b.text} />}
-                            </label>
+                              {b.url && (
+                                <img
+                                  src={b.url}
+                                  alt={b.text}
+                                  className="mt-3 h-auto max-w-full rounded-sm"
+                                />
+                              )}
+                            </AmsField>
                           )}
                           {["image", "quote"].includes(b.type) && (
-                            <label className="field">
-                              <span>
-                                {b.type === "quote"
-                                  ? "Autoría"
-                                  : "Pie de imagen"}
-                              </span>
-                              <input
+                            <AmsField
+                              label={
+                                b.type === "quote" ? "Autoría" : "Pie de imagen"
+                              }
+                            >
+                              <Input
                                 value={b.caption ?? ""}
+                                className="bg-white"
                                 onChange={(e) =>
                                   updateBlock(s.id, b.id, {
                                     caption: e.target.value,
                                   })
                                 }
                               />
-                            </label>
+                            </AmsField>
                           )}
                         </div>
                       ))}
                     </div>
-                    <div className="block-adder">
+                    <div className="flex flex-wrap gap-2">
                       {(Object.keys(labels) as BlogBlock["type"][])
                         .filter((t) => t !== "html")
                         .map((type) => (
                           <button
                             type="button"
                             key={type}
+                            className={blockAdderClass}
                             onClick={() =>
                               updateSection(s.id, {
                                 blocks: [...s.blocks, newBlock(type)],
@@ -565,17 +593,26 @@ export function Editor({ post }: { post?: typeof blogPosts.$inferSelect }) {
                   </div>
                 </div>
               ))}
-              <div className="panel block-adder">
+              <div className="flex flex-wrap gap-2 rounded-3xl bg-white p-5 sm:p-8">
                 <button
                   type="button"
+                  className={blockAdderClass}
                   onClick={() => setSections((ss) => [...ss, newSection()])}
                 >
                   + Sección
                 </button>
-                <button type="button" onClick={() => template("guide")}>
+                <button
+                  type="button"
+                  className={blockAdderClass}
+                  onClick={() => template("guide")}
+                >
                   + Plantilla de guía
                 </button>
-                <button type="button" onClick={() => template("story")}>
+                <button
+                  type="button"
+                  className={blockAdderClass}
+                  onClick={() => template("story")}
+                >
                   + Plantilla de historia
                 </button>
               </div>

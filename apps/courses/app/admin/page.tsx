@@ -10,7 +10,23 @@ import {
 } from "@workspace/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { requireManager } from "@/lib/auth";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { NativeSelect } from "@workspace/ui/components/native-select";
+import { AmsField } from "@workspace/ui/components/ams-field";
+import { cn } from "@workspace/ui/lib/utils";
 import { Submit } from "@/components/submit";
+import {
+  Callout,
+  Eyebrow,
+  PageHeading,
+  Pill,
+  panelClass,
+  smallClass,
+  tdClass,
+  textLinkClass,
+  thClass,
+} from "@/components/ui";
 import { grantStaff } from "@/app/actions";
 
 export default async function AdminPage() {
@@ -40,57 +56,61 @@ export default async function AdminPage() {
     .from(courseLegacyStudents)
     .where(sql`${courseLegacyStudents.claimedBy} is null`);
   return (
-    <section className="shell section">
-      <div className="section-head">
+    <section className="ams-container max-w-295 py-12">
+      <div className="mb-7 flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <span className="eyebrow">Equipo AMS</span>
-          <h1>Administrar cursos</h1>
-          <p>Crea experiencias de aprendizaje para la comunidad.</p>
+          <Eyebrow>Equipo AMS</Eyebrow>
+          <PageHeading>Administrar cursos</PageHeading>
+          <p className="mt-1.5 text-ams-navy/60">
+            Crea experiencias de aprendizaje para la comunidad.
+          </p>
         </div>
-        <Link className="btn" href="/admin/cursos/nuevo">
-          + Crear curso
-        </Link>
+        <Button asChild variant="destructive">
+          <Link href="/admin/cursos/nuevo">+ Crear curso</Link>
+        </Button>
       </div>
-      <div className="stat-grid">
-        <div className="stat">
-          <strong>{catalog.length}</strong>
-          <span>Cursos</span>
-        </div>
-        <div className="stat">
-          <strong>{(stats?.total ?? 0) + (legacy?.total ?? 0)}</strong>
-          <span>Inscripciones actuales e históricas</span>
-        </div>
-        <div className="stat">
-          <strong>{legacy?.done ?? 0}</strong>
-          <span>Finalizaciones importadas de WordPress</span>
-        </div>
+      <div className="mb-6 grid gap-4.5 sm:grid-cols-3">
+        {[
+          [catalog.length, "Cursos"],
+          [
+            (stats?.total ?? 0) + (legacy?.total ?? 0),
+            "Inscripciones actuales e históricas",
+          ],
+          [legacy?.done ?? 0, "Finalizaciones importadas de WordPress"],
+        ].map(([value, label]) => (
+          <div key={label} className="rounded-2xl bg-white p-5.5">
+            <strong className="ams-display block text-[34px]">{value}</strong>
+            <span className={smallClass}>{label}</span>
+          </div>
+        ))}
       </div>
-      <div className="panel table-wrap">
-        <table className="data-table">
+      <div className={cn(panelClass, "overflow-x-auto")}>
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th>Curso</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th className={thClass}>Curso</th>
+              <th className={thClass}>Estado</th>
+              <th className={thClass}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {catalog.map((c) => (
               <tr key={c.id}>
-                <td>{c.title}</td>
-                <td>
-                  <span
-                    className={`pill ${c.status === "published" ? "success" : ""}`}
-                  >
+                <td className={tdClass}>{c.title}</td>
+                <td className={tdClass}>
+                  <Pill tone={c.status === "published" ? "success" : "neutral"}>
                     {c.status === "published"
                       ? "Publicado"
                       : c.status === "draft"
                         ? "Borrador"
                         : "Archivado"}
-                  </span>
+                  </Pill>
                 </td>
-                <td>
-                  <Link href={`/admin/cursos/${c.id}`} className="text-link">
+                <td className={tdClass}>
+                  <Link
+                    href={`/admin/cursos/${c.id}`}
+                    className={textLinkClass}
+                  >
                     Editar →
                   </Link>
                 </td>
@@ -98,21 +118,25 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
-        {!catalog.length && <p>Aún no hay cursos. Crea el primero.</p>}
+        {!catalog.length && (
+          <p className="mt-4">Aún no hay cursos. Crea el primero.</p>
+        )}
       </div>
-      <div className="callout subsection">
+      <Callout className="mt-8">
         {pending?.count ?? 0} historiales esperan vincularse cuando sus alumnos
         inicien sesión con el mismo correo verificado en AMS o WCA.
-      </div>
+      </Callout>
       {viewer.canManageStaff && (
-        <section className="panel subsection">
-          <h2>Permisos del equipo</h2>
-          <p className="small">
+        <section className={cn(panelClass, "mt-8")}>
+          <h2 className="ams-heading mb-3 text-2xl font-bold">
+            Permisos del equipo
+          </h2>
+          <p className={cn(smallClass, "mb-4")}>
             Los delegados pueden gestionar cursos automáticamente.
             Administradores y desarrolladores pueden además asignar permisos. El
             rol editorial del blog no concede acceso a Cursos.
           </p>
-          <ul>
+          <ul className="mb-5 list-disc pl-6">
             {staff.map((s) => (
               <li key={s.name}>
                 {s.name} · {s.role}
@@ -120,14 +144,12 @@ export default async function AdminPage() {
             ))}
           </ul>
           <form action={grantStaff}>
-            <div className="form-grid">
-              <label className="field">
-                Correo de la cuenta AMS
-                <input type="email" name="email" required />
-              </label>
-              <label className="field">
-                Permiso
-                <select name="role">
+            <div className="grid gap-x-4.5 sm:grid-cols-2">
+              <AmsField label="Correo de la cuenta AMS">
+                <Input type="email" name="email" required />
+              </AmsField>
+              <AmsField label="Permiso">
+                <NativeSelect name="role">
                   <option value="instructor">
                     Instructor: gestionar cursos
                   </option>
@@ -140,8 +162,8 @@ export default async function AdminPage() {
                   <option value="none">
                     Retirar permiso específico de Cursos
                   </option>
-                </select>
-              </label>
+                </NativeSelect>
+              </AmsField>
             </div>
             <Submit>Actualizar permisos</Submit>
           </form>

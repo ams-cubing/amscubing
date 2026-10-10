@@ -8,7 +8,7 @@ export default function AdminLayout({
 }) {
   return (
     <>
-      <div className="shell pt-6">
+      <div className="ams-container max-w-295 pt-6">
         <AmsBackToProfile webUrl={getWebUrl()} section="Administrar Blog" />
       </div>
       {children}

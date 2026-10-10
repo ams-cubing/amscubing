@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { requireManager } from "@/lib/auth";
 import { getCourse } from "@/lib/data";
 import { LessonEditor } from "@/components/lesson-editor";
+import { PageHeading, panelClass } from "@/components/ui";
 
 export default async function EditLesson({
   params,
@@ -25,13 +26,20 @@ export default async function EditLesson({
   const lesson = course.lessons.find((l) => l.id === Number(lessonId));
   if (lessonId !== "nueva" && !lesson) notFound();
   return (
-    <section className="shell section">
-      <div className="breadcrumb">
-        <Link href={`/admin/cursos/${course.id}`}>{course.title}</Link> /{" "}
-        {lesson ? "Editar lección" : "Nueva lección"}
+    <section className="ams-container max-w-295 py-12">
+      <div className="mb-6 text-[13px] text-ams-navy/60">
+        <Link
+          href={`/admin/cursos/${course.id}`}
+          className="hover:text-ams-red"
+        >
+          {course.title}
+        </Link>{" "}
+        / {lesson ? "Editar lección" : "Nueva lección"}
       </div>
-      <div className="panel">
-        <h1>{lesson ? lesson.title : "Agregar lección"}</h1>
+      <div className={panelClass}>
+        <PageHeading className="mb-6">
+          {lesson ? lesson.title : "Agregar lección"}
+        </PageHeading>
         <LessonEditor
           courseId={course.id}
           modules={course.modules}

@@ -4,6 +4,10 @@ import { and, eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getWebUrl } from "@workspace/auth/urls";
+import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
+import { Button } from "@workspace/ui/components/button";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { Tag } from "@/components/tag";
 import { getViewer, signInUrl } from "@/lib/auth";
 import { Sections } from "@/components/sections";
 import { addComment } from "@/app/actions";
@@ -58,21 +62,25 @@ export default async function Page({
     .limit(200);
   return (
     <>
-      <div className="shell breadcrumbs">
+      <div className="ams-container my-6 max-w-295 text-[13px] text-ams-navy/60">
         <Link href="/">Blog</Link> / {post.categories.join(" · ")}
       </div>
-      <header className="article-header">
-        <div className="shell">
+      <header className="bg-ams-navy py-14 text-white">
+        <div className="ams-container max-w-240">
           {post.status !== "published" && (
-            <p className="notice">Vista previa · {post.status}</p>
+            <AmsNotice className="text-white">
+              Vista previa · {post.status}
+            </AmsNotice>
           )}
           {post.categories.map((c) => (
-            <span className="tag" key={c}>
+            <Tag key={c} className="bg-white/10 text-white">
               {c}
-            </span>
+            </Tag>
           ))}
-          <h1>{post.title}</h1>
-          <div className="meta">
+          <h1 className="ams-display mb-6 text-[clamp(2.2rem,4.5vw,4rem)] leading-[1.08]">
+            {post.title}
+          </h1>
+          <div className="mb-4 text-[13px] text-white/60">
             {post.authorName} ·{" "}
             {post.publishedAt?.toLocaleDateString("es-MX", {
               day: "numeric",
@@ -81,33 +89,39 @@ export default async function Page({
               timeZone: "UTC",
             })}
           </div>
-          <p>{post.excerpt}</p>
+          <p className="mb-6 max-w-210 text-[21px] text-white/80">
+            {post.excerpt}
+          </p>
           {viewer?.canManage && (
-            <Link className="button light" href={`/admin/entradas/${post.id}`}>
-              Editar entrada
-            </Link>
+            <Button asChild variant="outline" className="text-ams-navy">
+              <Link href={`/admin/entradas/${post.id}`}>Editar entrada</Link>
+            </Button>
           )}
           {post.coverUrl && (
-            <img className="cover" src={post.coverUrl} alt={post.title} />
+            <img
+              className="mt-8 block max-h-127.5 w-full rounded-3xl object-cover"
+              src={post.coverUrl}
+              alt={post.title}
+            />
           )}
         </div>
       </header>
       <article>
         <Sections sections={post.sections} />
       </article>
-      <section className="section shell comments">
+      <section className="ams-container max-w-230 py-14">
         {post.tags.length > 0 && (
-          <p>
+          <p className="mb-4">
             {post.tags.map((t) => (
-              <span key={t} className="tag">
-                #{t}
-              </span>
+              <Tag key={t}>#{t}</Tag>
             ))}
           </p>
         )}
-        <h2>La conversación</h2>
+        <h2 className="ams-heading mb-4 text-[clamp(1.3rem,2.6vw,2rem)] font-bold">
+          La conversación
+        </h2>
         {aviso && (
-          <p role="status" className="notice">
+          <AmsNotice role="status">
             {{
               "comentario-enviado":
                 "Gracias. Tu comentario se publicará después de revisarlo.",
@@ -118,53 +132,62 @@ export default async function Page({
               "comentarios-cerrados": "La conversación está cerrada.",
               "comentario-invalido": "Escribe entre 3 y 2000 caracteres.",
             }[aviso] ?? "Revisa tu comentario."}
-          </p>
+          </AmsNotice>
         )}
         {comments.map((c) => (
-          <div className="comment" key={c.id}>
+          <div className="border-t border-ams-navy/10 py-5.5" key={c.id}>
             <strong>{c.authorName}</strong>{" "}
-            <small>{c.createdAt.toLocaleDateString("es-MX")}</small>
-            <p>{c.content}</p>
+            <small className="opacity-65">
+              {c.createdAt.toLocaleDateString("es-MX")}
+            </small>
+            <p className="whitespace-pre-wrap">{c.content}</p>
           </div>
         ))}
         {!comments.length && (
-          <p>Sé la primera persona en compartir tu experiencia.</p>
+          <p className="mb-6">
+            Sé la primera persona en compartir tu experiencia.
+          </p>
         )}
         {post.commentsEnabled && post.status === "published" ? (
           viewer ? (
             viewer.emailVerified ? (
-              <form action={addComment} className="panel">
+              <form
+                action={addComment}
+                className="mt-6 rounded-3xl bg-white p-5 sm:p-8"
+              >
                 <input type="hidden" name="postId" value={post.id} />
-                <label className="field">
-                  <span>Tu comentario</span>
-                  <textarea
+                <AmsField label="Tu comentario">
+                  <Textarea
                     name="content"
                     minLength={3}
                     maxLength={2000}
                     required
                     placeholder="Comparte tu experiencia con respeto"
+                    className="min-h-28"
                   />
-                </label>
-                <p className="meta">
+                </AmsField>
+                <p className="mb-4 text-[13px] text-ams-navy/60">
                   Los comentarios se revisan antes de publicarse.
                 </p>
-                <button className="button">Enviar comentario</button>
+                <Button variant="destructive">Enviar comentario</Button>
               </form>
             ) : (
-              <p className="notice">
-                <a href={`${getWebUrl()}/cuenta`}>
+              <AmsNotice>
+                <a className="underline" href={`${getWebUrl()}/cuenta`}>
                   Verifica tu correo en tu cuenta ↗
                 </a>{" "}
                 para participar.
-              </p>
+              </AmsNotice>
             )
           ) : (
-            <a className="button" href={signInUrl(`/entradas/${post.slug}`)}>
-              Iniciar sesión o crear cuenta para comentar
-            </a>
+            <Button asChild variant="destructive">
+              <a href={signInUrl(`/entradas/${post.slug}`)}>
+                Iniciar sesión o crear cuenta para comentar
+              </a>
+            </Button>
           )
         ) : (
-          <p className="meta">
+          <p className="text-[13px] text-ams-navy/60">
             Los comentarios están cerrados para esta entrada.
           </p>
         )}

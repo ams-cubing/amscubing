@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { courseModules, courseLessons } from "@workspace/db/schema";
+import { cn } from "@workspace/ui/lib/utils";
 
 export function Curriculum({
   slug,
@@ -8,6 +9,7 @@ export function Curriculum({
   completed = [],
   active,
   canRead = false,
+  compact = false,
 }: {
   slug: string;
   modules: (typeof courseModules.$inferSelect)[];
@@ -18,6 +20,7 @@ export function Curriculum({
   completed?: number[];
   active?: number;
   canRead?: boolean;
+  compact?: boolean;
 }) {
   const groups = [
     ...modules,
@@ -28,36 +31,52 @@ export function Curriculum({
   return (
     <>
       {groups.map((module) => (
-        <div className="module" key={module.id ?? "none"}>
-          <h3 className="module-title">{module.title}</h3>
-          <ul className="curriculum">
+        <div className="mt-6" key={module.id ?? "none"}>
+          <h3
+            className={cn(
+              "ams-heading mb-2.5 font-bold",
+              compact ? "text-[13px]" : "text-base",
+            )}
+          >
+            {module.title}
+          </h3>
+          <ul>
             {lessons
               .filter((l) => l.moduleId === module.id)
-              .map((lesson) => (
-                <li key={lesson.id}>
-                  <Link
-                    aria-current={active === lesson.id ? "page" : undefined}
-                    href={
-                      canRead
-                        ? `/cursos/${slug}/lecciones/${lesson.id}`
-                        : `/cursos/${slug}`
-                    }
-                    className={`lesson-row ${completed.includes(lesson.id) ? "complete" : ""} ${active === lesson.id ? "active" : ""}`}
-                  >
-                    <span
-                      className="status"
-                      aria-label={
-                        completed.includes(lesson.id)
-                          ? "Completada"
-                          : "Pendiente"
+              .map((lesson) => {
+                const isDone = completed.includes(lesson.id);
+                const isActive = active === lesson.id;
+                return (
+                  <li key={lesson.id}>
+                    <Link
+                      aria-current={isActive ? "page" : undefined}
+                      href={
+                        canRead
+                          ? `/cursos/${slug}/lecciones/${lesson.id}`
+                          : `/cursos/${slug}`
                       }
+                      className={cn(
+                        "flex items-center gap-3 border-b border-ams-navy/5 hover:text-ams-red",
+                        compact
+                          ? "py-2.5 text-xs leading-relaxed"
+                          : "py-3 text-sm",
+                        isActive && "font-bold text-ams-red",
+                      )}
                     >
-                      {completed.includes(lesson.id) ? "✓" : "○"}
-                    </span>
-                    <span>{lesson.title}</span>
-                  </Link>
-                </li>
-              ))}
+                      <span
+                        className={cn(
+                          "shrink-0 text-[13px]",
+                          isDone ? "text-ams-green" : "text-ams-navy/60",
+                        )}
+                        aria-label={isDone ? "Completada" : "Pendiente"}
+                      >
+                        {isDone ? "✓" : "○"}
+                      </span>
+                      <span>{lesson.title}</span>
+                    </Link>
+                  </li>
+                );
+              })}
           </ul>
         </div>
       ))}
