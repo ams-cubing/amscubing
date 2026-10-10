@@ -4,7 +4,7 @@ import { consumeRateLimit } from "@workspace/db/rate-limit";
 import { blogPosts, blogComments } from "@workspace/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import {
   ActionError,
@@ -126,8 +126,8 @@ export async function savePost(
       }
     }
     if (!post) throw new ActionError(saveErrors.conflicto);
-    revalidatePath("/");
-    revalidatePath(`/entradas/${post.slug}`);
+    updateTag("blog-posts");
+    revalidatePath("/admin", "layout");
     redirect(`/admin/entradas/${post.id}?guardado=1`);
   });
 }
@@ -143,7 +143,6 @@ export async function addComment(
       .from(blogPosts)
       .where(eq(blogPosts.id, id));
     if (!post) throw new ActionError("La entrada ya no existe.");
-    const path = `/entradas/${post.slug}`;
     if (post.status !== "published" || !post.commentsEnabled)
       throw new ActionError("La conversación está cerrada.");
     if (!viewer.emailVerified)
@@ -169,7 +168,7 @@ export async function addComment(
       content,
     });
     await notifyCommentPending({ post, actorId: viewer.id });
-    revalidatePath(path);
+    revalidatePath("/admin/comentarios");
     return {
       ok: true,
       message: "Gracias. Tu comentario se publicará después de revisarlo.",
@@ -208,8 +207,8 @@ export async function moderateComment(
         actorId: viewer.id,
         status,
       });
+    updateTag(`blog-comments-${existing.post.id}`);
     revalidatePath("/admin/comentarios");
-    revalidatePath("/entradas/[slug]", "page");
     return {
       ok: true,
       message: {

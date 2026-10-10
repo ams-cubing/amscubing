@@ -3,7 +3,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { sendEmail, renderEmailLayout } from "@workspace/email";
 function directory() {
-  return resolve(process.env.AUTH_DEV_MAIL_DIR ?? "../../.codex/dev-mail");
+  return resolve(
+    /*turbopackIgnore: true*/ process.env.AUTH_DEV_MAIL_DIR ??
+      "../../.codex/dev-mail",
+  );
 }
 function filename(userId: string, kind: string) {
   return `${createHash("sha256").update(`${userId}:${kind}`).digest("hex")}.json`;

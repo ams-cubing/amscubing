@@ -33,8 +33,6 @@ import type {
   User,
 } from "@workspace/db/schema";
 import { Badge } from "@workspace/ui/components/badge";
-import Link from "next/link";
-
 interface FullCompetition extends Competition {
   state: State & { region: Region };
 }
@@ -336,7 +334,7 @@ export function CalendarView({
               {selectedCompetition?.statusPublic === "announced" ||
               isDelegate ? (
                 selectedCompetition?.wcaCompetitionUrl ? (
-                  <Link
+                  <a
                     href={selectedCompetition.wcaCompetitionUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -346,7 +344,7 @@ export function CalendarView({
                       {selectedCompetition.name}
                     </span>
                     <ExternalLink className="mt-1 size-5 shrink-0" />
-                  </Link>
+                  </a>
                 ) : (
                   selectedCompetition?.name ||
                   `Competencia en ${selectedCompetition?.state.name}`

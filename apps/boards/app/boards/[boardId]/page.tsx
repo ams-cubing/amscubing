@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 
@@ -194,12 +193,12 @@ export default async function BoardPage({
               </Badge>
             )}
             {competitionHref && (
-              <Link
+              <a
                 href={competitionHref}
                 className="text-sm text-muted-foreground underline-offset-4 hover:underline"
               >
                 Ver en calendario
-              </Link>
+              </a>
             )}
             {isDelegate && (
               <BoardDelegateControls

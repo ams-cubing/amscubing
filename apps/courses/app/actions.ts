@@ -9,7 +9,7 @@ import {
   courseQuizAttempts,
 } from "@workspace/db/schema";
 import { and, eq, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
@@ -105,7 +105,8 @@ async function saveCourseData(data: FormData) {
       course: { id: courseId, slug: values.slug, title: values.title },
       actorId: viewer.id,
     });
-  revalidatePath("/", "layout");
+  updateTag("courses");
+  revalidatePath("/admin", "layout");
   redirect(`/admin/cursos/${courseId}?aviso=guardado`);
 }
 
@@ -135,7 +136,8 @@ async function saveModuleData(data: FormData): Promise<ActionResult> {
         ),
       );
   else await db.insert(courseModules).values(values);
-  revalidatePath("/", "layout");
+  updateTag("courses");
+  revalidatePath("/admin", "layout");
   return { ok: true, message: "Módulo guardado." };
 }
 
@@ -201,7 +203,8 @@ async function saveLessonData(data: FormData) {
         ),
       );
   else await db.insert(courseLessons).values(values);
-  revalidatePath("/", "layout");
+  updateTag("courses");
+  revalidatePath("/admin", "layout");
   redirect(`/admin/cursos/${courseId}?aviso=leccion-guardada`);
 }
 

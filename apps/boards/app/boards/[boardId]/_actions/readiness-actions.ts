@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
 import {
@@ -101,10 +101,6 @@ export async function applyReadinessSuggestionAction(input: {
   }
 
   revalidatePath(`/boards/${input.boardId}`);
-  revalidateTag(`competition-${readiness.competitionId}`, "days");
-  revalidateTag("competitions", "days");
-  revalidateTag("competition-public-status-counts", "days");
-  revalidateTag("competition-status-internal-counts", "days");
 
   return { success: true as const, label: suggestion.label };
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
 import { boards, cardAttachments, competitions } from "@workspace/db/schema";
@@ -106,7 +106,6 @@ async function requireDelegateBoardCompetition(boardId: number) {
 
 function revalidateBoardSocial(boardId: number) {
   revalidatePath(`/boards/${boardId}`);
-  revalidateTag("competitions", "days");
 }
 
 export async function retryBoardCompetitionSocialPublish(

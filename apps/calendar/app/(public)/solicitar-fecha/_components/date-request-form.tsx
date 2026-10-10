@@ -33,6 +33,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { submitDateRequest } from "../_actions/submit-date-request";
 import { toast } from "sonner";
 import { es } from "react-day-picker/locale";
+import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { DateRange } from "react-day-picker";
 import { MEXICAN_STATES } from "@workspace/db/data/mexico";
@@ -175,7 +176,7 @@ export function DateRequestForm({
                   if (!value) params.delete("estado");
                   else params.set("estado", value);
                   const q = params.toString();
-                  router.replace(`${pathname}${q ? `?${q}` : ""}`);
+                  router.replace(`${pathname}${q ? `?${q}` : ""}` as Route);
                 }}
                 defaultValue={field.value}
               >

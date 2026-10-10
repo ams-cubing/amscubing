@@ -7,6 +7,7 @@ import {
   Trophy,
   type LucideIcon,
 } from "lucide-react";
+import type { Route } from "next";
 
 export type DelegatePanelBadgeKey = "dateRequests" | "competitions";
 
@@ -18,7 +19,7 @@ export type DelegatePanelBadges = {
 
 export type DelegatePanelLink = {
   name: string;
-  href: string;
+  href: Route;
   icon: LucideIcon;
   badgeKey: DelegatePanelBadgeKey | null;
 };

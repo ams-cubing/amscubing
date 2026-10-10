@@ -21,7 +21,7 @@ import {
   logs,
 } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import {
   sendCompetitionStatusChangedEmail,
@@ -555,12 +555,12 @@ export async function updateCompetition(
       log.error("calendar.notify_competition_team_failed", { error: err });
     }
 
-    revalidateTag(`competition-${competitionId}`, "days");
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-public-status-counts", "days");
-    revalidateTag("competition-status-internal-counts", "days");
-    revalidateTag("competition-state-counts", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag(`competition-${competitionId}`);
+    updateTag("competitions");
+    updateTag("competition-public-status-counts");
+    updateTag("competition-status-internal-counts");
+    updateTag("competition-state-counts");
+    updateTag("competition-delegates-counts");
     revalidatePath("/panel/competencias", "layout");
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");

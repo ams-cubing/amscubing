@@ -16,7 +16,7 @@ import {
   user,
 } from "@workspace/db/schema";
 import { and, eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import {
   holdAvailability,
@@ -127,9 +127,9 @@ export async function acceptDateRequest(competitionId: number): Promise<{
       }
     }
 
-    revalidateTag(`competition-${competitionId}`, "days");
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag(`competition-${competitionId}`);
+    updateTag("competitions");
+    updateTag("competition-delegates-counts");
     revalidatePath(`/panel/competencias/${competitionId}`);
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");
@@ -271,9 +271,9 @@ export async function declineDateRequest(competitionId: number): Promise<{
       }
     }
 
-    revalidateTag(`competition-${competitionId}`, "days");
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag(`competition-${competitionId}`);
+    updateTag("competitions");
+    updateTag("competition-delegates-counts");
     revalidatePath(`/panel/competencias/${competitionId}`);
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");

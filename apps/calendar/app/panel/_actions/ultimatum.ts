@@ -14,7 +14,7 @@ import {
   user,
 } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { sendUltimatumEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
@@ -112,7 +112,7 @@ export async function sendUltimatum(
       });
     }
 
-    revalidateTag("competitions", "days");
+    updateTag("competitions");
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");
   } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { Route } from "next";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Select,
@@ -28,7 +29,7 @@ export function RegionFilter({
     if (value === "todo") params.delete("region");
     else params.set("region", value);
     const q = params.toString();
-    router.replace(`${pathname}${q ? `?${q}` : ""}`);
+    router.replace(`${pathname}${q ? `?${q}` : ""}` as Route);
   };
 
   return (

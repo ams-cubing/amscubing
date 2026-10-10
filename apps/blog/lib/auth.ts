@@ -3,13 +3,14 @@ import { createAuth } from "@workspace/auth";
 import { db } from "@workspace/db";
 import { blogStaff, user } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import type { Route } from "next";
 import { headers } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
 import { canManageBlog } from "./permissions";
 import { getBlogUrl, getCrossAppSignInUrl } from "./urls";
 export const auth = createAuth();
 export function signInUrl(path = "/") {
-  return getCrossAppSignInUrl(`${getBlogUrl()}${path}`);
+  return getCrossAppSignInUrl(`${getBlogUrl()}${path}`) as Route;
 }
 export const getViewer = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });

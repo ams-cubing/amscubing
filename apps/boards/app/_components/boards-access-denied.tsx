@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { getCalendarUrl } from "@/lib/urls";
 
 export function BoardsAccessDenied() {
@@ -15,12 +13,12 @@ export function BoardsAccessDenied() {
         organizas una competencia, pide a tu delegado que te agregue como
         organizador.
       </p>
-      <Link
+      <a
         href={calendarUrl}
         className="text-sm font-medium text-primary hover:underline"
       >
         Volver al calendario
-      </Link>
+      </a>
     </div>
   );
 }

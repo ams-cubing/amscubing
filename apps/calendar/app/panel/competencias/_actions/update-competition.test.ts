@@ -12,7 +12,7 @@ const {
   holdAvailability,
   restoreAvailability,
   revalidatePath,
-  revalidateTag,
+  updateTag,
   publishCompetitionSocialAnnouncement,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -26,7 +26,7 @@ const {
   holdAvailability: vi.fn(),
   restoreAvailability: vi.fn(),
   revalidatePath: vi.fn(),
-  revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   publishCompetitionSocialAnnouncement: vi.fn(),
 }));
 
@@ -36,7 +36,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath,
-  revalidateTag,
+  updateTag,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -149,7 +149,7 @@ describe("updateCompetition pending preservation", () => {
     holdAvailability.mockReset();
     restoreAvailability.mockReset();
     revalidatePath.mockReset();
-    revalidateTag.mockReset();
+    updateTag.mockReset();
     publishCompetitionSocialAnnouncement.mockReset();
 
     getSession.mockResolvedValue({

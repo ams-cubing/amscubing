@@ -3,6 +3,7 @@ import { createAuth } from "@workspace/auth";
 import { db } from "@workspace/db";
 import { courseStaff, user } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import type { Route } from "next";
 import { headers } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
 import { canManageCourses } from "./permissions";
@@ -11,7 +12,7 @@ import { getCoursesUrl, getCrossAppSignInUrl } from "./urls";
 
 export const auth = createAuth();
 export function signInUrl(path = "/mis-cursos") {
-  return getCrossAppSignInUrl(`${getCoursesUrl()}${path}`);
+  return getCrossAppSignInUrl(`${getCoursesUrl()}${path}`) as Route;
 }
 export const getViewer = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });

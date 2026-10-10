@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 import {
   completeCompetitionInstagramPublish,
@@ -17,7 +17,6 @@ import { requireDelegate } from "@/lib/session";
 
 function revalidateSocial() {
   revalidatePath("/admin/redes");
-  revalidateTag("competitions", "days");
 }
 
 function toCoverPanelStatus(

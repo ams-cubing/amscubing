@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 
 import {
@@ -15,5 +16,5 @@ export default async function SignInPage({
   const callbackURL =
     returnTo && isAllowedReturnTo(returnTo) ? returnTo : getCalendarUrl();
 
-  redirect(getCrossAppSignInUrl(callbackURL));
+  redirect(getCrossAppSignInUrl(callbackURL) as Route);
 }
