@@ -27,6 +27,13 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "date_request_accepted",
   "date_request_declined",
   "ultimatum_sent",
+  "blog_comment_pending",
+  "blog_comment_approved",
+  "blog_comment_hidden",
+  "blog_staff_changed",
+  "course_staff_changed",
+  "course_completed",
+  "course_published",
 ]);
 
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
@@ -44,6 +51,12 @@ export type NotificationPayload = {
   statusLabel?: string;
   actorName?: string;
   suggestionKind?: string;
+  postId?: number;
+  postTitle?: string;
+  commentId?: number;
+  courseId?: number;
+  courseTitle?: string;
+  role?: string;
 };
 
 export const notifications = pgTable(

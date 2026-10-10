@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { consumeRateLimit, requireViewer, selectedPosts, insertValues } =
-  vi.hoisted(() => ({
-    consumeRateLimit: vi.fn(),
-    requireViewer: vi.fn(),
-    selectedPosts: { current: [] as unknown[] },
-    insertValues: vi.fn(),
-  }));
+const {
+  consumeRateLimit,
+  requireViewer,
+  selectedPosts,
+  insertValues,
+  notifyCommentPending,
+} = vi.hoisted(() => ({
+  consumeRateLimit: vi.fn(),
+  requireViewer: vi.fn(),
+  selectedPosts: { current: [] as unknown[] },
+  insertValues: vi.fn(),
+  notifyCommentPending: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((url: string) => {
@@ -25,6 +31,12 @@ vi.mock("@workspace/db/rate-limit", () => ({
 vi.mock("@/lib/auth", () => ({
   requireViewer,
   requireManager: vi.fn(),
+}));
+
+vi.mock("@/lib/notifications", () => ({
+  notifyCommentPending,
+  notifyCommentModerated: vi.fn(),
+  notifyBlogStaffChanged: vi.fn(),
 }));
 
 vi.mock("@workspace/db", () => ({
@@ -49,6 +61,7 @@ describe("addComment", () => {
   beforeEach(() => {
     consumeRateLimit.mockReset();
     insertValues.mockReset();
+    notifyCommentPending.mockReset();
     requireViewer.mockResolvedValue({
       id: "user-1",
       name: "Lectora",
@@ -71,6 +84,7 @@ describe("addComment", () => {
       max: 5,
     });
     expect(insertValues).not.toHaveBeenCalled();
+    expect(notifyCommentPending).not.toHaveBeenCalled();
   });
 
   it("stores the comment when under the limit", async () => {
@@ -81,6 +95,9 @@ describe("addComment", () => {
     );
     expect(insertValues).toHaveBeenCalledWith(
       expect.objectContaining({ postId: 7, authorId: "user-1" }),
+    );
+    expect(notifyCommentPending).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: "user-1" }),
     );
   });
 });

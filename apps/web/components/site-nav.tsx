@@ -7,6 +7,7 @@ import {
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { toSessionUser, type RawSessionUser } from "@workspace/auth/types";
 
+import { HeaderNotifications } from "@/components/header-notifications";
 import { SiteNavAccount } from "@/components/site-nav-account";
 import { getBoardsUrl, getCalendarUrl, getWebUrl } from "@/lib/urls";
 
@@ -26,6 +27,11 @@ export function SiteNav({ active = "Inicio" }: { active?: AmsNavItemLabel }) {
       <AmsSiteNav
         active={active}
         webUrl={webUrl}
+        actions={
+          <Suspense fallback={null}>
+            <HeaderNotifications />
+          </Suspense>
+        }
         account={
           <Suspense
             fallback={

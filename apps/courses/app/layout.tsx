@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Saira, Unbounded } from "next/font/google";
 import { AmsSiteNav } from "@workspace/ui/components/ams-site-nav";
 import { getWebUrl } from "@workspace/auth/urls";
+import { HeaderNotifications } from "@/components/header-notifications";
 import { getViewer, signInUrl } from "@/lib/auth";
 import "./globals.css";
 
@@ -35,6 +36,7 @@ export default async function Layout({
         <AmsSiteNav
           active="Cursos"
           webUrl={getWebUrl()}
+          actions={viewer ? <HeaderNotifications /> : null}
           account={
             <a
               className="account"

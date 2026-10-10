@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { canManageCourses, canManageStaff } from "./permissions";
 import { claimLegacyProgress } from "./legacy";
 
-const auth = createAuth();
+export const auth = createAuth();
 export function signInUrl(path = "/mis-cursos") {
   return getCrossAppSignInUrl(`${getCoursesUrl()}${path}`);
 }

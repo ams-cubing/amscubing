@@ -7,6 +7,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireManager, requireViewer } from "@/lib/auth";
+import {
+  notifyBlogStaffChanged,
+  notifyCommentModerated,
+  notifyCommentPending,
+} from "@/lib/notifications";
 import { validateSections, safeUrl, slugify, plainText } from "@/lib/content";
 const postSchema = z.object({
   title: z.string().trim().min(3).max(200),
@@ -130,16 +135,34 @@ export async function addComment(form: FormData) {
     authorName: viewer.name,
     content,
   });
+  await notifyCommentPending({ post, actorId: viewer.id });
   revalidatePath(path);
   redirect(`${path}?aviso=comentario-enviado`);
 }
 export async function moderateComment(form: FormData) {
-  await requireManager();
+  const viewer = await requireManager();
   const status = z
     .enum(["approved", "hidden", "pending"])
     .parse(form.get("status"));
   const id = z.coerce.number().int().positive().parse(form.get("id"));
+  const [existing] = await db
+    .select({ comment: blogComments, post: blogPosts })
+    .from(blogComments)
+    .innerJoin(blogPosts, eq(blogPosts.id, blogComments.postId))
+    .where(eq(blogComments.id, id));
   await db.update(blogComments).set({ status }).where(eq(blogComments.id, id));
+  if (
+    existing?.comment.authorId &&
+    existing.comment.status !== status &&
+    status !== "pending"
+  )
+    await notifyCommentModerated({
+      post: existing.post,
+      commentId: id,
+      authorId: existing.comment.authorId,
+      actorId: viewer.id,
+      status,
+    });
   revalidatePath("/admin/comentarios");
   revalidatePath("/entradas/[slug]", "page");
   redirect("/admin/comentarios");
@@ -161,6 +184,11 @@ export async function grantStaff(form: FormData) {
       .insert(blogStaff)
       .values({ userId: target.id, role })
       .onConflictDoUpdate({ target: blogStaff.userId, set: { role } });
+  await notifyBlogStaffChanged({
+    recipientId: target.id,
+    actorId: viewer.id,
+    role,
+  });
   revalidatePath("/admin");
   redirect("/admin?permisos=1");
 }

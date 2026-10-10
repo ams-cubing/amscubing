@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Saira, Unbounded } from "next/font/google";
 import { AmsSiteNav } from "@workspace/ui/components/ams-site-nav";
 import { getWebUrl, getBlogUrl } from "@workspace/auth/urls";
+import { HeaderNotifications } from "@/components/header-notifications";
 import { getViewer, signInUrl } from "@/lib/auth";
 import "./globals.css";
 const heading = Unbounded({
@@ -32,6 +33,7 @@ export default async function Layout({
         <AmsSiteNav
           active="Blog"
           webUrl={getWebUrl()}
+          actions={viewer ? <HeaderNotifications /> : null}
           account={
             <a
               className="account"

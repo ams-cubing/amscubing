@@ -288,6 +288,13 @@
       "when": 1791592253414,
       "tag": "0040_uploaded_file",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791647275433,
+      "tag": "0041_fancy_flatman",
+      "breakpoints": true
     }
   ]
 }

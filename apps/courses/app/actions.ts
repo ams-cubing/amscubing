@@ -17,6 +17,11 @@ import { z } from "zod";
 import { requireViewer, requireManager } from "@/lib/auth";
 import { cleanHtml, safeUrl } from "@/lib/content";
 import { gradeQuiz } from "@/lib/grading";
+import {
+  notifyCourseCompleted,
+  notifyCoursePublished,
+  notifyCourseStaffChanged,
+} from "@/lib/notifications";
 import { verifyQuizSession } from "@/lib/quiz-session";
 
 const id = (data: FormData, field: string) =>
@@ -60,6 +65,7 @@ export async function saveCourse(data: FormData) {
       "El enlace solo admite letras minúsculas, números y guiones",
     );
   let courseId: number;
+  let wasPublished = false;
   if (data.get("courseId")) {
     courseId = id(data, "courseId");
     const [existing] = await db
@@ -67,6 +73,7 @@ export async function saveCourse(data: FormData) {
       .from(courses)
       .where(eq(courses.id, courseId));
     if (!existing) throw new Error("Curso inexistente");
+    wasPublished = existing.status === "published";
     await db.update(courses).set(values).where(eq(courses.id, courseId));
   } else {
     const [created] = await db
@@ -75,6 +82,11 @@ export async function saveCourse(data: FormData) {
       .returning();
     courseId = created!.id;
   }
+  if (values.status === "published" && !wasPublished)
+    await notifyCoursePublished({
+      course: { id: courseId, slug: values.slug, title: values.title },
+      actorId: viewer.id,
+    });
   revalidatePath("/", "layout");
   redirect(`/admin/cursos/${courseId}?aviso=guardado`);
 }
@@ -191,6 +203,7 @@ export async function completeLesson(data: FormData) {
   const { lesson, course } = row;
   let score: number | null = null;
   let passed = true;
+  let justCompleted = false;
   await db.transaction(async (tx) => {
     const [enrollment] = await tx
       .select()
@@ -229,11 +242,14 @@ export async function completeLesson(data: FormData) {
         .insert(courseProgress)
         .values({ lessonId, userId: viewer.id, score })
         .onConflictDoNothing();
-      await tx.execute(
-        sql`update course_enrollment set completed_at = coalesce(completed_at, now()) where course_id = ${course.id} and user_id = ${viewer.id} and not exists (select 1 from course_lesson l where l.course_id = ${course.id} and not exists (select 1 from course_progress p where p.lesson_id = l.id and p.user_id = ${viewer.id}))`,
+      const completed = await tx.execute(
+        sql`update course_enrollment set completed_at = now() where course_id = ${course.id} and user_id = ${viewer.id} and completed_at is null and not exists (select 1 from course_lesson l where l.course_id = ${course.id} and not exists (select 1 from course_progress p where p.lesson_id = l.id and p.user_id = ${viewer.id})) returning course_id`,
       );
+      justCompleted = completed.length > 0;
     }
   });
+  if (justCompleted)
+    await notifyCourseCompleted({ course, recipientId: viewer.id });
   if (passed) {
     const { issueCertificate } = await import("@/lib/certificates");
     await issueCertificate(course.id, viewer.id);
@@ -278,5 +294,10 @@ export async function grantStaff(data: FormData) {
       .insert(courseStaff)
       .values({ userId: target.id, role })
       .onConflictDoUpdate({ target: courseStaff.userId, set: { role } });
+  await notifyCourseStaffChanged({
+    recipientId: target.id,
+    actorId: viewer.id,
+    role,
+  });
   revalidatePath("/admin");
 }
