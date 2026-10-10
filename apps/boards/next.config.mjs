@@ -2,6 +2,10 @@ import { securityHeaders } from "@workspace/server/security-headers";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  cacheComponents: true,
+  partialPrefetching: true,
+  reactCompiler: true,
+  typedRoutes: true,
   transpilePackages: [
     "@workspace/ui",
     "@workspace/db",

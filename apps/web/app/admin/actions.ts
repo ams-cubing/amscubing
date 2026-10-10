@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { db } from "@workspace/db";
 import { user } from "@workspace/db/schema";
@@ -27,7 +27,7 @@ function normalizeOptional(raw: string | null | undefined): string | null {
 }
 
 function revalidateAdminAndDelegates() {
-  revalidateTag("public-delegates", "hours");
+  updateTag("public-delegates");
   revalidatePath("/admin/delegados");
   revalidatePath("/admin/redes");
   revalidatePath("/nosotros");

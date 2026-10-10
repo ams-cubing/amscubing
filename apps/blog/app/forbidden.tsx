@@ -14,7 +14,7 @@ export default function ForbiddenPage() {
         href="/"
         className={buttonVariants({ variant: "destructive", size: "lg" })}
       >
-        Volver a el blog
+        Volver al blog
       </Link>
     </AmsStatusPage>
   );

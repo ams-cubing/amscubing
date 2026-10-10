@@ -14,12 +14,14 @@ export function SiteNavAccount({
   webUrl,
   calendarUrl,
   boardsUrl,
+  signInHref,
 }: {
   showBoardsLink?: boolean;
   initialUser?: AmsAccountUser | null;
   webUrl: string;
   calendarUrl: string;
   boardsUrl: string;
+  signInHref: string;
 }) {
   const { data: session, isPending } = authClient.useSession();
   const sessionUser = session?.user;
@@ -43,7 +45,7 @@ export function SiteNavAccount({
         calendarUrl,
         boardsUrl,
         coursesUrl: COURSES_URL,
-        signInHref: `${webUrl}/cuenta`,
+        signInHref,
       }}
       onSignOut={async () => {
         await authClient.signOut({

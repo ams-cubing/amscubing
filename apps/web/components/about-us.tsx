@@ -94,7 +94,7 @@ export function AboutUs({ delegates }: { delegates: PublicDelegate[] }) {
 
       <div className="ams-container grid gap-6 pb-20 md:grid-cols-2 md:pb-24">
         <article className="relative overflow-hidden rounded-5 bg-ams-soft p-8 md:p-11">
-          <div className="ams-texture absolute inset-0 opacity-[0.03]" />
+          <div className="ams-texture absolute inset-0 opacity-3" />
           <div className="relative">
             <h3 className="ams-display mb-4 text-3xl text-ams-red">Misión</h3>
             <p className="text-base leading-8 text-black/70">{mission}</p>

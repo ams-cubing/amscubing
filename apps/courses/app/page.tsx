@@ -1,23 +1,14 @@
 import Link from "next/link";
-import { db } from "@workspace/db";
-import { courses, courseLessons } from "@workspace/db/schema";
-import { asc, eq, sql } from "drizzle-orm";
+import { connection } from "next/server";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { CourseCard } from "@/components/course-card";
 import { Eyebrow, textLinkClass } from "@/components/ui";
+import { getCatalog } from "@/lib/data";
 
 export default async function Home() {
-  const catalog = await db
-    .select({
-      course: courses,
-      count: sql<number>`count(${courseLessons.id})::int`,
-    })
-    .from(courses)
-    .leftJoin(courseLessons, eq(courseLessons.courseId, courses.id))
-    .where(eq(courses.status, "published"))
-    .groupBy(courses.id)
-    .orderBy(asc(courses.id));
+  await connection();
+  const catalog = await getCatalog();
   return (
     <>
       <section className="relative overflow-hidden bg-[linear-gradient(90deg,rgba(1,11,25,0.94),rgba(1,11,25,0.78)),url(/source/photos/ponny-1.jpg)] bg-cover bg-center py-12 text-white md:py-18">

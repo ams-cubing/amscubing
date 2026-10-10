@@ -6,7 +6,7 @@ import { getCalendarUrl } from "@/lib/urls";
 export function SiteCta() {
   return (
     <section className="relative overflow-hidden bg-ams-red px-0 py-20 text-white">
-      <div className="absolute -left-[20%] -top-[20%] h-[140%] w-[140%] rotate-[-6deg] opacity-[0.07] [background-image:url('/source/isotipo-color-sm.png')] [background-position:0_0,45px_25px] [background-repeat:repeat] [background-size:90px_auto]" />
+      <div className="absolute -left-1/5 -top-1/5 h-[140%] w-[140%] -rotate-6 bg-[url('/source/isotipo-color-sm.png')] bg-position-[0_0,45px_25px] bg-repeat bg-size-[90px_auto] opacity-7" />
       <div className="absolute bottom-0 left-0 h-[60%] w-[38%] bg-ams-navy opacity-40 [clip-path:polygon(0_100%,45%_100%,20%_0,0_0)]" />
       <div className="ams-container relative text-center">
         <h2 className="ams-display text-[clamp(2rem,5vw,4rem)] leading-none">

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import {
   completeCompetitionInstagramPublish,
@@ -12,7 +12,7 @@ import {
 import { requireDelegate } from "@/lib/session";
 
 function revalidateCompetitionSocial(competitionId: number) {
-  revalidateTag("competitions", "days");
+  updateTag("competitions");
   revalidatePath("/panel/competencias");
   revalidatePath("/panel");
   revalidatePath(`/panel/competencias/${competitionId}`);

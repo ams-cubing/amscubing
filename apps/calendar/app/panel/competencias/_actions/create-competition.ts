@@ -17,7 +17,7 @@ import {
   competitionOrganizers,
   logs,
 } from "@workspace/db/schema";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import {
   sendDelegateAssignedEmail,
@@ -243,11 +243,11 @@ export async function createCompetition(
       log.error("calendar.organizer_emails_fetch_failed", { error: err });
     }
 
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-public-status-counts", "days");
-    revalidateTag("competition-status-internal-counts", "days");
-    revalidateTag("competition-state-counts", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag("competitions");
+    updateTag("competition-public-status-counts");
+    updateTag("competition-status-internal-counts");
+    updateTag("competition-state-counts");
+    updateTag("competition-delegates-counts");
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");

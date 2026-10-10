@@ -1,11 +1,13 @@
-import { db } from "@workspace/db";
-import { blogPosts } from "@workspace/db/schema";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { AmsPageHero } from "@workspace/ui/components/ams-page-hero";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { NativeSelect } from "@workspace/ui/components/native-select";
 import { PostCard } from "@/components/post-card";
+import {
+  listCategories,
+  listPublishedPosts,
+  POSTS_PER_PAGE,
+} from "@/lib/posts";
 export default async function Page({
   searchParams,
 }: {
@@ -19,27 +21,10 @@ export default async function Page({
   const page = Math.max(1, Math.min(1000, Number(params.pagina) || 1));
   const q = (params.q ?? "").slice(0, 100);
   const category = (params.categoria ?? "").slice(0, 100);
-  const conditions = and(
-    eq(blogPosts.status, "published"),
-    q
-      ? or(ilike(blogPosts.title, `%${q}%`), ilike(blogPosts.excerpt, `%${q}%`))
-      : undefined,
-    category
-      ? sql`${blogPosts.categories} @> ${JSON.stringify([category])}::jsonb`
-      : undefined,
-  );
-  const posts = await db
-    .select()
-    .from(blogPosts)
-    .where(conditions)
-    .orderBy(desc(blogPosts.publishedAt), desc(blogPosts.id))
-    .limit(13)
-    .offset((page - 1) * 12);
-  const all = await db
-    .select({ categories: blogPosts.categories })
-    .from(blogPosts)
-    .where(eq(blogPosts.status, "published"));
-  const categories = [...new Set(all.flatMap((p) => p.categories))].sort();
+  const [posts, categories] = await Promise.all([
+    listPublishedPosts({ page, q, category }),
+    listCategories(),
+  ]);
   return (
     <>
       <AmsPageHero
@@ -88,7 +73,7 @@ export default async function Page({
         </div>
         {posts.length ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.slice(0, 12).map((post) => (
+            {posts.slice(0, POSTS_PER_PAGE).map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
@@ -107,7 +92,7 @@ export default async function Page({
               </a>
             </Button>
           )}
-          {posts.length > 12 && (
+          {posts.length > POSTS_PER_PAGE && (
             <Button asChild variant="destructive">
               <a
                 href={`/?pagina=${page + 1}&q=${encodeURIComponent(q)}&categoria=${encodeURIComponent(category)}`}

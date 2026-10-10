@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, unauthorized } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@workspace/db";
@@ -19,7 +19,7 @@ export type AdminAccess = {
 
 export const getAdminAccess = cache(async (): Promise<AdminAccess | null> => {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return null;
+  if (!session?.user) unauthorized();
 
   const role = session.user.role ?? "user";
   const [[blogPermission], [coursePermission]] = await Promise.all([

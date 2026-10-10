@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -25,7 +26,7 @@ function NavLink({
   active,
   badgeCount,
 }: {
-  href: string;
+  href: Route;
   label: string;
   active: boolean;
   badgeCount?: number;

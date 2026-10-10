@@ -6,11 +6,29 @@ import {
   courseEnrollments,
   courseProgress,
 } from "@workspace/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { calculateCourseScore } from "./course-score";
 
-export async function getCourse(slug: string, manager = false) {
+export async function getCatalog() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("courses");
+
+  return db
+    .select({
+      course: courses,
+      count: sql<number>`count(${courseLessons.id})::int`,
+    })
+    .from(courses)
+    .leftJoin(courseLessons, eq(courseLessons.courseId, courses.id))
+    .where(eq(courses.status, "published"))
+    .groupBy(courses.id)
+    .orderBy(asc(courses.id));
+}
+
+async function loadCourse(slug: string, manager: boolean) {
   const [course] = await db
     .select()
     .from(courses)
@@ -20,7 +38,7 @@ export async function getCourse(slug: string, manager = false) {
         manager ? undefined : eq(courses.status, "published"),
       ),
     );
-  if (!course) notFound();
+  if (!course) return null;
   const modules = await db
     .select()
     .from(courseModules)
@@ -32,6 +50,22 @@ export async function getCourse(slug: string, manager = false) {
     .where(eq(courseLessons.courseId, course.id))
     .orderBy(asc(courseLessons.position));
   return { ...course, modules, lessons };
+}
+
+async function getPublishedCourse(slug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("courses");
+
+  return loadCourse(slug, false);
+}
+
+export async function getCourse(slug: string, manager = false) {
+  const course = manager
+    ? await loadCourse(slug, true)
+    : await getPublishedCourse(slug);
+  if (!course) notFound();
+  return course;
 }
 export async function getProgress(courseId: number, userId: string) {
   const [enrollment] = await db

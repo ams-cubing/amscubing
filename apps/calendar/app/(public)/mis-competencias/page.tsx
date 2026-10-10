@@ -7,6 +7,7 @@ import {
   formatInternalStatus,
 } from "@/lib/utils";
 import { cn } from "@workspace/ui/lib/utils";
+import type { Route } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { unauthorized } from "next/navigation";
@@ -35,12 +36,12 @@ function dateRequestStatusLabel(status: "open" | "accepted" | "exhausted") {
 
 type Filters = { includePast: boolean; includeCancelled: boolean };
 
-function filtersHref({ includePast, includeCancelled }: Filters) {
+function filtersHref({ includePast, includeCancelled }: Filters): Route {
   const params = new URLSearchParams();
   if (includePast) params.set("pasadas", "1");
   if (includeCancelled) params.set("canceladas", "1");
   const query = params.toString();
-  return query ? `/mis-competencias?${query}` : "/mis-competencias";
+  return query ? (`/mis-competencias?${query}` as Route) : "/mis-competencias";
 }
 
 function FilterToggles(filters: Filters) {

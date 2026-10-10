@@ -1,23 +1,24 @@
 import Link from "next/link";
 
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
 import { buttonVariants } from "@workspace/ui/components/button";
 
-import { ReturnSignInLink } from "@/components/return-sign-in-link";
+import { getCalendarUrl, getCrossAppSignInUrl } from "@/lib/urls";
 
 export default function UnauthorizedPage() {
   return (
     <AmsStatusPage
       code="401"
-      title="No autorizado"
-      description="Inicia sesión para continuar. Al entrar volverás a esta página."
+      title="Inicia sesión"
+      description="Usa tu cuenta AMS o WCA para continuar. Al entrar volverás a esta página."
     >
-      <ReturnSignInLink />
+      <AmsSignInLink href={getCrossAppSignInUrl(getCalendarUrl())} />
       <Link
         href="/"
         className={buttonVariants({ variant: "outline", size: "lg" })}
       >
-        Ir al calendario
+        Volver al calendario
       </Link>
     </AmsStatusPage>
   );

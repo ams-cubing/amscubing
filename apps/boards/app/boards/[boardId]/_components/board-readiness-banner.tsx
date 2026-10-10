@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import * as React from "react";
 import { AlertTriangle } from "lucide-react";
 
@@ -75,7 +74,7 @@ export function BoardReadinessBanner({
           <div className="flex flex-wrap items-center gap-2">
             {suggestion.kindLabel === "announce_ready" && competitionHref ? (
               <Button asChild size="sm" variant="default">
-                <Link href={competitionHref}>Ir a anunciar</Link>
+                <a href={competitionHref}>Ir a anunciar</a>
               </Button>
             ) : null}
             {canApply ? (

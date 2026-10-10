@@ -9,7 +9,8 @@ import { PreviewBanner } from "@workspace/ui/components/preview-banner";
 import { CalendarAppNav } from "@/components/calendar-app-nav";
 import { AmsAppNav } from "@workspace/ui/components/ams-app-nav";
 import { AmsHeaderNotifications } from "@workspace/ui/components/ams-header-notifications";
-import { getCoursesUrl } from "@workspace/auth/urls";
+import { AmsSiteFooter } from "@workspace/ui/components/ams-site-footer";
+import { getBlogUrl, getCoursesUrl } from "@workspace/auth/urls";
 import { signOutAction } from "@/app/_actions/auth";
 import {
   getNotificationInbox,
@@ -17,7 +18,6 @@ import {
   markNotificationReadAction,
 } from "@/app/_actions/notifications";
 import { Toaster } from "sonner";
-import { Footer } from "@/components/footer";
 import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
 import { auth } from "@/lib/auth";
 import { canSeeBoardsNav } from "@/lib/boards";
@@ -175,9 +175,12 @@ export default function RootLayout({
               {children}
             </div>
           </div>
-          <Suspense fallback={null}>
-            <Footer />
-          </Suspense>
+          <AmsSiteFooter
+            webUrl={getWebUrl()}
+            calendarUrl={getCalendarUrl()}
+            blogUrl={getBlogUrl()}
+            coursesUrl={getCoursesUrl()}
+          />
           <Analytics />
           <SpeedInsights />
           <Toaster />

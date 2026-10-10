@@ -3,7 +3,7 @@
 import { db } from "@workspace/db";
 import { applyStatusTransition } from "@workspace/db/competition-transitions";
 import { competitionOrganizersOnly } from "@workspace/db/notifications";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
@@ -51,9 +51,9 @@ export async function markAsCelebrated(competitionId: number): Promise<{
       log.error("calendar.notify_organizers_failed", { error: err });
     }
 
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-public-status-counts", "days");
-    revalidateTag("competition-status-internal-counts", "days");
+    updateTag("competitions");
+    updateTag("competition-public-status-counts");
+    updateTag("competition-status-internal-counts");
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");

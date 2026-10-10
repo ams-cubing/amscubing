@@ -8,7 +8,7 @@ import {
   logs,
 } from "@workspace/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { restoreAvailability } from "@/lib/availability-dates";
 import { getErrorMessage } from "@/lib/handle-error";
@@ -71,11 +71,11 @@ export async function deleteCompetition(competitionId: number): Promise<{
       });
     });
 
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-public-status-counts", "days");
-    revalidateTag("competition-status-internal-counts", "days");
-    revalidateTag("competition-state-counts", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag("competitions");
+    updateTag("competition-public-status-counts");
+    updateTag("competition-status-internal-counts");
+    updateTag("competition-state-counts");
+    updateTag("competition-delegates-counts");
     revalidatePath("/panel/competencias");
     revalidatePath("/panel");
     revalidatePath("/");

@@ -4,13 +4,13 @@ const {
   getSession,
   transaction,
   revalidatePath,
-  revalidateTag,
+  updateTag,
   applyStatusTransition,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   transaction: vi.fn(),
   revalidatePath: vi.fn(),
-  revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   applyStatusTransition: vi.fn(),
 }));
 
@@ -20,7 +20,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath,
-  revalidateTag,
+  updateTag,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -63,7 +63,7 @@ describe("markAsCelebrated", () => {
     getSession.mockReset();
     transaction.mockReset();
     revalidatePath.mockReset();
-    revalidateTag.mockReset();
+    updateTag.mockReset();
     applyStatusTransition.mockReset();
     applyStatusTransition.mockResolvedValue({
       city: "CDMX",

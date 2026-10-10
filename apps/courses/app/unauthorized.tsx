@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
 import { buttonVariants } from "@workspace/ui/components/button";
 
@@ -10,14 +11,9 @@ export default function UnauthorizedPage() {
     <AmsStatusPage
       code="401"
       title="Inicia sesión"
-      description="Usa tu cuenta AMS o WCA para continuar."
+      description="Usa tu cuenta AMS o WCA para continuar. Al entrar volverás a esta página."
     >
-      <a
-        href={signInUrl("/")}
-        className={buttonVariants({ variant: "destructive", size: "lg" })}
-      >
-        Iniciar sesión
-      </a>
+      <AmsSignInLink href={signInUrl("/")} />
       <Link
         href="/"
         className={buttonVariants({ variant: "outline", size: "lg" })}

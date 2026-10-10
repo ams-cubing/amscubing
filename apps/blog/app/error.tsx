@@ -30,7 +30,10 @@ export default function ErrorPage({
       >
         Intentar de nuevo
       </button>
-      <Link href="/" className={buttonVariants({ variant: "brand", size: "lg" })}>
+      <Link
+        href="/"
+        className={buttonVariants({ variant: "brand", size: "lg" })}
+      >
         Volver al blog
       </Link>
     </AmsStatusPage>

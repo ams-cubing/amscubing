@@ -7,6 +7,7 @@ import { Submit } from "@/components/submit";
 import { enroll } from "@/app/actions";
 import { formatCourseScore } from "@/lib/course-score";
 import { ActionForm } from "@workspace/ui/components/action-form";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import {
@@ -130,11 +131,12 @@ export default async function CoursePage({
               <Submit className="w-full">Tomar curso →</Submit>
             </ActionForm>
           ) : !viewer ? (
-            <Button asChild variant="destructive" className="w-full">
-              <a href={signInUrl(`/cursos/${slug}`)}>
-                Iniciar sesión o crear cuenta
-              </a>
-            </Button>
+            <AmsSignInLink
+              href={signInUrl(`/cursos/${slug}`)}
+              label="Iniciar sesión o crear cuenta"
+              size="default"
+              className="w-full"
+            />
           ) : (
             <p className={smallClass}>
               Vista previa: publica el curso para permitir inscripciones.

@@ -5,7 +5,7 @@ const {
   transaction,
   findFirst,
   revalidatePath,
-  revalidateTag,
+  updateTag,
   publishCompetitionSocialAnnouncement,
   refreshTorneoDeRubikCoverBestEffort,
   applyStatusTransition,
@@ -18,7 +18,7 @@ const {
   transaction: vi.fn(),
   findFirst: vi.fn(),
   revalidatePath: vi.fn(),
-  revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   publishCompetitionSocialAnnouncement: vi.fn(),
   refreshTorneoDeRubikCoverBestEffort: vi.fn(),
   applyStatusTransition: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath,
-  revalidateTag,
+  updateTag,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -116,7 +116,7 @@ describe("markAsAnnounced", () => {
     transaction.mockReset();
     findFirst.mockReset();
     revalidatePath.mockReset();
-    revalidateTag.mockReset();
+    updateTag.mockReset();
     publishCompetitionSocialAnnouncement.mockReset();
     refreshTorneoDeRubikCoverBestEffort.mockReset();
     refreshTorneoDeRubikCoverBestEffort.mockResolvedValue(undefined);

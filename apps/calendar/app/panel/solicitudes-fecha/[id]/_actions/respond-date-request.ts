@@ -8,7 +8,7 @@ import {
 } from "@workspace/db/notifications";
 import { dateRequests } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import {
   holdAvailability,
@@ -151,9 +151,9 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
       }
     }
 
-    revalidateTag(`competition-${competitionId}`, "days");
-    revalidateTag("competitions", "days");
-    revalidateTag("competition-delegates-counts", "days");
+    updateTag(`competition-${competitionId}`);
+    updateTag("competitions");
+    updateTag("competition-delegates-counts");
     revalidatePath(`/panel/solicitudes-fecha/${dateRequestId}`);
     revalidatePath("/panel/solicitudes-fecha");
     revalidatePath(`/panel/competencias/${competitionId}`);

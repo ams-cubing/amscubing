@@ -1,28 +1,27 @@
 import Image from "next/image";
 import { db } from "@workspace/db";
-import { blogPosts, blogComments } from "@workspace/db/schema";
-import { and, eq, desc } from "drizzle-orm";
+import { blogPosts } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getWebUrl } from "@workspace/auth/urls";
 import { AmsField, AmsNotice } from "@workspace/ui/components/ams-field";
 import { ActionForm } from "@workspace/ui/components/action-form";
+import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tag } from "@/components/tag";
 import { getViewer, signInUrl } from "@/lib/auth";
 import { Sections } from "@/components/sections";
 import { addComment } from "@/app/actions";
+import { getApprovedComments, getPublishedPost } from "@/lib/posts";
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [post] = await db
-    .select()
-    .from(blogPosts)
-    .where(and(eq(blogPosts.slug, slug), eq(blogPosts.status, "published")));
+  const post = await getPublishedPost(slug);
   return post
     ? {
         title: post.title,
@@ -42,23 +41,17 @@ export default async function Page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const viewer = await getViewer();
-  const [post] = await db
-    .select()
-    .from(blogPosts)
-    .where(eq(blogPosts.slug, slug));
-  if (!post || (post.status !== "published" && !viewer?.canManage)) notFound();
-  const comments = await db
-    .select()
-    .from(blogComments)
-    .where(
-      and(
-        eq(blogComments.postId, post.id),
-        eq(blogComments.status, "approved"),
-      ),
-    )
-    .orderBy(desc(blogComments.createdAt))
-    .limit(200);
+  const [viewer, published] = await Promise.all([
+    getViewer(),
+    getPublishedPost(slug),
+  ]);
+  const post =
+    published ??
+    (viewer?.canManage
+      ? (await db.select().from(blogPosts).where(eq(blogPosts.slug, slug)))[0]
+      : undefined);
+  if (!post) notFound();
+  const comments = await getApprovedComments(post.id);
   return (
     <>
       <div className="ams-container my-6 max-w-295 text-[13px] text-ams-navy/60">
@@ -168,11 +161,11 @@ export default async function Page({
               </AmsNotice>
             )
           ) : (
-            <Button asChild variant="destructive">
-              <a href={signInUrl(`/entradas/${post.slug}`)}>
-                Iniciar sesión o crear cuenta para comentar
-              </a>
-            </Button>
+            <AmsSignInLink
+              href={signInUrl(`/entradas/${post.slug}`)}
+              label="Iniciar sesión o crear cuenta para comentar"
+              size="default"
+            />
           )
         ) : (
           <p className="text-[13px] text-ams-navy/60">

@@ -33,7 +33,7 @@ export function HomeAbout() {
           </div>
         </div>
 
-        <div className="grid min-h-[25rem] grid-cols-2">
+        <div className="grid min-h-100 grid-cols-2">
           <div className="relative [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
             <Image
               src="/source/photos/mexchamp-3.jpg"

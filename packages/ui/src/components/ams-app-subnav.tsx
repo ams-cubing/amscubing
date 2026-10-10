@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 
 /** Secondary bar under the AMS header with the app name and its own sections. */
@@ -15,14 +16,14 @@ export function AmsAppSubnav({
   return (
     <div className="ams-heading border-b border-ams-navy/10 bg-white text-xs text-ams-navy">
       <div className="ams-container flex max-w-295 items-center justify-between gap-5 py-4.5">
-        <Link href={href} className="font-bold text-ams-red">
+        <Link href={href as Route} className="font-bold text-ams-red">
           {title}
         </Link>
         <nav aria-label={label} className="flex flex-wrap gap-6">
           {links.map((link) => (
             <Link
               key={link.href}
-              href={link.href}
+              href={link.href as Route}
               className="transition-colors hover:text-ams-red"
             >
               {link.label}

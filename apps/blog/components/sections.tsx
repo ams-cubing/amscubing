@@ -23,7 +23,7 @@ export const sectionClass = "px-4.5 py-6 sm:px-6 md:px-10.5 md:py-8";
 
 /** Imported WordPress HTML can't carry classes, so its elements are styled from the wrapper. */
 export const richContentClass =
-  "[overflow-wrap:anywhere] [&_a]:text-ams-red [&_a]:underline [&_blockquote]:my-2.5 [&_blockquote]:border-l-[5px] [&_blockquote]:border-ams-red [&_blockquote]:bg-ams-navy/5 [&_blockquote]:p-6 [&_h2]:font-sans [&_h2]:mt-7 [&_h2]:mb-3 [&_h2]:text-[clamp(1.3rem,2.6vw,2rem)] [&_h2]:font-bold [&_h3]:font-sans [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_iframe]:aspect-video [&_iframe]:w-full [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-sm [&_li]:ml-6 [&_ol]:mb-5.5 [&_ol]:list-decimal [&_p]:mb-5.5 [&_table]:block [&_table]:w-full [&_table]:overflow-auto [&_table]:border-collapse [&_table]:text-[15px] [&_td]:border [&_td]:border-ams-navy/20 [&_td]:p-2.5 [&_th]:border [&_th]:border-ams-navy/20 [&_th]:p-2.5 [&_ul]:mb-5.5 [&_ul]:list-disc";
+  "wrap-anywhere [&_a]:text-ams-red [&_a]:underline [&_blockquote]:my-2.5 [&_blockquote]:border-l-[5px] [&_blockquote]:border-ams-red [&_blockquote]:bg-ams-navy/5 [&_blockquote]:p-6 [&_h2]:font-sans [&_h2]:mt-7 [&_h2]:mb-3 [&_h2]:text-[clamp(1.3rem,2.6vw,2rem)] [&_h2]:font-bold [&_h3]:font-sans [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_iframe]:aspect-video [&_iframe]:w-full [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-sm [&_li]:ml-6 [&_ol]:mb-5.5 [&_ol]:list-decimal [&_p]:mb-5.5 [&_table]:block [&_table]:w-full [&_table]:overflow-auto [&_table]:border-collapse [&_table]:text-[15px] [&_td]:border [&_td]:border-ams-navy/20 [&_td]:p-2.5 [&_th]:border [&_th]:border-ams-navy/20 [&_th]:p-2.5 [&_ul]:mb-5.5 [&_ul]:list-disc";
 
 export function Sections({ sections }: { sections: BlogSection[] }) {
   return (

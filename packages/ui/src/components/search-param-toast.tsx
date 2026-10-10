@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export function SearchParamToast({
     const next = new URLSearchParams(searchParams);
     next.delete(param);
     const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
+    router.replace((query ? `${pathname}?${query}` : pathname) as Route, {
       scroll: false,
     });
   }, [value, param, messages, pathname, router, searchParams]);

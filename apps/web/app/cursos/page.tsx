@@ -92,7 +92,7 @@ export default function CoursesPage() {
           </div>
         </div>
       </section>
-      <section className="relative h-[24rem] overflow-hidden bg-ams-navy">
+      <section className="relative h-96 overflow-hidden bg-ams-navy">
         <Image
           src="/source/photos/ponny-1.jpg"
           alt="Competidores y staff en competencia AMS"

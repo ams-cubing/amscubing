@@ -63,7 +63,7 @@ export function BlogTeaser() {
         </div>
 
         <div className="relative mt-16 overflow-hidden bg-ams-red px-6 py-12 text-center text-white md:px-12">
-          <div className="absolute inset-0 opacity-10 [background-image:url('/source/isotipo-color-sm.png')] [background-size:92px_auto]" />
+          <div className="absolute inset-0 bg-[url('/source/isotipo-color-sm.png')] bg-size-[92px_auto] opacity-10" />
           <div className="relative mx-auto max-w-3xl">
             <GraduationCap className="mx-auto mb-5 size-9" />
             <h3 className="ams-display text-[clamp(2rem,5vw,3.8rem)] leading-none">
