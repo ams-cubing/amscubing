@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canManageCourses, canManageStaff } from "./permissions";
+import { canManageCourses } from "./permissions";
 import { gradeQuiz } from "./grading";
 import { cleanHtml } from "./content";
 import {
@@ -38,12 +38,6 @@ describe("permisos de cursos", () => {
     expect(canManageCourses("user")).toBe(false);
     expect(canManageCourses("editor")).toBe(false);
     expect(canManageCourses("user", "made-up")).toBe(false);
-  });
-  it("solo administradores y desarrolladores asignan permisos", () => {
-    expect(canManageStaff("instructor")).toBe(false);
-    expect(canManageStaff()).toBe(false);
-    expect(canManageStaff("administrator")).toBe(true);
-    expect(canManageStaff("developer")).toBe(true);
   });
 });
 describe("evaluaciones", () => {

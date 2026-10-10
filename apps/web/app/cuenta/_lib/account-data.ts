@@ -16,7 +16,7 @@ import {
 import {
   canGrantPermission,
   type PermissionScope,
-} from "@/lib/profile-permissions";
+} from "@workspace/auth/permissions";
 
 export type AccountData = Awaited<ReturnType<typeof loadAccountData>>;
 export type AccountUser = NonNullable<AccountData["user"]>;

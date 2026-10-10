@@ -16,7 +16,9 @@
     "./client": "./src/client.ts",
     "./urls": "./src/urls.ts",
     "./session": "./src/session.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./permissions": "./src/permissions.ts",
+    "./notifications": "./src/notifications.ts"
   },
   "peerDependencies": {
     "next": "catalog:"

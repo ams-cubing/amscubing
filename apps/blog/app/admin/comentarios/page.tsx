@@ -1,8 +1,11 @@
 import { db } from "@workspace/db";
 import { blogComments, blogPosts } from "@workspace/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { ActionForm } from "@workspace/ui/components/action-form";
+import { Button } from "@workspace/ui/components/button";
 import { requireManager } from "@/lib/auth";
 import { moderateComment } from "@/app/actions";
+import { Tag } from "@/components/tag";
 export default async function Page() {
   await requireManager();
   const comments = await db
@@ -12,38 +15,42 @@ export default async function Page() {
     .orderBy(desc(blogComments.createdAt))
     .limit(200);
   return (
-    <section className="section shell">
-      <h1>Comentarios</h1>
-      <p>Revisa las conversaciones antes de hacerlas públicas.</p>
+    <section className="ams-container max-w-295 py-14">
+      <h1 className="ams-display text-[clamp(2.4rem,5vw,4.8rem)] leading-[1.08]">
+        Comentarios
+      </h1>
+      <p className="mb-6">
+        Revisa las conversaciones antes de hacerlas públicas.
+      </p>
       {comments.map(({ comment: c, post }) => (
-        <div key={c.id} className="panel">
-          <span className="tag">{c.status}</span>
-          <h3>{post}</h3>
+        <div key={c.id} className="mb-6 rounded-3xl bg-white p-5 sm:p-8">
+          <Tag>{c.status}</Tag>
+          <h3 className="ams-heading text-lg font-bold">{post}</h3>
           <p>
             <strong>{c.authorName}</strong> ·{" "}
             {c.createdAt.toLocaleDateString("es-MX")}
           </p>
-          <p className="text-content">{c.content}</p>
-          <form action={moderateComment} className="tool-buttons">
+          <p className="mb-4 whitespace-pre-wrap">{c.content}</p>
+          <ActionForm
+            action={moderateComment}
+            className="flex flex-wrap gap-1.5"
+          >
             <input name="id" type="hidden" value={c.id} />
-            <button className="button small" name="status" value="approved">
+            <Button
+              size="sm"
+              variant="destructive"
+              name="status"
+              value="approved"
+            >
               Aprobar
-            </button>
-            <button
-              className="button small secondary"
-              name="status"
-              value="hidden"
-            >
+            </Button>
+            <Button size="sm" variant="brand" name="status" value="hidden">
               Ocultar
-            </button>
-            <button
-              className="button small secondary"
-              name="status"
-              value="pending"
-            >
+            </Button>
+            <Button size="sm" variant="brand" name="status" value="pending">
               Pendiente
-            </button>
-          </form>
+            </Button>
+          </ActionForm>
         </div>
       ))}
     </section>

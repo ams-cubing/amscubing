@@ -1,18 +1,19 @@
+import { cache } from "react";
 import { createAuth } from "@workspace/auth";
-import { getCrossAppSignInUrl, getCoursesUrl } from "@workspace/auth/urls";
 import { db } from "@workspace/db";
 import { courseStaff, user } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { canManageCourses, canManageStaff } from "./permissions";
+import { forbidden, redirect } from "next/navigation";
+import { canManageCourses } from "./permissions";
 import { claimLegacyProgress } from "./legacy";
+import { getCoursesUrl, getCrossAppSignInUrl } from "./urls";
 
 export const auth = createAuth();
 export function signInUrl(path = "/mis-cursos") {
   return getCrossAppSignInUrl(`${getCoursesUrl()}${path}`);
 }
-export async function getViewer() {
+export const getViewer = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
   // Read current permissions from DB, rather than trusting a cached session role.
@@ -25,21 +26,26 @@ export async function getViewer() {
     .select()
     .from(courseStaff)
     .where(eq(courseStaff.userId, viewer.id));
-  await claimLegacyProgress(viewer);
   return {
     ...viewer,
     staffRole: staff?.role ?? null,
     canManage: canManageCourses(viewer.role, staff?.role),
-    canManageStaff: canManageStaff(staff?.role),
   };
-}
-export async function requireViewer(path = "/mis-cursos") {
+});
+/** Viewer for learning pages: also links WordPress history on first visit. */
+export const getLearner = cache(async () => {
   const viewer = await getViewer();
+  if (viewer) await claimLegacyProgress(viewer);
+  return viewer;
+});
+export async function requireViewer(path = "/mis-cursos") {
+  const viewer = await getLearner();
   if (!viewer) redirect(signInUrl(path));
   return viewer;
 }
 export async function requireManager() {
-  const viewer = await requireViewer("/admin");
-  if (!viewer.canManage) redirect("/mis-cursos?aviso=sin-permiso");
+  const viewer = await getViewer();
+  if (!viewer) redirect(signInUrl("/admin"));
+  if (!viewer.canManage) forbidden();
   return viewer;
 }

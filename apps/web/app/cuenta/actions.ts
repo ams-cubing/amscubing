@@ -11,11 +11,18 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { getBlogUrl, getCoursesUrl } from "@workspace/auth/urls";
+import {
+  formatNotificationTitle,
+  formatStaffRoleLabel,
+  insertNotifications,
+} from "@workspace/db/notifications";
+import { log } from "@workspace/server/log";
 import {
   canGrantPermission,
   validScopedRole,
   type PermissionScope,
-} from "@/lib/profile-permissions";
+} from "@workspace/auth/permissions";
 export type ProfileResult = { ok: boolean; message: string };
 async function currentUser() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -199,10 +206,43 @@ export async function setPermission(
       ok: false,
       message: "Tu permiso fue revocado. Recarga tu perfil.",
     };
+  await notifyStaffChanged({
+    scope: scope as PermissionScope,
+    recipientId: target.id,
+    actorId: member.id,
+    role,
+  });
   revalidatePath("/cuenta");
   revalidatePath("/admin/permisos");
   return {
     ok: true,
     message: `Permiso actualizado únicamente en ${scope === "blog" ? "Blog" : "Cursos"}.`,
   };
+}
+
+async function notifyStaffChanged(opts: {
+  scope: PermissionScope;
+  recipientId: string;
+  actorId: string;
+  role: string;
+}) {
+  const type =
+    opts.scope === "blog" ? "blog_staff_changed" : "course_staff_changed";
+  const appUrl = opts.scope === "blog" ? getBlogUrl() : getCoursesUrl();
+  const roleLabel =
+    opts.role === "none" ? undefined : formatStaffRoleLabel(opts.role);
+  try {
+    await insertNotifications(db, [
+      {
+        recipientId: opts.recipientId,
+        actorId: opts.actorId,
+        type,
+        title: formatNotificationTitle(type, { roleLabel }),
+        href: `${appUrl}${roleLabel ? "/admin" : "/"}`,
+        payload: { role: opts.role },
+      },
+    ]);
+  } catch (error) {
+    log.error("web.notification_failed", { event: type, error });
+  }
 }

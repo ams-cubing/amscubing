@@ -1,7 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { saveProfile, setPermission } from "@/app/cuenta/actions";
-import { roleLabel } from "@/lib/profile-permissions";
+import { roleLabel } from "@workspace/auth/permissions";
 const initial = { ok: false, message: "" };
 const field =
   "mt-2 w-full rounded-xl border border-black/15 bg-white px-4 py-3 text-ams-navy";

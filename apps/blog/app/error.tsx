@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { AmsStatusPage } from "@workspace/ui/components/ams-status-page";
+import { buttonVariants } from "@workspace/ui/components/button";
+
 export default function ErrorPage({
   error,
   reset,
@@ -15,20 +18,21 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <section className="shell section">
-      <div className="panel">
-        <p className="eyebrow">500</p>
-        <h1>Algo salió mal</h1>
-        <p>Ocurrió un error inesperado al cargar esta página.</p>
-        <div className="section-tools">
-          <button type="button" className="button" onClick={reset}>
-            Intentar de nuevo
-          </button>
-          <Link className="button secondary" href="/">
-            Volver al blog
-          </Link>
-        </div>
-      </div>
-    </section>
+    <AmsStatusPage
+      code="500"
+      title="Algo salió mal"
+      description="Ocurrió un error inesperado al cargar esta página."
+    >
+      <button
+        type="button"
+        onClick={reset}
+        className={buttonVariants({ variant: "destructive", size: "lg" })}
+      >
+        Intentar de nuevo
+      </button>
+      <Link href="/" className={buttonVariants({ variant: "brand", size: "lg" })}>
+        Volver al blog
+      </Link>
+    </AmsStatusPage>
   );
 }

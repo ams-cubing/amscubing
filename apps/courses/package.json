@@ -6,26 +6,31 @@
   "scripts": {
     "dev": "next dev --turbopack -p 3003",
     "build": "next build",
-    "start": "next start -p 3003",
+    "start": "next start",
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
+    "test:watch": "vitest",
     "import:sensei": "tsx scripts/import-sensei.ts",
     "staff:grant": "tsx scripts/grant-staff.ts"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
+    "@vercel/analytics": "^1.6.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/server": "workspace:*",
+    "@workspace/social": "workspace:*",
     "@workspace/ui": "workspace:*",
     "csv-parse": "^6.1.0",
     "drizzle-orm": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
     "pdf-lib": "^1.17.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sanitize-html": "^2.17.0",
+    "sonner": "^2.0.7",
     "zod": "catalog:"
   },
   "devDependencies": {

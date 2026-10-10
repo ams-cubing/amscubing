@@ -8,7 +8,7 @@ export function AmsPageHero({
   compact = false,
 }: {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   children?: ReactNode;
   compact?: boolean;

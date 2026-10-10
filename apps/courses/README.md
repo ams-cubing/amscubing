@@ -18,7 +18,8 @@ y usar el mismo `BETTER_AUTH_SECRET` que la web. La base de datos es obligatoria
   en servidor y umbral de aprobación configurable. Banco de preguntas con
   selección aleatoria por intento y formulario firmado por alumno/lección.
 - Progreso por usuario, historial de intentos y finalización de cursos.
-- Panel `/admin`: cursos, módulos, lecciones, evaluaciones, alumnos y permisos.
+- Panel `/admin`: cursos, módulos, lecciones, evaluaciones y alumnos. Los
+  permisos se asignan desde `/admin/permisos` en la web.
 - Publicación, borradores y archivado. Borradores nunca accesibles a alumnos.
 
 ## Permisos

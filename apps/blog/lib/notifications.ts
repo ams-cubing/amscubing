@@ -2,7 +2,6 @@ import { getBlogUrl } from "@workspace/auth/urls";
 import { db } from "@workspace/db";
 import {
   formatNotificationTitle,
-  formatStaffRoleLabel,
   insertNotifications,
 } from "@workspace/db/notifications";
 import { blogStaff } from "@workspace/db/schema";
@@ -75,28 +74,6 @@ export function notifyCommentModerated(opts: {
           postTitle: opts.post.title,
           commentId: opts.commentId,
         },
-      },
-    ]),
-  );
-}
-
-export function notifyBlogStaffChanged(opts: {
-  recipientId: string;
-  actorId: string;
-  role: string;
-}) {
-  const roleLabel =
-    opts.role === "none" ? undefined : formatStaffRoleLabel(opts.role);
-
-  return safely("blog_staff_changed", () =>
-    insertNotifications(db, [
-      {
-        recipientId: opts.recipientId,
-        actorId: opts.actorId,
-        type: "blog_staff_changed",
-        title: formatNotificationTitle("blog_staff_changed", { roleLabel }),
-        href: `${getBlogUrl()}${roleLabel ? "/admin" : "/"}`,
-        payload: { role: opts.role },
       },
     ]),
   );

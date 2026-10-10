@@ -1,9 +1,10 @@
 import { db } from "@workspace/db";
 import { blogPosts } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import { connection } from "next/server";
 import { getBlogUrl } from "@workspace/auth/urls";
-export const dynamic = "force-dynamic";
 export default async function sitemap() {
+  await connection();
   const posts = await db
     .select()
     .from(blogPosts)

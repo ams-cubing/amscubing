@@ -18,6 +18,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
   }),
+  unstable_rethrow: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -36,7 +37,6 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/notifications", () => ({
   notifyCommentPending,
   notifyCommentModerated: vi.fn(),
-  notifyBlogStaffChanged: vi.fn(),
 }));
 
 vi.mock("@workspace/db", () => ({
@@ -75,9 +75,10 @@ describe("addComment", () => {
   it("rejects the comment when the shared rate limit is exhausted", async () => {
     consumeRateLimit.mockResolvedValue({ allowed: false, count: 6 });
 
-    await expect(addComment(commentForm())).rejects.toThrow(
-      "REDIRECT:/entradas/hola?aviso=demasiados-comentarios",
-    );
+    await expect(addComment(null, commentForm())).resolves.toEqual({
+      ok: false,
+      message: "Espera unos minutos antes de enviar otro comentario.",
+    });
     expect(consumeRateLimit).toHaveBeenCalledWith({
       key: "blog:comment:user:user-1",
       windowMs: 10 * 60 * 1000,
@@ -90,9 +91,10 @@ describe("addComment", () => {
   it("stores the comment when under the limit", async () => {
     consumeRateLimit.mockResolvedValue({ allowed: true, count: 1 });
 
-    await expect(addComment(commentForm())).rejects.toThrow(
-      "REDIRECT:/entradas/hola?aviso=comentario-enviado",
-    );
+    await expect(addComment(null, commentForm())).resolves.toEqual({
+      ok: true,
+      message: "Gracias. Tu comentario se publicará después de revisarlo.",
+    });
     expect(insertValues).toHaveBeenCalledWith(
       expect.objectContaining({ postId: 7, authorId: "user-1" }),
     );

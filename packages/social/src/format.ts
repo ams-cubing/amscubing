@@ -176,7 +176,8 @@ export function formatDateRangeEs(startDate: string, endDate: string): string {
   }
 
   if (start.year === end.year && start.month === end.month) {
-    return `${start.day} y ${end.day} de ${monthName(start.month)} de ${start.year}`;
+    const joiner = end.day - start.day === 1 ? "y" : "al";
+    return `${start.day} ${joiner} ${end.day} de ${monthName(start.month)} de ${start.year}`;
   }
 
   return `${formatDateEs(startDate)} – ${formatDateEs(endDate)}`;

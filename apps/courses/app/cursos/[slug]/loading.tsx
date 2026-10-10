@@ -2,7 +2,7 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 
 export default function Loading() {
   return (
-    <section className="shell section" aria-busy="true">
+    <section className="ams-container max-w-295 py-12" aria-busy="true">
       <Skeleton className="h-4 w-48" />
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">

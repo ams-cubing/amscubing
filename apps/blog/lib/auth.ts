@@ -1,16 +1,17 @@
+import { cache } from "react";
 import { createAuth } from "@workspace/auth";
-import { getBlogUrl, getCrossAppSignInUrl } from "@workspace/auth/urls";
 import { db } from "@workspace/db";
 import { blogStaff, user } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { canManageBlog, canManageStaff } from "./permissions";
+import { forbidden, redirect } from "next/navigation";
+import { canManageBlog } from "./permissions";
+import { getBlogUrl, getCrossAppSignInUrl } from "./urls";
 export const auth = createAuth();
 export function signInUrl(path = "/") {
   return getCrossAppSignInUrl(`${getBlogUrl()}${path}`);
 }
-export async function getViewer() {
+export const getViewer = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
   const [viewer] = await db
@@ -26,9 +27,8 @@ export async function getViewer() {
     ...viewer,
     staffRole: staff?.role ?? null,
     canManage: canManageBlog(viewer.role, staff?.role),
-    canManageStaff: canManageStaff(staff?.role),
   };
-}
+});
 export async function requireViewer(path = "/") {
   const viewer = await getViewer();
   if (!viewer) redirect(signInUrl(path));
@@ -36,6 +36,6 @@ export async function requireViewer(path = "/") {
 }
 export async function requireManager() {
   const viewer = await requireViewer("/admin");
-  if (!viewer.canManage) redirect("/?aviso=sin-permiso");
+  if (!viewer.canManage) forbidden();
   return viewer;
 }

@@ -2,7 +2,6 @@ import { getCoursesUrl } from "@workspace/auth/urls";
 import { db } from "@workspace/db";
 import {
   formatNotificationTitle,
-  formatStaffRoleLabel,
   insertNotifications,
   notifyAllUsers,
 } from "@workspace/db/notifications";
@@ -50,28 +49,6 @@ export function notifyCourseCompleted(opts: {
         }),
         href: `${getCoursesUrl()}/mis-cursos`,
         payload: { courseId: opts.course.id, courseTitle: opts.course.title },
-      },
-    ]),
-  );
-}
-
-export function notifyCourseStaffChanged(opts: {
-  recipientId: string;
-  actorId: string;
-  role: string;
-}) {
-  const roleLabel =
-    opts.role === "none" ? undefined : formatStaffRoleLabel(opts.role);
-
-  return safely("course_staff_changed", () =>
-    insertNotifications(db, [
-      {
-        recipientId: opts.recipientId,
-        actorId: opts.actorId,
-        type: "course_staff_changed",
-        title: formatNotificationTitle("course_staff_changed", { roleLabel }),
-        href: `${getCoursesUrl()}${roleLabel ? "/admin" : "/"}`,
-        payload: { role: opts.role },
       },
     ]),
   );

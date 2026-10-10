@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { unauthorized } from "next/navigation";
 
 import { PermissionBadge, PermissionForm } from "@/components/profile-forms";
-import { roleLabel } from "@/lib/profile-permissions";
+import { roleLabel } from "@workspace/auth/permissions";
 
 import { getAdminAccess } from "@/app/admin/_lib/admin-access";
 import { loadPermissionsData } from "@/app/admin/permisos/permissions-data";

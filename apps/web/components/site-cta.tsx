@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
+import { getCalendarUrl } from "@/lib/urls";
 
 export function SiteCta() {
   return (
@@ -32,7 +33,9 @@ export function SiteCta() {
             variant="glass"
             className="border-white/55 hover:bg-white hover:text-ams-red"
           >
-            <Link href="/become-organizer">Organizar una competencia</Link>
+            <a href={`${getCalendarUrl()}/solicitar-fecha`}>
+              Organizar una competencia
+            </a>
           </Button>
         </div>
       </div>

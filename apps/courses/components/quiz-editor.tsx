@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
 import type { CourseQuestion } from "@workspace/db/schema";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { NativeSelect } from "@workspace/ui/components/native-select";
+import { AmsField } from "@workspace/ui/components/ams-field";
+import { smallClass, textLinkClass } from "./ui";
 
 export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
   const [questions, setQuestions] = useState(initial);
@@ -10,27 +15,28 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
     );
   }
   return (
-    <div>
+    <div className="mt-8 border-t border-ams-navy/10 pt-7">
       <input type="hidden" name="quiz" value={JSON.stringify(questions)} />
-      <h3>Evaluación</h3>
-      <p className="small">
+      <h3 className="ams-heading mb-2 text-xl font-bold">Evaluación</h3>
+      <p className={`${smallClass} mb-5`}>
         Agrega preguntas y marca las respuestas correctas. Sin preguntas, la
         lección se completa al marcarla como leída.
       </p>
       {questions.map((q, i) => (
-        <div className="quiz-editor" key={q.id}>
-          <div className="form-grid">
-            <label className="field">
-              Pregunta {i + 1}
-              <input
+        <div
+          className="mb-4.5 rounded-2xl border border-ams-navy/10 bg-ams-soft p-5"
+          key={q.id}
+        >
+          <div className="grid gap-x-4.5 sm:grid-cols-2">
+            <AmsField label={`Pregunta ${i + 1}`}>
+              <Input
                 value={q.prompt}
                 required
                 onChange={(e) => update(i, { prompt: e.target.value })}
-              />
-            </label>
-            <label className="field">
-              Tipo
-              <select
+              />{" "}
+            </AmsField>
+            <AmsField label="Tipo">
+              <NativeSelect
                 value={q.type}
                 onChange={(e) =>
                   update(i, {
@@ -48,26 +54,28 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
                 <option value="choice">Selección de respuestas</option>
                 <option value="boolean">Verdadero o falso</option>
                 <option value="text">Respuesta corta</option>
-              </select>
-            </label>
+              </NativeSelect>{" "}
+            </AmsField>
           </div>
           {q.type === "text" ? (
-            <label className="field">
-              Respuesta correcta
-              <input
+            <AmsField label="Respuesta correcta">
+              <Input
                 value={q.answers[0] ?? ""}
                 required
                 onChange={(e) => update(i, { answers: [e.target.value] })}
-              />
-            </label>
+              />{" "}
+            </AmsField>
           ) : (
             <>
-              <p className="small">Selecciona todas las opciones correctas:</p>
+              <p className={`${smallClass} mb-2`}>
+                Selecciona todas las opciones correctas:
+              </p>
               {q.options.map((option, j) => (
-                <div className="option-edit" key={j}>
+                <div className="mb-2.5 flex items-center gap-2.5" key={j}>
                   <input
                     aria-label={`Opción ${j + 1} correcta`}
                     type="checkbox"
+                    className="size-4.5 shrink-0 accent-ams-red"
                     checked={q.answers.includes(option)}
                     onChange={(e) =>
                       update(i, {
@@ -77,7 +85,7 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
                       })
                     }
                   />
-                  <input
+                  <Input
                     aria-label={`Texto opción ${j + 1}`}
                     type="text"
                     value={option}
@@ -96,8 +104,9 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
                 </div>
               ))}
               {q.type === "choice" && (
-                <button
-                  className="btn secondary"
+                <Button
+                  variant="outline"
+                  size="sm"
                   type="button"
                   onClick={() =>
                     update(i, {
@@ -106,25 +115,24 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
                   }
                 >
                   Agregar opción
-                </button>
+                </Button>
               )}
             </>
           )}
-          <div className="form-grid subsection">
-            <label className="field">
-              Puntos
-              <input
+          <div className="mt-5 grid items-end gap-x-4.5 sm:grid-cols-2">
+            <AmsField label="Puntos">
+              <Input
                 type="number"
                 min="1"
                 max="100"
                 value={q.points}
                 onChange={(e) => update(i, { points: Number(e.target.value) })}
-              />
-            </label>
-            <div>
+              />{" "}
+            </AmsField>
+            <div className="mb-4">
               <button
                 type="button"
-                className="text-link"
+                className={textLinkClass}
                 onClick={() =>
                   setQuestions((current) => current.filter((_, j) => j !== i))
                 }
@@ -135,8 +143,8 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
           </div>
         </div>
       ))}
-      <button
-        className="btn secondary"
+      <Button
+        variant="outline"
         type="button"
         onClick={() =>
           setQuestions((current) => [
@@ -153,7 +161,7 @@ export function QuizEditor({ initial = [] }: { initial?: CourseQuestion[] }) {
         }
       >
         + Agregar pregunta
-      </button>
+      </Button>
     </div>
   );
 }

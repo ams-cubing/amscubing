@@ -4,6 +4,3 @@ export function canManageBlog(role: string, staff?: string | null) {
     ["administrator", "developer", "editor"].includes(staff ?? "")
   );
 }
-export function canManageStaff(staff?: string | null) {
-  return ["administrator", "developer"].includes(staff ?? "");
-}

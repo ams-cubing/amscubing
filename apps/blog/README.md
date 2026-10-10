@@ -32,7 +32,7 @@ código de WordPress/Elementor. El contenido importado se edita visualmente.
 
 `blog_staff` admite `administrator`, `developer` y `editor`. Administradores y
 desarrolladores pueden asignar o retirar permisos de Blog a cuentas con correo
-verificado; editores gestionan entradas y comentarios. Los delegados también
+verificado desde `/admin/permisos` en la web; editores gestionan entradas y comentarios. Los delegados también
 pueden gestionar contenido. El rol editorial global antiguo no concede acceso
 automáticamente. `course_staff` permanece separado: ningún permiso de Blog
 concede permisos de Cursos ni viceversa.
