@@ -12,6 +12,7 @@ import {
   getTorneoDeRubikCoverStatus,
 } from "@workspace/social";
 
+import { requireDelegateAdminPage } from "@/app/admin/_lib/admin-access";
 import {
   SocialPostsList,
   type SocialPostRow,
@@ -32,6 +33,7 @@ function todayMexicoIsoDate() {
 
 export default async function AdminRedesPage() {
   await connection();
+  await requireDelegateAdminPage();
 
   const today = todayMexicoIsoDate();
 

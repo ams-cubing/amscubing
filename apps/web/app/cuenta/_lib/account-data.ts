@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@workspace/db";
 import {
@@ -10,7 +10,6 @@ import {
   competitions,
   courseStaff,
   dateRequests,
-  permissionAudit,
   user as userTable,
   userProfile,
 } from "@workspace/db/schema";
@@ -21,10 +20,6 @@ import {
 
 export type AccountData = Awaited<ReturnType<typeof loadAccountData>>;
 export type AccountUser = NonNullable<AccountData["user"]>;
-export type TeamMember =
-  | AccountData["blogTeam"][number]
-  | AccountData["courseTeam"][number];
-export type PermissionAuditEntry = AccountData["audit"][number];
 
 export async function loadAccountData() {
   const requestHeaders = await headers();
@@ -77,48 +72,6 @@ export async function loadAccountData() {
           : []),
       ]
     : [];
-  const audit = managedScopes.length
-    ? await db
-        .select({
-          id: permissionAudit.id,
-          scope: permissionAudit.scope,
-          previousRole: permissionAudit.previousRole,
-          nextRole: permissionAudit.nextRole,
-          createdAt: permissionAudit.createdAt,
-          name: userTable.name,
-        })
-        .from(permissionAudit)
-        .leftJoin(userTable, eq(userTable.id, permissionAudit.targetId))
-        .where(inArray(permissionAudit.scope, managedScopes))
-        .orderBy(desc(permissionAudit.createdAt))
-        .limit(10)
-    : [];
-  const blogTeam = managedScopes.includes("blog")
-    ? await db
-        .select({
-          id: userTable.id,
-          name: userTable.name,
-          email: userTable.email,
-          role: blogStaff.role,
-        })
-        .from(blogStaff)
-        .innerJoin(userTable, eq(userTable.id, blogStaff.userId))
-        .orderBy(userTable.name)
-        .limit(200)
-    : [];
-  const courseTeam = managedScopes.includes("courses")
-    ? await db
-        .select({
-          id: userTable.id,
-          name: userTable.name,
-          email: userTable.email,
-          role: courseStaff.role,
-        })
-        .from(courseStaff)
-        .innerJoin(userTable, eq(userTable.id, courseStaff.userId))
-        .orderBy(userTable.name)
-        .limit(200)
-    : [];
 
   return {
     user,
@@ -129,9 +82,6 @@ export async function loadAccountData() {
     credential,
     hasCompetitionActivity,
     managedScopes,
-    audit,
-    blogTeam,
-    courseTeam,
   };
 }
 

@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 
-export default function AdminIndexPage() {
-  redirect("/admin/delegados");
+import { getAdminAccess } from "./_lib/admin-access";
+
+export default async function AdminIndexPage() {
+  const access = await getAdminAccess();
+  redirect(access?.isDelegate ? "/admin/delegados" : "/admin/permisos");
 }

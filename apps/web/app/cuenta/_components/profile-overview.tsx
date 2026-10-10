@@ -31,14 +31,6 @@ export function ProfileOverview({
         <a href="#permisos" className="rounded-full bg-ams-soft px-5 py-3">
           Mi nivel y permisos
         </a>
-        {data.managedScopes.length > 0 && (
-          <a
-            href="#gestion"
-            className="rounded-full bg-ams-red px-5 py-3 text-white"
-          >
-            Gestionar permisos
-          </a>
-        )}
       </nav>
       <div className="mb-10 grid items-start gap-8 lg:grid-cols-2">
         <section

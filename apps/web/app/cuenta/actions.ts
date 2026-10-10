@@ -200,6 +200,7 @@ export async function setPermission(
       message: "Tu permiso fue revocado. Recarga tu perfil.",
     };
   revalidatePath("/cuenta");
+  revalidatePath("/admin/permisos");
   return {
     ok: true,
     message: `Permiso actualizado únicamente en ${scope === "blog" ? "Blog" : "Cursos"}.`,

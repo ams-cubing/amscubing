@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
-import { auth } from "@/lib/auth";
+
+import { getAdminAccess } from "./_lib/admin-access";
+
+const TAB_CLASS =
+  "ams-heading rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20";
 
 async function AdminShell({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const access = await getAdminAccess();
 
-  if (!session?.user || session.user.role !== "delegate") {
+  if (!access) {
     unauthorized();
   }
 
@@ -28,21 +29,23 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             Panel AMS
           </h1>
           <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-white/75">
-            Gestiona perfiles públicos de delegados y las publicaciones en
-            redes.
+            {access.isDelegate
+              ? "Gestiona perfiles públicos de delegados, las publicaciones en redes y los permisos del equipo."
+              : "Gestiona los permisos del equipo AMS."}
           </p>
           <nav className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/admin/delegados"
-              className="ams-heading rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20"
-            >
-              Delegados
-            </Link>
-            <Link
-              href="/admin/redes"
-              className="ams-heading rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20"
-            >
-              Redes
+            {access.isDelegate && (
+              <>
+                <Link href="/admin/delegados" className={TAB_CLASS}>
+                  Delegados
+                </Link>
+                <Link href="/admin/redes" className={TAB_CLASS}>
+                  Redes
+                </Link>
+              </>
+            )}
+            <Link href="/admin/permisos" className={TAB_CLASS}>
+              Permisos
             </Link>
             <Link
               href="/cuenta"

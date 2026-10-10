@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { Saira, Unbounded } from "next/font/google";
-import { AmsSiteNav } from "@workspace/ui/components/ams-site-nav";
-import { getWebUrl, getBlogUrl } from "@workspace/auth/urls";
+import { canAccessBoardsApp } from "@workspace/auth/boards-access";
+import {
+  getBlogUrl,
+  getBoardsUrl,
+  getCalendarUrl,
+  getCoursesUrl,
+  getWebUrl,
+} from "@workspace/auth/urls";
+import { BlogAmsNav } from "@/components/ams-site-nav";
 import { HeaderNotifications } from "@/components/header-notifications";
 import { getViewer, signInUrl } from "@/lib/auth";
 import "./globals.css";
@@ -30,18 +37,21 @@ export default async function Layout({
   return (
     <html lang="es">
       <body className={`${heading.variable} ${body.variable}`}>
-        <AmsSiteNav
-          active="Blog"
-          webUrl={getWebUrl()}
-          actions={viewer ? <HeaderNotifications /> : null}
-          account={
-            <a
-              className="account"
-              href={viewer ? `${getWebUrl()}/cuenta` : signInUrl()}
-            >
-              {viewer ? viewer.name.split(" ")[0] : "Iniciar sesión"} ↗
-            </a>
+        <BlogAmsNav
+          user={
+            viewer
+              ? { name: viewer.name, image: viewer.image, email: viewer.email }
+              : null
           }
+          showBoardsLink={await canAccessBoardsApp(viewer)}
+          actions={viewer ? <HeaderNotifications /> : null}
+          urls={{
+            webUrl: getWebUrl(),
+            calendarUrl: getCalendarUrl(),
+            boardsUrl: getBoardsUrl(),
+            coursesUrl: getCoursesUrl(),
+            signInHref: signInUrl(),
+          }}
         />
         <div className="subnav shell">
           <Link href="/" className="wordmark">

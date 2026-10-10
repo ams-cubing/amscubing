@@ -6,6 +6,7 @@ const base = {
   isDelegate: false,
   hasBlogPermission: false,
   hasCoursePermission: false,
+  canManagePermissions: false,
   hasCompetitionActivity: false,
 };
 
@@ -36,6 +37,18 @@ describe("getAccountSections", () => {
       hasBlogPermission: true,
     });
     expect(titles(organization)).toEqual(["Administrar Blog"]);
+  });
+
+  it("gives non-delegate permission managers the admin panel", () => {
+    const { organization } = getAccountSections({
+      ...base,
+      hasBlogPermission: true,
+      canManagePermissions: true,
+    });
+    expect(titles(organization)).toEqual([
+      "Panel de administración",
+      "Administrar Blog",
+    ]);
   });
 
   it("gives delegates every tool once, with no duplicate destinations", () => {
