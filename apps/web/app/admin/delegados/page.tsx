@@ -6,6 +6,7 @@ import { MEXICO_REGIONS } from "@workspace/db/data/mexico";
 import { user } from "@workspace/db/schema";
 import { hasWcaId } from "@workspace/db/utils";
 
+import { requireDelegateAdminPage } from "@/app/admin/_lib/admin-access";
 import {
   AddDelegateForm,
   DelegateEditForm,
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDelegatesPage() {
+  await requireDelegateAdminPage();
   const delegates = (
     await db.query.user.findMany({
       where: eq(user.role, "delegate"),

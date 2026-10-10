@@ -10,7 +10,6 @@ import { AccountHeader } from "./_components/account-header";
 import { ActionCard } from "./_components/action-card";
 import { OnboardingChecklist } from "./_components/onboarding-checklist";
 import { OrganizationTools } from "./_components/organization-tools";
-import { PermissionManagement } from "./_components/permission-management";
 import { ProfileOverview } from "./_components/profile-overview";
 import { getProfileLevel, loadAccountData } from "./_lib/account-data";
 import { getAccountSections } from "./_lib/actions-config";
@@ -50,6 +49,7 @@ async function AccountBody() {
     isDelegate,
     hasBlogPermission: Boolean(blogPermission),
     hasCoursePermission: Boolean(coursePermission),
+    canManagePermissions: managedScopes.length > 0,
     hasCompetitionActivity: data.hasCompetitionActivity,
   });
 
@@ -65,15 +65,6 @@ async function AccountBody() {
         <>
           <OnboardingChecklist user={user} data={data} />
           <ProfileOverview user={user} data={data} />
-          {managedScopes.length > 0 && (
-            <PermissionManagement
-              managedScopes={managedScopes}
-              blogTeam={data.blogTeam}
-              courseTeam={data.courseTeam}
-              audit={data.audit}
-              isDelegate={isDelegate}
-            />
-          )}
         </>
       )}
       {organization.length > 0 && <OrganizationTools actions={organization} />}

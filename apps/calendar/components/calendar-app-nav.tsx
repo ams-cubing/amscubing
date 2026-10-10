@@ -2,12 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Suspense, type ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 
-import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
 import { isDelegatePanelPath } from "@/lib/delegate-panel-nav";
@@ -21,41 +17,6 @@ const CALENDAR_LINKS = [
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function ThemeToggleButton() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (theme === "system") {
-      setTheme("light");
-    }
-  }, [theme, setTheme]);
-
-  const isDark = (resolvedTheme ?? theme) === "dark";
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className="size-9 text-foreground"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      disabled={!mounted}
-    >
-      {mounted && isDark ? (
-        <Sun className="size-4" />
-      ) : (
-        <Moon className="size-4" />
-      )}
-    </Button>
-  );
 }
 
 function NavLink({
@@ -96,14 +57,12 @@ type CalendarAppNavProps = {
   isSignedIn?: boolean;
   isDelegate?: boolean;
   delegateBadgeCount?: number;
-  notifications?: ReactNode;
 };
 
 function CalendarAppNavShell({
   isSignedIn = false,
   isDelegate = false,
   delegateBadgeCount = 0,
-  notifications,
   pathname,
 }: CalendarAppNavProps & {
   pathname: string | null;
@@ -144,10 +103,6 @@ function CalendarAppNavShell({
             />
           ) : null}
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          {notifications}
-          <ThemeToggleButton />
-        </div>
       </div>
     </div>
   );

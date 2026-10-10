@@ -28,11 +28,13 @@ export function getAccountSections({
   isDelegate,
   hasBlogPermission,
   hasCoursePermission,
+  canManagePermissions,
   hasCompetitionActivity,
 }: {
   isDelegate: boolean;
   hasBlogPermission: boolean;
   hasCoursePermission: boolean;
+  canManagePermissions: boolean;
   hasCompetitionActivity: boolean;
 }): AccountSections {
   const calendarUrl = getCalendarUrl();
@@ -71,15 +73,18 @@ export function getAccountSections({
   ];
 
   const organization: AccountAction[] = [];
+  if (isDelegate || canManagePermissions) {
+    organization.push({
+      title: "Panel de administración",
+      description: isDelegate
+        ? "Edita delegados públicos, redes y permisos del equipo AMS."
+        : "Asigna permisos de Blog y Cursos al equipo AMS.",
+      href: "/admin",
+      icon: Newspaper,
+    });
+  }
   if (isDelegate) {
     organization.push(
-      {
-        title: "Panel de administración",
-        description:
-          "Edita delegados públicos, ubicaciones y contenido del sitio AMS.",
-        href: "/admin",
-        icon: Newspaper,
-      },
       {
         title: "Crear competencias",
         description:

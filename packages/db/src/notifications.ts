@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "./index";
 import {
@@ -73,8 +73,13 @@ export function formatNotificationTitle(
     city?: string;
     actorName?: string;
     statusLabel?: string;
+    postTitle?: string;
+    courseTitle?: string;
+    roleLabel?: string;
   },
 ) {
+  const post = ctx.postTitle?.trim() || "una entrada";
+  const course = ctx.courseTitle?.trim() || "un curso";
   const card = ctx.cardTitle?.trim() || "una tarjeta";
   const board = ctx.boardName?.trim() || "un tablero";
   const actor = ctx.actorName?.trim() || "Alguien";
@@ -113,7 +118,36 @@ export function formatNotificationTitle(
         : `Actualización de solicitud de fecha: ${city}`;
     case "ultimatum_sent":
       return `Ultimátum enviado para ${city}`;
+    case "blog_comment_pending":
+      return `Comentario pendiente de moderación en «${post}»`;
+    case "blog_comment_approved":
+      return `Tu comentario en «${post}» fue aprobado`;
+    case "blog_comment_hidden":
+      return `Tu comentario en «${post}» fue ocultado`;
+    case "blog_staff_changed":
+      return ctx.roleLabel
+        ? `Ahora eres ${ctx.roleLabel} del blog`
+        : "Ya no tienes permisos en el blog";
+    case "course_staff_changed":
+      return ctx.roleLabel
+        ? `Ahora eres ${ctx.roleLabel} en Cursos AMS`
+        : "Ya no tienes permisos en Cursos AMS";
+    case "course_completed":
+      return `¡Completaste «${course}»!`;
+    case "course_published":
+      return `Nuevo curso: «${course}»`;
   }
+}
+
+const STAFF_ROLE_LABELS: Record<string, string> = {
+  administrator: "administrador",
+  developer: "desarrollador",
+  editor: "editor",
+  instructor: "instructor",
+};
+
+export function formatStaffRoleLabel(role: string) {
+  return STAFF_ROLE_LABELS[role];
 }
 
 export function hrefForNotification(
@@ -260,6 +294,21 @@ export async function insertNotifications(
   if (filtered.length === 0) return;
 
   await dbOrTx.insert(notifications).values(filtered);
+}
+
+export async function notifyAllUsers(
+  dbOrTx: Pick<typeof db, "execute">,
+  row: Omit<NewNotificationRow, "recipientId">,
+) {
+  const actorId = row.actorId ?? null;
+  const payload = row.payload ? JSON.stringify(row.payload) : null;
+
+  await dbOrTx.execute(sql`
+    insert into ${notifications} (recipient_id, actor_id, type, title, href, payload)
+    select ${user.id}, ${actorId}, ${row.type}::notification_type, ${row.title}, ${row.href}, ${payload}::jsonb
+    from ${user}
+    where ${actorId}::text is null or ${user.id} <> ${actorId}
+  `);
 }
 
 export async function userIdsByWcaIds(

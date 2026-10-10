@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { canManageBlog, canManageStaff } from "./permissions";
-const auth = createAuth();
+export const auth = createAuth();
 export function signInUrl(path = "/") {
   return getCrossAppSignInUrl(`${getBlogUrl()}${path}`);
 }

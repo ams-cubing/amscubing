@@ -16,8 +16,7 @@ export function AppProviders({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      forcedTheme="light"
       disableTransitionOnChange
       enableColorScheme
     >

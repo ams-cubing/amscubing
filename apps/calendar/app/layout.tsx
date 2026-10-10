@@ -83,11 +83,6 @@ async function CalendarAppNavWrapper() {
       isSignedIn={normalizedUser != null}
       isDelegate={isDelegate}
       delegateBadgeCount={delegateBadgeCount}
-      notifications={
-        <Suspense fallback={null}>
-          <HeaderNotifications />
-        </Suspense>
-      }
     />
   );
 }
@@ -118,6 +113,13 @@ async function CalendarAmsNavWrapper() {
           : null
       }
       showBoardsLink={await canSeeBoardsNav(normalizedUser)}
+      actions={
+        normalizedUser != null ? (
+          <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
+            <HeaderNotifications />
+          </div>
+        ) : null
+      }
       signInHref={getCrossAppSignInUrl(calendarUrl)}
       webUrl={webUrl}
       calendarUrl={calendarUrl}
