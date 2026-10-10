@@ -3,7 +3,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { unauthorized } from "next/navigation";
 import { Skeleton } from "@workspace/ui/components/skeleton";
+import { AmsBackToProfile } from "@workspace/ui/components/ams-back-to-profile";
 
+import { getWebUrl } from "@/lib/urls";
 import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
 import { PanelSubnav } from "@/app/panel/_components/panel-subnav";
 
@@ -25,6 +27,9 @@ async function PanelGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <div className="mb-4">
+        <AmsBackToProfile webUrl={getWebUrl()} section="Panel de delegado" />
+      </div>
       <PanelSubnav badges={badges} />
       {children}
     </>

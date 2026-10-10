@@ -21,7 +21,7 @@ export default async function UnauthorizedPage() {
     <AmsStatusPage
       code="401"
       title="Inicia sesión"
-      description="Usa tu cuenta WCA para acceder a los tableros de organización de competencias AMS."
+      description="Usa tu cuenta AMS o WCA para acceder a los tableros de organización de competencias AMS. Al entrar volverás a esta página."
     >
       <SignInButton />
       <Button variant="outline" size="lg" asChild>

@@ -196,7 +196,7 @@ export function CalendarView({
 
   return (
     <>
-      <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+      <div className="rounded-3xl border border-black/10 bg-white p-4 md:p-6 shadow-[0_14px_34px_rgba(1,11,25,0.06)]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-primary">
             {monthNames[month]} {year}

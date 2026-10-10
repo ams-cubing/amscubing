@@ -51,7 +51,7 @@ export function ClientMap({
   }[];
 }) {
   return (
-    <section className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
+    <section className="rounded-3xl bg-ams-soft p-4 md:p-6">
       <h2 className="text-lg md:text-xl font-semibold mb-4">
         Mapa Interactivo de Regiones
       </h2>

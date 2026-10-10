@@ -5,7 +5,11 @@ import { db } from "@workspace/db";
 import {
   account,
   blogStaff,
+  competitionDelegates,
+  competitionOrganizers,
+  competitions,
   courseStaff,
+  dateRequests,
   permissionAudit,
   user as userTable,
   userProfile,
@@ -60,6 +64,9 @@ export async function loadAccountData() {
           ),
         )
     : [];
+  const hasCompetitionActivity = user
+    ? await loadHasCompetitionActivity(user.id, user.wcaId)
+    : false;
   const managedScopes: PermissionScope[] = user
     ? [
         ...(canGrantPermission(user.role, blogPermission?.role)
@@ -120,11 +127,46 @@ export async function loadAccountData() {
     wcaAccount,
     profile,
     credential,
+    hasCompetitionActivity,
     managedScopes,
     audit,
     blogTeam,
     courseTeam,
   };
+}
+
+async function loadHasCompetitionActivity(
+  userId: string,
+  wcaId: string | null,
+) {
+  const checks = [
+    db
+      .select({ id: competitionOrganizers.competitionId })
+      .from(competitionOrganizers)
+      .where(eq(competitionOrganizers.organizerUserId, userId))
+      .limit(1),
+    db
+      .select({ id: competitions.id })
+      .from(competitions)
+      .where(eq(competitions.requestedByUserId, userId))
+      .limit(1),
+    db
+      .select({ id: dateRequests.id })
+      .from(dateRequests)
+      .where(eq(dateRequests.requestedByUserId, userId))
+      .limit(1),
+    ...(wcaId
+      ? [
+          db
+            .select({ id: competitionDelegates.competitionId })
+            .from(competitionDelegates)
+            .where(eq(competitionDelegates.delegateWcaId, wcaId))
+            .limit(1),
+        ]
+      : []),
+  ];
+  const results = await Promise.all(checks);
+  return results.some((rows) => rows.length > 0);
 }
 
 export function getProfileLevel({

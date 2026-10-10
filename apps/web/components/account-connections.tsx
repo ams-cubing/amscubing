@@ -45,7 +45,7 @@ export function AccountConnections({
       const result = await authClient.oauth2.link({
         providerId: "wca",
         callbackURL: `${window.location.origin}/cuenta`,
-        errorCallbackURL: `${window.location.origin}/iniciar-sesion`,
+        errorCallbackURL: `${window.location.origin}/iniciar-sesion?returnTo=${encodeURIComponent("/cuenta")}`,
       });
       if (result.error) throw new Error();
     } catch {

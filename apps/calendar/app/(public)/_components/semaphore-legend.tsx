@@ -38,7 +38,7 @@ export function SemaphoreLegend() {
   ];
 
   return (
-    <section className="w-full overflow-hidden bg-card border rounded-lg shadow-sm">
+    <section className="w-full overflow-hidden rounded-3xl bg-ams-soft">
       <Table className="w-full">
         <TableHeader>
           <TableRow>

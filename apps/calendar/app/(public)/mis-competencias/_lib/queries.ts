@@ -66,7 +66,10 @@ export async function getUserDateRequests(userId: string) {
 
 export async function getUserCompetitions(
   competitionIds: number[],
-  { includePast }: { includePast: boolean },
+  {
+    includePast,
+    includeCancelled,
+  }: { includePast: boolean; includeCancelled: boolean },
 ) {
   return db
     .select({
@@ -91,6 +94,9 @@ export async function getUserCompetitions(
         includePast
           ? undefined
           : gte(competitions.endDate, getTodayInMexicoCity()),
+        includeCancelled
+          ? undefined
+          : ne(competitions.statusInternal, "cancelled"),
       ),
     )
     .orderBy(

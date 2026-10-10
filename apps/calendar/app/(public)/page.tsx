@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { CalendarView } from "./_components/calendar-view";
 import { RegionFilter } from "./_components/region-filter";
 import { SemaphoreLegend } from "./_components/semaphore-legend";
+import { PublicPageShell } from "./_components/public-page-shell";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import {
@@ -37,18 +38,19 @@ async function PageContent({
   const session = await auth.api.getSession({ headers: headersList });
 
   return (
-    <main className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
-        <RegionFilter regions={reg} selected={regionFilter ?? ""} />
-        <CalendarView
-          competitions={comps}
-          holidays={holidays}
-          availability={avail}
-          role={session?.user.role}
-        />
-        <SemaphoreLegend />
-      </div>
-    </main>
+    <PublicPageShell
+      title="Calendario de competencias"
+      description="Consulta competencias programadas, feriados y fechas disponibles por región antes de solicitar la tuya."
+    >
+      <RegionFilter regions={reg} selected={regionFilter ?? ""} />
+      <CalendarView
+        competitions={comps}
+        holidays={holidays}
+        availability={avail}
+        role={session?.user.role}
+      />
+      <SemaphoreLegend />
+    </PublicPageShell>
   );
 }
 

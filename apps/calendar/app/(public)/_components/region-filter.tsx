@@ -32,7 +32,7 @@ export function RegionFilter({
   };
 
   return (
-    <div className="bg-card border rounded-lg p-4 md:p-5 shadow-sm">
+    <div className="rounded-3xl bg-ams-soft p-4 md:p-5">
       <Label
         id="region-filter-label"
         className="text-sm font-semibold mb-2 block"
