@@ -1,6 +1,6 @@
 "use client";
 
-import type { UseFormReturn } from "react-hook-form";
+import { useFormState, useWatch, type UseFormReturn } from "react-hook-form";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
@@ -108,6 +108,15 @@ export function CompetitionDatesField({
   isEditing: boolean;
   minDate: Date;
 }) {
+  const [startDate, endDate] = useWatch({
+    control: form.control,
+    name: ["startDate", "endDate"],
+  });
+  const { errors } = useFormState({
+    control: form.control,
+    name: ["startDate", "endDate"],
+  });
+
   return (
     <FormItem className="flex flex-col">
       <FormLabel>Fechas</FormLabel>
@@ -116,19 +125,16 @@ export function CompetitionDatesField({
           <FormControl>
             <Button
               variant="outline"
-              data-invalid={
-                !!form.formState.errors.startDate ||
-                !!form.formState.errors.endDate
-              }
+              data-invalid={!!errors.startDate || !!errors.endDate}
               className={cn(
                 "w-full pl-3 text-left font-normal data-[invalid=true]:ring-2 data-[invalid=true]:ring-destructive/20 dark:data-[invalid=true]:ring-destructive/40 data-[invalid=true]:border-destructive",
-                !form.watch("startDate") && "text-muted-foreground",
+                !startDate && "text-muted-foreground",
               )}
             >
-              {form.watch("startDate") && form.watch("endDate") ? (
+              {startDate && endDate ? (
                 <>
-                  {format(form.watch("startDate"), "PPP", { locale: es })} -{" "}
-                  {format(form.watch("endDate"), "PPP", { locale: es })}
+                  {format(startDate, "PPP", { locale: es })} -{" "}
+                  {format(endDate, "PPP", { locale: es })}
                 </>
               ) : (
                 <span>Selecciona la fecha</span>
@@ -140,16 +146,19 @@ export function CompetitionDatesField({
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="range"
-            selected={{
-              from: form.watch("startDate"),
-              to: form.watch("endDate"),
-            }}
+            selected={{ from: startDate, to: endDate }}
             onSelect={(range: DateRange | undefined) => {
               if (range?.from) {
-                form.setValue("startDate", range.from);
+                form.setValue("startDate", range.from, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
               }
               if (range?.to) {
-                form.setValue("endDate", range.to);
+                form.setValue("endDate", range.to, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
               }
             }}
             disabled={(date) => !isEditing && date < minDate}
@@ -166,8 +175,7 @@ export function CompetitionDatesField({
         </PopoverContent>
       </Popover>
       <FormMessage>
-        {form.formState.errors.startDate?.message ||
-          form.formState.errors.endDate?.message}
+        {errors.startDate?.message || errors.endDate?.message}
       </FormMessage>
     </FormItem>
   );

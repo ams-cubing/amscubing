@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Resolver, useForm } from "react-hook-form";
+import { Resolver, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -108,6 +108,10 @@ export function CompetitionForm({
           assignBoard: true,
         },
   });
+  const shouldAssignBoard = useWatch({
+    control: form.control,
+    name: "assignBoard",
+  });
 
   const handleAddOrganizer = (organizer: OrganizerOption) => {
     const current = form.getValues("organizerUserIds") || [];
@@ -213,7 +217,7 @@ export function CompetitionForm({
           />
         )}
 
-        {(isEditing || !form.watch("assignBoard")) && (
+        {(isEditing || !shouldAssignBoard) && (
           <FormField
             control={form.control}
             name="trelloUrl"
