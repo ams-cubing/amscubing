@@ -108,7 +108,10 @@ export function CompetitionForm({
           assignBoard: true,
         },
   });
-  const shouldAssignBoard = useWatch({ control: form.control, name: "assignBoard" });
+  const shouldAssignBoard = useWatch({
+    control: form.control,
+    name: "assignBoard",
+  });
 
   const handleAddOrganizer = (organizer: OrganizerOption) => {
     const current = form.getValues("organizerUserIds") || [];

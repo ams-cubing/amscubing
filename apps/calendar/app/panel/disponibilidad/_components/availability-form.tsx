@@ -47,7 +47,8 @@ export function AvailabilityForm({
       }),
     },
   });
-  const selectedDates = useWatch({ control: form.control, name: "dates" }) ?? [];
+  const selectedDates =
+    useWatch({ control: form.control, name: "dates" }) ?? [];
 
   const unavailableDays = busyDays.map((dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
