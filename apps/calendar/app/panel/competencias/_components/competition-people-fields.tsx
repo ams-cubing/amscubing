@@ -1,6 +1,6 @@
 "use client";
 
-import type { UseFormReturn } from "react-hook-form";
+import { useWatch, type UseFormReturn } from "react-hook-form";
 import { X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -43,6 +43,9 @@ export function CompetitionOrganizerFields({
   onAddOrganizer: (organizer: OrganizerOption) => void;
   onRemoveOrganizer: (userId: string) => void;
 }) {
+  const organizerUserIds =
+    useWatch({ control: form.control, name: "organizerUserIds" }) ?? [];
+
   return (
     <>
       <FormField
@@ -58,7 +61,7 @@ export function CompetitionOrganizerFields({
             <OrganizerCombobox
               value=""
               onSelect={onAddOrganizer}
-              selectedOrganizers={form.watch("organizerUserIds") || []}
+              selectedOrganizers={organizerUserIds}
               placeholder="Buscar organizador..."
             />
             {selectedOrganizers.length > 0 && (
@@ -131,6 +134,12 @@ export function CompetitionDelegateFields({
   delegates: DelegateOption[];
   pendingDelegateWcaIds: Set<string>;
 }) {
+  const delegateWcaIds =
+    useWatch({ control: form.control, name: "delegateWcaIds" }) ?? [];
+  const selectedDelegates = delegateWcaIds
+    .map((wcaId) => delegates.find((d) => d.wcaId === wcaId))
+    .filter((delegate): delegate is DelegateOption => Boolean(delegate));
+
   return (
     <>
       <FormField
@@ -196,15 +205,11 @@ export function CompetitionDelegateFields({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {form
-                  .watch("delegateWcaIds")
-                  ?.map((wcaId) => delegates.find((d) => d.wcaId === wcaId))
-                  .filter(Boolean)
-                  .map((delegate) => (
-                    <SelectItem key={delegate!.wcaId} value={delegate!.wcaId}>
-                      {delegate?.name}
-                    </SelectItem>
-                  ))}
+                {selectedDelegates.map((delegate) => (
+                  <SelectItem key={delegate.wcaId} value={delegate.wcaId}>
+                    {delegate.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormDescription>

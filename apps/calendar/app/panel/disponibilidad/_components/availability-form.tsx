@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@workspace/ui/components/button";
@@ -47,6 +47,7 @@ export function AvailabilityForm({
       }),
     },
   });
+  const selectedDates = useWatch({ control: form.control, name: "dates" }) ?? [];
 
   const unavailableDays = busyDays.map((dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
@@ -118,14 +119,14 @@ export function AvailabilityForm({
 
         <div className="flex flex-col gap-4">
           <div className="text-sm text-muted-foreground text-center">
-            {form.watch("dates")?.length > 0
-              ? `${form.watch("dates").length} fecha(s) seleccionada(s)`
+            {selectedDates.length > 0
+              ? `${selectedDates.length} fecha(s) seleccionada(s)`
               : "Sin fechas seleccionadas (se borrará tu disponibilidad)"}
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending
               ? "Guardando..."
-              : form.watch("dates")?.length === 0
+              : selectedDates.length === 0
                 ? "Borrar Disponibilidad"
                 : "Registrar Disponibilidad"}
           </Button>

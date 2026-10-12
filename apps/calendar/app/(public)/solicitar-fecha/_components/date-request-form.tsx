@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFormState, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@workspace/ui/components/button";
@@ -136,7 +136,15 @@ export function DateRequestForm({
     form.setValue("endDate", undefined as unknown as Date);
   }, [state, form]);
 
-  const stateSelected = Boolean(form.watch("stateId"));
+  const [stateId, startDate, endDate] = useWatch({
+    control: form.control,
+    name: ["stateId", "startDate", "endDate"],
+  });
+  const { errors } = useFormState({
+    control: form.control,
+    name: ["startDate", "endDate"],
+  });
+  const stateSelected = Boolean(stateId);
 
   async function onSubmit(data: DateRequestFormValues) {
     startTransition(async () => {
@@ -220,20 +228,16 @@ export function DateRequestForm({
                 <Button
                   variant="outline"
                   disabled={!stateSelected}
-                  data-invalid={
-                    !!form.formState.errors.startDate ||
-                    !!form.formState.errors.endDate
-                  }
+                  data-invalid={!!errors.startDate || !!errors.endDate}
                   className={cn(
                     "w-full pl-3 text-left font-normal data-[invalid=true]:ring-2 data-[invalid=true]:ring-destructive/20 dark:data-[invalid=true]:ring-destructive/40 data-[invalid=true]:border-destructive",
-                    (!form.watch("startDate") || !stateSelected) &&
-                      "text-muted-foreground",
+                    (!startDate || !stateSelected) && "text-muted-foreground",
                   )}
                 >
-                  {form.watch("startDate") && form.watch("endDate") ? (
+                  {startDate && endDate ? (
                     <>
-                      {format(form.watch("startDate"), "PPP", { locale: es })} -{" "}
-                      {format(form.watch("endDate"), "PPP", { locale: es })}
+                      {format(startDate, "PPP", { locale: es })} -{" "}
+                      {format(endDate, "PPP", { locale: es })}
                     </>
                   ) : (
                     <span>
@@ -249,10 +253,7 @@ export function DateRequestForm({
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="range"
-                selected={{
-                  from: form.watch("startDate"),
-                  to: form.watch("endDate"),
-                }}
+                selected={{ from: startDate, to: endDate }}
                 onSelect={(range: DateRange | undefined) => {
                   if (!stateSelected) return;
                   if (!range?.from) {
@@ -275,8 +276,12 @@ export function DateRequestForm({
                       );
                       return;
                     }
-                    form.setValue("startDate", range.from);
-                    form.setValue("endDate", range.to);
+                    form.setValue("startDate", range.from, {
+                      shouldValidate: true,
+                    });
+                    form.setValue("endDate", range.to, {
+                      shouldValidate: true,
+                    });
                     return;
                   }
                   form.setValue("startDate", range.from);
@@ -306,8 +311,7 @@ export function DateRequestForm({
             </PopoverContent>
           </Popover>
           <FormMessage>
-            {form.formState.errors.startDate?.message ||
-              form.formState.errors.endDate?.message}
+            {errors.startDate?.message || errors.endDate?.message}
           </FormMessage>
         </FormItem>
 

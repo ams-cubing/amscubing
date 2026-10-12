@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@workspace/ui/components/popover";
-import { useForm } from "react-hook-form";
+import { useForm, useFormState, useWatch } from "react-hook-form";
 
 export function UltimatumDialog({
   competitionId,
@@ -36,15 +36,9 @@ export function UltimatumDialog({
   const form = useForm<{ deadline: Date }>({
     defaultValues: { deadline: undefined },
   });
-  const {
-    handleSubmit,
-    setValue,
-    setError,
-    formState: { errors },
-    watch,
-  } = form;
-
-  const deadline = watch("deadline");
+  const { handleSubmit, setValue, setError } = form;
+  const deadline = useWatch({ control: form.control, name: "deadline" });
+  const { errors } = useFormState({ control: form.control, name: "deadline" });
 
   const startOfToday = React.useMemo(() => {
     const d = new Date();
@@ -108,7 +102,7 @@ export function UltimatumDialog({
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        data-invalid={!!form.formState.errors.deadline}
+                        data-invalid={!!errors.deadline}
                         className="w-full text-left data-[invalid=true]:ring-2 data-[invalid=true]:ring-destructive/20 dark:data-[invalid=true]:ring-destructive/40 data-[invalid=true]:border-destructive"
                         type="button"
                       >
