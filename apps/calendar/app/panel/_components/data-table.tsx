@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 
 "use client";
+"use no memo";
 
 import * as React from "react";
 import { Button, buttonVariants } from "@workspace/ui/components/button";
