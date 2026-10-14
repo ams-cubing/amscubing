@@ -1,6 +1,6 @@
 "use client";
 
-import type { Editor } from "@tiptap/react";
+import { useEditorState, type Editor } from "@tiptap/react";
 import {
   Bold,
   ChevronDown,
@@ -82,9 +82,11 @@ function ToolbarButton({
 
 function LinkPopover({
   editor,
+  active,
   disabled,
 }: {
   editor: Editor;
+  active: boolean;
   disabled?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -134,7 +136,7 @@ function LinkPopover({
               variant="ghost"
               className={cn(
                 "size-8 shrink-0",
-                editor.isActive("link") && "bg-accent text-accent-foreground",
+                active && "bg-accent text-accent-foreground",
               )}
               disabled={disabled}
               aria-label="Enlace"
@@ -185,7 +187,7 @@ function LinkPopover({
           >
             Aplicar
           </Button>
-          {editor.isActive("link") && (
+          {active && (
             <Button
               type="button"
               size="sm"
@@ -321,7 +323,20 @@ export function DescriptionToolbar({
   onMarkdownModeChange: (value: boolean) => void;
   onOpenAttachments?: () => void;
 }) {
-  if (!editor) return null;
+  const formatState = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      headingLabel: current ? currentHeadingLabel(current) : "Texto normal",
+      isBold: current?.isActive("bold") ?? false,
+      isItalic: current?.isActive("italic") ?? false,
+      isList:
+        (current?.isActive("bulletList") || current?.isActive("orderedList")) ??
+        false,
+      isLink: current?.isActive("link") ?? false,
+    }),
+  });
+
+  if (!editor || !formatState) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 rounded-t-md border bg-muted/30 px-1 py-1">
@@ -338,7 +353,7 @@ export function DescriptionToolbar({
               >
                 <Type className="size-4" />
                 <span className="hidden max-w-24 truncate sm:inline">
-                  {currentHeadingLabel(editor)}
+                  {formatState.headingLabel}
                 </span>
                 <ChevronDown className="size-3 opacity-60" />
               </Button>
@@ -364,7 +379,7 @@ export function DescriptionToolbar({
 
           <ToolbarButton
             label="Negrita"
-            active={editor.isActive("bold")}
+            active={formatState.isBold}
             disabled={disabled}
             onClick={() => editor.chain().focus().toggleBold().run()}
           >
@@ -373,7 +388,7 @@ export function DescriptionToolbar({
 
           <ToolbarButton
             label="Cursiva"
-            active={editor.isActive("italic")}
+            active={formatState.isItalic}
             disabled={disabled}
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
@@ -431,9 +446,7 @@ export function DescriptionToolbar({
                 variant="ghost"
                 className={cn(
                   "size-8 shrink-0",
-                  (editor.isActive("bulletList") ||
-                    editor.isActive("orderedList")) &&
-                    "bg-accent text-accent-foreground",
+                  formatState.isList && "bg-accent text-accent-foreground",
                 )}
                 disabled={disabled}
                 aria-label="Listas"
@@ -459,7 +472,11 @@ export function DescriptionToolbar({
 
           <Separator orientation="vertical" className="mx-0.5 h-6" />
 
-          <LinkPopover editor={editor} disabled={disabled} />
+          <LinkPopover
+            editor={editor}
+            active={formatState.isLink}
+            disabled={disabled}
+          />
           <ImagePopover editor={editor} disabled={disabled} />
         </>
       )}

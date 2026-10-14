@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import * as React from "react";
 import { DataTable } from "@workspace/ui/components/data-table/data-table";

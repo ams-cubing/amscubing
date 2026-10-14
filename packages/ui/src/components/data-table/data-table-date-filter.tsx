@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import type { Column } from "@tanstack/react-table";
 import { CalendarIcon, XCircle } from "lucide-react";
