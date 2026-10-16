@@ -194,6 +194,7 @@ export async function sendDateRequestDeclinedOrganizerEmail(input: {
   startDate: string;
   endDate: string;
   nextDelegateName: string | null;
+  reason: string;
 }) {
   if (!isDeliverableEmail(input.to)) return;
 
@@ -206,6 +207,7 @@ export async function sendDateRequestDeclinedOrganizerEmail(input: {
       startDate: input.startDate,
       endDate: input.endDate,
       nextDelegateName: input.nextDelegateName,
+      reason: input.reason,
       myCompetitionsUrl: myCompetitionsUrl(),
     }),
   });

@@ -1,10 +1,25 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./index", () => ({ db: {} }));
+const dbMocks = vi.hoisted(() => ({
+  select: vi.fn(),
+  update: vi.fn(),
+}));
 
-import { formatNotificationTitle, notifyAllUsers } from "./notifications";
+vi.mock("./index", () => ({
+  db: {
+    select: (...args: unknown[]) => dbMocks.select(...args),
+    update: (...args: unknown[]) => dbMocks.update(...args),
+  },
+}));
+
+import {
+  countUnreadNotificationsByCard,
+  formatNotificationTitle,
+  markCardNotificationsRead,
+  notifyAllUsers,
+} from "./notifications";
 
 describe("notifyAllUsers", () => {
   it("broadcasts with a single insert-select that skips the actor", async () => {
@@ -42,5 +57,52 @@ describe("formatNotificationTitle", () => {
     expect(formatNotificationTitle("course_staff_changed", {})).toBe(
       "Ya no tienes permisos en Cursos AMS",
     );
+  });
+});
+
+describe("countUnreadNotificationsByCard", () => {
+  beforeEach(() => {
+    dbMocks.select.mockReset();
+    dbMocks.update.mockReset();
+  });
+
+  it("groups unread counts by card id", async () => {
+    const groupBy = vi.fn().mockResolvedValue([
+      { cardId: 7, value: 2 },
+      { cardId: 11, value: 1 },
+    ]);
+    const where = vi.fn().mockReturnValue({ groupBy });
+    const from = vi.fn().mockReturnValue({ where });
+    dbMocks.select.mockReturnValue({ from });
+
+    await expect(countUnreadNotificationsByCard("user-1", 10)).resolves.toEqual(
+      { 7: 2, 11: 1 },
+    );
+
+    expect(dbMocks.select).toHaveBeenCalled();
+    expect(from).toHaveBeenCalled();
+    expect(where).toHaveBeenCalled();
+    expect(groupBy).toHaveBeenCalled();
+  });
+});
+
+describe("markCardNotificationsRead", () => {
+  beforeEach(() => {
+    dbMocks.select.mockReset();
+    dbMocks.update.mockReset();
+  });
+
+  it("marks unread notifications for the card as read", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    dbMocks.update.mockReturnValue({ set });
+
+    await markCardNotificationsRead("user-1", 7);
+
+    expect(dbMocks.update).toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ readAt: expect.any(Date) }),
+    );
+    expect(where).toHaveBeenCalled();
   });
 });

@@ -1,10 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
-import { cardAttachments } from "@workspace/db/schema";
+import { cardAttachments, cards } from "@workspace/db/schema";
 
 import {
   assertAttachmentOnBoard,
@@ -37,7 +37,10 @@ export async function updateAttachmentAction(input: {
   url: string;
 }) {
   await requireBoardAccess(input.boardId);
-  await assertAttachmentOnBoard(input.boardId, input.attachmentId);
+  const attachment = await assertAttachmentOnBoard(
+    input.boardId,
+    input.attachmentId,
+  );
 
   const name = input.name.trim();
   const url = input.url.trim();
@@ -51,6 +54,18 @@ export async function updateAttachmentAction(input: {
     })
     .where(eq(cardAttachments.id, input.attachmentId));
 
+  if (attachment.url !== url) {
+    await db
+      .update(cards)
+      .set({ coverUrl: url })
+      .where(
+        and(
+          eq(cards.id, attachment.cardId),
+          eq(cards.coverUrl, attachment.url),
+        ),
+      );
+  }
+
   revalidatePath(`/boards/${input.boardId}`);
 }
 
@@ -59,11 +74,49 @@ export async function removeAttachmentAction(input: {
   attachmentId: number;
 }) {
   await requireBoardAccess(input.boardId);
-  await assertAttachmentOnBoard(input.boardId, input.attachmentId);
+  const attachment = await assertAttachmentOnBoard(
+    input.boardId,
+    input.attachmentId,
+  );
 
   await db
     .delete(cardAttachments)
     .where(eq(cardAttachments.id, input.attachmentId));
+
+  await db
+    .update(cards)
+    .set({ coverUrl: null })
+    .where(
+      and(eq(cards.id, attachment.cardId), eq(cards.coverUrl, attachment.url)),
+    );
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function setCardCoverAction(input: {
+  boardId: number;
+  cardId: number;
+  /** Attachment URL to use as cover, or null to clear. */
+  coverUrl: string | null;
+}) {
+  await requireBoardAccess(input.boardId);
+  await assertCardOnBoard(input.boardId, input.cardId);
+
+  const coverUrl = input.coverUrl?.trim() || null;
+  if (coverUrl) {
+    const attachment = await db.query.cardAttachments.findFirst({
+      where: and(
+        eq(cardAttachments.cardId, input.cardId),
+        eq(cardAttachments.url, coverUrl),
+      ),
+      columns: { id: true },
+    });
+    if (!attachment) {
+      throw new Error("El adjunto de portada no pertenece a esta tarjeta");
+    }
+  }
+
+  await db.update(cards).set({ coverUrl }).where(eq(cards.id, input.cardId));
 
   revalidatePath(`/boards/${input.boardId}`);
 }

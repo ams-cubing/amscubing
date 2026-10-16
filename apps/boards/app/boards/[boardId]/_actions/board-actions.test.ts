@@ -16,6 +16,7 @@ import {
   deleteLabelAction,
   moveCardAction,
   removeAttachmentAction,
+  setCardCoverAction,
   toggleCardLabelAction,
   toggleChecklistItemAction,
   updateAttachmentAction,
@@ -524,5 +525,71 @@ describe("cross-board resource ownership", () => {
 
     expect(dbInsert).not.toHaveBeenCalled();
     expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("clears cover when removing the cover attachment", async () => {
+    mockAuthenticatedUser();
+    mockBoardAccessAllowed();
+    const { findFirstAttachment, dbDelete, dbUpdate, revalidatePath } =
+      getBoardMocks();
+    findFirstAttachment.mockResolvedValue({
+      id: 5,
+      cardId: 7,
+      name: "flyer.png",
+      url: "https://utfs.io/f/flyer.png",
+      card: { id: 7, list: { boardId } },
+    });
+    const deleteWhere = vi.fn().mockResolvedValue(undefined);
+    dbDelete.mockReturnValue({ where: deleteWhere });
+    const updateWhere = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where: updateWhere });
+    dbUpdate.mockReturnValue({ set });
+
+    await removeAttachmentAction({ boardId, attachmentId: 5 });
+
+    expect(deleteWhere).toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith({ coverUrl: null });
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+  });
+
+  it("sets cover from an attachment on the card", async () => {
+    mockAuthenticatedUser();
+    mockBoardAccessAllowed();
+    const { findFirstCard, findFirstAttachment, dbUpdate, revalidatePath } =
+      getBoardMocks();
+    findFirstCard.mockResolvedValue(cardOnBoard(7));
+    findFirstAttachment.mockResolvedValue({ id: 5 });
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    dbUpdate.mockReturnValue({ set });
+
+    await setCardCoverAction({
+      boardId,
+      cardId: 7,
+      coverUrl: "https://utfs.io/f/flyer.png",
+    });
+
+    expect(set).toHaveBeenCalledWith({
+      coverUrl: "https://utfs.io/f/flyer.png",
+    });
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+  });
+
+  it("rejects setCardCoverAction when attachment is not on the card", async () => {
+    mockAuthenticatedUser();
+    mockBoardAccessAllowed();
+    const { findFirstCard, findFirstAttachment, dbUpdate } = getBoardMocks();
+    findFirstCard.mockResolvedValue(cardOnBoard(7));
+    findFirstAttachment.mockResolvedValue(null);
+
+    await expect(
+      setCardCoverAction({
+        boardId,
+        cardId: 7,
+        coverUrl: "https://utfs.io/f/other.png",
+      }),
+    ).rejects.toThrow("El adjunto de portada no pertenece a esta tarjeta");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
   });
 });

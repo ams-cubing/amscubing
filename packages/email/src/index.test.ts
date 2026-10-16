@@ -4,6 +4,7 @@ import {
   AMS_EMAIL,
   boardNotificationEmail,
   competitionStatusChangedEmail,
+  dateRequestDeclinedOrganizerEmail,
   delegateAssignedEmail,
   delegateRemovedEmail,
   isDeliverableEmail,
@@ -136,6 +137,24 @@ describe("email templates escape HTML", () => {
 
     expect(html).toContain("León &amp; Co");
     expect(html).toContain("Anunciada &quot;ya&quot;");
+  });
+
+  it("includes and escapes the decline reason for the organizer", () => {
+    const html = dateRequestDeclinedOrganizerEmail({
+      organizerName: "Org",
+      city: "Puebla",
+      startDate: "2027-02-06",
+      endDate: "2027-02-07",
+      nextDelegateName: null,
+      reason: 'No puedo <script> ese fin & "más"',
+      myCompetitionsUrl: "https://example.com/mis",
+    });
+
+    expect(html).toContain("Motivo del rechazo");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("&amp;");
+    expect(html).toContain("&quot;más&quot;");
   });
 });
 

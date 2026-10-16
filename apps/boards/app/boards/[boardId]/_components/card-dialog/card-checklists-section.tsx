@@ -92,9 +92,14 @@ export function CardChecklistsSection({
         return (
           <div key={checklist.id} className="space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 <CheckSquare className="size-4 shrink-0 text-muted-foreground" />
-                <div className="text-sm font-medium">{checklist.title}</div>
+                <div
+                  className="min-w-0 truncate text-sm font-medium"
+                  title={checklist.title}
+                >
+                  {checklist.title}
+                </div>
               </div>
               {!readOnly && (
                 <Button
@@ -133,7 +138,7 @@ export function CardChecklistsSection({
                   />
                   <span
                     className={cn(
-                      "text-sm",
+                      "min-w-0 flex-1 text-sm break-words",
                       item.done && "text-muted-foreground line-through",
                     )}
                   >

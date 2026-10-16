@@ -26,6 +26,8 @@ import { cn } from "@workspace/ui/lib/utils";
 
 import { getBoardsUrl } from "@/lib/urls";
 
+import type { ReassignmentOption } from "@/lib/reassignment-option";
+
 import { BoardAssignControls } from "../../_components/board-assign-controls";
 import { DateRequestResponseControls } from "./date-request-response-controls";
 import { CompetitionSocialStatusSection } from "./competition-social-status-section";
@@ -53,9 +55,11 @@ function assignmentStatusLabel(
 export function CompetitionDetailView({
   competition,
   currentUserWcaId,
+  reassignmentCandidates = [],
 }: {
   competition: CompetitionDetail;
   currentUserWcaId?: string | null;
+  reassignmentCandidates?: ReassignmentOption[];
 }) {
   const boardsUrl = getBoardsUrl();
   const location = [
@@ -123,7 +127,10 @@ export function CompetitionDetailView({
       </div>
 
       {pendingForCurrentUser && (
-        <DateRequestResponseControls competitionId={competition.id} />
+        <DateRequestResponseControls
+          competitionId={competition.id}
+          candidates={reassignmentCandidates}
+        />
       )}
 
       <CompetitionSocialStatusSection

@@ -258,6 +258,7 @@ export function dateRequestDeclinedOrganizerEmail(input: {
   startDate: string;
   endDate: string;
   nextDelegateName: string | null;
+  reason: string;
   myCompetitionsUrl: string;
 }) {
   const followUp = input.nextDelegateName
@@ -274,6 +275,9 @@ export function dateRequestDeclinedOrganizerEmail(input: {
       emailParagraph(`Hola ${escapeHtml(input.organizerName)},`),
       emailParagraph(
         `Hubo un cambio en la propuesta de delegado para tu competencia en ${escapeHtml(input.city)} (${escapeHtml(input.startDate)} - ${escapeHtml(input.endDate)}).`,
+      ),
+      emailParagraph(
+        `<strong>Motivo del rechazo:</strong><br />${escapeHtml(input.reason).replace(/\n/g, "<br />")}`,
       ),
       followUp,
     ].join(""),

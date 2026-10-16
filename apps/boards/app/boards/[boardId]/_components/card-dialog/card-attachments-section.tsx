@@ -15,6 +15,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
+import { isImageAttachmentUrl } from "@/lib/attachment-media";
 import { useUploadThing } from "@/lib/uploadthing-client";
 
 import type { BoardCard } from "../../_lib/types";
@@ -72,19 +73,25 @@ function AttachmentRow({
   pending,
   readOnly,
   editing,
+  isCover,
   onEdit,
   onCancelEdit,
   onSave,
   onRemove,
+  onSetCover,
+  onClearCover,
 }: {
   attachment: Attachment;
   pending: boolean;
   readOnly: boolean;
   editing: boolean;
+  isCover: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
   onSave: (name: string, url: string) => void;
   onRemove: () => void;
+  onSetCover: () => void;
+  onClearCover: () => void;
 }) {
   if (editing) {
     return (
@@ -97,9 +104,20 @@ function AttachmentRow({
     );
   }
 
+  const isImage = isImageAttachmentUrl(attachment.url);
+
   return (
     <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-      <Link2 className="size-4 shrink-0 text-emerald-500" />
+      {isImage ? (
+        // eslint-disable-next-line @next/next/no-img-element -- attachment thumbnails from arbitrary URLs
+        <img
+          src={attachment.url}
+          alt=""
+          className="size-10 shrink-0 rounded object-cover"
+        />
+      ) : (
+        <Link2 className="size-4 shrink-0 text-emerald-500" />
+      )}
       <a
         href={attachment.url}
         target="_blank"
@@ -107,6 +125,9 @@ function AttachmentRow({
         className="min-w-0 flex-1 truncate underline-offset-2 hover:underline"
       >
         {attachment.name}
+        {isCover ? (
+          <span className="ml-2 text-xs text-muted-foreground">(portada)</span>
+        ) : null}
       </a>
       {!readOnly && (
         <DropdownMenu>
@@ -123,6 +144,16 @@ function AttachmentRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
+            {isImage &&
+              (isCover ? (
+                <DropdownMenuItem onClick={onClearCover}>
+                  Quitar portada
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={onSetCover}>
+                  Usar como portada
+                </DropdownMenuItem>
+              ))}
             <DropdownMenuItem variant="destructive" onClick={onRemove}>
               Eliminar
             </DropdownMenuItem>
@@ -149,6 +180,8 @@ export function CardAttachmentsSection({
   onRemove,
   onAdd,
   onUpdate,
+  onSetCover,
+  onClearCover,
 }: {
   boardId: number;
   card: BoardCard;
@@ -165,6 +198,8 @@ export function CardAttachmentsSection({
   onRemove: (attachmentId: number) => void;
   onAdd: () => void;
   onUpdate: (attachmentId: number, name: string, url: string) => void;
+  onSetCover: (url: string) => void;
+  onClearCover: () => void;
 }) {
   const router = useRouter();
   const [editingAttachmentId, setEditingAttachmentId] = React.useState<
@@ -187,23 +222,24 @@ export function CardAttachmentsSection({
 
   const hasAttachments = card.attachments.length > 0;
   const busy = pending || isUploading;
+  const coverUrl = card.coverUrl?.trim() || null;
 
   if (!hasAttachments && !showAttachmentForm && readOnly) return null;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <Label className="inline-flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Label className="inline-flex shrink-0 items-center gap-2">
           <Paperclip className="size-4" />
           Adjuntos
         </Label>
         {!readOnly && !showAttachmentForm && (
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 shrink px-2 text-xs"
               disabled={busy}
               onClick={() => {
                 const input = document.createElement("input");
@@ -228,7 +264,7 @@ export function CardAttachmentsSection({
               type="button"
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 shrink px-2 text-xs"
               disabled={busy}
               onClick={onShowForm}
             >
@@ -247,6 +283,7 @@ export function CardAttachmentsSection({
                 pending={busy}
                 readOnly={readOnly}
                 editing={editingAttachmentId === attachment.id}
+                isCover={coverUrl === attachment.url}
                 onEdit={() => setEditingAttachmentId(attachment.id)}
                 onCancelEdit={() => setEditingAttachmentId(null)}
                 onSave={(name, url) => {
@@ -254,6 +291,8 @@ export function CardAttachmentsSection({
                   setEditingAttachmentId(null);
                 }}
                 onRemove={() => onRemove(attachment.id)}
+                onSetCover={() => onSetCover(attachment.url)}
+                onClearCover={onClearCover}
               />
             </li>
           ))}

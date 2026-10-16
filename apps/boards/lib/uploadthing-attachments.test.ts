@@ -70,12 +70,15 @@ describe("assertCardBelongsToBoard", () => {
 });
 
 describe("insertUploadedCardAttachment", () => {
-  it("inserts attachment and revalidates board path", async () => {
-    const { dbInsert, revalidatePath } = getBoardMocks();
+  it("inserts attachment, auto-sets cover when empty, and revalidates", async () => {
+    const { dbInsert, dbUpdate, revalidatePath } = getBoardMocks();
     const values = vi.fn().mockReturnValue({
       returning: vi.fn().mockResolvedValue([{ id: 55 }]),
     });
     dbInsert.mockReturnValue({ values });
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    dbUpdate.mockReturnValue({ set });
 
     const result = await insertUploadedCardAttachment({
       boardId,
@@ -89,11 +92,32 @@ describe("insertUploadedCardAttachment", () => {
       name: "flyer.png",
       url: "https://utfs.io/f/flyer.png",
     });
+    expect(set).toHaveBeenCalledWith({
+      coverUrl: "https://utfs.io/f/flyer.png",
+    });
     expect(result).toEqual({
       attachmentId: 55,
       name: "flyer.png",
       url: "https://utfs.io/f/flyer.png",
     });
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+  });
+
+  it("does not set cover for non-image uploads", async () => {
+    const { dbInsert, dbUpdate, revalidatePath } = getBoardMocks();
+    const values = vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([{ id: 56 }]),
+    });
+    dbInsert.mockReturnValue({ values });
+
+    await insertUploadedCardAttachment({
+      boardId,
+      cardId,
+      name: "rules.pdf",
+      url: "https://utfs.io/f/rules.pdf",
+    });
+
+    expect(dbUpdate).not.toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
   });
 });

@@ -7,8 +7,10 @@ import { headers } from "next/headers";
 import { Mail } from "lucide-react";
 import { AmsSignInPrompt } from "@workspace/ui/components/ams-sign-in-prompt";
 import { getCalendarUrl, getCrossAppSignInUrl } from "@/lib/urls";
+import Link from "next/link";
 import { MAX_DATE_REQUESTS_PER_WEEK } from "./_lib/constants";
 import {
+  getPendingAnnouncementCompetition,
   getRecentRequestsCount,
   getDelegatesForState,
   getAvailabilityForState,
@@ -57,6 +59,36 @@ async function PageContent({
           description="Puedes entrar con tu cuenta AMS o WCA; no necesitas WCA ID para organizar. Al iniciar sesión volverás a este formulario."
           signInHref={getCrossAppSignInUrl(returnTo.toString())}
         />
+      </PublicPageShell>
+    );
+  }
+
+  const pendingCompetition = await getPendingAnnouncementCompetition(
+    session.user.id,
+  );
+
+  if (pendingCompetition) {
+    const label =
+      pendingCompetition.name?.trim() ||
+      pendingCompetition.city ||
+      "una competencia";
+    return (
+      <PublicPageShell
+        title="Solicitar fecha"
+        description={PAGE_DESCRIPTION}
+        width="narrow"
+      >
+        <BrandCallout tone="warning">
+          Ya organizas {label}, pendiente de anunciar. Anúnciala o termina ese
+          proceso antes de solicitar otra fecha.{" "}
+          <Link
+            href="/mis-competencias"
+            className="font-semibold text-ams-green underline-offset-2 hover:underline"
+          >
+            Ver mis competencias
+          </Link>
+          .
+        </BrandCallout>
       </PublicPageShell>
     );
   }

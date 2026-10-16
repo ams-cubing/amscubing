@@ -25,6 +25,7 @@ import {
   DATE_REQUEST_USER_LIMIT,
   MAX_DATE_REQUESTS_PER_WEEK,
 } from "../_lib/constants";
+import { getPendingAnnouncementCompetition } from "../_lib/queries";
 import { log } from "@workspace/server/log";
 
 function getClientIp(headersList: Headers) {
@@ -95,6 +96,19 @@ export async function submitDateRequest(
     const startDateStr = toDateOnlyString(validatedData.startDate);
     const endDateStr = toDateOnlyString(validatedData.endDate);
     const requesterUserId = session.user.id;
+
+    const pendingCompetition =
+      await getPendingAnnouncementCompetition(requesterUserId);
+    if (pendingCompetition) {
+      const label =
+        pendingCompetition.name?.trim() ||
+        pendingCompetition.city ||
+        "una competencia";
+      return {
+        success: false,
+        message: `Ya organizas ${label}, pendiente de anunciar. Anúnciala o termina ese proceso antes de solicitar otra fecha.`,
+      };
+    }
 
     const recentRequests = await db.query.dateRequests.findMany({
       where: and(

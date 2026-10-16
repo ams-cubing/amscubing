@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
 import { cardAttachments, cards, type User } from "@workspace/db/schema";
 
+import { isImageAttachmentUrl } from "@/lib/attachment-media";
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 
 export async function assertBoardUploadAccess(user: User, boardId: number) {
@@ -50,6 +51,13 @@ export async function insertUploadedCardAttachment(input: {
       url,
     })
     .returning({ id: cardAttachments.id });
+
+  if (isImageAttachmentUrl(url)) {
+    await db
+      .update(cards)
+      .set({ coverUrl: url })
+      .where(and(eq(cards.id, input.cardId), isNull(cards.coverUrl)));
+  }
 
   revalidatePath(`/boards/${input.boardId}`);
 

@@ -38,6 +38,7 @@ export const dateRequests = pgTable("date_request", {
     .$type<string[]>()
     .default([])
     .notNull(),
+  lastDeclineReason: text("last_decline_reason"),
   status: dateRequestStatusEnum("status").default("open").notNull(),
   competitionId: integer("competition_id").references(() => competitions.id, {
     onDelete: "set null",

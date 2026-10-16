@@ -115,6 +115,7 @@ export const competitionDelegates = pgTable("competition_delegate", {
     .references(() => user.wcaId, { onDelete: "cascade" }),
   isPrimary: boolean("is_primary").default(false).notNull(),
   status: delegateAssignmentStatusEnum("status").default("accepted").notNull(),
+  declineReason: text("decline_reason"),
 });
 
 export type CompetitionDelegate = InferSelectModel<typeof competitionDelegates>;

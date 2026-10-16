@@ -40,6 +40,7 @@ import {
   deleteLabelAction,
   moveCardAction,
   removeAttachmentAction,
+  setCardCoverAction,
   toggleCardLabelAction,
   toggleCardMemberAction,
   toggleChecklistItemAction,
@@ -248,13 +249,27 @@ export function CardDialog({
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
             {readOnly ? (
-              <Badge variant="secondary">{currentList?.title ?? "Lista"}</Badge>
+              <Badge
+                variant="secondary"
+                className="max-w-[min(100%,14rem)] min-w-0 truncate"
+                title={currentList?.title ?? "Lista"}
+              >
+                {currentList?.title ?? "Lista"}
+              </Badge>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="secondary" size="sm">
-                    {currentList?.title ?? "Lista"}
-                    <ChevronDown className="size-4" />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="max-w-[min(100%,14rem)] min-w-0 shrink"
+                    title={currentList?.title ?? "Lista"}
+                  >
+                    <span className="truncate">
+                      {currentList?.title ?? "Lista"}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -264,7 +279,12 @@ export function CardDialog({
                       onClick={() => moveToList(list.id)}
                       disabled={list.id === card.listId || pending}
                     >
-                      {list.title}
+                      <span
+                        className="block max-w-64 truncate"
+                        title={list.title}
+                      >
+                        {list.title}
+                      </span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -561,6 +581,24 @@ export function CardDialog({
                     attachmentId,
                     name,
                     url,
+                  }),
+                )
+              }
+              onSetCover={(url) =>
+                run("No se pudo establecer la portada", () =>
+                  setCardCoverAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    coverUrl: url,
+                  }),
+                )
+              }
+              onClearCover={() =>
+                run("No se pudo quitar la portada", () =>
+                  setCardCoverAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    coverUrl: null,
                   }),
                 )
               }

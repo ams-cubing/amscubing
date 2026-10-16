@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { db } from "@workspace/db";
 import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
+import { countUnreadNotificationsByCard } from "@workspace/db/notifications";
 import { boardInvites } from "@workspace/db/schema";
 import {
   Avatar,
@@ -62,6 +63,8 @@ export default async function BoardPage({
     }
     notFound();
   }
+
+  const unreadByCard = await countUnreadNotificationsByCard(user.id, boardId);
 
   const readiness = board.competition
     ? await evaluateBoardReadiness(boardId)
@@ -143,9 +146,9 @@ export default async function BoardPage({
       )}
       <div className="shrink-0 border-b px-4 py-3">
         <div className="mx-auto flex w-full max-w-400 flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold tracking-tight">
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h1 className="min-w-0 text-lg font-semibold tracking-tight break-words">
                 {board.name}
               </h1>
               {board.isTemplate && <Badge variant="secondary">Plantilla</Badge>}
@@ -237,6 +240,7 @@ export default async function BoardPage({
         readOnly={isArchived}
         initialCardId={initialCardId}
         canManageSocialPublish={isDelegate}
+        unreadByCard={unreadByCard}
       />
     </div>
   );

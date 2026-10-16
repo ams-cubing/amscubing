@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { getReassignmentOptions } from "@/lib/reassignment-candidates";
 import { formatAction } from "@/lib/utils";
 import { requireDelegate } from "@/lib/session";
 
@@ -32,6 +33,26 @@ async function PageContent({
   ]);
 
   const currentUserWcaId = authResult.ok ? authResult.session.user.wcaId : null;
+  const pendingForCurrentUser = competition.delegates.some(
+    (row) =>
+      row.status === "pending" &&
+      row.delegateWcaId === currentUserWcaId &&
+      Boolean(currentUserWcaId),
+  );
+
+  const reassignmentCandidates = pendingForCurrentUser
+    ? await getReassignmentOptions({
+        stateId: competition.stateId,
+        startDate: competition.startDate,
+        endDate: competition.endDate,
+        excludeWcaIds: [
+          ...(currentUserWcaId ? [currentUserWcaId] : []),
+          ...competition.delegates
+            .filter((row) => row.status === "declined")
+            .map((row) => row.delegateWcaId),
+        ],
+      })
+    : [];
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -39,6 +60,7 @@ async function PageContent({
         <CompetitionDetailView
           competition={competition}
           currentUserWcaId={currentUserWcaId}
+          reassignmentCandidates={reassignmentCandidates}
         />
 
         <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
