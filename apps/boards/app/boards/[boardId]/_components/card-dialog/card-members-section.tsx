@@ -55,14 +55,15 @@ export function CardMembersSection({
               key={person.userId}
               type="button"
               className={cn(
-                "inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs transition",
+                "inline-flex max-w-full min-w-0 items-center gap-2 rounded-md border px-2 py-1 text-xs transition",
                 checked
                   ? "border-foreground/40 bg-muted"
                   : "opacity-70 hover:opacity-100",
               )}
               onClick={() => onToggle(person.userId, !checked)}
+              title={person.name}
             >
-              <Avatar className="size-5">
+              <Avatar className="size-5 shrink-0">
                 <AvatarImage
                   src={person.image || undefined}
                   alt={person.name}
@@ -71,7 +72,7 @@ export function CardMembersSection({
                   {initials(person.name)}
                 </AvatarFallback>
               </Avatar>
-              {person.name}
+              <span className="truncate">{person.name}</span>
             </button>
           );
         })}

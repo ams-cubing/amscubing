@@ -122,15 +122,18 @@ export function NotificationInbox({
           ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
+      <PopoverContent
+        align="end"
+        className="w-[min(22rem,calc(100vw-1.5rem))] p-0"
+      >
         <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-          <p className="text-sm font-medium">Notificaciones</p>
+          <p className="min-w-0 shrink text-sm font-medium">Notificaciones</p>
           {unreadCount > 0 ? (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-auto px-2 py-1 text-xs"
+              className="h-auto min-w-0 shrink px-2 py-1 text-right text-xs leading-tight whitespace-normal"
               disabled={pending}
               onClick={() => void handleMarkAll()}
             >
@@ -165,7 +168,10 @@ export function NotificationInbox({
                       <span className="mt-1.5 size-2 shrink-0" aria-hidden />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm leading-snug">
+                      <span
+                        className="block text-sm leading-snug break-words line-clamp-3"
+                        title={item.title}
+                      >
                         {item.title}
                       </span>
                       <span className="text-muted-foreground mt-0.5 block text-xs">

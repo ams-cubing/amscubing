@@ -94,7 +94,10 @@ export function KanbanCardFace({
         </div>
       )}
       <div className="flex items-start gap-1">
-        <div className="min-w-0 flex-1 text-sm font-medium leading-snug">
+        <div
+          className="min-w-0 flex-1 text-sm font-medium leading-snug break-words line-clamp-3"
+          title={card.title}
+        >
           {card.title}
         </div>
         {dragHandle}

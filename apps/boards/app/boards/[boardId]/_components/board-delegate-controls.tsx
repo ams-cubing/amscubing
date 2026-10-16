@@ -269,7 +269,14 @@ function InviteBoardDialog({
                     key={member.userId}
                     className="flex items-center justify-between gap-2 text-sm"
                   >
-                    <span>
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={
+                        member.wcaId
+                          ? `${member.name} (${member.wcaId})`
+                          : member.name
+                      }
+                    >
                       {member.name}
                       {member.wcaId ? (
                         <span className="text-muted-foreground">
@@ -282,6 +289,7 @@ function InviteBoardDialog({
                       type="button"
                       size="sm"
                       variant="ghost"
+                      className="shrink-0"
                       disabled={pending}
                       onClick={() => {
                         startTransition(async () => {

@@ -192,18 +192,18 @@ export function CardAttachmentsSection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <Label className="inline-flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Label className="inline-flex shrink-0 items-center gap-2">
           <Paperclip className="size-4" />
           Adjuntos
         </Label>
         {!readOnly && !showAttachmentForm && (
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 shrink px-2 text-xs"
               disabled={busy}
               onClick={() => {
                 const input = document.createElement("input");
@@ -228,7 +228,7 @@ export function CardAttachmentsSection({
               type="button"
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs"
+              className="h-7 shrink px-2 text-xs"
               disabled={busy}
               onClick={onShowForm}
             >

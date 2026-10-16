@@ -60,9 +60,14 @@ export function BoardKanbanColumn({
       {...props}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{title}</span>
-          <Badge variant="secondary" className="pointer-events-none rounded-sm">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="truncate text-sm font-semibold" title={title}>
+            {title}
+          </span>
+          <Badge
+            variant="secondary"
+            className="pointer-events-none shrink-0 rounded-sm"
+          >
             {cardIds.length}
           </Badge>
         </div>

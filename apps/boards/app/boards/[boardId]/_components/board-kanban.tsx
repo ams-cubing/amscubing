@@ -211,13 +211,16 @@ export function BoardKanban({
               return (
                 <div className="flex h-auto max-h-full w-72 shrink-0 flex-col overflow-hidden rounded-lg border bg-muted/40">
                   <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <span
+                        className="truncate text-sm font-semibold"
+                        title={list.title}
+                      >
                         {list.title}
                       </span>
                       <Badge
                         variant="secondary"
-                        className="pointer-events-none rounded-sm"
+                        className="pointer-events-none shrink-0 rounded-sm"
                       >
                         {cardIds.length}
                       </Badge>
