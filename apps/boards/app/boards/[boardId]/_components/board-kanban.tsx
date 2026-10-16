@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { Badge } from "@workspace/ui/components/badge";
@@ -9,6 +10,7 @@ import {
   KanbanOverlay,
 } from "@workspace/ui/components/kanban";
 
+import { markCardNotificationsReadAction } from "@/app/_actions/notifications";
 import { runBoardAction } from "@/lib/run-board-action";
 
 import { moveCardAction } from "../_actions/board-actions";
@@ -53,29 +55,56 @@ export function BoardKanban({
   readOnly = false,
   initialCardId = null,
   canManageSocialPublish = false,
+  unreadByCard = {},
 }: {
   board: BoardDetail;
   readOnly?: boolean;
   initialCardId?: number | null;
   canManageSocialPublish?: boolean;
+  unreadByCard?: Record<number, number>;
 }) {
+  const router = useRouter();
   const [columns, setColumns] = React.useState<ColumnsState>(() =>
     boardToColumns(board),
   );
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(
     () => (initialCardId != null ? cardKey(initialCardId) : null),
   );
+  const markedReadRef = React.useRef<Set<number>>(new Set());
+
   function selectCard(cardId: string | null) {
     setSelectedCardId(cardId);
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (cardId) {
-      url.searchParams.set("card", String(parseCardKey(cardId)));
+      const numericId = parseCardKey(cardId);
+      url.searchParams.set("card", String(numericId));
+      if (
+        (unreadByCard[numericId] ?? 0) > 0 &&
+        !markedReadRef.current.has(numericId)
+      ) {
+        markedReadRef.current.add(numericId);
+        void markCardNotificationsReadAction({
+          boardId: board.id,
+          cardId: numericId,
+        }).then(() => router.refresh());
+      }
     } else {
       url.searchParams.delete("card");
     }
     window.history.replaceState(null, "", url);
   }
+
+  React.useEffect(() => {
+    if (initialCardId == null) return;
+    if ((unreadByCard[initialCardId] ?? 0) <= 0) return;
+    if (markedReadRef.current.has(initialCardId)) return;
+    markedReadRef.current.add(initialCardId);
+    void markCardNotificationsReadAction({
+      boardId: board.id,
+      cardId: initialCardId,
+    }).then(() => router.refresh());
+  }, [board.id, initialCardId, router, unreadByCard]);
   const columnsRef = React.useRef(columns);
   const dragSnapshotRef = React.useRef<ColumnsState | null>(null);
   const activeDragIdRef = React.useRef<string | null>(null);
@@ -196,6 +225,7 @@ export function BoardKanban({
                 cardsById={cardsById}
                 board={board}
                 readOnly={readOnly}
+                unreadByCard={unreadByCard}
                 onOpenCard={selectCard}
               />
             );
@@ -234,6 +264,7 @@ export function BoardKanban({
                         <KanbanCardFace
                           key={id}
                           card={card}
+                          unreadCount={unreadByCard[card.id] ?? 0}
                           relevant={isCardRelevantNow(
                             card,
                             board.competition?.statusPublic,
@@ -252,6 +283,7 @@ export function BoardKanban({
             return (
               <KanbanCardFace
                 card={card}
+                unreadCount={unreadByCard[card.id] ?? 0}
                 relevant
                 className="cursor-grabbing shadow-lg"
               />

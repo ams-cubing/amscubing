@@ -40,6 +40,7 @@ import {
   deleteLabelAction,
   moveCardAction,
   removeAttachmentAction,
+  setCardCoverAction,
   toggleCardLabelAction,
   toggleCardMemberAction,
   toggleChecklistItemAction,
@@ -577,6 +578,24 @@ export function CardDialog({
                     attachmentId,
                     name,
                     url,
+                  }),
+                )
+              }
+              onSetCover={(url) =>
+                run("No se pudo establecer la portada", () =>
+                  setCardCoverAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    coverUrl: url,
+                  }),
+                )
+              }
+              onClearCover={() =>
+                run("No se pudo quitar la portada", () =>
+                  setCardCoverAction({
+                    boardId: board.id,
+                    cardId: card.id,
+                    coverUrl: null,
                   }),
                 )
               }

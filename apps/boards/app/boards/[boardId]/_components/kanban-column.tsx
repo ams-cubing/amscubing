@@ -35,6 +35,7 @@ interface BoardColumnProps extends Omit<
   cardsById: Map<string, BoardCard>;
   board: BoardDetail;
   readOnly?: boolean;
+  unreadByCard?: Record<number, number>;
   onOpenCard: (cardId: string) => void;
 }
 
@@ -45,6 +46,7 @@ export function BoardKanbanColumn({
   cardsById,
   board,
   readOnly = false,
+  unreadByCard = {},
   onOpenCard,
   className,
   ...props
@@ -92,6 +94,7 @@ export function BoardKanbanColumn({
             <KanbanItem key={id} value={cardKey(card.id)} asChild>
               <KanbanCardFace
                 card={card}
+                unreadCount={unreadByCard[card.id] ?? 0}
                 relevant={isCardRelevantNow(
                   card,
                   board.competition?.statusPublic,

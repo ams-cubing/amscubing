@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { canAccessBoardsApp } from "@workspace/auth/boards-access";
 import { db } from "@workspace/db";
 import { evaluateBoardReadiness } from "@workspace/db/board-readiness";
+import { countUnreadNotificationsByCard } from "@workspace/db/notifications";
 import { boardInvites } from "@workspace/db/schema";
 import {
   Avatar,
@@ -62,6 +63,8 @@ export default async function BoardPage({
     }
     notFound();
   }
+
+  const unreadByCard = await countUnreadNotificationsByCard(user.id, boardId);
 
   const readiness = board.competition
     ? await evaluateBoardReadiness(boardId)
@@ -237,6 +240,7 @@ export default async function BoardPage({
         readOnly={isArchived}
         initialCardId={initialCardId}
         canManageSocialPublish={isDelegate}
+        unreadByCard={unreadByCard}
       />
     </div>
   );

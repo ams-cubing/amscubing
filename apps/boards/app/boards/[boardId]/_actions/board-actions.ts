@@ -29,6 +29,7 @@ export {
   addAttachmentAction,
   updateAttachmentAction,
   removeAttachmentAction,
+  setCardCoverAction,
 } from "./attachment-actions";
 
 export {

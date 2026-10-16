@@ -631,6 +631,36 @@ export async function countUnreadNotifications(userId: string) {
   return row?.value ?? 0;
 }
 
+export async function countUnreadNotificationsByCard(
+  userId: string,
+  boardId: number,
+): Promise<Record<number, number>> {
+  const cardIdExpr = sql<number>`(${notifications.payload}->>'cardId')::int`;
+  const rows = await db
+    .select({
+      cardId: cardIdExpr,
+      value: count(),
+    })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.recipientId, userId),
+        isNull(notifications.readAt),
+        sql`(${notifications.payload}->>'boardId')::int = ${boardId}`,
+        sql`${notifications.payload}->>'cardId' is not null`,
+      ),
+    )
+    .groupBy(cardIdExpr);
+
+  const result: Record<number, number> = {};
+  for (const row of rows) {
+    if (row.cardId != null) {
+      result[row.cardId] = Number(row.value);
+    }
+  }
+  return result;
+}
+
 export async function markNotificationRead(userId: string, id: number) {
   await db
     .update(notifications)
@@ -640,6 +670,22 @@ export async function markNotificationRead(userId: string, id: number) {
         eq(notifications.id, id),
         eq(notifications.recipientId, userId),
         isNull(notifications.readAt),
+      ),
+    );
+}
+
+export async function markCardNotificationsRead(
+  userId: string,
+  cardId: number,
+) {
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(notifications.recipientId, userId),
+        isNull(notifications.readAt),
+        sql`(${notifications.payload}->>'cardId')::int = ${cardId}`,
       ),
     );
 }
