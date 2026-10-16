@@ -279,7 +279,10 @@ export function CardDialog({
                       onClick={() => moveToList(list.id)}
                       disabled={list.id === card.listId || pending}
                     >
-                      <span className="block max-w-64 truncate" title={list.title}>
+                      <span
+                        className="block max-w-64 truncate"
+                        title={list.title}
+                      >
                         {list.title}
                       </span>
                     </DropdownMenuItem>

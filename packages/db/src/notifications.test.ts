@@ -75,9 +75,9 @@ describe("countUnreadNotificationsByCard", () => {
     const from = vi.fn().mockReturnValue({ where });
     dbMocks.select.mockReturnValue({ from });
 
-    await expect(
-      countUnreadNotificationsByCard("user-1", 10),
-    ).resolves.toEqual({ 7: 2, 11: 1 });
+    await expect(countUnreadNotificationsByCard("user-1", 10)).resolves.toEqual(
+      { 7: 2, 11: 1 },
+    );
 
     expect(dbMocks.select).toHaveBeenCalled();
     expect(from).toHaveBeenCalled();

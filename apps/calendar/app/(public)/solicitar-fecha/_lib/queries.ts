@@ -11,7 +11,11 @@ import {
 } from "@workspace/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 
-const PENDING_ANNOUNCEMENT_STATUSES = ["open", "reserved", "confirmed"] as const;
+const PENDING_ANNOUNCEMENT_STATUSES = [
+  "open",
+  "reserved",
+  "confirmed",
+] as const;
 
 export async function getRecentRequestsCount(userId: string) {
   return db.query.dateRequests.findMany({

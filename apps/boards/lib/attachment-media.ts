@@ -1,11 +1,4 @@
-const IMAGE_EXTENSIONS = new Set([
-  "png",
-  "jpg",
-  "jpeg",
-  "gif",
-  "webp",
-  "avif",
-]);
+const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif"]);
 
 /** True when the URL pathname ends with a common image extension. */
 export function isImageAttachmentUrl(url: string): boolean {

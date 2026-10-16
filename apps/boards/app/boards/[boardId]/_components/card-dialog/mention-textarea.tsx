@@ -109,7 +109,9 @@ export function MentionTextarea({
               value={group.value}
               label={group.label}
             >
-              <span className="truncate text-sm font-medium">{group.label}</span>
+              <span className="truncate text-sm font-medium">
+                {group.label}
+              </span>
               <span className="truncate text-xs text-muted-foreground">
                 @{group.value}
               </span>
@@ -121,7 +123,10 @@ export function MentionTextarea({
               value={person.wcaId}
               label={person.wcaId}
             >
-              <span className="truncate text-sm font-medium" title={person.name}>
+              <span
+                className="truncate text-sm font-medium"
+                title={person.name}
+              >
                 {person.name}
               </span>
               <span

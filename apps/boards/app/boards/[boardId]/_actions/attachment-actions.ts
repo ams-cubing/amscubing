@@ -59,7 +59,10 @@ export async function updateAttachmentAction(input: {
       .update(cards)
       .set({ coverUrl: url })
       .where(
-        and(eq(cards.id, attachment.cardId), eq(cards.coverUrl, attachment.url)),
+        and(
+          eq(cards.id, attachment.cardId),
+          eq(cards.coverUrl, attachment.url),
+        ),
       );
   }
 
@@ -113,10 +116,7 @@ export async function setCardCoverAction(input: {
     }
   }
 
-  await db
-    .update(cards)
-    .set({ coverUrl })
-    .where(eq(cards.id, input.cardId));
+  await db.update(cards).set({ coverUrl }).where(eq(cards.id, input.cardId));
 
   revalidatePath(`/boards/${input.boardId}`);
 }

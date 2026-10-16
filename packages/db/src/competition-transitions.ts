@@ -495,12 +495,17 @@ export async function declinePendingDelegateAssignment(
   input: {
     competitionId: number;
     delegateWcaId: string;
+    declineReason: string;
     nextDelegate?: { wcaId: string } | null;
   },
 ): Promise<void> {
   const updated = await tx
     .update(competitionDelegates)
-    .set({ status: "declined", isPrimary: false })
+    .set({
+      status: "declined",
+      isPrimary: false,
+      declineReason: input.declineReason,
+    })
     .where(
       and(
         eq(competitionDelegates.competitionId, input.competitionId),

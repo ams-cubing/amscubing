@@ -19,7 +19,8 @@ import {
   sendDateRequestDeclinedOrganizerEmail,
   sendDateRequestDelegateEmail,
 } from "@/lib/calendar-emails";
-import { findEligibleDelegate } from "@/lib/find-eligible-delegate";
+import { parseDeclineReason } from "@/lib/decline-reason";
+import { getEligibleReassignmentDelegate } from "@/lib/find-eligible-delegate";
 import { getErrorMessage } from "@/lib/handle-error";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
@@ -172,7 +173,13 @@ export async function acceptDateRequest(dateRequestId: number): Promise<{
   }
 }
 
-export async function declineDateRequest(dateRequestId: number): Promise<{
+export async function declineDateRequest(
+  dateRequestId: number,
+  input: {
+    reason: string;
+    replacementWcaId?: string | null;
+  },
+): Promise<{
   success: boolean;
   message: string;
 }> {
@@ -186,6 +193,13 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
     if (!wcaId) {
       return { success: false, message: "Usuario sin WCA ID" };
     }
+
+    const reasonResult = parseDeclineReason(input.reason);
+    if (!reasonResult.ok) {
+      return { success: false, message: reasonResult.message };
+    }
+    const reason = reasonResult.reason;
+    const replacementWcaId = input.replacementWcaId?.trim() || null;
 
     const request = await db.query.dateRequests.findFirst({
       where: eq(dateRequests.id, dateRequestId),
@@ -220,18 +234,34 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
       ...new Set([...(request.declinedDelegateWcaIds ?? []), wcaId]),
     ];
 
+    if (replacementWcaId && declined.includes(replacementWcaId)) {
+      return {
+        success: false,
+        message: "Ese delegado ya rechazó esta solicitud",
+      };
+    }
+
     const nextDelegate = await db.transaction(async (tx) => {
       await restoreAvailability(tx, wcaId, request.startDate, request.endDate);
 
-      const next = await findEligibleDelegate(
-        {
-          stateId: request.stateId,
-          startDate: request.startDate,
-          endDate: request.endDate,
-          excludeWcaIds: declined,
-        },
-        tx,
-      );
+      const next = replacementWcaId
+        ? await getEligibleReassignmentDelegate(
+            {
+              stateId: request.stateId,
+              startDate: request.startDate,
+              endDate: request.endDate,
+              replacementWcaId,
+              excludeWcaIds: declined,
+            },
+            tx,
+          )
+        : null;
+
+      if (replacementWcaId && !next) {
+        throw new Error(
+          "El delegado seleccionado no está disponible para esas fechas",
+        );
+      }
 
       if (next) {
         await tx
@@ -239,6 +269,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           .set({
             proposedDelegateWcaId: next.wcaId,
             declinedDelegateWcaIds: declined,
+            lastDeclineReason: reason,
             updatedAt: new Date(),
           })
           .where(eq(dateRequests.id, dateRequestId));
@@ -287,6 +318,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           .set({
             proposedDelegateWcaId: null,
             declinedDelegateWcaIds: declined,
+            lastDeclineReason: reason,
             status: "exhausted",
             updatedAt: new Date(),
           })
@@ -338,6 +370,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
           startDate: request.startDate,
           endDate: request.endDate,
           nextDelegateName: nextDelegate?.name ?? null,
+          reason,
         });
       } catch (err) {
         log.error("calendar.decline_email_failed", { error: err });
@@ -354,7 +387,7 @@ export async function declineDateRequest(dateRequestId: number): Promise<{
       success: true,
       message: nextDelegate
         ? `Propuesta rechazada. Se ofreció a ${nextDelegate.name}.`
-        : "Propuesta rechazada. No hay otro delegado disponible por ahora.",
+        : "Propuesta rechazada. La solicitud quedó sin delegado disponible.",
     };
   } catch (error) {
     log.error("calendar.date_request_decline_failed", { error });

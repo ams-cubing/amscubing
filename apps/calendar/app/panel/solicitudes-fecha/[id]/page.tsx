@@ -5,6 +5,7 @@ import { CalendarDays, MapPin, User } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 
+import { getReassignmentOptions } from "@/lib/reassignment-candidates";
 import { requireDelegate } from "@/lib/session";
 
 import { getDateRequestById } from "../_lib/queries";
@@ -53,6 +54,18 @@ export default async function DateRequestDetailPage({
     request.proposedDelegateWcaId === wcaId &&
     Boolean(wcaId);
 
+  const reassignmentCandidates = canRespond
+    ? await getReassignmentOptions({
+        stateId: request.stateId,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        excludeWcaIds: [
+          ...(request.declinedDelegateWcaIds ?? []),
+          ...(wcaId ? [wcaId] : []),
+        ],
+      })
+    : [];
+
   const location = [
     request.city,
     request.state?.name,
@@ -93,7 +106,10 @@ export default async function DateRequestDetailPage({
         </div>
 
         {canRespond && (
-          <DateRequestResponseControls dateRequestId={request.id} />
+          <DateRequestResponseControls
+            dateRequestId={request.id}
+            candidates={reassignmentCandidates}
+          />
         )}
 
         {request.status === "accepted" && request.competitionId && (
