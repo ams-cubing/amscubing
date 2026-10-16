@@ -1,8 +1,17 @@
 import "server-only";
 
 import { db } from "@workspace/db";
-import { availability, regions, states, user } from "@workspace/db/schema";
-import { and, eq } from "drizzle-orm";
+import {
+  availability,
+  competitionOrganizers,
+  competitions,
+  regions,
+  states,
+  user,
+} from "@workspace/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
+
+const PENDING_ANNOUNCEMENT_STATUSES = ["open", "reserved", "confirmed"] as const;
 
 export async function getRecentRequestsCount(userId: string) {
   return db.query.dateRequests.findMany({
@@ -12,6 +21,31 @@ export async function getRecentRequestsCount(userId: string) {
         gte(request.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
       ),
   });
+}
+
+/** Competition the user organizes that has not been announced yet. */
+export async function getPendingAnnouncementCompetition(userId: string) {
+  const rows = await db
+    .select({
+      id: competitions.id,
+      name: competitions.name,
+      city: competitions.city,
+      statusPublic: competitions.statusPublic,
+    })
+    .from(competitionOrganizers)
+    .innerJoin(
+      competitions,
+      eq(competitionOrganizers.competitionId, competitions.id),
+    )
+    .where(
+      and(
+        eq(competitionOrganizers.organizerUserId, userId),
+        inArray(competitions.statusPublic, [...PENDING_ANNOUNCEMENT_STATUSES]),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
 }
 
 export async function getDelegatesForState(stateFilter: string) {

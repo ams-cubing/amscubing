@@ -10,9 +10,11 @@ const {
   sendDateRequestDelegateEmail,
   sendDateRequestOrganizerEmail,
   consumeRateLimit,
+  getPendingAnnouncementCompetition,
   requestHeaders,
 } = vi.hoisted(() => ({
   consumeRateLimit: vi.fn(),
+  getPendingAnnouncementCompetition: vi.fn(),
   requestHeaders: { current: new Headers() },
   getSession: vi.fn(),
   transaction: vi.fn(),
@@ -89,6 +91,10 @@ vi.mock("@/lib/notification-urls", () => ({
   })),
 }));
 
+vi.mock("../_lib/queries", () => ({
+  getPendingAnnouncementCompetition,
+}));
+
 import { submitDateRequest } from "@/app/(public)/solicitar-fecha/_actions/submit-date-request";
 
 describe("submitDateRequest", () => {
@@ -104,6 +110,8 @@ describe("submitDateRequest", () => {
     findMany.mockResolvedValue([]);
     consumeRateLimit.mockReset();
     consumeRateLimit.mockResolvedValue({ allowed: true, count: 1 });
+    getPendingAnnouncementCompetition.mockReset();
+    getPendingAnnouncementCompetition.mockResolvedValue(null);
     requestHeaders.current = new Headers();
   });
 
@@ -196,6 +204,38 @@ describe("submitDateRequest", () => {
       message:
         "Has alcanzado el límite de 3 solicitudes por semana. Intenta de nuevo más tarde.",
     });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the organizer already has a competition pending announcement", async () => {
+    getSession.mockResolvedValue({
+      user: {
+        id: "u1",
+        wcaId: "2016ORG01",
+        email: "org@example.com",
+        name: "Org",
+      },
+    });
+    getPendingAnnouncementCompetition.mockResolvedValue({
+      id: 42,
+      name: "Guadalajara Open 2026",
+      city: "Guadalajara",
+      statusPublic: "reserved",
+    });
+
+    const result = await submitDateRequest({
+      city: "Monterrey",
+      stateId: "NL",
+      startDate: new Date(2026, 5, 1),
+      endDate: new Date(2026, 5, 2),
+    });
+
+    expect(result).toEqual({
+      success: false,
+      message:
+        "Ya organizas Guadalajara Open 2026, pendiente de anunciar. Anúnciala o termina ese proceso antes de solicitar otra fecha.",
+    });
+    expect(findMany).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
 
