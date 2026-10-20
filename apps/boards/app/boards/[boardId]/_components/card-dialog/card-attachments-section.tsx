@@ -216,7 +216,15 @@ export function CardAttachmentsSection({
       router.refresh();
     },
     onUploadError: (error) => {
-      toast.error(error.message || "Error al subir el archivo");
+      if (error.message.includes("InvalidFileType")) {
+        toast.error(
+          "Tipo de archivo no permitido. Sube imágenes, PDF, Excel, CSV o Word.",
+        );
+      } else if (error.message.includes("FileSizeMismatch")) {
+        toast.error("El archivo supera el límite de 8 MB.");
+      } else {
+        toast.error(error.message || "Error al subir el archivo");
+      }
     },
   });
 
@@ -244,7 +252,8 @@ export function CardAttachmentsSection({
               onClick={() => {
                 const input = document.createElement("input");
                 input.type = "file";
-                input.accept = "image/*,application/pdf";
+                input.accept =
+                  "image/*,application/pdf,.csv,.xls,.xlsx,.doc,.docx";
                 input.multiple = true;
                 input.onchange = async () => {
                   const files = input.files ? Array.from(input.files) : [];

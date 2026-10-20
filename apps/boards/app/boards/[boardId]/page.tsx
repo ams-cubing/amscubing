@@ -148,7 +148,7 @@ export default async function BoardPage({
         <div className="mx-auto flex w-full max-w-400 flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1 className="min-w-0 text-lg font-semibold tracking-tight break-words">
+              <h1 className="min-w-0 text-lg font-semibold tracking-tight wrap-break-word">
                 {board.name}
               </h1>
               {board.isTemplate && <Badge variant="secondary">Plantilla</Badge>}
