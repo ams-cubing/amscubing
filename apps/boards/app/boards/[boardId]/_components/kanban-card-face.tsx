@@ -97,7 +97,7 @@ export function KanbanCardFace({
         <img
           src={coverUrl}
           alt=""
-          className="aspect-[16/9] w-full object-cover"
+          className="aspect-video w-full object-cover"
         />
       )}
       <div className="p-2.5">

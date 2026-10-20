@@ -15,6 +15,11 @@ import { log } from "@workspace/server/log";
 
 const f = createUploadthing();
 
+const cardAttachmentLimits = {
+  maxFileSize: "8MB",
+  maxFileCount: 4,
+} as const;
+
 async function trackUpload(
   route: "socialFlyer" | "cardAttachment",
   userId: string,
@@ -70,14 +75,15 @@ export const boardsFileRouter = {
     }),
 
   cardAttachment: f({
-    image: {
-      maxFileSize: "8MB",
-      maxFileCount: 4,
-    },
-    pdf: {
-      maxFileSize: "8MB",
-      maxFileCount: 4,
-    },
+    image: cardAttachmentLimits,
+    pdf: cardAttachmentLimits,
+    "text/csv": cardAttachmentLimits,
+    "application/vnd.ms-excel": cardAttachmentLimits,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      cardAttachmentLimits,
+    "application/msword": cardAttachmentLimits,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      cardAttachmentLimits,
   })
     .input(
       z.object({

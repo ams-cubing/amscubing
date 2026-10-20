@@ -169,7 +169,7 @@ export function NotificationInbox({
                     )}
                     <span className="min-w-0 flex-1">
                       <span
-                        className="block text-sm leading-snug break-words line-clamp-3"
+                        className="block text-sm leading-snug wrap-break-word line-clamp-3"
                         title={item.title}
                       >
                         {item.title}
