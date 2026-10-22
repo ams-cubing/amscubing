@@ -16,6 +16,7 @@ vi.mock("./index", () => ({
 
 import {
   countUnreadNotificationsByCard,
+  equipmentNotificationRow,
   formatNotificationTitle,
   markCardNotificationsRead,
   notifyAllUsers,
@@ -57,6 +58,54 @@ describe("formatNotificationTitle", () => {
     expect(formatNotificationTitle("course_staff_changed", {})).toBe(
       "Ya no tienes permisos en Cursos AMS",
     );
+  });
+});
+
+describe("equipmentNotificationRow", () => {
+  const base = {
+    actorId: "lender",
+    calendarUrl: "https://calendario.example/",
+    equipmentLabel: "8 Timer SpeedStack G4",
+  };
+
+  it("sends borrowers without the delegate role to mis-competencias", () => {
+    const row = equipmentNotificationRow({
+      ...base,
+      recipient: { id: "org", role: "user", wcaId: null },
+      type: "equipment_loaned",
+      loanId: 4,
+    });
+    expect(row.title).toBe("Te prestaron equipo: 8 Timer SpeedStack G4");
+    expect(row.href).toBe("https://calendario.example/mis-competencias");
+    expect(row.payload).toEqual({ loanId: 4, sku: undefined });
+  });
+
+  it("sends delegates to the loan or unit in the panel", () => {
+    const delegate = {
+      id: "d1",
+      role: "delegate" as const,
+      wcaId: "2016ROVI01",
+    };
+    expect(
+      equipmentNotificationRow({
+        ...base,
+        recipient: delegate,
+        type: "equipment_returned",
+        loanId: 4,
+      }).href,
+    ).toBe("https://calendario.example/panel/equipo/prestamos/4");
+    expect(
+      equipmentNotificationRow({
+        ...base,
+        recipient: delegate,
+        type: "equipment_transferred",
+        equipmentLabel: "DS3-2318",
+        sku: "DS3-2318",
+      }),
+    ).toMatchObject({
+      title: "Ahora eres guardián de: DS3-2318",
+      href: "https://calendario.example/panel/equipo/DS3-2318",
+    });
   });
 });
 

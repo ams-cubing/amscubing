@@ -75,6 +75,14 @@ Las apps corren con cuotas limitadas de Vercel (CDN Requests, Fluid Active CPU, 
 - Selector de categorías del ranking: usa `@cubing/icons` con clases `cubing-icon event-{eventId}` para mostrar iconos oficiales de eventos WCA en lugar de botones largos con texto.
 - Assets del rediseño en `apps/web/public/source` y `apps/web/public/fonts`.
 
+## Inventario de equipo
+
+- Vive en el panel de delegado del calendario: `apps/calendar/app/panel/equipo` (inventario, `[sku]`, `prestamos`, `adquisiciones`, `actividad`). Cualquier delegado puede editar o mover equipo; solo se presta a usuarios con cuenta (`equipment_loan.borrower_user_id`).
+- Esquema en `packages/db/src/schema/equipment.ts`. Timers y displays son `serialized` (una fila por unidad en `equipment_item` con SKU); accesorios son `bulk` (cantidad por guardián en `equipment_stock`, lo prestado se calcula de los renglones abiertos de préstamo).
+- SKU: `{PREFIJO}-{AA}{NN}` (p. ej. `DS3-2301`), año de la fecha de adquisición y consecutivo por prefijo y año. Se reserva con `nextSkus` (contador `equipment_sku_counter` que nunca baja del SKU más alto guardado). Los códigos de la hoja se conservan al importar.
+- Toda mutación pasa por los helpers de `@workspace/db/equipment` dentro de una transacción para que escriban su fila en `equipment_event` (quién, qué, cuándo). No hacer `insert`/`update` directos a tablas de equipo desde las apps. Etiquetas y tipos para componentes cliente: `@workspace/db/equipment-labels`.
+- Importar la hoja: `pnpm --filter @workspace/db db:import-equipment <carpeta> --actor <WCA ID> [--dry-run]` con `types.csv`, `units.csv`, `stock.csv` y `acquisitions.csv` (formatos en `--help`). Es idempotente.
+
 ## Fuentes externas verificadas
 
 - WordPress actual: `https://amscubing.org/`.

@@ -302,6 +302,13 @@
       "when": 1792123081954,
       "tag": "0042_smiling_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792638964541,
+      "tag": "0043_equipment_inventory",
+      "breakpoints": true
     }
   ]
 }

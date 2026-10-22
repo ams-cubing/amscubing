@@ -76,6 +76,7 @@ export function formatNotificationTitle(
     postTitle?: string;
     courseTitle?: string;
     roleLabel?: string;
+    equipmentLabel?: string;
   },
 ) {
   const post = ctx.postTitle?.trim() || "una entrada";
@@ -84,6 +85,7 @@ export function formatNotificationTitle(
   const board = ctx.boardName?.trim() || "un tablero";
   const actor = ctx.actorName?.trim() || "Alguien";
   const city = competitionLabel(ctx);
+  const equipment = ctx.equipmentLabel?.trim() || "equipo de competencia";
 
   switch (type) {
     case "card_assigned":
@@ -136,6 +138,12 @@ export function formatNotificationTitle(
       return `¡Completaste «${course}»!`;
     case "course_published":
       return `Nuevo curso: «${course}»`;
+    case "equipment_loaned":
+      return `Te prestaron equipo: ${equipment}`;
+    case "equipment_returned":
+      return `Se registró la devolución de equipo: ${equipment}`;
+    case "equipment_transferred":
+      return `Ahora eres guardián de: ${equipment}`;
   }
 }
 
@@ -274,6 +282,42 @@ export function dateRequestNotificationRow(opts: {
       city: opts.city,
       statusLabel: opts.statusLabel,
     },
+  };
+}
+
+/** Delegates land on the panel; borrowers without the role see their loans in mis-competencias. */
+export function equipmentNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  type: Extract<
+    NotificationType,
+    "equipment_loaned" | "equipment_returned" | "equipment_transferred"
+  >;
+  calendarUrl: string;
+  equipmentLabel: string;
+  loanId?: number;
+  sku?: string;
+}): NewNotificationRow {
+  const calendar = opts.calendarUrl.replace(/\/$/, "");
+  let href = `${calendar}/mis-competencias`;
+  if (opts.recipient.role === "delegate") {
+    if (opts.loanId != null) {
+      href = `${calendar}/panel/equipo/prestamos/${opts.loanId}`;
+    } else if (opts.sku) {
+      href = `${calendar}/panel/equipo/${encodeURIComponent(opts.sku)}`;
+    } else {
+      href = `${calendar}/panel/equipo`;
+    }
+  }
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: opts.type,
+    title: formatNotificationTitle(opts.type, {
+      equipmentLabel: opts.equipmentLabel,
+    }),
+    href,
+    payload: { loanId: opts.loanId, sku: opts.sku },
   };
 }
 
