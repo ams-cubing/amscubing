@@ -29,7 +29,9 @@ import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 
 export type EquipmentCardData = {
   sheet: CompetitionEquipmentSheet;
+  /** Availability counts only equipment held by the competition's delegates. */
   types: RequestableEquipmentType[];
+  hasDelegates: boolean;
 };
 
 export type EquipmentCardResult =
@@ -55,11 +57,15 @@ async function equipmentCardCompetition(boardId: number, cardId: number) {
 async function loadCardData(
   competitionId: number,
 ): Promise<EquipmentCardData | null> {
-  const [sheet, types] = await Promise.all([
+  const [sheet, delegates] = await Promise.all([
     getCompetitionEquipmentSheet(db, competitionId),
-    listRequestableEquipmentTypes(db),
+    competitionDelegatesOnly(db, competitionId),
   ]);
-  return sheet ? { sheet, types } : null;
+  if (!sheet) return null;
+  const types = await listRequestableEquipmentTypes(db, {
+    guardianUserIds: delegates.map((delegate) => delegate.id),
+  });
+  return { sheet, types, hasDelegates: delegates.length > 0 };
 }
 
 /** Read-only: also works on archived boards. */

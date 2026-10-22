@@ -2093,15 +2093,30 @@ export type RequestableEquipmentType = {
   available: number;
 };
 
-/** Active types with how many AMS can currently lend, for the request form. */
+/**
+ * Active types with how many can currently be lent, for the request form.
+ * With `guardianUserIds`, only equipment held by those guardians counts.
+ */
 export async function listRequestableEquipmentTypes(
   dbx: EquipmentDb,
+  filter: { guardianUserIds?: readonly string[] } = {},
 ): Promise<RequestableEquipmentType[]> {
-  const [types, items, stock] = await Promise.all([
+  const [types, allItems, allStock] = await Promise.all([
     listEquipmentTypes(dbx),
     listEquipmentItems(dbx),
     listEquipmentStock(dbx),
   ]);
+  const guardians = filter.guardianUserIds
+    ? new Set(filter.guardianUserIds)
+    : null;
+  const items = guardians
+    ? allItems.filter(
+        (item) => item.guardian && guardians.has(item.guardian.id),
+      )
+    : allItems;
+  const stock = guardians
+    ? allStock.filter((entry) => guardians.has(entry.guardian.id))
+    : allStock;
   return summarizeInventory(types, items, stock).map((row) => ({
     id: row.type.id,
     name: row.type.name,

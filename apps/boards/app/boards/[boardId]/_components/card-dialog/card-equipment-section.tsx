@@ -120,7 +120,7 @@ export function CardEquipmentSection({
     );
   }
 
-  const { sheet, types } = data;
+  const { sheet, types, hasDelegates } = data;
   const request = sheet.request;
   const editable =
     !readOnly &&
@@ -178,6 +178,13 @@ export function CardEquipmentSection({
 
       {editable ? (
         <div className="space-y-4">
+          {visibleTypes.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {hasDelegates
+                ? "Los delegados de la competencia no tienen equipo disponible a su cargo."
+                : "La competencia aún no tiene delegados confirmados. Cuando los tenga verás aquí el equipo que tienen a su cargo."}
+            </p>
+          ) : null}
           {CATEGORY_ORDER.map((category) => {
             const group = visibleTypes.filter(
               (type) => type.category === category,
@@ -200,7 +207,7 @@ export function CardEquipmentSection({
                       >
                         {type.name}
                         <span className="text-muted-foreground block text-xs">
-                          {type.available} disponibles en AMS
+                          {type.available} disponibles con los delegados
                         </span>
                       </Label>
                       <Input
