@@ -20,12 +20,14 @@ type AddWCAUserDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUserAdded: (user: OrganizerOption) => void;
+  noun?: string;
 };
 
 export function AddWCAUserDialog({
   open,
   onOpenChange,
   onUserAdded,
+  noun = "organizador",
 }: AddWCAUserDialogProps) {
   const [wcaId, setWcaId] = useState("");
   const [pending, startTransition] = useTransition();
@@ -63,9 +65,10 @@ export function AddWCAUserDialog({
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Agregar organizador desde WCA</DialogTitle>
+            <DialogTitle>Agregar {noun} desde la WCA</DialogTitle>
             <DialogDescription>
-              Ingresa el WCA ID del organizador para agregarlo al sistema.
+              Ingresa su WCA ID. Si todavía no tiene cuenta, se crea una que
+              queda vinculada la primera vez que inicie sesión con la WCA.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

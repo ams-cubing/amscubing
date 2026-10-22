@@ -155,10 +155,12 @@ export function LoanForm({
               selectedOrganizers={[]}
               onSelect={setBorrower}
               placeholder="Buscar por nombre, WCA ID o correo"
+              noun={{ singular: "persona", plural: "personas" }}
             />
           )}
           <p className="text-muted-foreground text-xs">
-            Debe tener cuenta. Si no aparece, agrégalo con su WCA ID.
+            Si no aparece, agrégalo con su WCA ID aunque nunca haya iniciado
+            sesión.
           </p>
         </div>
 
