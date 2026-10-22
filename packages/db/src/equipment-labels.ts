@@ -74,6 +74,12 @@ export const EQUIPMENT_REQUEST_STATUS_LABELS: Record<
   cancelled: "Cancelada",
 };
 
+/** What organizers request from the board; delegates add the rest when confirming. */
+export const ORGANIZER_REQUEST_CATEGORIES: readonly EquipmentCategory[] = [
+  "timer",
+  "display",
+];
+
 /** Organizers can still change the request in these states. */
 export const EDITABLE_REQUEST_STATUSES: readonly EquipmentRequestStatus[] = [
   "draft",

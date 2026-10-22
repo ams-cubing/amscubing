@@ -9,7 +9,7 @@ import {
   EDITABLE_REQUEST_STATUSES,
   EQUIPMENT_CATEGORY_LABELS,
   EQUIPMENT_REQUEST_STATUS_LABELS,
-  type EquipmentCategory,
+  ORGANIZER_REQUEST_CATEGORIES,
 } from "@workspace/db/equipment-labels";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -27,13 +27,6 @@ import type { BoardDetail } from "../../_lib/types";
 export function isEquipmentCard(title: string) {
   return title.trim() === EQUIPMENT_CARD_TITLE;
 }
-
-const CATEGORY_ORDER: EquipmentCategory[] = [
-  "timer",
-  "display",
-  "accessory",
-  "other",
-];
 
 function quantitiesFrom(data: EquipmentCardData | null) {
   const map: Record<number, string> = {};
@@ -137,7 +130,10 @@ export function CardEquipmentSection({
         typeId: Number(typeId),
         quantity: Number(value || 0),
       }))
-      .filter((line) => line.quantity > 0);
+      .filter(
+        (line) =>
+          line.quantity > 0 && types.some((type) => type.id === line.typeId),
+      );
     if (lines.some((line) => !Number.isInteger(line.quantity))) {
       toast.error("Las cantidades deben ser números enteros");
       return;
@@ -179,8 +175,9 @@ export function CardEquipmentSection({
         <div>
           <h3 className="text-sm font-semibold">Solicitud de equipo</h3>
           <p className="text-muted-foreground mt-1 text-xs leading-5">
-            Indica cuánto equipo necesita la competencia. El delegado revisa la
-            solicitud y confirma los SKUs que llevará a la competencia.
+            Indica cuántos timers y displays necesita la competencia. El
+            delegado revisa la solicitud, agrega el resto del equipo y confirma
+            los SKUs que llevará.
           </p>
         </div>
         {request ? (
@@ -199,7 +196,7 @@ export function CardEquipmentSection({
                 : "La competencia aún no tiene delegados confirmados. Cuando los tenga verás aquí el equipo que tienen a su cargo."}
             </p>
           ) : null}
-          {CATEGORY_ORDER.map((category) => {
+          {ORGANIZER_REQUEST_CATEGORIES.map((category) => {
             const group = visibleTypes.filter(
               (type) => type.category === category,
             );

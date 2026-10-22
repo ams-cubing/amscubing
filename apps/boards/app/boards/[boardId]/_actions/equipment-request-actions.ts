@@ -9,6 +9,7 @@ import {
   EquipmentError,
   getCompetitionEquipmentSheet,
   listRequestableEquipmentTypes,
+  ORGANIZER_REQUEST_CATEGORIES,
   saveEquipmentRequest,
   type CompetitionEquipmentSheet,
   type RequestableEquipmentType,
@@ -65,7 +66,13 @@ async function loadCardData(
   const types = await listRequestableEquipmentTypes(db, {
     guardianUserIds: delegates.map((delegate) => delegate.id),
   });
-  return { sheet, types, hasDelegates: delegates.length > 0 };
+  return {
+    sheet,
+    types: types.filter((type) =>
+      ORGANIZER_REQUEST_CATEGORIES.includes(type.category),
+    ),
+    hasDelegates: delegates.length > 0,
+  };
 }
 
 /** Read-only: also works on archived boards. */
@@ -142,6 +149,13 @@ export async function saveEquipmentRequestFromCard(
   );
   for (const line of input.lines) {
     const type = available.get(line.typeId);
+    if (type && !ORGANIZER_REQUEST_CATEGORIES.includes(type.category)) {
+      return {
+        ok: false,
+        message:
+          "Los organizadores solo solicitan timers y displays; el delegado agrega lo demás",
+      };
+    }
     if (line.quantity > (type?.available ?? 0)) {
       return {
         ok: false,

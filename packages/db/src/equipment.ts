@@ -41,6 +41,7 @@ import {
   EDITABLE_REQUEST_STATUSES,
   EQUIPMENT_STATUS_LABELS,
   LENDABLE_STATUSES,
+  ORGANIZER_REQUEST_CATEGORIES,
   REMOVAL_KINDS,
   RETURN_STATUSES,
   type EquipmentAcquisitionKind,
@@ -1430,6 +1431,11 @@ export async function saveEquipmentRequest(
     if (type.obsoleteAt) {
       throw new EquipmentError(
         `${type.name} es obsoleto; quítalo de la solicitud`,
+      );
+    }
+    if (!ORGANIZER_REQUEST_CATEGORIES.includes(type.category)) {
+      throw new EquipmentError(
+        "Los organizadores solo solicitan timers y displays; el delegado agrega lo demás",
       );
     }
   }
