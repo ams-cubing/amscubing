@@ -86,7 +86,7 @@ export function KanbanCardFace({
         }
       }}
       className={cn(
-        "w-full overflow-hidden rounded-md border bg-card text-left shadow-xs transition hover:border-foreground/20",
+        "w-full shrink-0 overflow-hidden rounded-md border bg-card text-left shadow-xs transition hover:border-foreground/20",
         onOpen && "cursor-pointer",
         !relevant && "opacity-50",
         className,
