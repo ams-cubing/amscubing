@@ -34,13 +34,22 @@ const ALL = "";
 export function ItemsTable({
   items,
   guardians,
+  initialGuardianId,
+  currentUserId,
 }: {
   items: EquipmentItemRow[];
   guardians: EquipmentPerson[];
+  initialGuardianId: string | null;
+  currentUserId: string | null;
 }) {
   const [query, setQuery] = useState("");
   const [typeName, setTypeName] = useState(ALL);
-  const [guardianId, setGuardianId] = useState(ALL);
+  const [guardianId, setGuardianId] = useState(() =>
+    initialGuardianId &&
+    items.some((item) => item.guardian?.id === initialGuardianId)
+      ? initialGuardianId
+      : ALL,
+  );
   const [status, setStatus] = useState(ALL);
   const [source, setSource] = useState(ALL);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -66,18 +75,24 @@ export function ItemsTable({
 
   const filtered = useMemo(() => {
     const q = query.trim().toUpperCase();
-    return items.filter(
-      (item) =>
-        (!q || item.sku.includes(q) || item.notes?.toUpperCase().includes(q)) &&
-        (!typeName || item.typeName === typeName) &&
-        (!guardianId || item.guardian?.id === guardianId) &&
-        (!status ||
-          (status === "on_loan"
-            ? item.onLoanId != null
-            : item.status === status)) &&
-        (!source || item.source === source),
-    );
-  }, [items, query, typeName, guardianId, status, source]);
+    const isOwn = (item: EquipmentItemRow) =>
+      currentUserId != null && item.guardian?.id === currentUserId;
+    return items
+      .filter(
+        (item) =>
+          (!q ||
+            item.sku.includes(q) ||
+            item.notes?.toUpperCase().includes(q)) &&
+          (!typeName || item.typeName === typeName) &&
+          (!guardianId || item.guardian?.id === guardianId) &&
+          (!status ||
+            (status === "on_loan"
+              ? item.onLoanId != null
+              : item.status === status)) &&
+          (!source || item.source === source),
+      )
+      .sort((a, b) => Number(isOwn(b)) - Number(isOwn(a)));
+  }, [items, query, typeName, guardianId, status, source, currentUserId]);
 
   const toggle = (id: number) =>
     setSelected((prev) => {

@@ -1,3 +1,4 @@
+import { Badge } from "@workspace/ui/components/badge";
 import {
   Table,
   TableBody,
@@ -8,9 +9,49 @@ import {
 } from "@workspace/ui/components/table";
 import type { InventorySummaryRow } from "@workspace/db/equipment";
 
-function Count({ value, tone }: { value: number; tone?: string }) {
-  if (value === 0) return <span className="text-muted-foreground">0</span>;
-  return <span className={tone}>{value}</span>;
+import {
+  LOAN_BADGE_CLASSES,
+  STATUS_BADGE_CLASSES,
+} from "@/lib/equipment-format";
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function Unavailable({ row }: { row: InventorySummaryRow }) {
+  const parts = [
+    {
+      count: row.onLoan,
+      label: plural(row.onLoan, "prestado"),
+      className: LOAN_BADGE_CLASSES.active,
+    },
+    {
+      count: row.faulty,
+      label: plural(row.faulty, "defectuoso"),
+      className: STATUS_BADGE_CLASSES.faulty,
+    },
+    {
+      count: row.inRepair,
+      label: `${row.inRepair} en reparación`,
+      className: STATUS_BADGE_CLASSES.in_repair,
+    },
+    {
+      count: row.lost,
+      label: plural(row.lost, "extraviado"),
+      className: STATUS_BADGE_CLASSES.lost,
+    },
+  ].filter((part) => part.count > 0);
+
+  if (parts.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {parts.map((part) => (
+        <Badge key={part.label} variant="outline" className={part.className}>
+          {part.label}
+        </Badge>
+      ))}
+    </div>
+  );
 }
 
 export function SummaryTable({ rows }: { rows: InventorySummaryRow[] }) {
@@ -30,10 +71,7 @@ export function SummaryTable({ rows }: { rows: InventorySummaryRow[] }) {
             <TableHead>Equipo</TableHead>
             <TableHead className="text-right">Total</TableHead>
             <TableHead className="text-right">Disponibles</TableHead>
-            <TableHead className="text-right">Prestados</TableHead>
-            <TableHead className="text-right">Defectuosos</TableHead>
-            <TableHead className="text-right">En reparación</TableHead>
-            <TableHead className="text-right">Extraviados</TableHead>
+            <TableHead>Fuera de stock</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -52,19 +90,14 @@ export function SummaryTable({ rows }: { rows: InventorySummaryRow[] }) {
                 {row.total}
               </TableCell>
               <TableCell className="text-right">
-                <Count value={row.available} tone="text-emerald-700" />
+                {row.available === 0 ? (
+                  <span className="text-muted-foreground">0</span>
+                ) : (
+                  <span className="text-emerald-700">{row.available}</span>
+                )}
               </TableCell>
-              <TableCell className="text-right">
-                <Count value={row.onLoan} tone="text-amber-700" />
-              </TableCell>
-              <TableCell className="text-right">
-                <Count value={row.faulty} tone="text-amber-700" />
-              </TableCell>
-              <TableCell className="text-right">
-                <Count value={row.inRepair} tone="text-sky-700" />
-              </TableCell>
-              <TableCell className="text-right">
-                <Count value={row.lost} tone="text-red-700" />
+              <TableCell>
+                <Unavailable row={row} />
               </TableCell>
             </TableRow>
           ))}

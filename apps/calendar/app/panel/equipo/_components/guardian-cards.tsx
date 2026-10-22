@@ -1,11 +1,14 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { Badge } from "@workspace/ui/components/badge";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { cn } from "@workspace/ui/lib/utils";
 import type {
   EquipmentItemRow,
   EquipmentPerson,
@@ -29,9 +32,11 @@ function groupItemsByType(items: EquipmentItemRow[]) {
 export function GuardianCards({
   groups,
   guardians,
+  currentUserId,
 }: {
   groups: GuardianInventory[];
   guardians: EquipmentPerson[];
+  currentUserId: string | null;
 }) {
   if (groups.length === 0) {
     return (
@@ -44,11 +49,32 @@ export function GuardianCards({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {groups.map(({ guardian, items, stock }) => (
-        <Card key={guardian.id}>
+        <Card
+          key={guardian.id}
+          className={cn(
+            guardian.id === currentUserId && "ring-primary/40 ring-1",
+          )}
+        >
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="flex flex-wrap items-center gap-2">
               <Person person={guardian} size={40} />
+              {guardian.id === currentUserId ? (
+                <Badge variant="secondary">Tu equipo</Badge>
+              ) : null}
             </CardTitle>
+            {items.length > 0 ? (
+              <CardAction>
+                <Link
+                  href={
+                    `/panel/equipo?guardian=${encodeURIComponent(guardian.id)}` as Route
+                  }
+                  prefetch={false}
+                  className="text-muted-foreground hover:text-foreground text-sm hover:underline"
+                >
+                  Ver unidades
+                </Link>
+              </CardAction>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             {items.length > 0 ? (

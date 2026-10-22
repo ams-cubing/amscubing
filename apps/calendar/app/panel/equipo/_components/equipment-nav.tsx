@@ -7,6 +7,7 @@ import { cn } from "@workspace/ui/lib/utils";
 
 const LINKS: { name: string; href: Route }[] = [
   { name: "Inventario", href: "/panel/equipo" },
+  { name: "Guardianes", href: "/panel/equipo/guardianes" },
   { name: "Préstamos", href: "/panel/equipo/prestamos" },
   { name: "Adquisiciones", href: "/panel/equipo/adquisiciones" },
   { name: "Actividad", href: "/panel/equipo/actividad" },
