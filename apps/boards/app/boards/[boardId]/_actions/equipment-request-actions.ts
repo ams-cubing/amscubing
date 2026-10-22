@@ -132,6 +132,24 @@ export async function saveEquipmentRequestFromCard(
     };
   }
 
+  const delegates = await competitionDelegatesOnly(db, competitionId);
+  const available = new Map(
+    (
+      await listRequestableEquipmentTypes(db, {
+        guardianUserIds: delegates.map((delegate) => delegate.id),
+      })
+    ).map((type) => [type.id, type]),
+  );
+  for (const line of input.lines) {
+    const type = available.get(line.typeId);
+    if (line.quantity > (type?.available ?? 0)) {
+      return {
+        ok: false,
+        message: `Solo hay ${type?.available ?? 0} ${type?.name ?? "equipo"} disponibles con los delegados`,
+      };
+    }
+  }
+
   try {
     const result = await db.transaction(async (tx) => {
       const saved = await saveEquipmentRequest(tx, {

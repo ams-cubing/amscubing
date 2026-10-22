@@ -43,32 +43,15 @@ export type EquipmentSheetRow = {
 export const EQUIPMENT_SHEET_CLAUSE =
   "El cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban. Marca cada renglón al entregar y al devolver; anota en Observaciones cualquier faltante o daño.";
 
-/** Confirmed units once the delegate confirms; otherwise the requested quantities. */
-export function equipmentSheetRows(sheet: EquipmentSheetInput): {
-  rows: EquipmentSheetRow[];
-  pending: boolean;
-} {
-  if (sheet.confirmation && sheet.confirmation.lines.length > 0) {
-    return {
-      pending: false,
-      rows: sheet.confirmation.lines.map((line) => ({
-        equipment: line.typeName,
-        identifier: line.sku ?? `${line.quantity} pzas.`,
-        carrier: line.guardian.name,
-      })),
-    };
-  }
-  if (sheet.request && sheet.request.status !== "cancelled") {
-    return {
-      pending: true,
-      rows: sheet.request.lines.map((line) => ({
-        equipment: line.typeName,
-        identifier: `${line.quantity} pzas.`,
-        carrier: "Por confirmar",
-      })),
-    };
-  }
-  return { pending: false, rows: [] };
+/** The sheet lists only what the delegate confirmed. */
+export function equipmentSheetRows(
+  sheet: EquipmentSheetInput,
+): EquipmentSheetRow[] {
+  return (sheet.confirmation?.lines ?? []).map((line) => ({
+    equipment: line.typeName,
+    identifier: line.sku ?? `${line.quantity} pzas.`,
+    carrier: line.guardian.name,
+  }));
 }
 
 export function equipmentSheetFolio(sheet: EquipmentSheetInput) {
@@ -323,19 +306,12 @@ export async function createEquipmentSheetPdf(
   );
   doc.y = peopleY - 24;
 
-  const { rows, pending } = equipmentSheetRows(sheet);
-  if (pending) {
-    doc.moveDown(4);
-    doc.paragraph(
-      "Pendiente de confirmar SKUs: el delegado aún no confirma el equipo, así que la lista refleja la solicitud de los organizadores.",
-      { size: 8.5, font: doc.fonts.bold, color: PDF_COLORS.red },
-    );
-  }
+  const rows = equipmentSheetRows(sheet);
 
   doc.moveDown(10);
   if (rows.length === 0) {
     doc.paragraph(
-      "Aún no hay equipo solicitado ni confirmado para esta competencia.",
+      "El delegado aún no confirma el equipo de esta competencia.",
       {
         size: 10,
         color: PDF_COLORS.muted,

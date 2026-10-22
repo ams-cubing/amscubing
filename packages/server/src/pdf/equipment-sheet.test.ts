@@ -57,39 +57,17 @@ const confirmation = (
 });
 
 describe("equipmentSheetRows", () => {
-  it("lists requested quantities until the delegate confirms", () => {
-    const { rows, pending } = equipmentSheetRows(sheet());
-    expect(pending).toBe(true);
-    expect(rows).toEqual([
-      {
-        equipment: "Timer SpeedStack G4",
-        identifier: "8 pzas.",
-        carrier: "Por confirmar",
-      },
-      {
-        equipment: "Display SpeedStack G3",
-        identifier: "8 pzas.",
-        carrier: "Por confirmar",
-      },
-    ]);
+  it("lists nothing until the delegate confirms", () => {
+    expect(equipmentSheetRows(sheet())).toEqual([]);
   });
 
   it("lists the confirmed SKUs and who brings them", () => {
-    const { rows, pending } = equipmentSheetRows(
-      sheet({ confirmation: confirmation(2) }),
-    );
-    expect(pending).toBe(false);
+    const rows = equipmentSheetRows(sheet({ confirmation: confirmation(2) }));
     expect(rows.map((row) => [row.identifier, row.carrier])).toEqual([
       ["SG4-2301", "Leonardo Sánchez"],
       ["SG4-2302", "Leonardo Sánchez"],
       ["12 pzas.", "Areli Gordillo"],
     ]);
-  });
-
-  it("ignores cancelled requests", () => {
-    const cancelled = sheet();
-    cancelled.request!.status = "cancelled";
-    expect(equipmentSheetRows(cancelled)).toEqual({ rows: [], pending: false });
   });
 });
 

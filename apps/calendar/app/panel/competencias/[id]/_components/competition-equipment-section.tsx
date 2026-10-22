@@ -139,7 +139,7 @@ export async function CompetitionEquipmentSection({
             </Link>
           </Button>
         ) : null}
-        {request ? (
+        {confirmation ? (
           <Button asChild variant="outline" size="sm">
             <a
               href={`/panel/competencias/${competitionId}/equipo/ficha`}

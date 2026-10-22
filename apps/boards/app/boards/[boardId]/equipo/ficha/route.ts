@@ -41,6 +41,11 @@ export async function GET(
       status: 404,
     });
   }
+  if (!sheet.confirmation) {
+    return new Response("El delegado aún no confirma el equipo", {
+      status: 409,
+    });
+  }
 
   try {
     const bytes = await createEquipmentSheetPdf(sheet);

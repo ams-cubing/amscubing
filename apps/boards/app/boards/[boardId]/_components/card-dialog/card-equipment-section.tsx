@@ -142,6 +142,18 @@ export function CardEquipmentSection({
       toast.error("Las cantidades deben ser números enteros");
       return;
     }
+    const tooMany = lines
+      .map((line) => ({
+        line,
+        type: types.find((type) => type.id === line.typeId),
+      }))
+      .find(({ line, type }) => line.quantity > (type?.available ?? 0));
+    if (tooMany) {
+      toast.error(
+        `Solo hay ${tooMany.type?.available ?? 0} ${tooMany.type?.name ?? "equipo"} disponibles con los delegados`,
+      );
+      return;
+    }
     startTransition(async () => {
       const result = await saveEquipmentRequestFromCard({
         boardId: board.id,
@@ -215,17 +227,29 @@ export function CardEquipmentSection({
                         type="number"
                         inputMode="numeric"
                         min={0}
-                        max={999}
+                        max={type.available}
                         className="w-24 shrink-0"
                         value={quantities[type.id] ?? ""}
                         placeholder="0"
                         disabled={pending}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const value = e.target.value;
                           setQuantities((prev) => ({
                             ...prev,
-                            [type.id]: e.target.value,
-                          }))
-                        }
+                            [type.id]:
+                              value === ""
+                                ? ""
+                                : String(
+                                    Math.min(
+                                      type.available,
+                                      Math.max(
+                                        0,
+                                        Math.trunc(Number(value) || 0),
+                                      ),
+                                    ),
+                                  ),
+                          }));
+                        }}
                       />
                     </div>
                   ))}
@@ -317,7 +341,7 @@ export function CardEquipmentSection({
         </div>
       ) : null}
 
-      {request ? (
+      {confirmation ? (
         <Button type="button" size="sm" variant="outline" asChild>
           <a
             href={`/boards/${board.id}/equipo/ficha`}

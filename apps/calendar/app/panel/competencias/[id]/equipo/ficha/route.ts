@@ -26,6 +26,11 @@ export async function GET(
   if (!sheet) {
     return new Response("Competencia no encontrada", { status: 404 });
   }
+  if (!sheet.confirmation) {
+    return new Response("Aún no confirmas el equipo de esta competencia", {
+      status: 409,
+    });
+  }
 
   try {
     const bytes = await createEquipmentSheetPdf(sheet);
