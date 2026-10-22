@@ -10,7 +10,11 @@ export function CancelRequestForm({ requestId }: { requestId: number }) {
     <ActionForm
       action={cancelEquipmentRequestAction}
       onSubmit={(event) => {
-        if (!window.confirm("¿Cancelar la solicitud de equipo?")) {
+        if (
+          !window.confirm(
+            "¿Cancelar la solicitud de equipo? Si ya está confirmada, el equipo reservado queda libre.",
+          )
+        ) {
           event.preventDefault();
         }
       }}

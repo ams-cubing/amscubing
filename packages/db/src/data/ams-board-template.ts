@@ -224,7 +224,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     list: "Por Hacer",
     phases: ["post_announce"],
     description:
-      "**Objetivo:**  \nAsegurar el buen uso y cuidado del equipo que los delegados llevan a las competencias.\n\n**Pasos:**\n\n1. Llena en esta tarjeta la solicitud de equipo con las cantidades que requiere la competencia y envíala al delegado.\n2. El delegado revisará la solicitud con los organizadores, acordará los detalles y registrará el préstamo con el equipo asignado.\n3. Una vez confirmado, descarga desde esta tarjeta la ficha de equipo (PDF) e imprímela para registrar la entrega y devolución del mismo durante la competencia.\n\n**Nota:**  \nEl cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban.",
+      "**Objetivo:**  \nAsegurar el buen uso y cuidado del equipo que los delegados llevan a las competencias.\n\n**Pasos:**\n\n1. Llena en esta tarjeta la solicitud de equipo con las cantidades que requiere la competencia y envíala al delegado.\n2. El delegado revisará la solicitud con los organizadores, acordará los detalles y confirmará el equipo que llevará a la competencia.\n3. Una vez confirmado, descarga desde esta tarjeta la ficha de equipo (PDF) e imprímela para registrar la entrega y devolución del mismo durante la competencia.\n\n**Nota:**  \nEl cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban.",
   },
   {
     title: "Correo Final y Encuesta de Calidad",

@@ -32,49 +32,57 @@ function sheet(
         { typeName: "Display SpeedStack G3", quantity: 8 },
       ],
     },
-    loans: [],
+    confirmation: null,
     ...overrides,
   };
 }
 
-const loan = (count: number): EquipmentSheetInput["loans"][number] => ({
-  id: 11,
-  lentBy: { name: "Leonardo Sánchez" },
+const confirmation = (
+  count: number,
+): NonNullable<EquipmentSheetInput["confirmation"]> => ({
   lines: [
     ...Array.from({ length: count }, (_, i) => ({
       typeName: "Timer SpeedStack G4",
       sku: `SG4-23${String(i + 1).padStart(2, "0")}`,
       quantity: 1,
+      guardian: { name: "Leonardo Sánchez" },
     })),
-    { typeName: "Cronómetro de mano", sku: null, quantity: 12 },
+    {
+      typeName: "Cronómetro de mano",
+      sku: null,
+      quantity: 12,
+      guardian: { name: "Areli Gordillo" },
+    },
   ],
 });
 
 describe("equipmentSheetRows", () => {
-  it("lists requested quantities while no loan exists", () => {
+  it("lists requested quantities until the delegate confirms", () => {
     const { rows, pending } = equipmentSheetRows(sheet());
     expect(pending).toBe(true);
     expect(rows).toEqual([
       {
         equipment: "Timer SpeedStack G4",
         identifier: "8 pzas.",
-        lender: "Por asignar",
+        carrier: "Por confirmar",
       },
       {
         equipment: "Display SpeedStack G3",
         identifier: "8 pzas.",
-        lender: "Por asignar",
+        carrier: "Por confirmar",
       },
     ]);
   });
 
-  it("prefers the loaned SKUs once the delegate lends", () => {
-    const { rows, pending } = equipmentSheetRows(sheet({ loans: [loan(2)] }));
+  it("lists the confirmed SKUs and who brings them", () => {
+    const { rows, pending } = equipmentSheetRows(
+      sheet({ confirmation: confirmation(2) }),
+    );
     expect(pending).toBe(false);
-    expect(rows.map((row) => row.identifier)).toEqual([
-      "SG4-2301",
-      "SG4-2302",
-      "12 pzas.",
+    expect(rows.map((row) => [row.identifier, row.carrier])).toEqual([
+      ["SG4-2301", "Leonardo Sánchez"],
+      ["SG4-2302", "Leonardo Sánchez"],
+      ["12 pzas.", "Areli Gordillo"],
     ]);
   });
 
@@ -103,7 +111,9 @@ describe("createEquipmentSheetPdf", () => {
   });
 
   it("paginates long lists and keeps the letterhead on every page", async () => {
-    const bytes = await createEquipmentSheetPdf(sheet({ loans: [loan(60)] }));
+    const bytes = await createEquipmentSheetPdf(
+      sheet({ confirmation: confirmation(60) }),
+    );
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBeGreaterThan(2);
     for (const page of pdf.getPages()) {

@@ -1,7 +1,8 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { FileDown, PackagePlus, Wrench } from "lucide-react";
+import { FileDown, PackageCheck, Wrench } from "lucide-react";
 
+import { todayInMexico } from "@workspace/db/equipment";
 import {
   EQUIPMENT_REQUEST_STATUS_LABELS,
   type EquipmentRequestStatus,
@@ -12,7 +13,6 @@ import { cn } from "@workspace/ui/lib/utils";
 
 import { formatEquipmentDateTime } from "@/lib/equipment-format";
 
-import { LoanStatusBadge } from "../../../equipo/_components/badges";
 import { CancelRequestForm } from "../../../equipo/_components/cancel-request-form";
 import { getCompetitionEquipment } from "../../../equipo/_lib/queries";
 
@@ -30,8 +30,12 @@ export async function CompetitionEquipmentSection({
 }) {
   const sheet = await getCompetitionEquipment(competitionId);
   if (!sheet) return null;
-  const { request, loans } = sheet;
-  const canLend = request && request.status !== "cancelled";
+  const { request, confirmation } = sheet;
+  const ended = sheet.competition.endDate < todayInMexico();
+  const canConfirm =
+    !ended &&
+    request &&
+    (request.status === "submitted" || request.status === "fulfilled");
 
   return (
     <section className="bg-card space-y-4 rounded-lg border p-4 shadow-sm md:p-5">
@@ -43,7 +47,8 @@ export async function CompetitionEquipmentSection({
           </h2>
           <p className="text-muted-foreground mt-1 text-xs">
             Los organizadores piden el equipo desde la tarjeta «Confirmación de
-            equipo de competencia» del tablero.
+            equipo de competencia» del tablero y el delegado confirma lo que
+            llevará.
           </p>
         </div>
         {request ? (
@@ -77,47 +82,64 @@ export async function CompetitionEquipmentSection({
         </p>
       )}
 
-      {loans.length > 0 ? (
-        <ul className="divide-y rounded-lg border text-sm">
-          {loans.map((loan) => (
-            <li
-              key={loan.id}
-              className="flex flex-wrap items-center justify-between gap-2 p-3"
-            >
-              <div className="min-w-0">
-                <Link
-                  prefetch={false}
-                  href={`/panel/equipo/prestamos/${loan.id}` as Route}
-                  className="font-medium hover:underline"
-                >
-                  Préstamo #{loan.id}
-                </Link>
-                <p className="text-muted-foreground text-xs">
-                  {loan.summary} · presta {loan.lentBy.name} · recibe{" "}
-                  {loan.borrower.name}
-                </p>
-              </div>
-              <LoanStatusBadge status={loan.status} />
-            </li>
-          ))}
-        </ul>
+      {confirmation ? (
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs">
+            Confirmado
+            {confirmation.confirmedBy
+              ? ` por ${confirmation.confirmedBy.name}`
+              : null}
+            {confirmation.confirmedAt
+              ? ` · ${formatEquipmentDateTime(confirmation.confirmedAt)}`
+              : null}
+            {ended ? null : " · reservado hasta que termine la competencia"}
+          </p>
+          <ul className="divide-y rounded-lg border text-sm">
+            {confirmation.lines.map((line) => (
+              <li
+                key={line.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+              >
+                <span>
+                  {line.typeName}{" "}
+                  {line.sku ? (
+                    <Link
+                      prefetch={false}
+                      href={
+                        `/panel/equipo/${encodeURIComponent(line.sku)}` as Route
+                      }
+                      className="font-mono text-xs hover:underline"
+                    >
+                      {line.sku}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground font-mono text-xs">
+                      × {line.quantity}
+                    </span>
+                  )}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  Lo lleva {line.guardian.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        {canLend ? (
+        {canConfirm ? (
           <Button asChild size="sm">
             <Link
               prefetch={false}
-              href={
-                `/panel/equipo/prestamos/nuevo?solicitud=${request.id}` as Route
-              }
+              href={`/panel/equipo/solicitudes/${request.id}` as Route}
             >
-              <PackagePlus className="size-4" />
-              {loans.length > 0 ? "Otro préstamo" : "Preparar préstamo"}
+              <PackageCheck className="size-4" />
+              {confirmation ? "Editar confirmación" : "Confirmar equipo"}
             </Link>
           </Button>
         ) : null}
-        {request || loans.length > 0 ? (
+        {request ? (
           <Button asChild variant="outline" size="sm">
             <a
               href={`/panel/competencias/${competitionId}/equipo/ficha`}
@@ -129,8 +151,7 @@ export async function CompetitionEquipmentSection({
             </a>
           </Button>
         ) : null}
-        {request &&
-        (request.status === "draft" || request.status === "submitted") ? (
+        {request && request.status !== "cancelled" && !ended ? (
           <CancelRequestForm requestId={request.id} />
         ) : null}
       </div>

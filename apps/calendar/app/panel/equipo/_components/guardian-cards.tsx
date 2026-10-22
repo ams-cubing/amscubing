@@ -103,6 +103,13 @@ export function GuardianCards({
                           ) : null}
                           {unit.onLoanId != null ? (
                             <span className="text-amber-700">· prestado</span>
+                          ) : unit.reservedFor ? (
+                            <span
+                              className="text-sky-700"
+                              title={`Reservado para ${unit.reservedFor.name}`}
+                            >
+                              · reservado
+                            </span>
                           ) : null}
                         </Link>
                       ))}
@@ -124,6 +131,9 @@ export function GuardianCards({
                       <div className="text-muted-foreground text-xs">
                         {entry.quantity} en total
                         {entry.onLoan > 0 ? ` · ${entry.onLoan} prestados` : ""}
+                        {entry.reserved > 0
+                          ? ` · ${entry.reserved} reservados`
+                          : ""}
                         {entry.notes ? ` · ${entry.notes}` : ""}
                       </div>
                     </div>
@@ -133,6 +143,7 @@ export function GuardianCards({
                       guardian={guardian}
                       quantity={entry.quantity}
                       onLoan={entry.onLoan}
+                      reserved={entry.reserved}
                       notes={entry.notes}
                       guardians={guardians}
                     />

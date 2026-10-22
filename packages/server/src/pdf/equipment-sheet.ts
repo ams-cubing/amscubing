@@ -24,37 +24,38 @@ export type EquipmentSheetInput = {
     notes: string | null;
     lines: { typeName: string; quantity: number }[];
   } | null;
-  loans: {
-    id: number;
-    lentBy: { name: string };
-    lines: { typeName: string; sku: string | null; quantity: number }[];
-  }[];
+  confirmation: {
+    lines: {
+      typeName: string;
+      sku: string | null;
+      quantity: number;
+      guardian: { name: string };
+    }[];
+  } | null;
 };
 
 export type EquipmentSheetRow = {
   equipment: string;
   identifier: string;
-  lender: string;
+  carrier: string;
 };
 
 export const EQUIPMENT_SHEET_CLAUSE =
   "El cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban. Marca cada renglón al entregar y al devolver; anota en Observaciones cualquier faltante o daño.";
 
-/** Loaned units when there are loans; otherwise the requested quantities. */
+/** Confirmed units once the delegate confirms; otherwise the requested quantities. */
 export function equipmentSheetRows(sheet: EquipmentSheetInput): {
   rows: EquipmentSheetRow[];
   pending: boolean;
 } {
-  if (sheet.loans.length > 0) {
+  if (sheet.confirmation && sheet.confirmation.lines.length > 0) {
     return {
       pending: false,
-      rows: sheet.loans.flatMap((loan) =>
-        loan.lines.map((line) => ({
-          equipment: line.typeName,
-          identifier: line.sku ?? `${line.quantity} pzas.`,
-          lender: loan.lentBy.name,
-        })),
-      ),
+      rows: sheet.confirmation.lines.map((line) => ({
+        equipment: line.typeName,
+        identifier: line.sku ?? `${line.quantity} pzas.`,
+        carrier: line.guardian.name,
+      })),
     };
   }
   if (sheet.request && sheet.request.status !== "cancelled") {
@@ -63,7 +64,7 @@ export function equipmentSheetRows(sheet: EquipmentSheetInput): {
       rows: sheet.request.lines.map((line) => ({
         equipment: line.typeName,
         identifier: `${line.quantity} pzas.`,
-        lender: "Por asignar",
+        carrier: "Por confirmar",
       })),
     };
   }
@@ -129,7 +130,7 @@ const COLUMNS = [
   { key: "index", label: "#", width: 22 },
   { key: "equipment", label: "Equipo", width: 150 },
   { key: "identifier", label: "SKU / Cant.", width: 74 },
-  { key: "lender", label: "Prestado por", width: 96 },
+  { key: "carrier", label: "Lo lleva", width: 96 },
   { key: "delivered", label: "Entregado", width: 50 },
   { key: "returned", label: "Devuelto", width: 50 },
   { key: "notes", label: "Observaciones", width: 70 },
@@ -326,7 +327,7 @@ export async function createEquipmentSheetPdf(
   if (pending) {
     doc.moveDown(4);
     doc.paragraph(
-      "Pendiente de asignar SKUs: el delegado aún no registra el préstamo, así que la lista refleja la solicitud de los organizadores.",
+      "Pendiente de confirmar SKUs: el delegado aún no confirma el equipo, así que la lista refleja la solicitud de los organizadores.",
       { size: 8.5, font: doc.fonts.bold, color: PDF_COLORS.red },
     );
   }
@@ -334,7 +335,7 @@ export async function createEquipmentSheetPdf(
   doc.moveDown(10);
   if (rows.length === 0) {
     doc.paragraph(
-      "Aún no hay equipo solicitado ni prestado para esta competencia.",
+      "Aún no hay equipo solicitado ni confirmado para esta competencia.",
       {
         size: 10,
         color: PDF_COLORS.muted,

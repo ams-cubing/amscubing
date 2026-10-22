@@ -129,7 +129,7 @@ export function CardEquipmentSection({
   const visibleTypes = types.filter(
     (type) => type.available > 0 || requestedTypeIds.has(type.id),
   );
-  const hasSomething = Boolean(request) || sheet.loans.length > 0;
+  const confirmation = sheet.confirmation;
 
   const save = (submit: boolean) => {
     const lines = Object.entries(quantities)
@@ -165,8 +165,8 @@ export function CardEquipmentSection({
         <div>
           <h3 className="text-sm font-semibold">Solicitud de equipo</h3>
           <p className="text-muted-foreground mt-1 text-xs leading-5">
-            Indica cuánto equipo necesita la competencia. El delegado lo revisa
-            y registra el préstamo con los SKUs que se entregarán.
+            Indica cuánto equipo necesita la competencia. El delegado revisa la
+            solicitud y confirma los SKUs que llevará a la competencia.
           </p>
         </div>
         {request ? (
@@ -286,45 +286,38 @@ export function CardEquipmentSection({
         </p>
       )}
 
-      {sheet.loans.length > 0 ? (
+      {confirmation && confirmation.lines.length > 0 ? (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs font-semibold uppercase">
-            Equipo asignado
+            Equipo confirmado
           </p>
-          {sheet.loans.map((loan) => (
-            <div key={loan.id} className="rounded-md border p-3 text-sm">
-              <p className="text-muted-foreground mb-2 text-xs">
-                Préstamo #{loan.id} · presta {loan.lentBy.name} · recibe{" "}
-                {loan.borrower.name}
-              </p>
-              <ul className="space-y-1">
-                {loan.lines.map((line) => (
-                  <li
-                    key={line.id}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <span>
-                      {line.typeName}{" "}
-                      <span className="text-muted-foreground font-mono text-xs">
-                        {line.sku ?? `× ${line.quantity}`}
-                      </span>
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {line.returnedQuantity >= line.quantity
-                        ? "Devuelto"
-                        : line.returnedQuantity > 0
-                          ? `Devueltos ${line.returnedQuantity}/${line.quantity}`
-                          : "Prestado"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {confirmation.confirmedBy ? (
+            <p className="text-muted-foreground text-xs">
+              Confirmó {confirmation.confirmedBy.name}
+            </p>
+          ) : null}
+          <ul className="space-y-1 rounded-md border p-3 text-sm">
+            {confirmation.lines.map((line) => (
+              <li
+                key={line.id}
+                className="flex items-center justify-between gap-2"
+              >
+                <span>
+                  {line.typeName}{" "}
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {line.sku ?? `× ${line.quantity}`}
+                  </span>
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  Lo lleva {line.guardian.name}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
 
-      {hasSomething ? (
+      {request ? (
         <Button type="button" size="sm" variant="outline" asChild>
           <a
             href={`/boards/${board.id}/equipo/ficha`}

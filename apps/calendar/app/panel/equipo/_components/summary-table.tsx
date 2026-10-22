@@ -24,6 +24,11 @@ function Unavailable({ row }: { row: InventorySummaryRow }) {
       className: LOAN_BADGE_CLASSES.active,
     },
     {
+      count: row.reserved,
+      label: plural(row.reserved, "reservado"),
+      className: "border-sky-200 bg-sky-100 text-sky-900",
+    },
+    {
       count: row.faulty,
       label: plural(row.faulty, "defectuoso"),
       className: STATUS_BADGE_CLASSES.faulty,

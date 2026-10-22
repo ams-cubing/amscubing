@@ -55,6 +55,7 @@ export const equipmentEventActionEnum = pgEnum("equipment_event_action", [
   "request_updated",
   "request_submitted",
   "request_cancelled",
+  "request_confirmed",
 ]);
 
 export const equipmentRequestStatusEnum = pgEnum("equipment_request_status", [
@@ -168,7 +169,10 @@ export const equipmentStock = pgTable(
 
 export type EquipmentStock = InferSelectModel<typeof equipmentStock>;
 
-/** What the organizers of a competition ask for, before a delegate lends it. */
+/**
+ * What the organizers of a competition ask for. `fulfilled` means a delegate
+ * confirmed the equipment they will bring (see `equipment_confirmation_line`).
+ */
 export const equipmentRequests = pgTable("equipment_request", {
   id: serial("id").primaryKey(),
   competitionId: integer("competition_id")
@@ -178,6 +182,9 @@ export const equipmentRequests = pgTable("equipment_request", {
   status: equipmentRequestStatusEnum("status").notNull().default("draft"),
   notes: text("notes"),
   requestedByUserId: text("requested_by_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  confirmedByUserId: text("confirmed_by_user_id").references(() => user.id, {
     onDelete: "set null",
   }),
   submittedAt: timestamp("submitted_at"),
@@ -208,6 +215,45 @@ export const equipmentRequestLines = pgTable(
   ],
 );
 
+/**
+ * Equipment a delegate confirmed for a competition. Units stay with their
+ * guardian; while the request is `fulfilled` and the competition hasn't ended
+ * they can't be lent, moved, removed or confirmed elsewhere.
+ * Either `itemId` (serialized unit) or `typeId` + `quantity` (bulk).
+ */
+export const equipmentConfirmationLines = pgTable(
+  "equipment_confirmation_line",
+  {
+    id: serial("id").primaryKey(),
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => equipmentRequests.id, { onDelete: "cascade" }),
+    typeId: integer("type_id")
+      .notNull()
+      .references(() => equipmentTypes.id),
+    itemId: integer("item_id").references(() => equipmentItems.id),
+    guardianUserId: text("guardian_user_id")
+      .notNull()
+      .references(() => user.id),
+    quantity: integer("quantity").notNull().default(1),
+  },
+  (table) => [
+    unique("equipment_confirmation_line_request_item_unique").on(
+      table.requestId,
+      table.itemId,
+    ),
+    index("equipment_confirmation_line_item_idx").on(table.itemId),
+    index("equipment_confirmation_line_guardian_type_idx").on(
+      table.guardianUserId,
+      table.typeId,
+    ),
+  ],
+);
+
+export type EquipmentConfirmationLine = InferSelectModel<
+  typeof equipmentConfirmationLines
+>;
+
 export const equipmentLoans = pgTable(
   "equipment_loan",
   {
@@ -219,9 +265,6 @@ export const equipmentLoans = pgTable(
       .notNull()
       .references(() => user.id),
     competitionId: integer("competition_id").references(() => competitions.id, {
-      onDelete: "set null",
-    }),
-    requestId: integer("request_id").references(() => equipmentRequests.id, {
       onDelete: "set null",
     }),
     reason: text("reason").notNull(),

@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertBulkAvailable,
+  assertItemsConfirmable,
   assertItemsLendable,
-  assertRequestFulfillable,
+  assertRequestConfirmable,
   availableQuantity,
   EquipmentError,
   formatSku,
   getLoanStatus,
   groupByGuardian,
+  isReservationActive,
   maxSkuSequence,
   nextRequestStatus,
   normalizeRequestLines,
@@ -157,6 +159,7 @@ describe("assertItemsLendable", () => {
     guardianUserId: "jaime",
     status: "functional",
     onOpenLoan: false,
+    reservedFor: null,
   };
 
   it("accepts functional or faulty units held by the lender", () => {
@@ -184,6 +187,50 @@ describe("assertItemsLendable", () => {
     expect(() =>
       assertItemsLendable([{ ...base, onOpenLoan: true }], "jaime"),
     ).toThrow(/ya está prestado/);
+  });
+
+  it("rejects units reserved for a competition", () => {
+    expect(() =>
+      assertItemsLendable(
+        [{ ...base, reservedFor: "Torneo de Rubik Querétaro" }],
+        "jaime",
+      ),
+    ).toThrow("SG4-2313 está reservada para Torneo de Rubik Querétaro");
+  });
+});
+
+describe("assertItemsConfirmable", () => {
+  const base: LoanCandidateItem = {
+    id: 1,
+    sku: "SG4-2313",
+    guardianUserId: "jaime",
+    status: "functional",
+    onOpenLoan: false,
+    reservedFor: null,
+  };
+
+  it("accepts free units from any guardian", () => {
+    expect(() =>
+      assertItemsConfirmable([
+        base,
+        { ...base, id: 2, guardianUserId: "areli", status: "faulty" },
+      ]),
+    ).not.toThrow();
+  });
+
+  it("rejects units without guardian, unusable, lent or reserved elsewhere", () => {
+    expect(() =>
+      assertItemsConfirmable([{ ...base, guardianUserId: null }]),
+    ).toThrow(/no tiene guardián/);
+    expect(() =>
+      assertItemsConfirmable([{ ...base, status: "in_repair" }]),
+    ).toThrow(/no se puede llevar/);
+    expect(() =>
+      assertItemsConfirmable([{ ...base, onOpenLoan: true }]),
+    ).toThrow(/ya está prestado/);
+    expect(() =>
+      assertItemsConfirmable([{ ...base, reservedFor: "Nacional 2026" }]),
+    ).toThrow(/reservada para Nacional 2026/);
   });
 });
 
@@ -248,6 +295,7 @@ function item(
     guardian,
     source: "AMS",
     onLoanId,
+    reservedFor: null,
   };
 }
 
@@ -255,6 +303,7 @@ function stock(
   guardian: typeof jaime,
   quantity: number,
   onLoan: number,
+  reserved = 0,
 ): EquipmentStockRow {
   return {
     typeId: 2,
@@ -262,6 +311,7 @@ function stock(
     category: "accessory",
     quantity,
     onLoan,
+    reserved,
     notes: null,
     guardian,
   };
@@ -303,6 +353,27 @@ describe("summarizeInventory", () => {
       [stock(jaime, 22, 12), stock(areli, 74, 0)],
     );
     expect(stopwatches).toMatchObject({ total: 96, onLoan: 12, available: 84 });
+  });
+
+  it("keeps reserved equipment in the total but out of what is available", () => {
+    const [timers, stopwatches] = summarizeInventory(
+      types,
+      [
+        item(1, "functional"),
+        {
+          ...item(2, "functional"),
+          reservedFor: { competitionId: 4, name: "Nacional" },
+        },
+      ],
+      [stock(jaime, 22, 2, 8)],
+    );
+    expect(timers).toMatchObject({ total: 2, available: 1, reserved: 1 });
+    expect(stopwatches).toMatchObject({
+      total: 22,
+      onLoan: 2,
+      reserved: 8,
+      available: 12,
+    });
   });
 });
 
@@ -367,30 +438,75 @@ describe("nextRequestStatus", () => {
     expect(nextRequestStatus("cancelled", true)).toBe("submitted");
   });
 
-  it("locks the request once a loan fulfils it", () => {
-    expect(() => nextRequestStatus("fulfilled", false)).toThrow(EquipmentError);
+  it("locks the request once the delegate confirms the equipment", () => {
+    expect(() => nextRequestStatus("fulfilled", false)).toThrow(
+      "ya confirmó el equipo",
+    );
   });
 });
 
-describe("assertRequestFulfillable", () => {
-  it("accepts loans for the request's own competition", () => {
-    expect(() =>
-      assertRequestFulfillable({ competitionId: 4, status: "submitted" }, 4),
-    ).not.toThrow();
-    expect(() =>
-      assertRequestFulfillable({ competitionId: 4, status: "fulfilled" }, 4),
-    ).not.toThrow();
+describe("assertRequestConfirmable", () => {
+  const today = "2026-10-22";
+
+  it("accepts sent or already confirmed requests of upcoming competitions", () => {
+    for (const status of ["submitted", "fulfilled"] as const) {
+      expect(() =>
+        assertRequestConfirmable(
+          { status, competitionEndDate: "2026-10-22" },
+          today,
+        ),
+      ).not.toThrow();
+    }
   });
 
-  it("rejects another competition, a missing one or a cancelled request", () => {
+  it("rejects drafts, cancelled requests and finished competitions", () => {
     expect(() =>
-      assertRequestFulfillable({ competitionId: 4, status: "submitted" }, 5),
-    ).toThrow("otra competencia");
+      assertRequestConfirmable(
+        { status: "draft", competitionEndDate: "2026-12-01" },
+        today,
+      ),
+    ).toThrow(/aún no envían/);
     expect(() =>
-      assertRequestFulfillable({ competitionId: 4, status: "draft" }, null),
-    ).toThrow(EquipmentError);
-    expect(() =>
-      assertRequestFulfillable({ competitionId: 4, status: "cancelled" }, 4),
+      assertRequestConfirmable(
+        { status: "cancelled", competitionEndDate: "2026-12-01" },
+        today,
+      ),
     ).toThrow("cancelada");
+    expect(() =>
+      assertRequestConfirmable(
+        { status: "submitted", competitionEndDate: "2026-10-21" },
+        today,
+      ),
+    ).toThrow("ya terminó");
+  });
+});
+
+describe("isReservationActive", () => {
+  const today = "2026-10-22";
+
+  it("blocks units from confirmation through the competition's last day", () => {
+    expect(
+      isReservationActive(
+        { status: "fulfilled", competitionEndDate: "2026-10-22" },
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("frees units after the competition or when the request isn't confirmed", () => {
+    expect(
+      isReservationActive(
+        { status: "fulfilled", competitionEndDate: "2026-10-21" },
+        today,
+      ),
+    ).toBe(false);
+    for (const status of ["draft", "submitted", "cancelled"] as const) {
+      expect(
+        isReservationActive(
+          { status, competitionEndDate: "2026-12-01" },
+          today,
+        ),
+      ).toBe(false);
+    }
   });
 });

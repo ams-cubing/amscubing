@@ -42,7 +42,6 @@ export async function createLoanAction(
       .parse(data.get("borrowerUserId"));
     const lentByUserId = formText(data, "lentByUserId");
     const competitionRaw = String(data.get("competitionId") ?? "");
-    const requestRaw = String(data.get("requestId") ?? "");
     const lines = formJson(data, "lines", loanLinesSchema);
 
     const loanId = await inEquipmentTx(async (tx) => {
@@ -51,7 +50,6 @@ export async function createLoanAction(
         borrowerUserId,
         lentByUserId,
         competitionId: competitionRaw ? formId(data, "competitionId") : null,
-        requestId: requestRaw ? formId(data, "requestId") : null,
         reason: formText(data, "reason", 500),
         loanedAt: formDate(data, "loanedAt"),
         dueAt: formOptionalDate(data, "dueAt"),
@@ -72,7 +70,6 @@ export async function createLoanAction(
       loanId,
       borrowerUserId,
       lentByUserId,
-      requestId: requestRaw || null,
       actorId: actor.id,
     });
     redirect(`/panel/equipo/prestamos/${loanId}?guardado=prestamo` as Route);

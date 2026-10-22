@@ -21,8 +21,12 @@ import {
   listEquipmentStock,
   listEquipmentTypes,
   summarizeInventory,
+  todayInMexico,
+  isReservationActive,
+  LENDABLE_STATUSES,
   type EquipmentEventAction,
 } from "@workspace/db/equipment";
+import { competitionDelegatesOnly } from "@workspace/db/notifications";
 
 function tag() {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
@@ -101,31 +105,86 @@ export async function getLendableInventory() {
     items: items.filter(
       (item) =>
         item.onLoanId == null &&
-        (item.status === "functional" || item.status === "faulty"),
+        item.reservedFor == null &&
+        LENDABLE_STATUSES.includes(item.status),
     ),
     stock,
     guardians,
   };
 }
 
-/** Organizers' request plus linked loans, for the competition page and the sheet. */
+/** Organizers' request plus what the delegates confirmed, for the competition page and the sheet. */
 export async function getCompetitionEquipment(competitionId: number) {
   tag();
   return getCompetitionEquipmentSheet(db, competitionId);
 }
 
-/** Request and team of its competition, to prefill a new loan. */
-export async function getRequestForLoan(requestId: number) {
+/**
+ * Request, its competition and the inventory a delegate can confirm. Units and
+ * quantities already confirmed for this same request count as available.
+ */
+export async function getRequestForConfirmation(requestId: number) {
   tag();
   const request = await getEquipmentRequest(db, { requestId });
   if (!request) return null;
-  const sheet = await getCompetitionEquipmentSheet(db, request.competitionId);
-  return sheet ? { request, sheet } : null;
+  const [sheet, types, items, stock, guardians, delegates] = await Promise.all([
+    getCompetitionEquipmentSheet(db, request.competitionId),
+    listEquipmentTypes(db),
+    listEquipmentItems(db),
+    listEquipmentStock(db),
+    listEquipmentGuardians(db),
+    competitionDelegatesOnly(db, request.competitionId),
+  ]);
+  if (!sheet) return null;
+
+  const ownBulk = new Map<string, number>();
+  for (const line of sheet.confirmation?.lines ?? []) {
+    if (line.itemId != null) continue;
+    const key = `${line.typeId}:${line.guardian.id}`;
+    ownBulk.set(key, (ownBulk.get(key) ?? 0) + line.quantity);
+  }
+
+  return {
+    request,
+    sheet,
+    types,
+    items: items.filter(
+      (item) =>
+        item.guardian != null &&
+        item.onLoanId == null &&
+        LENDABLE_STATUSES.includes(item.status) &&
+        (item.reservedFor == null ||
+          item.reservedFor.competitionId === request.competitionId),
+    ),
+    stock: stock.map((entry) => ({
+      ...entry,
+      reserved:
+        entry.reserved -
+        (ownBulk.get(`${entry.typeId}:${entry.guardian.id}`) ?? 0),
+    })),
+    guardians,
+    delegateIds: delegates.map((delegate) => delegate.id),
+  };
 }
 
 export async function getOpenEquipmentRequests() {
   tag();
   return listEquipmentRequests(db, { status: "submitted" });
+}
+
+export async function getConfirmedEquipmentRequests() {
+  tag();
+  const today = todayInMexico();
+  const requests = await listEquipmentRequests(db, { status: "fulfilled" });
+  return requests.filter((request) =>
+    isReservationActive(
+      {
+        status: request.status,
+        competitionEndDate: request.competition.endDate,
+      },
+      today,
+    ),
+  );
 }
 
 /** Upcoming and recent competitions a loan can be attached to. */

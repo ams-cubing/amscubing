@@ -10,7 +10,7 @@ import {
 } from "@workspace/ui/components/card";
 import { EQUIPMENT_STATUS_LABELS } from "@workspace/db/equipment-labels";
 
-import { EquipmentStatusBadge } from "../_components/badges";
+import { EquipmentStatusBadge, ReservedBadge } from "../_components/badges";
 import { EventTimeline } from "../_components/event-timeline";
 import { ItemEditForm, ItemTransferDialog } from "../_components/item-forms";
 import { Person } from "../_components/person";
@@ -46,6 +46,16 @@ async function PageContent({ params }: PageProps) {
                 Prestado (préstamo #{item.onLoanId})
               </Link>
             ) : null}
+            {item.reservedFor ? (
+              <Link
+                prefetch={false}
+                href={
+                  `/panel/competencias/${item.reservedFor.competitionId}` as Route
+                }
+              >
+                <ReservedBadge competition={item.reservedFor.name} />
+              </Link>
+            ) : null}
           </div>
         </div>
         <ItemTransferDialog
@@ -53,7 +63,9 @@ async function PageContent({ params }: PageProps) {
           sku={item.sku}
           currentGuardianId={item.guardian?.id ?? null}
           guardians={guardians}
-          disabled={onLoan || item.status === "retired"}
+          disabled={
+            onLoan || item.reservedFor != null || item.status === "retired"
+          }
         />
       </div>
 

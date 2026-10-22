@@ -2,6 +2,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import type { EquipmentRequestListRow } from "@workspace/db/equipment";
 import { Button } from "@workspace/ui/components/button";
 
 import {
@@ -9,22 +10,21 @@ import {
   formatEquipmentDateTime,
 } from "@/lib/equipment-format";
 
-import { getOpenEquipmentRequests } from "../_lib/queries";
+import {
+  getConfirmedEquipmentRequests,
+  getOpenEquipmentRequests,
+} from "../_lib/queries";
 import Loading from "./loading";
 
-async function PageContent() {
-  await connection();
-  const requests = await getOpenEquipmentRequests();
-
-  if (requests.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        No hay solicitudes pendientes. Los organizadores las envían desde la
-        tarjeta «Confirmación de equipo de competencia» de su tablero.
-      </p>
-    );
-  }
-
+function RequestList({
+  requests,
+  action,
+  variant,
+}: {
+  requests: EquipmentRequestListRow[];
+  action: string;
+  variant?: "outline";
+}) {
   return (
     <ul className="divide-y rounded-lg border">
       {requests.map((request) => (
@@ -46,22 +46,61 @@ async function PageContent() {
               {request.submittedAt
                 ? ` · enviada ${formatEquipmentDateTime(request.submittedAt)}`
                 : null}
+              {request.confirmedBy
+                ? ` · confirmó ${request.confirmedBy.name}`
+                : null}
             </p>
             <p className="text-sm">{request.summary || "Sin renglones"}</p>
           </div>
-          <Button asChild size="sm">
+          <Button asChild size="sm" variant={variant}>
             <Link
               prefetch={false}
-              href={
-                `/panel/equipo/prestamos/nuevo?solicitud=${request.id}` as Route
-              }
+              href={`/panel/equipo/solicitudes/${request.id}` as Route}
             >
-              Preparar préstamo
+              {action}
             </Link>
           </Button>
         </li>
       ))}
     </ul>
+  );
+}
+
+async function PageContent() {
+  await connection();
+  const [open, confirmed] = await Promise.all([
+    getOpenEquipmentRequests(),
+    getConfirmedEquipmentRequests(),
+  ]);
+
+  return (
+    <div className="space-y-8">
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Por confirmar</h2>
+        {open.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No hay solicitudes pendientes. Los organizadores las envían desde la
+            tarjeta «Confirmación de equipo de competencia» de su tablero.
+          </p>
+        ) : (
+          <RequestList requests={open} action="Confirmar equipo" />
+        )}
+      </section>
+
+      {confirmed.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Confirmadas</h2>
+          <p className="text-muted-foreground text-sm">
+            Su equipo está reservado hasta que termine la competencia.
+          </p>
+          <RequestList
+            requests={confirmed}
+            action="Editar confirmación"
+            variant="outline"
+          />
+        </section>
+      ) : null}
+    </div>
   );
 }
 
@@ -71,8 +110,9 @@ export default function Page() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Solicitudes</h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-base">
-          Equipo que los organizadores pidieron para sus competencias y que aún
-          no tiene préstamo.
+          Equipo que los organizadores pidieron para sus competencias. El
+          delegado confirma los SKUs que llevará; el equipo no se presta, se
+          queda con su guardián.
         </p>
       </div>
       <Suspense fallback={<Loading />}>

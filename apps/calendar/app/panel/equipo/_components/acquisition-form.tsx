@@ -155,7 +155,10 @@ export function AcquisitionForm({
           const pickUnits = removal && type?.tracking === "serialized";
           const removableUnits = pickUnits
             ? items.filter(
-                (item) => item.typeId === type!.id && item.onLoanId == null,
+                (item) =>
+                  item.typeId === type!.id &&
+                  item.onLoanId == null &&
+                  item.reservedFor == null,
               )
             : [];
           return (

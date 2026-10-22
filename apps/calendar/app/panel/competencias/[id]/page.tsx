@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { SearchParamToast } from "@workspace/ui/components/search-param-toast";
 
 import { getReassignmentOptions } from "@/lib/reassignment-candidates";
 import { formatAction } from "@/lib/utils";
@@ -108,8 +109,16 @@ async function PageContent({
 
 export default function Page({ params }: { params: Params }) {
   return (
-    <Suspense fallback={<Loading />}>
-      <PageContent params={params} />
-    </Suspense>
+    <>
+      <Suspense fallback={null}>
+        <SearchParamToast
+          param="guardado"
+          messages={{ equipo: "Equipo confirmado" }}
+        />
+      </Suspense>
+      <Suspense fallback={<Loading />}>
+        <PageContent params={params} />
+      </Suspense>
+    </>
   );
 }

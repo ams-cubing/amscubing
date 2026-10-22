@@ -32,52 +32,6 @@ type CompetitionOption = {
   startDate: string;
 };
 
-/** Values taken from an organizers' equipment request. */
-export type LoanPrefill = {
-  requestId: number;
-  competitionId: number;
-  competitionLabel: string;
-  borrower: OrganizerOption | null;
-  reason: string;
-  summary: string;
-  notes: string | null;
-  quantities: Record<number, number>;
-};
-
-type Quantities = {
-  autoPick: Record<number, number>;
-  bulk: Record<number, number>;
-};
-
-/** Requested quantities capped to what `lenderId` can lend right now. */
-function quantitiesFor(
-  prefill: LoanPrefill | undefined,
-  lenderId: string,
-  types: EquipmentType[],
-  items: EquipmentItemRow[],
-  stock: EquipmentStockRow[],
-): Quantities {
-  const result: Quantities = { autoPick: {}, bulk: {} };
-  if (!prefill) return result;
-  for (const type of types) {
-    const wanted = prefill.quantities[type.id];
-    if (!wanted) continue;
-    if (type.tracking === "serialized") {
-      const units = items.filter(
-        (item) => item.typeId === type.id && item.guardian?.id === lenderId,
-      ).length;
-      if (units > 0) result.autoPick[type.id] = Math.min(wanted, units);
-    } else {
-      const entry = stock.find(
-        (s) => s.typeId === type.id && s.guardian.id === lenderId,
-      );
-      const available = entry ? Math.max(0, entry.quantity - entry.onLoan) : 0;
-      if (available > 0) result.bulk[type.id] = Math.min(wanted, available);
-    }
-  }
-  return result;
-}
-
 export function LoanForm({
   types,
   items,
@@ -86,7 +40,6 @@ export function LoanForm({
   competitions,
   defaultLenderId,
   today,
-  prefill,
 }: {
   types: EquipmentType[];
   items: EquipmentItemRow[];
@@ -95,7 +48,6 @@ export function LoanForm({
   competitions: CompetitionOption[];
   defaultLenderId: string | null;
   today: string;
-  prefill?: LoanPrefill;
 }) {
   const lenders = useMemo(() => {
     const ids = new Set([
@@ -108,24 +60,11 @@ export function LoanForm({
   const initialLenderId = lenders.some((l) => l.id === defaultLenderId)
     ? defaultLenderId!
     : (lenders[0]?.id ?? "");
-  const initialQuantities = quantitiesFor(
-    prefill,
-    initialLenderId,
-    types,
-    items,
-    stock,
-  );
 
-  const [borrower, setBorrower] = useState<OrganizerOption | null>(
-    prefill?.borrower ?? null,
-  );
+  const [borrower, setBorrower] = useState<OrganizerOption | null>(null);
   const [lenderId, setLenderId] = useState(initialLenderId);
-  const [autoPick, setAutoPick] = useState<Record<number, number>>(
-    initialQuantities.autoPick,
-  );
-  const [bulk, setBulk] = useState<Record<number, number>>(
-    initialQuantities.bulk,
-  );
+  const [autoPick, setAutoPick] = useState<Record<number, number>>({});
+  const [bulk, setBulk] = useState<Record<number, number>>({});
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -133,10 +72,9 @@ export function LoanForm({
   const lenderStock = stock.filter((entry) => entry.guardian.id === lenderId);
 
   const changeLender = (id: string) => {
-    const next = quantitiesFor(prefill, id, types, items, stock);
     setLenderId(id);
-    setAutoPick(next.autoPick);
-    setBulk(next.bulk);
+    setAutoPick({});
+    setBulk({});
     setPicked(new Set());
   };
 
@@ -154,7 +92,9 @@ export function LoanForm({
       const entry = lenderStock.find((s) => s.typeId === type.id);
       return {
         type,
-        available: entry ? Math.max(0, entry.quantity - entry.onLoan) : 0,
+        available: entry
+          ? Math.max(0, entry.quantity - entry.onLoan - entry.reserved)
+          : 0,
       };
     })
     .filter((row) => row.available > 0);
@@ -189,27 +129,6 @@ export function LoanForm({
     <ActionForm action={createLoanAction} className="space-y-8">
       <input type="hidden" name="borrowerUserId" value={borrower?.id ?? ""} />
       <input type="hidden" name="lines" value={JSON.stringify(lines)} />
-      {prefill ? (
-        <input type="hidden" name="requestId" value={prefill.requestId} />
-      ) : null}
-
-      {prefill ? (
-        <section className="bg-muted/50 space-y-1 rounded-lg border p-4 text-sm">
-          <p className="font-medium">
-            Solicitud de equipo · {prefill.competitionLabel}
-          </p>
-          <p>{prefill.summary || "Sin renglones"}</p>
-          {prefill.notes ? (
-            <p className="text-muted-foreground whitespace-pre-line text-xs">
-              {prefill.notes}
-            </p>
-          ) : null}
-          <p className="text-muted-foreground text-xs">
-            Las cantidades se ajustan a lo que tiene el guardián que presta.
-            Ajusta o elige SKUs antes de registrar.
-          </p>
-        </section>
-      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
@@ -269,16 +188,10 @@ export function LoanForm({
 
         <div className="space-y-2">
           <Label htmlFor="competitionId">Competencia (opcional)</Label>
-          <NativeSelect
-            id="competitionId"
-            name="competitionId"
-            defaultValue={prefill ? String(prefill.competitionId) : ""}
-          >
-            {prefill ? null : (
-              <option value="">
-                Sin competencia (torneo no oficial, evento…)
-              </option>
-            )}
+          <NativeSelect id="competitionId" name="competitionId" defaultValue="">
+            <option value="">
+              Sin competencia (torneo no oficial, evento…)
+            </option>
             {competitions.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name ?? c.city} · {c.startDate}
@@ -293,7 +206,6 @@ export function LoanForm({
             id="reason"
             name="reason"
             required
-            defaultValue={prefill?.reason}
             placeholder="Para los torneos no oficiales del SubUrbano"
           />
         </div>

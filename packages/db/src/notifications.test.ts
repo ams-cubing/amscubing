@@ -16,6 +16,7 @@ vi.mock("./index", () => ({
 
 import {
   countUnreadNotificationsByCard,
+  equipmentConfirmedNotificationRow,
   equipmentNotificationRow,
   equipmentRequestNotificationRow,
   formatNotificationTitle,
@@ -129,6 +130,38 @@ describe("equipmentRequestNotificationRow", () => {
       href: "https://calendario.example/panel/competencias/9",
       payload: { competitionId: 9, requestId: 2, city: "Querétaro" },
     });
+  });
+});
+
+describe("equipmentConfirmedNotificationRow", () => {
+  const base = {
+    recipient: { id: "o1", role: "user" as const, wcaId: null },
+    actorId: "delegate-1",
+    urls: {
+      calendarUrl: "https://calendario.example/",
+      boardsUrl: "https://tableros.example/",
+    },
+    competitionId: 9,
+    requestId: 2,
+    city: "Querétaro",
+  };
+
+  it("opens the equipment card on the competition board", () => {
+    expect(
+      equipmentConfirmedNotificationRow({ ...base, boardId: 4, cardId: 31 }),
+    ).toMatchObject({
+      recipientId: "o1",
+      type: "equipment_confirmed",
+      title: "El delegado confirmó el equipo para Querétaro",
+      href: "https://tableros.example/boards/4?card=31",
+      payload: { boardId: 4, cardId: 31, requestId: 2 },
+    });
+  });
+
+  it("falls back to mis-competencias without a board", () => {
+    expect(equipmentConfirmedNotificationRow(base).href).toBe(
+      "https://calendario.example/mis-competencias",
+    );
   });
 });
 

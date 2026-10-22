@@ -26,7 +26,7 @@ import type {
 } from "@workspace/db/equipment";
 
 import { transferItemsAction } from "../_actions/inventory";
-import { EquipmentStatusBadge } from "./badges";
+import { EquipmentStatusBadge, ReservedBadge } from "./badges";
 import { FormDialog } from "./form-dialog";
 
 const ALL = "";
@@ -88,7 +88,9 @@ export function ItemsTable({
           (!status ||
             (status === "on_loan"
               ? item.onLoanId != null
-              : item.status === status)) &&
+              : status === "reserved"
+                ? item.reservedFor != null
+                : item.status === status)) &&
           (!source || item.source === source),
       )
       .sort((a, b) => Number(isOwn(b)) - Number(isOwn(a)));
@@ -102,7 +104,9 @@ export function ItemsTable({
       return next;
     });
 
-  const selectable = filtered.filter((item) => item.onLoanId == null);
+  const selectable = filtered.filter(
+    (item) => item.onLoanId == null && item.reservedFor == null,
+  );
   const allSelected =
     selectable.length > 0 && selectable.every((item) => selected.has(item.id));
 
@@ -149,6 +153,7 @@ export function ItemsTable({
               </option>
             ))}
           <option value="on_loan">Prestados</option>
+          <option value="reserved">Reservados</option>
         </NativeSelect>
         <NativeSelect
           value={source}
@@ -237,7 +242,7 @@ export function ItemsTable({
                 <TableCell>
                   <Checkbox
                     checked={selected.has(item.id)}
-                    disabled={item.onLoanId != null}
+                    disabled={item.onLoanId != null || item.reservedFor != null}
                     aria-label={`Seleccionar ${item.sku}`}
                     onCheckedChange={() => toggle(item.id)}
                   />
@@ -264,6 +269,16 @@ export function ItemsTable({
                         className="text-xs text-amber-700 hover:underline"
                       >
                         Prestado
+                      </Link>
+                    ) : null}
+                    {item.reservedFor ? (
+                      <Link
+                        prefetch={false}
+                        href={
+                          `/panel/competencias/${item.reservedFor.competitionId}` as Route
+                        }
+                      >
+                        <ReservedBadge competition={item.reservedFor.name} />
                       </Link>
                     ) : null}
                   </div>

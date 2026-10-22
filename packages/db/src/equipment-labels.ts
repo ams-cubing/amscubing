@@ -61,6 +61,7 @@ export const EQUIPMENT_EVENT_LABELS: Record<EquipmentEventAction, string> = {
   request_updated: "Solicitud editada",
   request_submitted: "Solicitud enviada",
   request_cancelled: "Solicitud cancelada",
+  request_confirmed: "Equipo confirmado",
 };
 
 export const EQUIPMENT_REQUEST_STATUS_LABELS: Record<
@@ -69,7 +70,7 @@ export const EQUIPMENT_REQUEST_STATUS_LABELS: Record<
 > = {
   draft: "Borrador",
   submitted: "Enviada al delegado",
-  fulfilled: "Préstamo registrado",
+  fulfilled: "Equipo confirmado",
   cancelled: "Cancelada",
 };
 
@@ -86,6 +87,9 @@ export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   overdue: "Vencido",
   returned: "Devuelto",
 };
+
+/** Unit confirmed for a competition that hasn't ended. */
+export const RESERVED_LABEL = "Reservado";
 
 /** Units in these states can be lent. */
 export const LENDABLE_STATUSES: readonly EquipmentStatus[] = [

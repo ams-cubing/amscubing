@@ -3,10 +3,12 @@ import {
   asc,
   desc,
   eq,
+  gte,
   inArray,
   isNull,
   like,
   lt,
+  ne,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -20,6 +22,7 @@ import {
   competitions,
   equipmentAcquisitionLines,
   equipmentAcquisitions,
+  equipmentConfirmationLines,
   equipmentEvents,
   equipmentItems,
   equipmentLoanLines,
@@ -228,7 +231,24 @@ export type LoanCandidateItem = {
   guardianUserId: string | null;
   status: EquipmentStatus;
   onOpenLoan: boolean;
+  /** Competition the unit is confirmed for, while that reservation is active. */
+  reservedFor: string | null;
 };
+
+function assertUnitFree(item: {
+  sku: string;
+  onOpenLoan: boolean;
+  reservedFor: string | null;
+}) {
+  if (item.onOpenLoan) {
+    throw new EquipmentError(`${item.sku} ya está prestado`);
+  }
+  if (item.reservedFor) {
+    throw new EquipmentError(
+      `${item.sku} está reservada para ${item.reservedFor}`,
+    );
+  }
+}
 
 export function assertItemsLendable(
   items: readonly LoanCandidateItem[],
@@ -245,9 +265,22 @@ export function assertItemsLendable(
         `${item.sku} no se puede prestar (${EQUIPMENT_STATUS_LABELS[item.status]})`,
       );
     }
-    if (item.onOpenLoan) {
-      throw new EquipmentError(`${item.sku} ya está prestado`);
+    assertUnitFree(item);
+  }
+}
+
+/** Units a delegate can confirm for a competition: same rules as lending, any guardian. */
+export function assertItemsConfirmable(items: readonly LoanCandidateItem[]) {
+  for (const item of items) {
+    if (!item.guardianUserId) {
+      throw new EquipmentError(`${item.sku} no tiene guardián`);
     }
+    if (!LENDABLE_STATUSES.includes(item.status)) {
+      throw new EquipmentError(
+        `${item.sku} no se puede llevar (${EQUIPMENT_STATUS_LABELS[item.status]})`,
+      );
+    }
+    assertUnitFree(item);
   }
 }
 
@@ -314,26 +347,37 @@ export function nextRequestStatus(
 ): EquipmentRequestStatus {
   if (current && !EDITABLE_REQUEST_STATUSES.includes(current)) {
     throw new EquipmentError(
-      "El delegado ya registró el préstamo; pídele los cambios directamente",
+      "El delegado ya confirmó el equipo; pídele los cambios directamente",
     );
   }
   if (submit || current === "submitted") return "submitted";
   return "draft";
 }
 
-/** A loan can only fulfil a live request of its own competition. */
-export function assertRequestFulfillable(
-  request: { competitionId: number; status: EquipmentRequestStatus },
-  competitionId: number | null | undefined,
+/** Delegates confirm sent (or already confirmed) requests of competitions that haven't ended. */
+export function assertRequestConfirmable(
+  request: { status: EquipmentRequestStatus; competitionEndDate: string },
+  today: string,
 ) {
-  if (request.competitionId !== competitionId) {
-    throw new EquipmentError(
-      "La solicitud pertenece a otra competencia que la del préstamo",
-    );
-  }
   if (request.status === "cancelled") {
     throw new EquipmentError("La solicitud fue cancelada");
   }
+  if (request.status === "draft") {
+    throw new EquipmentError(
+      "Los organizadores aún no envían la solicitud de equipo",
+    );
+  }
+  if (request.competitionEndDate < today) {
+    throw new EquipmentError("La competencia ya terminó");
+  }
+}
+
+/** A confirmation blocks its units from the moment it's saved until the competition ends. */
+export function isReservationActive(
+  request: { status: EquipmentRequestStatus; competitionEndDate: string },
+  today: string,
+) {
+  return request.status === "fulfilled" && request.competitionEndDate >= today;
 }
 
 function diffFields<T extends Record<string, unknown>>(
@@ -399,6 +443,127 @@ async function bulkOnLoan(
       ),
     );
   return row?.total ?? 0;
+}
+
+function activeReservation(excludeRequestId?: number) {
+  return and(
+    eq(equipmentRequests.status, "fulfilled"),
+    gte(competitions.endDate, todayInMexico()),
+    excludeRequestId
+      ? ne(equipmentConfirmationLines.requestId, excludeRequestId)
+      : undefined,
+  );
+}
+
+function competitionLabel(row: { name: string | null; city: string }) {
+  return row.name?.trim() || row.city;
+}
+
+/** Serialized units held by an active confirmation, with the competition they're reserved for. */
+async function reservedItems(
+  dbx: EquipmentDb,
+  itemIds: number[] | null,
+  excludeRequestId?: number,
+) {
+  if (itemIds && itemIds.length === 0) {
+    return new Map<number, { competitionId: number; name: string }>();
+  }
+  const rows = await dbx
+    .select({
+      itemId: equipmentConfirmationLines.itemId,
+      competitionId: competitions.id,
+      name: competitions.name,
+      city: competitions.city,
+    })
+    .from(equipmentConfirmationLines)
+    .innerJoin(
+      equipmentRequests,
+      eq(equipmentRequests.id, equipmentConfirmationLines.requestId),
+    )
+    .innerJoin(
+      competitions,
+      eq(competitions.id, equipmentRequests.competitionId),
+    )
+    .where(
+      and(
+        itemIds
+          ? inArray(equipmentConfirmationLines.itemId, itemIds)
+          : sql`${equipmentConfirmationLines.itemId} is not null`,
+        activeReservation(excludeRequestId),
+      ),
+    );
+  return new Map(
+    rows.map((row) => [
+      row.itemId!,
+      { competitionId: row.competitionId, name: competitionLabel(row) },
+    ]),
+  );
+}
+
+/** Bulk units of `typeId` that `guardianUserId` has confirmed for competitions. */
+async function bulkReserved(
+  tx: EquipmentDb,
+  typeId: number,
+  guardianUserId: string,
+  excludeRequestId?: number,
+) {
+  const [row] = await tx
+    .select({
+      total: sql<number>`coalesce(sum(${equipmentConfirmationLines.quantity}), 0)::int`,
+    })
+    .from(equipmentConfirmationLines)
+    .innerJoin(
+      equipmentRequests,
+      eq(equipmentRequests.id, equipmentConfirmationLines.requestId),
+    )
+    .innerJoin(
+      competitions,
+      eq(competitions.id, equipmentRequests.competitionId),
+    )
+    .where(
+      and(
+        eq(equipmentConfirmationLines.typeId, typeId),
+        isNull(equipmentConfirmationLines.itemId),
+        eq(equipmentConfirmationLines.guardianUserId, guardianUserId),
+        activeReservation(excludeRequestId),
+      ),
+    );
+  return row?.total ?? 0;
+}
+
+/** Bulk units of `typeId` the guardian can't lend, move or remove right now. */
+async function bulkCommitted(
+  tx: EquipmentDb,
+  typeId: number,
+  guardianUserId: string,
+  excludeRequestId?: number,
+) {
+  const onLoan = await bulkOnLoan(tx, typeId, guardianUserId);
+  const reserved = await bulkReserved(
+    tx,
+    typeId,
+    guardianUserId,
+    excludeRequestId,
+  );
+  return onLoan + reserved;
+}
+
+async function assertNotReserved(
+  tx: EquipmentDb,
+  items: readonly { id: number; sku: string }[],
+) {
+  const reserved = await reservedItems(
+    tx,
+    items.map((item) => item.id),
+  );
+  for (const item of items) {
+    const reservation = reserved.get(item.id);
+    if (reservation) {
+      throw new EquipmentError(
+        `${item.sku} está reservada para ${reservation.name}`,
+      );
+    }
+  }
 }
 
 async function stockQuantity(
@@ -597,6 +762,7 @@ export async function registerAcquisition(
           throw new EquipmentError(`${item.sku} está prestado`);
         }
       }
+      await assertNotReserved(tx, items);
       await tx
         .update(equipmentItems)
         .set({ status: "retired", updatedAt: new Date() })
@@ -638,10 +804,10 @@ export async function registerAcquisition(
         );
       }
       const quantity = await stockQuantity(tx, type.id, line.guardianUserId);
-      const onLoan = await bulkOnLoan(tx, type.id, line.guardianUserId);
+      const committed = await bulkCommitted(tx, type.id, line.guardianUserId);
       assertBulkAvailable(
         line.quantity,
-        availableQuantity(quantity, onLoan),
+        availableQuantity(quantity, committed),
         type.name,
       );
       await changeStock(tx, type.id, line.guardianUserId, -line.quantity);
@@ -748,11 +914,12 @@ export async function updateItem(
   );
   if (Object.keys(changes).length === 0) return { changed: false };
 
-  if (changes.status) {
+  if (changes.status && input.status === "retired") {
     const onLoan = await openLoanItemIds(tx, [item.id]);
-    if (onLoan.has(item.id) && input.status === "retired") {
+    if (onLoan.has(item.id)) {
       throw new EquipmentError("No se puede dar de baja una unidad prestada");
     }
+    await assertNotReserved(tx, [item]);
   }
 
   await tx
@@ -812,6 +979,7 @@ export async function transferItems(
       throw new EquipmentError(`${item.sku} está prestado; regístralo primero`);
     }
   }
+  await assertNotReserved(tx, moving);
   if (moving.length === 0) return { moved: [] as typeof items };
 
   await tx
@@ -859,10 +1027,10 @@ export async function transferStock(
   await assertUserExists(tx, input.toUserId);
 
   const quantity = await stockQuantity(tx, type.id, input.fromUserId);
-  const onLoan = await bulkOnLoan(tx, type.id, input.fromUserId);
+  const committed = await bulkCommitted(tx, type.id, input.fromUserId);
   assertBulkAvailable(
     input.quantity,
-    availableQuantity(quantity, onLoan),
+    availableQuantity(quantity, committed),
     type.name,
   );
 
@@ -904,9 +1072,12 @@ export async function adjustStock(
 
   const quantity = await stockQuantity(tx, type.id, input.guardianUserId);
   const onLoan = await bulkOnLoan(tx, type.id, input.guardianUserId);
-  if (quantity + input.delta < onLoan) {
+  const reserved = await bulkReserved(tx, type.id, input.guardianUserId);
+  if (quantity + input.delta < onLoan + reserved) {
     throw new EquipmentError(
-      `No puedes dejar menos de ${onLoan} (prestados actualmente)`,
+      reserved > 0
+        ? `No puedes dejar menos de ${onLoan + reserved} (${onLoan} prestados y ${reserved} reservados para competencias)`
+        : `No puedes dejar menos de ${onLoan} (prestados actualmente)`,
     );
   }
 
@@ -956,13 +1127,120 @@ export async function setStockNotes(
   });
 }
 
+/** `quantity` free units of a serialized type held by `guardianUserId`, best first. */
+async function pickFreeUnits(
+  tx: EquipmentDb,
+  input: {
+    typeId: number;
+    quantity: number;
+    guardianUserId: string;
+    exclude: ReadonlySet<number>;
+    excludeRequestId?: number;
+  },
+): Promise<number[]> {
+  if (input.quantity <= 0) return [];
+  const type = await getTypeOrThrow(tx, input.typeId);
+  if (type.tracking !== "serialized") {
+    throw new EquipmentError(`${type.name} se maneja por cantidad`);
+  }
+  const candidates = await tx
+    .select({
+      id: equipmentItems.id,
+      sku: equipmentItems.sku,
+      status: equipmentItems.status,
+    })
+    .from(equipmentItems)
+    .where(
+      and(
+        eq(equipmentItems.typeId, type.id),
+        eq(equipmentItems.guardianUserId, input.guardianUserId),
+        inArray(equipmentItems.status, [...LENDABLE_STATUSES]),
+      ),
+    );
+  const ids = candidates.map((c) => c.id);
+  const busy = await openLoanItemIds(tx, ids);
+  const reserved = await reservedItems(tx, ids, input.excludeRequestId);
+  const free = candidates.filter(
+    (c) => !busy.has(c.id) && !reserved.has(c.id) && !input.exclude.has(c.id),
+  );
+  if (free.length < input.quantity) {
+    throw new EquipmentError(
+      `Solo hay ${free.length} ${type.name} disponible(s) con ese guardián`,
+    );
+  }
+  return pickUnits(free, input.quantity).map((unit) => unit.id);
+}
+
+async function lockCandidateItems(
+  tx: EquipmentDb,
+  ids: number[],
+  excludeRequestId?: number,
+) {
+  if (ids.length === 0) return [];
+  const items = await tx
+    .select()
+    .from(equipmentItems)
+    .where(inArray(equipmentItems.id, ids))
+    .for("update");
+  if (items.length !== ids.length) {
+    throw new EquipmentError("Alguna unidad no existe");
+  }
+  const busy = await openLoanItemIds(tx, ids);
+  const reserved = await reservedItems(tx, ids, excludeRequestId);
+  return items.map((item) => ({
+    ...item,
+    onOpenLoan: busy.has(item.id),
+    reservedFor: reserved.get(item.id)?.name ?? null,
+  }));
+}
+
+type BulkLineInput = {
+  typeId: number;
+  quantity: number;
+  guardianUserId: string;
+};
+
+/** Drops empty rows; each type/guardian pair must fit in what that guardian has free. */
+async function validateBulkLines(
+  tx: EquipmentDb,
+  lines: readonly BulkLineInput[],
+  excludeRequestId?: number,
+) {
+  const result: (BulkLineInput & { type: EquipmentType })[] = [];
+  const seen = new Set<string>();
+  for (const line of lines) {
+    if (line.quantity <= 0) continue;
+    const type = await getTypeOrThrow(tx, line.typeId);
+    if (type.tracking !== "bulk") {
+      throw new EquipmentError(`${type.name} se maneja por unidad`);
+    }
+    const key = `${type.id}:${line.guardianUserId}`;
+    if (seen.has(key)) {
+      throw new EquipmentError(`${type.name} aparece dos veces`);
+    }
+    seen.add(key);
+    const quantity = await stockQuantity(tx, type.id, line.guardianUserId);
+    const committed = await bulkCommitted(
+      tx,
+      type.id,
+      line.guardianUserId,
+      excludeRequestId,
+    );
+    assertBulkAvailable(
+      line.quantity,
+      availableQuantity(quantity, committed),
+      type.name,
+    );
+    result.push({ ...line, type });
+  }
+  return result;
+}
+
 export type CreateLoanInput = {
   actorId: string;
   borrowerUserId: string;
   lentByUserId: string;
   competitionId?: number | null;
-  /** Organizers' request this loan fulfils; must match `competitionId`. */
-  requestId?: number | null;
   reason: string;
   loanedAt: string;
   dueAt?: string | null;
@@ -992,92 +1270,26 @@ export async function createLoan(
   await assertUserExists(tx, input.borrowerUserId);
   await assertUserExists(tx, input.lentByUserId);
 
-  if (input.requestId) {
-    const [request] = await tx
-      .select({
-        competitionId: equipmentRequests.competitionId,
-        status: equipmentRequests.status,
-      })
-      .from(equipmentRequests)
-      .where(eq(equipmentRequests.id, input.requestId))
-      .for("update");
-    if (!request) throw new EquipmentError("Solicitud no encontrada");
-    assertRequestFulfillable(request, input.competitionId);
-  }
-
   const itemIds = new Set(input.itemIds ?? []);
-
   for (const pick of input.autoPick ?? []) {
-    if (pick.quantity <= 0) continue;
-    const type = await getTypeOrThrow(tx, pick.typeId);
-    if (type.tracking !== "serialized") {
-      throw new EquipmentError(`${type.name} se presta por cantidad`);
-    }
-    const candidates = await tx
-      .select({
-        id: equipmentItems.id,
-        sku: equipmentItems.sku,
-        status: equipmentItems.status,
-      })
-      .from(equipmentItems)
-      .where(
-        and(
-          eq(equipmentItems.typeId, type.id),
-          eq(equipmentItems.guardianUserId, input.lentByUserId),
-          inArray(equipmentItems.status, [...LENDABLE_STATUSES]),
-        ),
-      );
-    const busy = await openLoanItemIds(
-      tx,
-      candidates.map((c) => c.id),
-    );
-    const free = candidates.filter(
-      (c) => !busy.has(c.id) && !itemIds.has(c.id),
-    );
-    if (free.length < pick.quantity) {
-      throw new EquipmentError(
-        `Solo hay ${free.length} ${type.name} disponible(s) con ese guardián`,
-      );
-    }
-    for (const unit of pickUnits(free, pick.quantity)) itemIds.add(unit.id);
+    const picked = await pickFreeUnits(tx, {
+      ...pick,
+      guardianUserId: input.lentByUserId,
+      exclude: itemIds,
+    });
+    for (const id of picked) itemIds.add(id);
   }
 
-  const ids = [...itemIds];
-  const items = ids.length
-    ? await tx
-        .select()
-        .from(equipmentItems)
-        .where(inArray(equipmentItems.id, ids))
-        .for("update")
-    : [];
-  if (items.length !== ids.length) {
-    throw new EquipmentError("Alguna unidad no existe");
-  }
-  const busy = await openLoanItemIds(tx, ids);
-  assertItemsLendable(
-    items.map((item) => ({ ...item, onOpenLoan: busy.has(item.id) })),
-    input.lentByUserId,
+  const items = await lockCandidateItems(tx, [...itemIds]);
+  assertItemsLendable(items, input.lentByUserId);
+
+  const bulk = await validateBulkLines(
+    tx,
+    (input.bulk ?? []).map((line) => ({
+      ...line,
+      guardianUserId: input.lentByUserId,
+    })),
   );
-
-  const bulk = (input.bulk ?? []).filter((line) => line.quantity > 0);
-  const bulkTypes = new Map<number, EquipmentType>();
-  for (const line of bulk) {
-    const type = await getTypeOrThrow(tx, line.typeId);
-    if (type.tracking !== "bulk") {
-      throw new EquipmentError(`${type.name} se presta por unidad`);
-    }
-    if (bulkTypes.has(type.id)) {
-      throw new EquipmentError(`${type.name} aparece dos veces`);
-    }
-    const quantity = await stockQuantity(tx, type.id, input.lentByUserId);
-    const onLoan = await bulkOnLoan(tx, type.id, input.lentByUserId);
-    assertBulkAvailable(
-      line.quantity,
-      availableQuantity(quantity, onLoan),
-      type.name,
-    );
-    bulkTypes.set(type.id, type);
-  }
 
   if (items.length === 0 && bulk.length === 0) {
     throw new EquipmentError("Agrega al menos un equipo al préstamo");
@@ -1089,7 +1301,6 @@ export async function createLoan(
       borrowerUserId: input.borrowerUserId,
       lentByUserId: input.lentByUserId,
       competitionId: input.competitionId ?? null,
-      requestId: input.requestId || null,
       reason,
       loanedAt: input.loanedAt,
       dueAt: input.dueAt || null,
@@ -1097,17 +1308,6 @@ export async function createLoan(
     })
     .returning({ id: equipmentLoans.id });
   const loanId = loan!.id;
-
-  if (input.requestId) {
-    await tx
-      .update(equipmentRequests)
-      .set({
-        status: "fulfilled",
-        fulfilledAt: sql`coalesce(${equipmentRequests.fulfilledAt}, now())`,
-        updatedAt: new Date(),
-      })
-      .where(eq(equipmentRequests.id, input.requestId));
-  }
 
   if (items.length) {
     await tx.insert(equipmentLoanLines).values(
@@ -1139,7 +1339,7 @@ export async function createLoan(
       loanId,
       fromUserId: input.lentByUserId,
       toUserId: input.borrowerUserId,
-      details: { sku: item.sku, requestId: input.requestId || undefined },
+      details: { sku: item.sku },
     })),
     ...bulk.map((line) => ({
       action: "loaned" as const,
@@ -1150,7 +1350,7 @@ export async function createLoan(
       loanId,
       fromUserId: input.lentByUserId,
       toUserId: input.borrowerUserId,
-      details: input.requestId ? { requestId: input.requestId } : null,
+      details: null,
     })),
   ]);
 
@@ -1269,6 +1469,124 @@ export async function saveEquipmentRequest(
   return { requestId, status, summary };
 }
 
+export type ConfirmEquipmentInput = {
+  actorId: string;
+  requestId: number;
+  itemIds?: number[];
+  /** Serialized types: N units chosen automatically from that guardian. */
+  autoPick?: { typeId: number; quantity: number; guardianUserId: string }[];
+  bulk?: { typeId: number; quantity: number; guardianUserId: string }[];
+};
+
+/**
+ * The delegates confirm what they'll bring to the competition. Nothing is
+ * lent: units stay with their guardian but are reserved until the competition
+ * ends. Confirming again replaces the previous lines.
+ */
+export async function confirmEquipmentRequest(
+  tx: EquipmentDb,
+  input: ConfirmEquipmentInput,
+): Promise<{ requestId: number; competitionId: number; summary: string }> {
+  const [request] = await tx
+    .select({
+      id: equipmentRequests.id,
+      status: equipmentRequests.status,
+      competitionId: equipmentRequests.competitionId,
+      competitionEndDate: competitions.endDate,
+    })
+    .from(equipmentRequests)
+    .innerJoin(
+      competitions,
+      eq(competitions.id, equipmentRequests.competitionId),
+    )
+    .where(eq(equipmentRequests.id, input.requestId))
+    .for("update", { of: equipmentRequests });
+  if (!request) throw new EquipmentError("Solicitud no encontrada");
+  assertRequestConfirmable(request, todayInMexico());
+
+  const itemIds = new Set(input.itemIds ?? []);
+  for (const pick of input.autoPick ?? []) {
+    await assertUserExists(tx, pick.guardianUserId);
+    const picked = await pickFreeUnits(tx, {
+      ...pick,
+      exclude: itemIds,
+      excludeRequestId: request.id,
+    });
+    for (const id of picked) itemIds.add(id);
+  }
+
+  const items = await lockCandidateItems(tx, [...itemIds], request.id);
+  assertItemsConfirmable(items);
+
+  for (const line of input.bulk ?? []) {
+    if (line.quantity > 0) await assertUserExists(tx, line.guardianUserId);
+  }
+  const bulk = await validateBulkLines(tx, input.bulk ?? [], request.id);
+
+  if (items.length === 0 && bulk.length === 0) {
+    throw new EquipmentError("Agrega al menos un equipo a la confirmación");
+  }
+
+  await tx
+    .delete(equipmentConfirmationLines)
+    .where(eq(equipmentConfirmationLines.requestId, request.id));
+  await tx.insert(equipmentConfirmationLines).values([
+    ...items.map((item) => ({
+      requestId: request.id,
+      typeId: item.typeId,
+      itemId: item.id,
+      guardianUserId: item.guardianUserId!,
+      quantity: 1,
+    })),
+    ...bulk.map((line) => ({
+      requestId: request.id,
+      typeId: line.typeId,
+      guardianUserId: line.guardianUserId,
+      quantity: line.quantity,
+    })),
+  ]);
+  await tx
+    .update(equipmentRequests)
+    .set({
+      status: "fulfilled",
+      fulfilledAt: sql`coalesce(${equipmentRequests.fulfilledAt}, now())`,
+      confirmedByUserId: input.actorId,
+      updatedAt: new Date(),
+    })
+    .where(eq(equipmentRequests.id, request.id));
+
+  const details = {
+    requestId: request.id,
+    competitionId: request.competitionId,
+  };
+  await tx.insert(equipmentEvents).values([
+    ...items.map((item) => ({
+      action: "request_confirmed" as const,
+      actorId: input.actorId,
+      itemId: item.id,
+      typeId: item.typeId,
+      guardianUserId: item.guardianUserId,
+      details: { ...details, sku: item.sku },
+    })),
+    ...bulk.map((line) => ({
+      action: "request_confirmed" as const,
+      actorId: input.actorId,
+      typeId: line.typeId,
+      guardianUserId: line.guardianUserId,
+      quantityDelta: line.quantity,
+      details,
+    })),
+  ]);
+
+  const summary = await describeConfirmation(tx, request.id);
+  return {
+    requestId: request.id,
+    competitionId: request.competitionId,
+    summary,
+  };
+}
+
+/** Cancelling a confirmed request drops its lines, which frees the reserved units. */
 export async function cancelEquipmentRequest(
   tx: EquipmentDb,
   input: { actorId: string; requestId: number },
@@ -1280,15 +1598,22 @@ export async function cancelEquipmentRequest(
     .for("update");
   if (!request) throw new EquipmentError("Solicitud no encontrada");
   if (request.status === "cancelled") return request;
-  if (request.status === "fulfilled") {
-    throw new EquipmentError(
-      "La solicitud ya tiene préstamo; registra la devolución en su lugar",
-    );
-  }
 
+  const confirmed =
+    request.status === "fulfilled"
+      ? await describeConfirmation(tx, request.id)
+      : null;
+  await tx
+    .delete(equipmentConfirmationLines)
+    .where(eq(equipmentConfirmationLines.requestId, request.id));
   await tx
     .update(equipmentRequests)
-    .set({ status: "cancelled", updatedAt: new Date() })
+    .set({
+      status: "cancelled",
+      fulfilledAt: null,
+      confirmedByUserId: null,
+      updatedAt: new Date(),
+    })
     .where(eq(equipmentRequests.id, request.id));
   await tx.insert(equipmentEvents).values({
     action: "request_cancelled",
@@ -1297,6 +1622,7 @@ export async function cancelEquipmentRequest(
       requestId: request.id,
       competitionId: request.competitionId,
       status: { before: request.status, after: "cancelled" },
+      ...(confirmed ? { confirmed } : {}),
     },
   });
   return request;
@@ -1458,6 +1784,23 @@ export async function describeLoan(tx: EquipmentDb, loanId: number) {
   return rows.map((row) => `${row.quantity} ${row.name}`).join(", ");
 }
 
+export async function describeConfirmation(tx: EquipmentDb, requestId: number) {
+  const rows = await tx
+    .select({
+      name: equipmentTypes.name,
+      quantity: sql<number>`sum(${equipmentConfirmationLines.quantity})::int`,
+    })
+    .from(equipmentConfirmationLines)
+    .innerJoin(
+      equipmentTypes,
+      eq(equipmentTypes.id, equipmentConfirmationLines.typeId),
+    )
+    .where(eq(equipmentConfirmationLines.requestId, requestId))
+    .groupBy(equipmentTypes.name, equipmentTypes.sortOrder)
+    .orderBy(asc(equipmentTypes.sortOrder), asc(equipmentTypes.name));
+  return rows.map((row) => `${row.quantity} ${row.name}`).join(", ");
+}
+
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
@@ -1506,6 +1849,7 @@ export type EquipmentItemRow = {
   guardian: EquipmentPerson | null;
   source: string | null;
   onLoanId: number | null;
+  reservedFor: { competitionId: number; name: string } | null;
 };
 
 export async function listEquipmentItems(
@@ -1557,6 +1901,7 @@ export async function listEquipmentItems(
     )
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(asc(equipmentTypes.sortOrder), asc(equipmentItems.sku));
+  const reserved = rows.length ? await reservedItems(dbx, null) : new Map();
 
   return rows.map((row) => ({
     id: row.id,
@@ -1576,6 +1921,7 @@ export async function listEquipmentItems(
       : null,
     source: row.source,
     onLoanId: row.onLoanId,
+    reservedFor: reserved.get(row.id) ?? null,
   }));
 }
 
@@ -1585,6 +1931,8 @@ export type EquipmentStockRow = {
   category: EquipmentCategory;
   quantity: number;
   onLoan: number;
+  /** Confirmed for competitions that haven't ended; still with the guardian. */
+  reserved: number;
   notes: string | null;
   guardian: EquipmentPerson;
 };
@@ -1613,6 +1961,17 @@ export async function listEquipmentStock(
           and ${equipmentLoanLines.returnedAt} is null
           and ${equipmentLoans.lentByUserId} = ${equipmentStock.guardianUserId}
       ), 0)::int`,
+      reserved: sql<number>`coalesce((
+        select sum(${equipmentConfirmationLines.quantity})
+        from ${equipmentConfirmationLines}
+        inner join ${equipmentRequests} on ${equipmentRequests.id} = ${equipmentConfirmationLines.requestId}
+        inner join ${competitions} on ${competitions.id} = ${equipmentRequests.competitionId}
+        where ${equipmentConfirmationLines.typeId} = ${equipmentStock.typeId}
+          and ${equipmentConfirmationLines.itemId} is null
+          and ${equipmentConfirmationLines.guardianUserId} = ${equipmentStock.guardianUserId}
+          and ${equipmentRequests.status} = 'fulfilled'
+          and ${competitions.endDate} >= ${todayInMexico()}
+      ), 0)::int`,
     })
     .from(equipmentStock)
     .innerJoin(equipmentTypes, eq(equipmentTypes.id, equipmentStock.typeId))
@@ -1625,13 +1984,17 @@ export async function listEquipmentStock(
     .orderBy(asc(equipmentTypes.sortOrder), asc(equipmentTypes.name));
 
   return rows
-    .filter((row) => row.quantity > 0 || row.onLoan > 0 || row.notes)
+    .filter(
+      (row) =>
+        row.quantity > 0 || row.onLoan > 0 || row.reserved > 0 || row.notes,
+    )
     .map((row) => ({
       typeId: row.typeId,
       typeName: row.typeName,
       category: row.category,
       quantity: row.quantity,
       onLoan: row.onLoan,
+      reserved: row.reserved,
       notes: row.notes,
       guardian: {
         id: row.guardianId,
@@ -1647,6 +2010,7 @@ export type InventorySummaryRow = {
   total: number;
   available: number;
   onLoan: number;
+  reserved: number;
   faulty: number;
   inRepair: number;
   lost: number;
@@ -1664,6 +2028,7 @@ export function summarizeInventory(
       total: 0,
       available: 0,
       onLoan: 0,
+      reserved: 0,
       faulty: 0,
       inRepair: 0,
       lost: 0,
@@ -1679,6 +2044,7 @@ export function summarizeInventory(
         if (item.status === "faulty") row.faulty++;
         if (item.status === "in_repair") row.inRepair++;
         if (item.onLoanId != null) row.onLoan++;
+        else if (item.reservedFor) row.reserved++;
         else if (item.status !== "in_repair") row.available++;
       }
     } else {
@@ -1686,7 +2052,11 @@ export function summarizeInventory(
         if (entry.typeId !== type.id) continue;
         row.total += entry.quantity;
         row.onLoan += entry.onLoan;
-        row.available += availableQuantity(entry.quantity, entry.onLoan);
+        row.reserved += entry.reserved;
+        row.available += availableQuantity(
+          entry.quantity,
+          entry.onLoan + entry.reserved,
+        );
       }
     }
     return row;
@@ -1857,7 +2227,6 @@ export type EquipmentLoanRow = {
   dueAt: string | null;
   returnedAt: Date | null;
   createdAt: Date;
-  requestId: number | null;
   status: LoanStatus;
   borrower: EquipmentPerson;
   lentBy: EquipmentPerson;
@@ -1905,7 +2274,6 @@ export async function listEquipmentLoans(
       dueAt: equipmentLoans.dueAt,
       returnedAt: equipmentLoans.returnedAt,
       createdAt: equipmentLoans.createdAt,
-      requestId: equipmentLoans.requestId,
       borrowerId: borrower.id,
       borrowerName: borrower.name,
       borrowerWcaId: borrower.wcaId,
@@ -1979,7 +2347,6 @@ export async function listEquipmentLoans(
       dueAt: loan.dueAt,
       returnedAt: loan.returnedAt,
       createdAt: loan.createdAt,
-      requestId: loan.requestId,
       status: getLoanStatus(loan, loanLines, today),
       borrower: {
         id: loan.borrowerId,
@@ -2143,6 +2510,7 @@ export type EquipmentRequestRow = {
   fulfilledAt: Date | null;
   updatedAt: Date;
   requestedBy: { id: string; name: string } | null;
+  confirmedBy: { id: string; name: string } | null;
   lines: EquipmentRequestLineRow[];
   summary: string;
 };
@@ -2151,6 +2519,7 @@ async function loadRequests(
   dbx: EquipmentDb,
   where: SQL | undefined,
 ): Promise<EquipmentRequestRow[]> {
+  const confirmer = alias(user, "confirmer");
   const requests = await dbx
     .select({
       id: equipmentRequests.id,
@@ -2162,9 +2531,12 @@ async function loadRequests(
       updatedAt: equipmentRequests.updatedAt,
       requestedById: user.id,
       requestedByName: user.name,
+      confirmedById: confirmer.id,
+      confirmedByName: confirmer.name,
     })
     .from(equipmentRequests)
     .leftJoin(user, eq(user.id, equipmentRequests.requestedByUserId))
+    .leftJoin(confirmer, eq(confirmer.id, equipmentRequests.confirmedByUserId))
     .where(where)
     .orderBy(desc(equipmentRequests.updatedAt));
   if (requests.length === 0) return [];
@@ -2191,27 +2563,38 @@ async function loadRequests(
     )
     .orderBy(asc(equipmentTypes.sortOrder), asc(equipmentTypes.name));
 
-  return requests.map(({ requestedById, requestedByName, ...request }) => {
-    const own = lines
-      .filter((line) => line.requestId === request.id)
-      .map((line) => ({
-        typeId: line.typeId,
-        typeName: line.typeName,
-        category: line.category,
-        tracking: line.tracking,
-        quantity: line.quantity,
-      }));
-    return {
-      ...request,
-      requestedBy: requestedById
-        ? { id: requestedById, name: requestedByName! }
-        : null,
-      lines: own,
-      summary: own
-        .map((line) => `${line.quantity} ${line.typeName}`)
-        .join(", "),
-    };
-  });
+  return requests.map(
+    ({
+      requestedById,
+      requestedByName,
+      confirmedById,
+      confirmedByName,
+      ...request
+    }) => {
+      const own = lines
+        .filter((line) => line.requestId === request.id)
+        .map((line) => ({
+          typeId: line.typeId,
+          typeName: line.typeName,
+          category: line.category,
+          tracking: line.tracking,
+          quantity: line.quantity,
+        }));
+      return {
+        ...request,
+        requestedBy: requestedById
+          ? { id: requestedById, name: requestedByName! }
+          : null,
+        confirmedBy: confirmedById
+          ? { id: confirmedById, name: confirmedByName! }
+          : null,
+        lines: own,
+        summary: own
+          .map((line) => `${line.quantity} ${line.typeName}`)
+          .join(", "),
+      };
+    },
+  );
 }
 
 export async function getEquipmentRequest(
@@ -2233,6 +2616,7 @@ export type EquipmentRequestListRow = EquipmentRequestRow & {
     name: string | null;
     city: string;
     startDate: string;
+    endDate: string;
   };
 };
 
@@ -2251,6 +2635,7 @@ export async function listEquipmentRequests(
       name: competitions.name,
       city: competitions.city,
       startDate: competitions.startDate,
+      endDate: competitions.endDate,
     })
     .from(competitions)
     .where(
@@ -2271,6 +2656,74 @@ export async function listEquipmentRequests(
     );
 }
 
+export type EquipmentConfirmationLineRow = {
+  id: number;
+  typeId: number;
+  typeName: string;
+  category: EquipmentCategory;
+  tracking: EquipmentTracking;
+  itemId: number | null;
+  sku: string | null;
+  quantity: number;
+  guardian: EquipmentPerson;
+};
+
+export type EquipmentConfirmation = {
+  confirmedAt: Date | null;
+  confirmedBy: { id: string; name: string } | null;
+  lines: EquipmentConfirmationLineRow[];
+  summary: string;
+};
+
+export async function listConfirmationLines(
+  dbx: EquipmentDb,
+  requestId: number,
+): Promise<EquipmentConfirmationLineRow[]> {
+  const rows = await dbx
+    .select({
+      id: equipmentConfirmationLines.id,
+      typeId: equipmentConfirmationLines.typeId,
+      typeName: equipmentTypes.name,
+      category: equipmentTypes.category,
+      tracking: equipmentTypes.tracking,
+      itemId: equipmentConfirmationLines.itemId,
+      sku: equipmentItems.sku,
+      quantity: equipmentConfirmationLines.quantity,
+      guardianId: user.id,
+      guardianName: user.name,
+      guardianWcaId: user.wcaId,
+      guardianImage: user.image,
+    })
+    .from(equipmentConfirmationLines)
+    .innerJoin(
+      equipmentTypes,
+      eq(equipmentTypes.id, equipmentConfirmationLines.typeId),
+    )
+    .innerJoin(user, eq(user.id, equipmentConfirmationLines.guardianUserId))
+    .leftJoin(
+      equipmentItems,
+      eq(equipmentItems.id, equipmentConfirmationLines.itemId),
+    )
+    .where(eq(equipmentConfirmationLines.requestId, requestId))
+    .orderBy(
+      asc(user.name),
+      asc(equipmentTypes.sortOrder),
+      asc(equipmentTypes.name),
+      asc(equipmentItems.sku),
+    );
+  return rows.map(
+    ({ guardianId, guardianName, guardianWcaId, guardianImage, ...line }) => ({
+      ...line,
+      guardian: {
+        id: guardianId,
+        name: guardianName,
+        wcaId: guardianWcaId,
+        image: guardianImage,
+      },
+    }),
+  );
+}
+
 export type EquipmentSheetPerson = EquipmentPerson & { email: string | null };
 
 export type CompetitionEquipmentSheet = {
@@ -2285,7 +2738,8 @@ export type CompetitionEquipmentSheet = {
   primaryDelegate: EquipmentSheetPerson | null;
   primaryOrganizer: EquipmentSheetPerson | null;
   request: EquipmentRequestRow | null;
-  loans: EquipmentLoanRow[];
+  /** What the delegates confirmed they'll bring; `null` until they do. */
+  confirmation: EquipmentConfirmation | null;
 };
 
 /** Everything the equipment card, the panel and the printable sheet show. */
@@ -2307,7 +2761,7 @@ export async function getCompetitionEquipmentSheet(
     .where(eq(competitions.id, competitionId));
   if (!competition) return null;
 
-  const [delegates, organizers, request, loans] = await Promise.all([
+  const [delegates, organizers, request] = await Promise.all([
     dbx
       .select({ ...personColumns, email: user.email })
       .from(competitionDelegates)
@@ -2326,14 +2780,31 @@ export async function getCompetitionEquipmentSheet(
       .where(eq(competitionOrganizers.competitionId, competitionId))
       .orderBy(desc(competitionOrganizers.isPrimary), asc(user.name)),
     getEquipmentRequest(dbx, { competitionId }),
-    listEquipmentLoans(dbx, { competitionId }),
   ]);
+
+  let confirmation: EquipmentConfirmation | null = null;
+  if (request?.status === "fulfilled") {
+    const lines = await listConfirmationLines(dbx, request.id);
+    const totals = new Map<string, number>();
+    for (const line of lines) {
+      totals.set(
+        line.typeName,
+        (totals.get(line.typeName) ?? 0) + line.quantity,
+      );
+    }
+    confirmation = {
+      confirmedAt: request.fulfilledAt,
+      confirmedBy: request.confirmedBy,
+      lines,
+      summary: [...totals].map(([name, qty]) => `${qty} ${name}`).join(", "),
+    };
+  }
 
   return {
     competition,
     primaryDelegate: delegates[0] ?? null,
     primaryOrganizer: organizers[0] ?? null,
     request,
-    loans: [...loans].reverse(),
+    confirmation,
   };
 }

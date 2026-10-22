@@ -21,6 +21,7 @@ export function StockActions({
   guardian,
   quantity,
   onLoan,
+  reserved,
   notes,
   guardians,
 }: {
@@ -29,10 +30,11 @@ export function StockActions({
   guardian: EquipmentPerson;
   quantity: number;
   onLoan: number;
+  reserved: number;
   notes: string | null;
   guardians: EquipmentPerson[];
 }) {
-  const available = Math.max(0, quantity - onLoan);
+  const available = Math.max(0, quantity - onLoan - reserved);
   const hidden = (
     <>
       <input type="hidden" name="typeId" value={typeId} />
@@ -44,7 +46,7 @@ export function StockActions({
     <div className="flex gap-1">
       <FormDialog
         title={`Ajustar ${typeName}`}
-        description={`${guardian.name} tiene ${quantity} (${onLoan} prestados). Usa negativos para pérdidas o correcciones.`}
+        description={`${guardian.name} tiene ${quantity} (${onLoan} prestados${reserved > 0 ? `, ${reserved} reservados` : ""}). Usa negativos para pérdidas o correcciones.`}
         action={adjustStockAction}
         trigger={
           <Button size="icon" variant="ghost" aria-label="Ajustar cantidad">

@@ -1,16 +1,22 @@
 import "server-only";
 
+import { and, eq } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { z } from "zod";
 import { db } from "@workspace/db";
+import { EQUIPMENT_CARD_TITLE } from "@workspace/db/data/ams-board-template";
 import { EquipmentError, type EquipmentDb } from "@workspace/db/equipment";
 import {
+  competitionOrganizersOnly,
+  equipmentConfirmedNotificationRow,
   equipmentNotificationRow,
   insertNotifications,
   notificationUsersByIds,
 } from "@workspace/db/notifications";
+import { boardLists, boards, cards, competitions } from "@workspace/db/schema";
 import { ActionError } from "@workspace/server/action";
 
+import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
 import { getCalendarUrl } from "@/lib/urls";
 
@@ -57,6 +63,47 @@ export async function notifyEquipment(
         equipmentLabel: opts.equipmentLabel,
         loanId: opts.loanId,
         sku: opts.sku,
+      }),
+    ),
+  );
+}
+
+/** Tells the organizers, linking to the equipment card of the competition board. */
+export async function notifyEquipmentConfirmed(
+  tx: EquipmentDb,
+  opts: { actorId: string; competitionId: number; requestId: number },
+) {
+  const [organizers, [competition], [card]] = await Promise.all([
+    competitionOrganizersOnly(tx, opts.competitionId),
+    tx
+      .select({ name: competitions.name, city: competitions.city })
+      .from(competitions)
+      .where(eq(competitions.id, opts.competitionId)),
+    tx
+      .select({ boardId: boards.id, cardId: cards.id })
+      .from(boards)
+      .innerJoin(boardLists, eq(boardLists.boardId, boards.id))
+      .innerJoin(cards, eq(cards.listId, boardLists.id))
+      .where(
+        and(
+          eq(boards.competitionId, opts.competitionId),
+          eq(cards.title, EQUIPMENT_CARD_TITLE),
+        ),
+      )
+      .limit(1),
+  ]);
+  await insertNotifications(
+    tx,
+    organizers.map((recipient) =>
+      equipmentConfirmedNotificationRow({
+        recipient,
+        actorId: opts.actorId,
+        urls: notificationAppUrls(),
+        competitionId: opts.competitionId,
+        requestId: opts.requestId,
+        city: competition?.name?.trim() || competition?.city || "",
+        boardId: card?.boardId,
+        cardId: card?.cardId,
       }),
     ),
   );

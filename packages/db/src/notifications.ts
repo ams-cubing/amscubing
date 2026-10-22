@@ -146,6 +146,8 @@ export function formatNotificationTitle(
       return `Ahora eres guardián de: ${equipment}`;
     case "equipment_requested":
       return `Solicitud de equipo para ${city}`;
+    case "equipment_confirmed":
+      return `El delegado confirmó el equipo para ${city}`;
   }
 }
 
@@ -343,6 +345,40 @@ export function equipmentRequestNotificationRow(opts: {
       competitionId: opts.competitionId,
       requestId: opts.requestId,
       city: opts.city,
+    },
+  };
+}
+
+/** Sent to the organizers when a delegate confirms the equipment; opens the board card when there is one. */
+export function equipmentConfirmedNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  urls: AppUrls;
+  competitionId: number;
+  requestId: number;
+  city: string;
+  boardId?: number;
+  cardId?: number;
+}): NewNotificationRow {
+  const boards = opts.urls.boardsUrl.replace(/\/$/, "");
+  const calendar = opts.urls.calendarUrl.replace(/\/$/, "");
+  let href = `${calendar}/mis-competencias`;
+  if (opts.boardId != null) {
+    href = `${boards}/boards/${opts.boardId}`;
+    if (opts.cardId != null) href += `?card=${opts.cardId}`;
+  }
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: "equipment_confirmed",
+    title: formatNotificationTitle("equipment_confirmed", { city: opts.city }),
+    href,
+    payload: {
+      competitionId: opts.competitionId,
+      requestId: opts.requestId,
+      city: opts.city,
+      boardId: opts.boardId,
+      cardId: opts.cardId,
     },
   };
 }
