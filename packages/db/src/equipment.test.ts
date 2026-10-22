@@ -3,11 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   assertBulkAvailable,
   assertItemsLendable,
+  assertRequestFulfillable,
   availableQuantity,
+  EquipmentError,
   formatSku,
   getLoanStatus,
   groupByGuardian,
   maxSkuSequence,
+  nextRequestStatus,
+  normalizeRequestLines,
   parseSku,
   pickUnits,
   skuRange,
@@ -311,5 +315,82 @@ describe("groupByGuardian", () => {
     expect(groups.map((g) => g.guardian.id)).toEqual(["areli", "jaime"]);
     expect(groups[1]!.items).toHaveLength(1);
     expect(groups[1]!.stock).toHaveLength(1);
+  });
+});
+
+describe("normalizeRequestLines", () => {
+  it("drops empty rows and keeps the rest", () => {
+    expect(
+      normalizeRequestLines([
+        { typeId: 1, quantity: 8 },
+        { typeId: 2, quantity: 0 },
+        { typeId: 3, quantity: 12 },
+      ]),
+    ).toEqual([
+      { typeId: 1, quantity: 8 },
+      { typeId: 3, quantity: 12 },
+    ]);
+  });
+
+  it("rejects invalid quantities and repeated types", () => {
+    expect(() => normalizeRequestLines([{ typeId: 1, quantity: 1.5 }])).toThrow(
+      EquipmentError,
+    );
+    expect(() => normalizeRequestLines([{ typeId: 1, quantity: -2 }])).toThrow(
+      EquipmentError,
+    );
+    expect(() =>
+      normalizeRequestLines([{ typeId: 1, quantity: 5000 }]),
+    ).toThrow(EquipmentError);
+    expect(() =>
+      normalizeRequestLines([
+        { typeId: 1, quantity: 2 },
+        { typeId: 1, quantity: 3 },
+      ]),
+    ).toThrow("aparece dos veces");
+  });
+});
+
+describe("nextRequestStatus", () => {
+  it("starts as draft unless organizers submit", () => {
+    expect(nextRequestStatus(null, false)).toBe("draft");
+    expect(nextRequestStatus(null, true)).toBe("submitted");
+    expect(nextRequestStatus("draft", true)).toBe("submitted");
+  });
+
+  it("keeps a submitted request submitted when edited", () => {
+    expect(nextRequestStatus("submitted", false)).toBe("submitted");
+  });
+
+  it("reopens a cancelled request", () => {
+    expect(nextRequestStatus("cancelled", false)).toBe("draft");
+    expect(nextRequestStatus("cancelled", true)).toBe("submitted");
+  });
+
+  it("locks the request once a loan fulfils it", () => {
+    expect(() => nextRequestStatus("fulfilled", false)).toThrow(EquipmentError);
+  });
+});
+
+describe("assertRequestFulfillable", () => {
+  it("accepts loans for the request's own competition", () => {
+    expect(() =>
+      assertRequestFulfillable({ competitionId: 4, status: "submitted" }, 4),
+    ).not.toThrow();
+    expect(() =>
+      assertRequestFulfillable({ competitionId: 4, status: "fulfilled" }, 4),
+    ).not.toThrow();
+  });
+
+  it("rejects another competition, a missing one or a cancelled request", () => {
+    expect(() =>
+      assertRequestFulfillable({ competitionId: 4, status: "submitted" }, 5),
+    ).toThrow("otra competencia");
+    expect(() =>
+      assertRequestFulfillable({ competitionId: 4, status: "draft" }, null),
+    ).toThrow(EquipmentError);
+    expect(() =>
+      assertRequestFulfillable({ competitionId: 4, status: "cancelled" }, 4),
+    ).toThrow("cancelada");
   });
 });

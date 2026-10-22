@@ -6,6 +6,7 @@ import { formatAction } from "@/lib/utils";
 import { requireDelegate } from "@/lib/session";
 
 import { CompetitionDetailView } from "./_components/competition-detail-view";
+import { CompetitionEquipmentSection } from "./_components/competition-equipment-section";
 import { DetailsDialog } from "./_components/details-dialog";
 import {
   getCompetitionLogs,
@@ -62,6 +63,8 @@ async function PageContent({
           currentUserWcaId={currentUserWcaId}
           reassignmentCandidates={reassignmentCandidates}
         />
+
+        <CompetitionEquipmentSection competitionId={competition.id} />
 
         <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
           <h2 className="text-lg md:text-xl font-bold mb-4">

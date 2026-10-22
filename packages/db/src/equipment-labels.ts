@@ -3,6 +3,7 @@ import type {
   equipmentAcquisitions,
   equipmentEvents,
   equipmentItems,
+  equipmentRequests,
 } from "./schema";
 
 export type EquipmentStatus = (typeof equipmentItems.$inferSelect)["status"];
@@ -13,6 +14,8 @@ export type EquipmentEventAction =
 export type EquipmentCategory = EquipmentType["category"];
 export type EquipmentTracking = EquipmentType["tracking"];
 export type LoanStatus = "active" | "partial" | "overdue" | "returned";
+export type EquipmentRequestStatus =
+  (typeof equipmentRequests.$inferSelect)["status"];
 
 export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
   functional: "Funcional",
@@ -55,7 +58,27 @@ export const EQUIPMENT_EVENT_LABELS: Record<EquipmentEventAction, string> = {
   returned: "Devolución",
   acquisition_recorded: "Adquisición/baja",
   retired: "Baja",
+  request_updated: "Solicitud editada",
+  request_submitted: "Solicitud enviada",
+  request_cancelled: "Solicitud cancelada",
 };
+
+export const EQUIPMENT_REQUEST_STATUS_LABELS: Record<
+  EquipmentRequestStatus,
+  string
+> = {
+  draft: "Borrador",
+  submitted: "Enviada al delegado",
+  fulfilled: "Préstamo registrado",
+  cancelled: "Cancelada",
+};
+
+/** Organizers can still change the request in these states. */
+export const EDITABLE_REQUEST_STATUSES: readonly EquipmentRequestStatus[] = [
+  "draft",
+  "submitted",
+  "cancelled",
+];
 
 export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   active: "Prestado",

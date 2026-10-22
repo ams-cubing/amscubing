@@ -52,6 +52,16 @@ export const equipmentEventActionEnum = pgEnum("equipment_event_action", [
   "returned",
   "acquisition_recorded",
   "retired",
+  "request_updated",
+  "request_submitted",
+  "request_cancelled",
+]);
+
+export const equipmentRequestStatusEnum = pgEnum("equipment_request_status", [
+  "draft",
+  "submitted",
+  "fulfilled",
+  "cancelled",
 ]);
 
 export const equipmentTypes = pgTable("equipment_type", {
@@ -158,6 +168,46 @@ export const equipmentStock = pgTable(
 
 export type EquipmentStock = InferSelectModel<typeof equipmentStock>;
 
+/** What the organizers of a competition ask for, before a delegate lends it. */
+export const equipmentRequests = pgTable("equipment_request", {
+  id: serial("id").primaryKey(),
+  competitionId: integer("competition_id")
+    .notNull()
+    .unique()
+    .references(() => competitions.id, { onDelete: "cascade" }),
+  status: equipmentRequestStatusEnum("status").notNull().default("draft"),
+  notes: text("notes"),
+  requestedByUserId: text("requested_by_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  submittedAt: timestamp("submitted_at"),
+  fulfilledAt: timestamp("fulfilled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type EquipmentRequest = InferSelectModel<typeof equipmentRequests>;
+
+export const equipmentRequestLines = pgTable(
+  "equipment_request_line",
+  {
+    id: serial("id").primaryKey(),
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => equipmentRequests.id, { onDelete: "cascade" }),
+    typeId: integer("type_id")
+      .notNull()
+      .references(() => equipmentTypes.id),
+    quantity: integer("quantity").notNull(),
+  },
+  (table) => [
+    unique("equipment_request_line_request_type_unique").on(
+      table.requestId,
+      table.typeId,
+    ),
+  ],
+);
+
 export const equipmentLoans = pgTable(
   "equipment_loan",
   {
@@ -171,6 +221,9 @@ export const equipmentLoans = pgTable(
     competitionId: integer("competition_id").references(() => competitions.id, {
       onDelete: "set null",
     }),
+    requestId: integer("request_id").references(() => equipmentRequests.id, {
+      onDelete: "set null",
+    }),
     reason: text("reason").notNull(),
     loanedAt: date("loaned_at").notNull(),
     dueAt: date("due_at"),
@@ -181,6 +234,7 @@ export const equipmentLoans = pgTable(
   (table) => [
     index("equipment_loan_borrower_idx").on(table.borrowerUserId),
     index("equipment_loan_lent_by_idx").on(table.lentByUserId),
+    index("equipment_loan_competition_idx").on(table.competitionId),
   ],
 );
 

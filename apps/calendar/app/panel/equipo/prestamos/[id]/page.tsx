@@ -1,3 +1,4 @@
+import { FileDown } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -76,6 +77,15 @@ async function PageContent({ params }: PageProps) {
                 >
                   {loan.competition.name ?? loan.competition.city}
                 </Link>
+                <a
+                  href={`/panel/competencias/${loan.competition.id}/equipo/ficha`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary mt-1 flex items-center gap-1 text-xs hover:underline"
+                >
+                  <FileDown className="size-3.5" />
+                  Descargar ficha de equipo (PDF)
+                </a>
               </div>
             ) : null}
             <div>

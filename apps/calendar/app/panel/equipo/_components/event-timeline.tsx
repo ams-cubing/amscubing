@@ -2,7 +2,9 @@ import type { Route } from "next";
 import Link from "next/link";
 import {
   EQUIPMENT_EVENT_LABELS,
+  EQUIPMENT_REQUEST_STATUS_LABELS,
   EQUIPMENT_STATUS_LABELS,
+  type EquipmentRequestStatus,
   type EquipmentStatus,
 } from "@workspace/db/equipment-labels";
 import type { EquipmentEventRow } from "@workspace/db/equipment";
@@ -20,7 +22,18 @@ function label(value: unknown) {
   if (typeof value === "string" && value in EQUIPMENT_STATUS_LABELS) {
     return EQUIPMENT_STATUS_LABELS[value as EquipmentStatus];
   }
+  if (typeof value === "string" && value in EQUIPMENT_REQUEST_STATUS_LABELS) {
+    return EQUIPMENT_REQUEST_STATUS_LABELS[value as EquipmentRequestStatus];
+  }
   return String(value);
+}
+
+function requestCompetitionId(event: EquipmentEventRow) {
+  const details = (event.details ?? {}) as Record<string, unknown>;
+  return event.action.startsWith("request_") &&
+    typeof details.competitionId === "number"
+    ? details.competitionId
+    : null;
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -55,6 +68,9 @@ function describe(event: EquipmentEventRow) {
   if (typeof details.reason === "string") parts.push(details.reason);
   if (typeof details.note === "string") parts.push(details.note);
   if (typeof details.description === "string") parts.push(details.description);
+  if (typeof details.summary === "string" && details.summary) {
+    parts.push(details.summary);
+  }
   if (typeof details.lost === "number")
     parts.push(`${details.lost} extraviado(s)`);
   if (Array.isArray(details.createdSkus) && details.createdSkus.length) {
@@ -96,6 +112,17 @@ export function EventTimeline({
                 className="text-xs text-amber-700 hover:underline"
               >
                 Préstamo #{event.loanId}
+              </Link>
+            ) : null}
+            {requestCompetitionId(event) ? (
+              <Link
+                prefetch={false}
+                href={
+                  `/panel/competencias/${requestCompetitionId(event)}` as Route
+                }
+                className="text-xs text-amber-700 hover:underline"
+              >
+                Ver competencia
               </Link>
             ) : null}
             <span className="text-muted-foreground text-xs">

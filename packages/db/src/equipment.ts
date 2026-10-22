@@ -8,12 +8,15 @@ import {
   like,
   lt,
   sql,
+  type SQL,
 } from "drizzle-orm";
 import { alias, type PgDatabase } from "drizzle-orm/pg-core";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 
 import type * as schema from "./schema";
 import {
+  competitionDelegates,
+  competitionOrganizers,
   competitions,
   equipmentAcquisitionLines,
   equipmentAcquisitions,
@@ -21,14 +24,18 @@ import {
   equipmentItems,
   equipmentLoanLines,
   equipmentLoans,
+  equipmentRequestLines,
+  equipmentRequests,
   equipmentSkuCounters,
   equipmentStock,
   equipmentTypes,
+  states,
   user,
   type EquipmentType,
 } from "./schema";
 
 import {
+  EDITABLE_REQUEST_STATUSES,
   EQUIPMENT_STATUS_LABELS,
   LENDABLE_STATUSES,
   REMOVAL_KINDS,
@@ -36,6 +43,7 @@ import {
   type EquipmentAcquisitionKind,
   type EquipmentCategory,
   type EquipmentEventAction,
+  type EquipmentRequestStatus,
   type EquipmentStatus,
   type EquipmentTracking,
   type LoanStatus,
@@ -269,6 +277,63 @@ export function pickUnits<T extends { sku: string; status: EquipmentStatus }>(
       return a.sku.localeCompare(b.sku);
     })
     .slice(0, count);
+}
+
+export type EquipmentRequestLineInput = { typeId: number; quantity: number };
+
+const MAX_REQUEST_QUANTITY = 999;
+
+/** Drops empty rows and rejects invalid or repeated types. */
+export function normalizeRequestLines(
+  lines: readonly EquipmentRequestLineInput[],
+): EquipmentRequestLineInput[] {
+  const seen = new Set<number>();
+  const result: EquipmentRequestLineInput[] = [];
+  for (const line of lines) {
+    if (!line.quantity) continue;
+    if (
+      !Number.isInteger(line.quantity) ||
+      line.quantity < 0 ||
+      line.quantity > MAX_REQUEST_QUANTITY
+    ) {
+      throw new EquipmentError("Cantidad inválida en la solicitud");
+    }
+    if (seen.has(line.typeId)) {
+      throw new EquipmentError("Un tipo de equipo aparece dos veces");
+    }
+    seen.add(line.typeId);
+    result.push({ typeId: line.typeId, quantity: line.quantity });
+  }
+  return result;
+}
+
+/** Status after organizers save; a submitted request stays submitted. */
+export function nextRequestStatus(
+  current: EquipmentRequestStatus | null,
+  submit: boolean,
+): EquipmentRequestStatus {
+  if (current && !EDITABLE_REQUEST_STATUSES.includes(current)) {
+    throw new EquipmentError(
+      "El delegado ya registró el préstamo; pídele los cambios directamente",
+    );
+  }
+  if (submit || current === "submitted") return "submitted";
+  return "draft";
+}
+
+/** A loan can only fulfil a live request of its own competition. */
+export function assertRequestFulfillable(
+  request: { competitionId: number; status: EquipmentRequestStatus },
+  competitionId: number | null | undefined,
+) {
+  if (request.competitionId !== competitionId) {
+    throw new EquipmentError(
+      "La solicitud pertenece a otra competencia que la del préstamo",
+    );
+  }
+  if (request.status === "cancelled") {
+    throw new EquipmentError("La solicitud fue cancelada");
+  }
 }
 
 function diffFields<T extends Record<string, unknown>>(
@@ -896,6 +961,8 @@ export type CreateLoanInput = {
   borrowerUserId: string;
   lentByUserId: string;
   competitionId?: number | null;
+  /** Organizers' request this loan fulfils; must match `competitionId`. */
+  requestId?: number | null;
   reason: string;
   loanedAt: string;
   dueAt?: string | null;
@@ -924,6 +991,19 @@ export async function createLoan(
   }
   await assertUserExists(tx, input.borrowerUserId);
   await assertUserExists(tx, input.lentByUserId);
+
+  if (input.requestId) {
+    const [request] = await tx
+      .select({
+        competitionId: equipmentRequests.competitionId,
+        status: equipmentRequests.status,
+      })
+      .from(equipmentRequests)
+      .where(eq(equipmentRequests.id, input.requestId))
+      .for("update");
+    if (!request) throw new EquipmentError("Solicitud no encontrada");
+    assertRequestFulfillable(request, input.competitionId);
+  }
 
   const itemIds = new Set(input.itemIds ?? []);
 
@@ -1009,6 +1089,7 @@ export async function createLoan(
       borrowerUserId: input.borrowerUserId,
       lentByUserId: input.lentByUserId,
       competitionId: input.competitionId ?? null,
+      requestId: input.requestId || null,
       reason,
       loanedAt: input.loanedAt,
       dueAt: input.dueAt || null,
@@ -1016,6 +1097,17 @@ export async function createLoan(
     })
     .returning({ id: equipmentLoans.id });
   const loanId = loan!.id;
+
+  if (input.requestId) {
+    await tx
+      .update(equipmentRequests)
+      .set({
+        status: "fulfilled",
+        fulfilledAt: sql`coalesce(${equipmentRequests.fulfilledAt}, now())`,
+        updatedAt: new Date(),
+      })
+      .where(eq(equipmentRequests.id, input.requestId));
+  }
 
   if (items.length) {
     await tx.insert(equipmentLoanLines).values(
@@ -1047,7 +1139,7 @@ export async function createLoan(
       loanId,
       fromUserId: input.lentByUserId,
       toUserId: input.borrowerUserId,
-      details: { sku: item.sku },
+      details: { sku: item.sku, requestId: input.requestId || undefined },
     })),
     ...bulk.map((line) => ({
       action: "loaned" as const,
@@ -1058,11 +1150,156 @@ export async function createLoan(
       loanId,
       fromUserId: input.lentByUserId,
       toUserId: input.borrowerUserId,
+      details: input.requestId ? { requestId: input.requestId } : null,
     })),
   ]);
 
   const summary = await describeLoan(tx, loanId);
   return { loanId, summary };
+}
+
+export type SaveEquipmentRequestInput = {
+  actorId: string;
+  competitionId: number;
+  lines: EquipmentRequestLineInput[];
+  notes?: string | null;
+  /** Sends it to the delegates; otherwise it is saved as is. */
+  submit?: boolean;
+};
+
+export async function saveEquipmentRequest(
+  tx: EquipmentDb,
+  input: SaveEquipmentRequestInput,
+): Promise<{
+  requestId: number;
+  status: EquipmentRequestStatus;
+  summary: string;
+}> {
+  const lines = normalizeRequestLines(input.lines);
+  const submit = Boolean(input.submit);
+  if (submit && lines.length === 0) {
+    throw new EquipmentError("Agrega al menos un equipo antes de enviar");
+  }
+
+  const [competition] = await tx
+    .select({ id: competitions.id })
+    .from(competitions)
+    .where(eq(competitions.id, input.competitionId));
+  if (!competition) throw new EquipmentError("Competencia no encontrada");
+
+  const types = lines.length
+    ? await tx
+        .select()
+        .from(equipmentTypes)
+        .where(
+          inArray(
+            equipmentTypes.id,
+            lines.map((line) => line.typeId),
+          ),
+        )
+    : [];
+  const typeById = new Map(types.map((type) => [type.id, type]));
+  for (const line of lines) {
+    const type = typeById.get(line.typeId);
+    if (!type || type.archivedAt) {
+      throw new EquipmentError("Algún tipo de equipo ya no está disponible");
+    }
+  }
+
+  const [existing] = await tx
+    .select()
+    .from(equipmentRequests)
+    .where(eq(equipmentRequests.competitionId, input.competitionId))
+    .for("update");
+  const status = nextRequestStatus(existing?.status ?? null, submit);
+  const notes = input.notes?.trim() || null;
+  const now = new Date();
+
+  let requestId: number;
+  if (existing) {
+    requestId = existing.id;
+    await tx
+      .update(equipmentRequests)
+      .set({
+        status,
+        notes,
+        submittedAt: submit ? now : existing.submittedAt,
+        updatedAt: now,
+      })
+      .where(eq(equipmentRequests.id, existing.id));
+    await tx
+      .delete(equipmentRequestLines)
+      .where(eq(equipmentRequestLines.requestId, existing.id));
+  } else {
+    const [created] = await tx
+      .insert(equipmentRequests)
+      .values({
+        competitionId: input.competitionId,
+        status,
+        notes,
+        requestedByUserId: input.actorId,
+        submittedAt: submit ? now : null,
+      })
+      .returning({ id: equipmentRequests.id });
+    requestId = created!.id;
+  }
+
+  if (lines.length) {
+    await tx
+      .insert(equipmentRequestLines)
+      .values(lines.map((line) => ({ requestId, ...line })));
+  }
+
+  const summary = lines
+    .map((line) => `${line.quantity} ${typeById.get(line.typeId)!.name}`)
+    .join(", ");
+
+  await tx.insert(equipmentEvents).values({
+    action: submit ? "request_submitted" : "request_updated",
+    actorId: input.actorId,
+    details: {
+      requestId,
+      competitionId: input.competitionId,
+      status: { before: existing?.status ?? null, after: status },
+      lines,
+      summary,
+    },
+  });
+
+  return { requestId, status, summary };
+}
+
+export async function cancelEquipmentRequest(
+  tx: EquipmentDb,
+  input: { actorId: string; requestId: number },
+) {
+  const [request] = await tx
+    .select()
+    .from(equipmentRequests)
+    .where(eq(equipmentRequests.id, input.requestId))
+    .for("update");
+  if (!request) throw new EquipmentError("Solicitud no encontrada");
+  if (request.status === "cancelled") return request;
+  if (request.status === "fulfilled") {
+    throw new EquipmentError(
+      "La solicitud ya tiene préstamo; registra la devolución en su lugar",
+    );
+  }
+
+  await tx
+    .update(equipmentRequests)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(equipmentRequests.id, request.id));
+  await tx.insert(equipmentEvents).values({
+    action: "request_cancelled",
+    actorId: input.actorId,
+    details: {
+      requestId: request.id,
+      competitionId: request.competitionId,
+      status: { before: request.status, after: "cancelled" },
+    },
+  });
+  return request;
 }
 
 export type ReturnLoanInput = {
@@ -1620,6 +1857,7 @@ export type EquipmentLoanRow = {
   dueAt: string | null;
   returnedAt: Date | null;
   createdAt: Date;
+  requestId: number | null;
   status: LoanStatus;
   borrower: EquipmentPerson;
   lentBy: EquipmentPerson;
@@ -1638,7 +1876,12 @@ function summarizeLines(lines: readonly EquipmentLoanLineRow[]) {
 
 export async function listEquipmentLoans(
   dbx: EquipmentDb,
-  filter: { borrowerUserId?: string; loanId?: number; openOnly?: boolean } = {},
+  filter: {
+    borrowerUserId?: string;
+    loanId?: number;
+    competitionId?: number;
+    openOnly?: boolean;
+  } = {},
 ): Promise<EquipmentLoanRow[]> {
   const borrower = alias(user, "borrower");
   const lender = alias(user, "lender");
@@ -1646,6 +1889,9 @@ export async function listEquipmentLoans(
   const conditions = [];
   if (filter.borrowerUserId) {
     conditions.push(eq(equipmentLoans.borrowerUserId, filter.borrowerUserId));
+  }
+  if (filter.competitionId) {
+    conditions.push(eq(equipmentLoans.competitionId, filter.competitionId));
   }
   if (filter.loanId) conditions.push(eq(equipmentLoans.id, filter.loanId));
   if (filter.openOnly) conditions.push(isNull(equipmentLoans.returnedAt));
@@ -1659,6 +1905,7 @@ export async function listEquipmentLoans(
       dueAt: equipmentLoans.dueAt,
       returnedAt: equipmentLoans.returnedAt,
       createdAt: equipmentLoans.createdAt,
+      requestId: equipmentLoans.requestId,
       borrowerId: borrower.id,
       borrowerName: borrower.name,
       borrowerWcaId: borrower.wcaId,
@@ -1732,6 +1979,7 @@ export async function listEquipmentLoans(
       dueAt: loan.dueAt,
       returnedAt: loan.returnedAt,
       createdAt: loan.createdAt,
+      requestId: loan.requestId,
       status: getLoanStatus(loan, loanLines, today),
       borrower: {
         id: loan.borrowerId,
@@ -1835,4 +2083,242 @@ export async function countOverdueLoans(dbx: EquipmentDb) {
       ),
     );
   return row?.total ?? 0;
+}
+
+export type RequestableEquipmentType = {
+  id: number;
+  name: string;
+  category: EquipmentCategory;
+  tracking: EquipmentTracking;
+  available: number;
+};
+
+/** Active types with how many AMS can currently lend, for the request form. */
+export async function listRequestableEquipmentTypes(
+  dbx: EquipmentDb,
+): Promise<RequestableEquipmentType[]> {
+  const [types, items, stock] = await Promise.all([
+    listEquipmentTypes(dbx),
+    listEquipmentItems(dbx),
+    listEquipmentStock(dbx),
+  ]);
+  return summarizeInventory(types, items, stock).map((row) => ({
+    id: row.type.id,
+    name: row.type.name,
+    category: row.type.category,
+    tracking: row.type.tracking,
+    available: row.available,
+  }));
+}
+
+export type EquipmentRequestLineRow = {
+  typeId: number;
+  typeName: string;
+  category: EquipmentCategory;
+  tracking: EquipmentTracking;
+  quantity: number;
+};
+
+export type EquipmentRequestRow = {
+  id: number;
+  competitionId: number;
+  status: EquipmentRequestStatus;
+  notes: string | null;
+  submittedAt: Date | null;
+  fulfilledAt: Date | null;
+  updatedAt: Date;
+  requestedBy: { id: string; name: string } | null;
+  lines: EquipmentRequestLineRow[];
+  summary: string;
+};
+
+async function loadRequests(
+  dbx: EquipmentDb,
+  where: SQL | undefined,
+): Promise<EquipmentRequestRow[]> {
+  const requests = await dbx
+    .select({
+      id: equipmentRequests.id,
+      competitionId: equipmentRequests.competitionId,
+      status: equipmentRequests.status,
+      notes: equipmentRequests.notes,
+      submittedAt: equipmentRequests.submittedAt,
+      fulfilledAt: equipmentRequests.fulfilledAt,
+      updatedAt: equipmentRequests.updatedAt,
+      requestedById: user.id,
+      requestedByName: user.name,
+    })
+    .from(equipmentRequests)
+    .leftJoin(user, eq(user.id, equipmentRequests.requestedByUserId))
+    .where(where)
+    .orderBy(desc(equipmentRequests.updatedAt));
+  if (requests.length === 0) return [];
+
+  const lines = await dbx
+    .select({
+      requestId: equipmentRequestLines.requestId,
+      typeId: equipmentRequestLines.typeId,
+      typeName: equipmentTypes.name,
+      category: equipmentTypes.category,
+      tracking: equipmentTypes.tracking,
+      quantity: equipmentRequestLines.quantity,
+    })
+    .from(equipmentRequestLines)
+    .innerJoin(
+      equipmentTypes,
+      eq(equipmentTypes.id, equipmentRequestLines.typeId),
+    )
+    .where(
+      inArray(
+        equipmentRequestLines.requestId,
+        requests.map((request) => request.id),
+      ),
+    )
+    .orderBy(asc(equipmentTypes.sortOrder), asc(equipmentTypes.name));
+
+  return requests.map(({ requestedById, requestedByName, ...request }) => {
+    const own = lines
+      .filter((line) => line.requestId === request.id)
+      .map((line) => ({
+        typeId: line.typeId,
+        typeName: line.typeName,
+        category: line.category,
+        tracking: line.tracking,
+        quantity: line.quantity,
+      }));
+    return {
+      ...request,
+      requestedBy: requestedById
+        ? { id: requestedById, name: requestedByName! }
+        : null,
+      lines: own,
+      summary: own
+        .map((line) => `${line.quantity} ${line.typeName}`)
+        .join(", "),
+    };
+  });
+}
+
+export async function getEquipmentRequest(
+  dbx: EquipmentDb,
+  filter: { requestId: number } | { competitionId: number },
+) {
+  const [request] = await loadRequests(
+    dbx,
+    "requestId" in filter
+      ? eq(equipmentRequests.id, filter.requestId)
+      : eq(equipmentRequests.competitionId, filter.competitionId),
+  );
+  return request ?? null;
+}
+
+export type EquipmentRequestListRow = EquipmentRequestRow & {
+  competition: {
+    id: number;
+    name: string | null;
+    city: string;
+    startDate: string;
+  };
+};
+
+export async function listEquipmentRequests(
+  dbx: EquipmentDb,
+  filter: { status?: EquipmentRequestStatus } = {},
+): Promise<EquipmentRequestListRow[]> {
+  const requests = await loadRequests(
+    dbx,
+    filter.status ? eq(equipmentRequests.status, filter.status) : undefined,
+  );
+  if (requests.length === 0) return [];
+  const rows = await dbx
+    .select({
+      id: competitions.id,
+      name: competitions.name,
+      city: competitions.city,
+      startDate: competitions.startDate,
+    })
+    .from(competitions)
+    .where(
+      inArray(
+        competitions.id,
+        requests.map((request) => request.competitionId),
+      ),
+    );
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return requests
+    .filter((request) => byId.has(request.competitionId))
+    .map((request) => ({
+      ...request,
+      competition: byId.get(request.competitionId)!,
+    }))
+    .sort((a, b) =>
+      a.competition.startDate.localeCompare(b.competition.startDate),
+    );
+}
+
+export type EquipmentSheetPerson = EquipmentPerson & { email: string | null };
+
+export type CompetitionEquipmentSheet = {
+  competition: {
+    id: number;
+    name: string | null;
+    city: string;
+    stateName: string;
+    startDate: string;
+    endDate: string;
+  };
+  primaryDelegate: EquipmentSheetPerson | null;
+  primaryOrganizer: EquipmentSheetPerson | null;
+  request: EquipmentRequestRow | null;
+  loans: EquipmentLoanRow[];
+};
+
+/** Everything the equipment card, the panel and the printable sheet show. */
+export async function getCompetitionEquipmentSheet(
+  dbx: EquipmentDb,
+  competitionId: number,
+): Promise<CompetitionEquipmentSheet | null> {
+  const [competition] = await dbx
+    .select({
+      id: competitions.id,
+      name: competitions.name,
+      city: competitions.city,
+      stateName: states.name,
+      startDate: competitions.startDate,
+      endDate: competitions.endDate,
+    })
+    .from(competitions)
+    .innerJoin(states, eq(states.id, competitions.stateId))
+    .where(eq(competitions.id, competitionId));
+  if (!competition) return null;
+
+  const [delegates, organizers, request, loans] = await Promise.all([
+    dbx
+      .select({ ...personColumns, email: user.email })
+      .from(competitionDelegates)
+      .innerJoin(user, eq(user.wcaId, competitionDelegates.delegateWcaId))
+      .where(
+        and(
+          eq(competitionDelegates.competitionId, competitionId),
+          eq(competitionDelegates.status, "accepted"),
+        ),
+      )
+      .orderBy(desc(competitionDelegates.isPrimary), asc(user.name)),
+    dbx
+      .select({ ...personColumns, email: user.email })
+      .from(competitionOrganizers)
+      .innerJoin(user, eq(user.id, competitionOrganizers.organizerUserId))
+      .where(eq(competitionOrganizers.competitionId, competitionId))
+      .orderBy(desc(competitionOrganizers.isPrimary), asc(user.name)),
+    getEquipmentRequest(dbx, { competitionId }),
+    listEquipmentLoans(dbx, { competitionId }),
+  ]);
+
+  return {
+    competition,
+    primaryDelegate: delegates[0] ?? null,
+    primaryOrganizer: organizers[0] ?? null,
+    request,
+    loans: [...loans].reverse(),
+  };
 }

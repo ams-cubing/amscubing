@@ -37,6 +37,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "equipment_loaned",
   "equipment_returned",
   "equipment_transferred",
+  "equipment_requested",
 ]);
 
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
@@ -62,6 +63,7 @@ export type NotificationPayload = {
   role?: string;
   loanId?: number;
   sku?: string;
+  requestId?: number;
 };
 
 export const notifications = pgTable(

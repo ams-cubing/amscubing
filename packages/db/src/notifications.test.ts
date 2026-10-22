@@ -17,6 +17,7 @@ vi.mock("./index", () => ({
 import {
   countUnreadNotificationsByCard,
   equipmentNotificationRow,
+  equipmentRequestNotificationRow,
   formatNotificationTitle,
   markCardNotificationsRead,
   notifyAllUsers,
@@ -105,6 +106,28 @@ describe("equipmentNotificationRow", () => {
     ).toMatchObject({
       title: "Ahora eres guardián de: DS3-2318",
       href: "https://calendario.example/panel/equipo/DS3-2318",
+    });
+  });
+});
+
+describe("equipmentRequestNotificationRow", () => {
+  it("sends delegates to the competition in the panel", () => {
+    expect(
+      equipmentRequestNotificationRow({
+        recipient: { id: "d1", role: "delegate", wcaId: "2016ROVI01" },
+        actorId: "organizer-1",
+        calendarUrl: "https://calendario.example/",
+        competitionId: 9,
+        requestId: 2,
+        city: "Querétaro",
+      }),
+    ).toEqual({
+      recipientId: "d1",
+      actorId: "organizer-1",
+      type: "equipment_requested",
+      title: "Solicitud de equipo para Querétaro",
+      href: "https://calendario.example/panel/competencias/9",
+      payload: { competitionId: 9, requestId: 2, city: "Querétaro" },
     });
   });
 });

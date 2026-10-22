@@ -7,8 +7,11 @@ import { asc, gte } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
 import {
+  getCompetitionEquipmentSheet,
   getEquipmentItemBySku,
   getEquipmentLoan,
+  getEquipmentRequest,
+  listEquipmentRequests,
   groupByGuardian,
   listEquipmentAcquisitions,
   listEquipmentEvents,
@@ -103,6 +106,26 @@ export async function getLendableInventory() {
     stock,
     guardians,
   };
+}
+
+/** Organizers' request plus linked loans, for the competition page and the sheet. */
+export async function getCompetitionEquipment(competitionId: number) {
+  tag();
+  return getCompetitionEquipmentSheet(db, competitionId);
+}
+
+/** Request and team of its competition, to prefill a new loan. */
+export async function getRequestForLoan(requestId: number) {
+  tag();
+  const request = await getEquipmentRequest(db, { requestId });
+  if (!request) return null;
+  const sheet = await getCompetitionEquipmentSheet(db, request.competitionId);
+  return sheet ? { request, sheet } : null;
+}
+
+export async function getOpenEquipmentRequests() {
+  tag();
+  return listEquipmentRequests(db, { status: "submitted" });
 }
 
 /** Upcoming and recent competitions a loan can be attached to. */

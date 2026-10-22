@@ -144,6 +144,8 @@ export function formatNotificationTitle(
       return `Se registró la devolución de equipo: ${equipment}`;
     case "equipment_transferred":
       return `Ahora eres guardián de: ${equipment}`;
+    case "equipment_requested":
+      return `Solicitud de equipo para ${city}`;
   }
 }
 
@@ -318,6 +320,30 @@ export function equipmentNotificationRow(opts: {
     }),
     href,
     payload: { loanId: opts.loanId, sku: opts.sku },
+  };
+}
+
+/** Sent to the competition's delegates when organizers submit the equipment request. */
+export function equipmentRequestNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  calendarUrl: string;
+  competitionId: number;
+  requestId: number;
+  city: string;
+}): NewNotificationRow {
+  const calendar = opts.calendarUrl.replace(/\/$/, "");
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: "equipment_requested",
+    title: formatNotificationTitle("equipment_requested", { city: opts.city }),
+    href: `${calendar}/panel/competencias/${opts.competitionId}`,
+    payload: {
+      competitionId: opts.competitionId,
+      requestId: opts.requestId,
+      city: opts.city,
+    },
   };
 }
 
