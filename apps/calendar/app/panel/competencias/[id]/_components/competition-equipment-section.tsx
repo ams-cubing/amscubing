@@ -82,6 +82,13 @@ export async function CompetitionEquipmentSection({
         </p>
       )}
 
+      {ended && !confirmation && request ? (
+        <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
+          La competencia ya terminó; ya no se puede confirmar equipo ni generar
+          la ficha.
+        </p>
+      ) : null}
+
       {confirmation ? (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">

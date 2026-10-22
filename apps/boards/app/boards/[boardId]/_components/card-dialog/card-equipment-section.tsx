@@ -117,6 +117,7 @@ export function CardEquipmentSection({
   const request = sheet.request;
   const editable =
     !readOnly &&
+    !data.ended &&
     (!request || EDITABLE_REQUEST_STATUSES.includes(request.status));
   const requestedTypeIds = new Set(request?.lines.map((line) => line.typeId));
   const visibleTypes = types.filter(
@@ -186,6 +187,13 @@ export function CardEquipmentSection({
           </Badge>
         ) : null}
       </div>
+
+      {data.ended && !confirmation ? (
+        <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
+          La competencia ya terminó, así que ya no se puede solicitar ni
+          confirmar equipo.
+        </p>
+      ) : null}
 
       {editable ? (
         <div className="space-y-4">

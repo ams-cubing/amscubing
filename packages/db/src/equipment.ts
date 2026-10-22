@@ -1406,10 +1406,15 @@ export async function saveEquipmentRequest(
   }
 
   const [competition] = await tx
-    .select({ id: competitions.id })
+    .select({ id: competitions.id, endDate: competitions.endDate })
     .from(competitions)
     .where(eq(competitions.id, input.competitionId));
   if (!competition) throw new EquipmentError("Competencia no encontrada");
+  if (competition.endDate < todayInMexico()) {
+    throw new EquipmentError(
+      "La competencia ya terminó; ya no se puede solicitar equipo",
+    );
+  }
 
   const types = lines.length
     ? await tx

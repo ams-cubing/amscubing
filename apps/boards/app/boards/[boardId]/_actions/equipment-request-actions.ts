@@ -10,6 +10,7 @@ import {
   getCompetitionEquipmentSheet,
   listRequestableEquipmentTypes,
   ORGANIZER_REQUEST_CATEGORIES,
+  todayInMexico,
   saveEquipmentRequest,
   type CompetitionEquipmentSheet,
   type RequestableEquipmentType,
@@ -33,6 +34,8 @@ export type EquipmentCardData = {
   /** Availability counts only equipment held by the competition's delegates. */
   types: RequestableEquipmentType[];
   hasDelegates: boolean;
+  /** Past the competition's end date: nothing can be requested or confirmed. */
+  ended: boolean;
 };
 
 export type EquipmentCardResult =
@@ -72,6 +75,7 @@ async function loadCardData(
       ORGANIZER_REQUEST_CATEGORIES.includes(type.category),
     ),
     hasDelegates: delegates.length > 0,
+    ended: sheet.competition.endDate < todayInMexico(),
   };
 }
 
