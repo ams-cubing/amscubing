@@ -150,7 +150,9 @@ export function CardEquipmentSection({
       .find(({ line, type }) => line.quantity > (type?.available ?? 0));
     if (tooMany) {
       toast.error(
-        `Solo hay ${tooMany.type?.available ?? 0} ${tooMany.type?.name ?? "equipo"} disponibles con los delegados`,
+        tooMany.type?.obsolete
+          ? `${tooMany.type.name} es obsoleto; quítalo de la solicitud`
+          : `Solo hay ${tooMany.type?.available ?? 0} ${tooMany.type?.name ?? "equipo"} disponibles con los delegados`,
       );
       return;
     }
@@ -218,9 +220,15 @@ export function CardEquipmentSection({
                         className="min-w-0 flex-1 flex-col items-start gap-1 text-sm leading-5 font-normal"
                       >
                         {type.name}
-                        <span className="text-muted-foreground text-xs">
-                          {type.available} disponibles con los delegados
-                        </span>
+                        {type.obsolete ? (
+                          <span className="text-destructive text-xs">
+                            Obsoleto: ya no se puede solicitar, déjalo en 0
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            {type.available} disponibles con los delegados
+                          </span>
+                        )}
                       </Label>
                       <Input
                         id={`equipment-${cardId}-${type.id}`}

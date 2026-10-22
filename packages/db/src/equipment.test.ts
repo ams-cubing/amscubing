@@ -260,6 +260,7 @@ function type(
     category: tracking === "serialized" ? "timer" : "accessory",
     tracking,
     sortOrder: id,
+    obsoleteAt: null,
     archivedAt: null,
     createdAt: new Date(),
   };

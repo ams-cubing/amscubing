@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   adjustStock,
   createEquipmentType,
+  setEquipmentTypeObsolete,
   setStockNotes,
   transferItems,
   transferStock,
@@ -211,6 +212,31 @@ export async function createTypeAction(
     return {
       ok: true,
       message: `Tipo ${type.name} (${type.skuPrefix}) creado`,
+    };
+  });
+}
+
+export async function setTypeObsoleteAction(
+  _state: ActionResult | null,
+  data: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const actor = await requireEquipmentActor();
+    const typeId = formId(data, "typeId");
+    const obsolete = data.get("obsolete") === "true";
+    const type = await inEquipmentTx((tx) =>
+      setEquipmentTypeObsolete(tx, { actorId: actor.id, typeId, obsolete }),
+    );
+    log.info("calendar.equipment.type_obsolete_changed", {
+      typeId,
+      obsolete,
+      actorId: actor.id,
+    });
+    return {
+      ok: true,
+      message: obsolete
+        ? `${type.name} marcado como obsoleto`
+        : `${type.name} se puede volver a solicitar`,
     };
   });
 }

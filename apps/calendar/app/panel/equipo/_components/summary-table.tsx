@@ -83,7 +83,12 @@ export function SummaryTable({ rows }: { rows: InventorySummaryRow[] }) {
           {rows.map((row) => (
             <TableRow key={row.type.id}>
               <TableCell>
-                <div className="font-medium">{row.type.name}</div>
+                <div className="flex flex-wrap items-center gap-2 font-medium">
+                  {row.type.name}
+                  {row.type.obsoleteAt ? (
+                    <Badge variant="outline">Obsoleto</Badge>
+                  ) : null}
+                </div>
                 <div className="text-muted-foreground text-xs">
                   {row.type.skuPrefix} ·{" "}
                   {row.type.tracking === "serialized"

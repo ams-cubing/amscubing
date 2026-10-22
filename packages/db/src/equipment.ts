@@ -652,6 +652,29 @@ export async function createEquipmentType(
   return type!;
 }
 
+/** Obsolete types stay in inventory but organizers can't request them and delegates can't confirm them. */
+export async function setEquipmentTypeObsolete(
+  tx: EquipmentDb,
+  input: { actorId: string; typeId: number; obsolete: boolean },
+) {
+  const type = await getTypeOrThrow(tx, input.typeId);
+  if (Boolean(type.obsoleteAt) === input.obsolete) return type;
+  const obsoleteAt = input.obsolete ? new Date() : null;
+  await tx
+    .update(equipmentTypes)
+    .set({ obsoleteAt })
+    .where(eq(equipmentTypes.id, type.id));
+  await tx.insert(equipmentEvents).values({
+    action: "item_updated",
+    actorId: input.actorId,
+    typeId: type.id,
+    details: {
+      obsolete: { before: Boolean(type.obsoleteAt), after: input.obsolete },
+    },
+  });
+  return { ...type, obsoleteAt };
+}
+
 export type AcquisitionLineInput =
   | {
       /** Adds units (serialized) or quantity (bulk) to a guardian. */
@@ -1404,6 +1427,11 @@ export async function saveEquipmentRequest(
     if (!type || type.archivedAt) {
       throw new EquipmentError("Algún tipo de equipo ya no está disponible");
     }
+    if (type.obsoleteAt) {
+      throw new EquipmentError(
+        `${type.name} es obsoleto; quítalo de la solicitud`,
+      );
+    }
   }
 
   const [existing] = await tx
@@ -1525,6 +1553,27 @@ export async function confirmEquipmentRequest(
 
   if (items.length === 0 && bulk.length === 0) {
     throw new EquipmentError("Agrega al menos un equipo a la confirmación");
+  }
+  const typeIds = [
+    ...new Set([
+      ...items.map((item) => item.typeId),
+      ...bulk.map((l) => l.typeId),
+    ]),
+  ];
+  const [obsolete] = await tx
+    .select({ name: equipmentTypes.name })
+    .from(equipmentTypes)
+    .where(
+      and(
+        inArray(equipmentTypes.id, typeIds),
+        sql`${equipmentTypes.obsoleteAt} is not null`,
+      ),
+    )
+    .limit(1);
+  if (obsolete) {
+    throw new EquipmentError(
+      `${obsolete.name} es obsoleto; no se puede confirmar para competencias`,
+    );
   }
 
   await tx
@@ -2457,7 +2506,9 @@ export type RequestableEquipmentType = {
   name: string;
   category: EquipmentCategory;
   tracking: EquipmentTracking;
+  /** Always 0 for obsolete types, which can't be requested. */
   available: number;
+  obsolete: boolean;
 };
 
 /**
@@ -2489,7 +2540,8 @@ export async function listRequestableEquipmentTypes(
     name: row.type.name,
     category: row.type.category,
     tracking: row.type.tracking,
-    available: row.available,
+    available: row.type.obsoleteAt ? 0 : row.available,
+    obsolete: Boolean(row.type.obsoleteAt),
   }));
 }
 

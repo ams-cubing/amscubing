@@ -145,7 +145,9 @@ export async function saveEquipmentRequestFromCard(
     if (line.quantity > (type?.available ?? 0)) {
       return {
         ok: false,
-        message: `Solo hay ${type?.available ?? 0} ${type?.name ?? "equipo"} disponibles con los delegados`,
+        message: type?.obsolete
+          ? `${type.name} es obsoleto; quítalo de la solicitud`
+          : `Solo hay ${type?.available ?? 0} ${type?.name ?? "equipo"} disponibles con los delegados`,
       };
     }
   }

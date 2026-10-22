@@ -11,8 +11,26 @@ import {
   type EquipmentTracking,
 } from "@workspace/db/equipment-labels";
 
-import { createTypeAction } from "../_actions/inventory";
+import { createTypeAction, setTypeObsoleteAction } from "../_actions/inventory";
 import { SubmitButton } from "./submit-button";
+
+export function TypeObsoleteToggle({
+  typeId,
+  obsolete,
+}: {
+  typeId: number;
+  obsolete: boolean;
+}) {
+  return (
+    <ActionForm action={setTypeObsoleteAction}>
+      <input type="hidden" name="typeId" value={typeId} />
+      <input type="hidden" name="obsolete" value={String(!obsolete)} />
+      <SubmitButton variant="ghost" size="sm" pendingLabel="Guardando…">
+        {obsolete ? "Reactivar" : "Marcar obsoleto"}
+      </SubmitButton>
+    </ActionForm>
+  );
+}
 
 export function TypeForm() {
   return (

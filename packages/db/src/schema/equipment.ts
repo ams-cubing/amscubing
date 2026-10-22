@@ -72,6 +72,8 @@ export const equipmentTypes = pgTable("equipment_type", {
   category: equipmentCategoryEnum("category").notNull(),
   tracking: equipmentTrackingEnum("tracking").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** Still in inventory (and lendable) but no longer requested or confirmed for competitions. */
+  obsoleteAt: timestamp("obsolete_at"),
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Badge } from "@workspace/ui/components/badge";
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ import {
 import { requireDelegate } from "@/lib/session";
 
 import { AcquisitionForm } from "../_components/acquisition-form";
-import { TypeForm } from "../_components/type-form";
+import { TypeForm, TypeObsoleteToggle } from "../_components/type-form";
 import { formatEquipmentDate } from "@/lib/equipment-format";
 import {
   getAcquisitions,
@@ -147,7 +148,9 @@ async function PageContent() {
           <CardDescription>
             El prefijo forma el SKU: prefijo, año y consecutivo (p. ej.
             DS3-2301). Los tipos por cantidad (cables, extensiones, cronómetros)
-            no llevan SKU por pieza.
+            no llevan SKU por pieza. Los tipos obsoletos (p. ej. timers G3 o G4)
+            siguen en el inventario y se pueden prestar, pero los organizadores
+            ya no los pueden solicitar para competencias.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -160,11 +163,16 @@ async function PageContent() {
                   <TableHead>Prefijo</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead>Seguimiento</TableHead>
+                  <TableHead>Competencias</TableHead>
+                  <TableHead className="w-0" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {types.map((type) => (
-                  <TableRow key={type.id}>
+                  <TableRow
+                    key={type.id}
+                    className={type.obsoleteAt ? "text-muted-foreground" : ""}
+                  >
                     <TableCell>{type.name}</TableCell>
                     <TableCell className="font-mono">
                       {type.skuPrefix}
@@ -174,6 +182,19 @@ async function PageContent() {
                     </TableCell>
                     <TableCell>
                       {EQUIPMENT_TRACKING_LABELS[type.tracking]}
+                    </TableCell>
+                    <TableCell>
+                      {type.obsoleteAt ? (
+                        <Badge variant="outline">Obsoleto</Badge>
+                      ) : (
+                        "Se puede solicitar"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <TypeObsoleteToggle
+                        typeId={type.id}
+                        obsolete={Boolean(type.obsoleteAt)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -144,12 +144,16 @@ export async function getRequestForConfirmation(requestId: number) {
     ownBulk.set(key, (ownBulk.get(key) ?? 0) + line.quantity);
   }
 
+  const current = types.filter((type) => !type.obsoleteAt);
+  const currentIds = new Set(current.map((type) => type.id));
+
   return {
     request,
     sheet,
-    types,
+    types: current,
     items: items.filter(
       (item) =>
+        currentIds.has(item.typeId) &&
         item.guardian != null &&
         item.onLoanId == null &&
         LENDABLE_STATUSES.includes(item.status) &&
