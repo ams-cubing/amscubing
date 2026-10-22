@@ -195,7 +195,7 @@ export function CardEquipmentSection({
                 <p className="text-muted-foreground text-xs font-semibold uppercase">
                   {EQUIPMENT_CATEGORY_LABELS[category]}
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
                   {group.map((type) => (
                     <div
                       key={type.id}
@@ -203,10 +203,10 @@ export function CardEquipmentSection({
                     >
                       <Label
                         htmlFor={`equipment-${cardId}-${type.id}`}
-                        className="flex-1 text-sm font-normal"
+                        className="min-w-0 flex-1 flex-col items-start gap-1 text-sm leading-5 font-normal"
                       >
                         {type.name}
-                        <span className="text-muted-foreground block text-xs">
+                        <span className="text-muted-foreground text-xs">
                           {type.available} disponibles con los delegados
                         </span>
                       </Label>
@@ -216,7 +216,7 @@ export function CardEquipmentSection({
                         inputMode="numeric"
                         min={0}
                         max={999}
-                        className="w-20"
+                        className="w-24 shrink-0"
                         value={quantities[type.id] ?? ""}
                         placeholder="0"
                         disabled={pending}
