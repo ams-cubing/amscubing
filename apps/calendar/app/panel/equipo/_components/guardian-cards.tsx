@@ -66,7 +66,7 @@ export function GuardianCards({
               <CardAction>
                 <Link
                   href={
-                    `/panel/equipo?guardian=${encodeURIComponent(guardian.id)}` as Route
+                    `/panel/equipo/unidades?guardian=${encodeURIComponent(guardian.id)}` as Route
                   }
                   prefetch={false}
                   className="text-muted-foreground hover:text-foreground text-sm hover:underline"

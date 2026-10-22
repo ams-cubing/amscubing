@@ -1,47 +1,25 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Button } from "@workspace/ui/components/button";
 
 import { requireDelegate } from "@/lib/session";
 
-import { ItemsTable } from "./_components/items-table";
 import { SummaryTable } from "./_components/summary-table";
-import { getGuardians, getInventoryOverview } from "./_lib/queries";
+import { getInventoryOverview } from "./_lib/queries";
 import Loading from "./loading";
 
-type SearchParams = Promise<{ guardian?: string }>;
-
-async function PageContent({ searchParams }: { searchParams: SearchParams }) {
-  const [params, session, { summary, items }, guardians] = await Promise.all([
-    searchParams,
+async function PageContent() {
+  await connection();
+  const [, { summary }] = await Promise.all([
     requireDelegate(),
     getInventoryOverview(),
-    getGuardians(),
   ]);
-  const initialGuardianId = params.guardian || null;
 
-  return (
-    <div className="space-y-8">
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Resumen</h2>
-        <SummaryTable rows={summary} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Unidades</h2>
-        <ItemsTable
-          key={initialGuardianId ?? ""}
-          items={items}
-          guardians={guardians}
-          initialGuardianId={initialGuardianId}
-          currentUserId={session.ok ? session.session.user.id : null}
-        />
-      </section>
-    </div>
-  );
+  return <SummaryTable rows={summary} />;
 }
 
-export default function Page({ searchParams }: { searchParams: SearchParams }) {
+export default function Page() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -66,7 +44,7 @@ export default function Page({ searchParams }: { searchParams: SearchParams }) {
         </div>
       </div>
       <Suspense fallback={<Loading />}>
-        <PageContent searchParams={searchParams} />
+        <PageContent />
       </Suspense>
     </div>
   );

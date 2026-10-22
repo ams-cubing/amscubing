@@ -5,8 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 
+const ROOT = "/panel/equipo";
+const UNITS = "/panel/equipo/unidades";
+
 const LINKS: { name: string; href: Route }[] = [
-  { name: "Inventario", href: "/panel/equipo" },
+  { name: "Resumen", href: ROOT },
+  { name: "Unidades", href: UNITS },
   { name: "Guardianes", href: "/panel/equipo/guardianes" },
   { name: "Solicitudes", href: "/panel/equipo/solicitudes" },
   { name: "Préstamos", href: "/panel/equipo/prestamos" },
@@ -14,15 +18,20 @@ const LINKS: { name: string; href: Route }[] = [
   { name: "Actividad", href: "/panel/equipo/actividad" },
 ];
 
+const SECTIONS = LINKS.slice(2);
+
+const matches = (pathname: string, href: string) =>
+  pathname === href || pathname.startsWith(`${href}/`);
+
 function isActive(pathname: string, href: string) {
-  if (href === "/panel/equipo") {
+  if (href === ROOT) return pathname === ROOT;
+  if (href === UNITS) {
     return (
-      pathname === href ||
-      (pathname.startsWith("/panel/equipo/") &&
-        !LINKS.slice(1).some((link) => pathname.startsWith(link.href)))
+      pathname.startsWith(`${ROOT}/`) &&
+      !SECTIONS.some((link) => matches(pathname, link.href))
     );
   }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return matches(pathname, href);
 }
 
 export function EquipmentNav() {
