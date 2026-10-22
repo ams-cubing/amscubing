@@ -65,8 +65,10 @@ export function LoansTable({
               <TableCell>{formatEquipmentDate(loan.loanedAt)}</TableCell>
               <TableCell>{formatEquipmentDate(loan.dueAt)}</TableCell>
               <TableCell>{formatEquipmentDate(loan.returnedAt)}</TableCell>
-              <TableCell className="max-w-xs">{loan.summary}</TableCell>
-              <TableCell className="text-muted-foreground max-w-xs">
+              <TableCell className="min-w-48 max-w-xs whitespace-normal">
+                {loan.summary}
+              </TableCell>
+              <TableCell className="text-muted-foreground min-w-48 max-w-xs whitespace-normal">
                 {loan.competition
                   ? `${loan.competition.name ?? loan.competition.city} · `
                   : ""}

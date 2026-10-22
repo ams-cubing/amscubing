@@ -61,7 +61,7 @@ export function SemaphoreLegend() {
               >
                 {r.label}
               </TableCell>
-              <TableCell className="p-3 md:p-5 text-xs md:text-sm leading-relaxed">
+              <TableCell className="p-3 md:p-5 text-xs md:text-sm leading-relaxed whitespace-normal">
                 {r.desc}
               </TableCell>
             </TableRow>

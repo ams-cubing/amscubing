@@ -106,7 +106,7 @@ async function PageContent() {
                     <TableCell className="whitespace-nowrap">
                       {formatEquipmentDate(acquisition.date)}
                     </TableCell>
-                    <TableCell className="max-w-md">
+                    <TableCell className="min-w-64 max-w-md whitespace-normal">
                       {acquisition.description}
                       {acquisition.createdByName ? (
                         <div className="text-muted-foreground text-xs">
