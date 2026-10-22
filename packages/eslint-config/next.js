@@ -48,4 +48,18 @@ export const nextJsConfig = [
       "react/prop-types": "off",
     },
   },
+  {
+    files: ["**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "JSXOpeningElement[name.name='Link']:has(JSXAttribute[name.name='href'] > JSXExpressionContainer > TemplateLiteral > TemplateElement:first-child[value.raw=/^\\//]):not(:has(JSXAttribute[name.name='prefetch']))",
+          message:
+            "Dynamic <Link> hrefs must set prefetch explicitly (usually prefetch={false}): each prefetch is a Vercel CDN request and can run a function. See the Vercel/Neon cost section in AGENTS.md.",
+        },
+      ],
+    },
+  },
 ]

@@ -29,7 +29,7 @@ export function NotificationInbox({
   onMarkRead,
   onMarkAllRead,
   onRefresh,
-  refreshIntervalMs = 45_000,
+  refreshIntervalMs = 120_000,
 }: {
   items: NotificationInboxItem[];
   unreadCount: number;
@@ -50,10 +50,17 @@ export function NotificationInbox({
     setUnreadCount(initialUnreadCount);
   }, [initialItems, initialUnreadCount]);
 
-  React.useEffect(() => {
-    if (!onRefresh) return;
+  const lastRefreshAt = React.useRef(0);
 
-    const id = window.setInterval(() => {
+  // Each refresh is a server action that queries Postgres; hidden tabs must not
+  // poll or Neon never scales to zero.
+  const refresh = React.useCallback(
+    (minAgeMs: number) => {
+      if (!onRefresh) return;
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRefreshAt.current < minAgeMs) return;
+
+      lastRefreshAt.current = Date.now();
       void onRefresh()
         .then((data) => {
           setItems(data.items);
@@ -62,10 +69,23 @@ export function NotificationInbox({
         .catch(() => {
           // Keep the last successful snapshot if a refresh fails.
         });
-    }, refreshIntervalMs);
+    },
+    [onRefresh],
+  );
 
-    return () => window.clearInterval(id);
-  }, [onRefresh, refreshIntervalMs]);
+  React.useEffect(() => {
+    if (!onRefresh) return;
+
+    lastRefreshAt.current = Date.now();
+    const id = window.setInterval(() => refresh(0), refreshIntervalMs);
+    const onVisibilityChange = () => refresh(refreshIntervalMs);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [onRefresh, refresh, refreshIntervalMs]);
 
   const badge =
     unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : null;
@@ -101,7 +121,11 @@ export function NotificationInbox({
   }
 
   return (
-    <Popover>
+    <Popover
+      onOpenChange={(open) => {
+        if (open) refresh(15_000);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"

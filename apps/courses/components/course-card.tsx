@@ -28,7 +28,7 @@ export function CourseCard({
   const isComplete = completed === count && !!count;
   return (
     <article className="ams-slash-card overflow-hidden bg-white">
-      <Link
+      <Link prefetch={false}
         href={`/cursos/${course.slug}`}
         className="relative flex h-45 items-center justify-center bg-[linear-gradient(90deg,rgba(1,11,25,0.65),rgba(1,11,25,0.2)),url(/source/photos/ponny-1.jpg)] bg-cover bg-center text-white"
         aria-label={course.title}
@@ -52,7 +52,7 @@ export function CourseCard({
           {isComplete ? "Completado" : enrolled ? "En curso" : "Formación AMS"}
         </Pill>
         <h2 className="ams-heading my-3 text-[19px] leading-normal font-bold">
-          <Link href={`/cursos/${course.slug}`}>{course.title}</Link>
+          <Link prefetch={false} href={`/cursos/${course.slug}`}>{course.title}</Link>
         </h2>
         <p className="text-sm leading-[1.7] text-ams-navy/60">{description}…</p>
         <div className="my-4.5 flex gap-4 text-[13px] text-ams-navy/60">
@@ -71,7 +71,7 @@ export function CourseCard({
         )}
         <div className="mt-6 flex items-center justify-between gap-3 border-t border-ams-navy/10 pt-5">
           <span className={smallClass}>Con tu cuenta AMS o WCA</span>
-          <Link className={textLinkClass} href={`/cursos/${course.slug}`}>
+          <Link prefetch={false} className={textLinkClass} href={`/cursos/${course.slug}`}>
             {enrolled ? "Continuar" : "Ver curso"} →
           </Link>
         </div>

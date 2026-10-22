@@ -15,6 +15,7 @@ export const maxDuration = 60;
 async function PanelGuard({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
     headers: await headers(),
+    query: { disableCookieCache: true },
   });
 
   if (!session?.user || session.user.role !== "delegate") {

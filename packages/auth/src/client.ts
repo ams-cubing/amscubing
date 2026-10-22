@@ -8,5 +8,6 @@ export function createAmsAuthClient(options?: { baseURL?: string }) {
   return createAuthClient({
     baseURL: options?.baseURL ?? getAuthBaseUrl(),
     plugins: [genericOAuthClient()],
+    sessionOptions: { refetchOnWindowFocus: false },
   });
 }

@@ -97,7 +97,7 @@ export async function getPublicCompetitionSpotlights(): Promise<
   CompetitionSpotlight[]
 > {
   "use cache";
-  cacheLife("minutes");
+  cacheLife("hours");
   cacheTag("public-competitions");
 
   const competitions = await getPublicCompetitions();
@@ -106,7 +106,7 @@ export async function getPublicCompetitionSpotlights(): Promise<
 
 export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
   "use cache";
-  cacheLife("minutes");
+  cacheLife("hours");
   cacheTag("public-competitions");
 
   try {

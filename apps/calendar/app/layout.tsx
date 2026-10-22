@@ -29,7 +29,6 @@ import {
 } from "@/lib/urls";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const fontSans = Unbounded({
   subsets: ["latin"],
@@ -182,7 +181,6 @@ export default function RootLayout({
             coursesUrl={getCoursesUrl()}
           />
           <Analytics />
-          <SpeedInsights />
           <Toaster />
         </AppProviders>
       </body>

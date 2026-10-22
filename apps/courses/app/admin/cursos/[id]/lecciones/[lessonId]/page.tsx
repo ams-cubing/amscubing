@@ -28,7 +28,7 @@ export default async function EditLesson({
   return (
     <section className="ams-container max-w-295 py-12">
       <div className="mb-6 text-[13px] text-ams-navy/60">
-        <Link
+        <Link prefetch={false}
           href={`/admin/cursos/${course.id}`}
           className="hover:text-ams-red"
         >
