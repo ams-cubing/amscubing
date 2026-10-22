@@ -116,7 +116,7 @@ async function PageContent() {
                   <TableCell className="font-medium">
                     {region.displayName}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground min-w-48 whitespace-normal">
                     {region.states.map((state) => state.name).join(", ")}
                   </TableCell>
                 </TableRow>

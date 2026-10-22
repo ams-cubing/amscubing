@@ -89,7 +89,10 @@ export default async function DateRequestsListPage() {
                       )}
                     </div>
                     <Button asChild size="sm">
-                      <Link prefetch={false} href={`/panel/solicitudes-fecha/${request.id}`}>
+                      <Link
+                        prefetch={false}
+                        href={`/panel/solicitudes-fecha/${request.id}`}
+                      >
                         Revisar
                       </Link>
                     </Button>

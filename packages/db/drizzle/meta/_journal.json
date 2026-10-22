@@ -302,6 +302,34 @@
       "when": 1792123081954,
       "tag": "0042_smiling_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792638964541,
+      "tag": "0043_equipment_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792693739614,
+      "tag": "0044_equipment_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792698803483,
+      "tag": "0045_equipment_confirmation",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792700943709,
+      "tag": "0046_equipment_type_obsolete",
+      "breakpoints": true
     }
   ]
 }

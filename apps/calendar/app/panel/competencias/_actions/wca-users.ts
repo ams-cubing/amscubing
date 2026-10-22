@@ -25,6 +25,10 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
       return { success: false, message: authResult.message };
     }
 
+    if (!/^\d{4}[A-Z]{4}\d{2}$/.test(wcaId)) {
+      return { success: false, message: "WCA ID inválido (ej. 2016TORO03)" };
+    }
+
     const existingUser = await db.query.user.findFirst({
       where: eq(user.wcaId, wcaId),
     });
@@ -68,7 +72,7 @@ export async function fetchAndCreateWCAUser(wcaId: string) {
     return {
       success: true,
       user: newUser ? { ...newUser, wcaId: data.person.wca_id } : undefined,
-      message: `Organizador ${data.person.name} añadido exitosamente`,
+      message: `${data.person.name} agregado desde la WCA`,
     };
   } catch (error) {
     log.error("calendar.wca_person_fetch_failed", { error });

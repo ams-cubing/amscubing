@@ -121,7 +121,8 @@ export function getCompetitionsTableColumns({
       ),
       cell: ({ row }) => {
         return (
-          <Link prefetch={false}
+          <Link
+            prefetch={false}
             href={`/panel/competencias/${row.original.id}`}
             className="flex items-center gap-2 hover:underline"
           >

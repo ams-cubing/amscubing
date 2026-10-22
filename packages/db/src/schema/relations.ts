@@ -23,6 +23,16 @@ import {
   logs,
 } from "./competitions";
 import { dateRequests } from "./date-requests";
+import {
+  equipmentAcquisitionLines,
+  equipmentAcquisitions,
+  equipmentEvents,
+  equipmentItems,
+  equipmentLoanLines,
+  equipmentLoans,
+  equipmentStock,
+  equipmentTypes,
+} from "./equipment";
 import { regions, states } from "./geo";
 import { notifications } from "./notifications";
 
@@ -299,3 +309,121 @@ export const availabilityRelations = relations(availability, ({ one }) => ({
     references: [user.wcaId],
   }),
 }));
+
+export const equipmentTypesRelations = relations(
+  equipmentTypes,
+  ({ many }) => ({
+    items: many(equipmentItems),
+    stock: many(equipmentStock),
+  }),
+);
+
+export const equipmentItemsRelations = relations(equipmentItems, ({ one }) => ({
+  type: one(equipmentTypes, {
+    fields: [equipmentItems.typeId],
+    references: [equipmentTypes.id],
+  }),
+  guardian: one(user, {
+    fields: [equipmentItems.guardianUserId],
+    references: [user.id],
+  }),
+  acquisition: one(equipmentAcquisitions, {
+    fields: [equipmentItems.acquisitionId],
+    references: [equipmentAcquisitions.id],
+  }),
+}));
+
+export const equipmentStockRelations = relations(equipmentStock, ({ one }) => ({
+  type: one(equipmentTypes, {
+    fields: [equipmentStock.typeId],
+    references: [equipmentTypes.id],
+  }),
+  guardian: one(user, {
+    fields: [equipmentStock.guardianUserId],
+    references: [user.id],
+  }),
+}));
+
+export const equipmentAcquisitionsRelations = relations(
+  equipmentAcquisitions,
+  ({ one, many }) => ({
+    lines: many(equipmentAcquisitionLines),
+    createdBy: one(user, {
+      fields: [equipmentAcquisitions.createdByUserId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const equipmentAcquisitionLinesRelations = relations(
+  equipmentAcquisitionLines,
+  ({ one }) => ({
+    acquisition: one(equipmentAcquisitions, {
+      fields: [equipmentAcquisitionLines.acquisitionId],
+      references: [equipmentAcquisitions.id],
+    }),
+    type: one(equipmentTypes, {
+      fields: [equipmentAcquisitionLines.typeId],
+      references: [equipmentTypes.id],
+    }),
+  }),
+);
+
+export const equipmentLoansRelations = relations(
+  equipmentLoans,
+  ({ one, many }) => ({
+    borrower: one(user, {
+      fields: [equipmentLoans.borrowerUserId],
+      references: [user.id],
+    }),
+    lentBy: one(user, {
+      fields: [equipmentLoans.lentByUserId],
+      references: [user.id],
+    }),
+    competition: one(competitions, {
+      fields: [equipmentLoans.competitionId],
+      references: [competitions.id],
+    }),
+    lines: many(equipmentLoanLines),
+  }),
+);
+
+export const equipmentLoanLinesRelations = relations(
+  equipmentLoanLines,
+  ({ one }) => ({
+    loan: one(equipmentLoans, {
+      fields: [equipmentLoanLines.loanId],
+      references: [equipmentLoans.id],
+    }),
+    type: one(equipmentTypes, {
+      fields: [equipmentLoanLines.typeId],
+      references: [equipmentTypes.id],
+    }),
+    item: one(equipmentItems, {
+      fields: [equipmentLoanLines.itemId],
+      references: [equipmentItems.id],
+    }),
+  }),
+);
+
+export const equipmentEventsRelations = relations(
+  equipmentEvents,
+  ({ one }) => ({
+    actor: one(user, {
+      fields: [equipmentEvents.actorId],
+      references: [user.id],
+    }),
+    item: one(equipmentItems, {
+      fields: [equipmentEvents.itemId],
+      references: [equipmentItems.id],
+    }),
+    type: one(equipmentTypes, {
+      fields: [equipmentEvents.typeId],
+      references: [equipmentTypes.id],
+    }),
+    loan: one(equipmentLoans, {
+      fields: [equipmentEvents.loanId],
+      references: [equipmentLoans.id],
+    }),
+  }),
+);

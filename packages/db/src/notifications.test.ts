@@ -16,6 +16,9 @@ vi.mock("./index", () => ({
 
 import {
   countUnreadNotificationsByCard,
+  equipmentConfirmedNotificationRow,
+  equipmentNotificationRow,
+  equipmentRequestNotificationRow,
   formatNotificationTitle,
   markCardNotificationsRead,
   notifyAllUsers,
@@ -56,6 +59,108 @@ describe("formatNotificationTitle", () => {
     ).toBe("Ahora eres editor del blog");
     expect(formatNotificationTitle("course_staff_changed", {})).toBe(
       "Ya no tienes permisos en Cursos AMS",
+    );
+  });
+});
+
+describe("equipmentNotificationRow", () => {
+  const base = {
+    actorId: "lender",
+    calendarUrl: "https://calendario.example/",
+    equipmentLabel: "8 Timer SpeedStack G4",
+  };
+
+  it("sends borrowers without the delegate role to mis-competencias", () => {
+    const row = equipmentNotificationRow({
+      ...base,
+      recipient: { id: "org", role: "user", wcaId: null },
+      type: "equipment_loaned",
+      loanId: 4,
+    });
+    expect(row.title).toBe("Te prestaron equipo: 8 Timer SpeedStack G4");
+    expect(row.href).toBe("https://calendario.example/mis-competencias");
+    expect(row.payload).toEqual({ loanId: 4, sku: undefined });
+  });
+
+  it("sends delegates to the loan or unit in the panel", () => {
+    const delegate = {
+      id: "d1",
+      role: "delegate" as const,
+      wcaId: "2016ROVI01",
+    };
+    expect(
+      equipmentNotificationRow({
+        ...base,
+        recipient: delegate,
+        type: "equipment_returned",
+        loanId: 4,
+      }).href,
+    ).toBe("https://calendario.example/panel/equipo/prestamos/4");
+    expect(
+      equipmentNotificationRow({
+        ...base,
+        recipient: delegate,
+        type: "equipment_transferred",
+        equipmentLabel: "DS3-2318",
+        sku: "DS3-2318",
+      }),
+    ).toMatchObject({
+      title: "Ahora eres guardián de: DS3-2318",
+      href: "https://calendario.example/panel/equipo/DS3-2318",
+    });
+  });
+});
+
+describe("equipmentRequestNotificationRow", () => {
+  it("sends delegates to the competition in the panel", () => {
+    expect(
+      equipmentRequestNotificationRow({
+        recipient: { id: "d1", role: "delegate", wcaId: "2016ROVI01" },
+        actorId: "organizer-1",
+        calendarUrl: "https://calendario.example/",
+        competitionId: 9,
+        requestId: 2,
+        city: "Querétaro",
+      }),
+    ).toEqual({
+      recipientId: "d1",
+      actorId: "organizer-1",
+      type: "equipment_requested",
+      title: "Solicitud de equipo para Querétaro",
+      href: "https://calendario.example/panel/competencias/9",
+      payload: { competitionId: 9, requestId: 2, city: "Querétaro" },
+    });
+  });
+});
+
+describe("equipmentConfirmedNotificationRow", () => {
+  const base = {
+    recipient: { id: "o1", role: "user" as const, wcaId: null },
+    actorId: "delegate-1",
+    urls: {
+      calendarUrl: "https://calendario.example/",
+      boardsUrl: "https://tableros.example/",
+    },
+    competitionId: 9,
+    requestId: 2,
+    city: "Querétaro",
+  };
+
+  it("opens the equipment card on the competition board", () => {
+    expect(
+      equipmentConfirmedNotificationRow({ ...base, boardId: 4, cardId: 31 }),
+    ).toMatchObject({
+      recipientId: "o1",
+      type: "equipment_confirmed",
+      title: "El delegado confirmó el equipo para Querétaro",
+      href: "https://tableros.example/boards/4?card=31",
+      payload: { boardId: 4, cardId: 31, requestId: 2 },
+    });
+  });
+
+  it("falls back to mis-competencias without a board", () => {
+    expect(equipmentConfirmedNotificationRow(base).href).toBe(
+      "https://calendario.example/mis-competencias",
     );
   });
 });

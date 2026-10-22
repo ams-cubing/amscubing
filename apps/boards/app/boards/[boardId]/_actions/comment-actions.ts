@@ -17,8 +17,11 @@ import {
   insertNotifications,
 } from "@workspace/db/notifications";
 import { boards, cardComments, cardMembers, cards } from "@workspace/db/schema";
+import { escapeHtml } from "@workspace/email";
+import { log } from "@workspace/server/log";
 
 import { sendBoardNotificationEmail } from "@/lib/board-emails";
+import { commentRecipients } from "@/lib/comment-recipients";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 import { addCardCommentSchema } from "@/app/_lib/validations";
 
@@ -117,66 +120,77 @@ export async function addCardCommentAction(input: {
       };
     });
 
-    const commentRows = members
-      .filter((member) => !mentionedIds.has(member.userId))
-      .map((member) => {
-        const profile = team.find((person) => person.id === member.userId);
-        if (profile?.email && member.userId !== user.id) {
-          commentEmailRecipients.push({
-            email: profile.email,
-            name: profile.name,
-          });
-        }
+    const commentRows = commentRecipients({
+      team,
+      cardMemberIds: members.map((member) => member.userId),
+      mentionedIds,
+      actorId: user.id,
+    }).map((recipientId) => {
+      const profile = team.find((person) => person.id === recipientId);
+      if (profile?.email) {
+        commentEmailRecipients.push({
+          email: profile.email,
+          name: profile.name,
+        });
+      }
 
-        return {
-          recipientId: member.userId,
-          actorId: user.id,
-          type: "card_comment" as const,
-          title: formatNotificationTitle("card_comment", {
-            cardTitle: card?.title,
-          }),
-          href: hrefForNotification("card_comment", {
-            urls,
-            recipientRole: "user",
-            boardId: input.boardId,
-            cardId: input.cardId,
-          }),
-          payload: {
-            boardId: input.boardId,
-            boardName: board?.name,
-            cardId: input.cardId,
-            cardTitle: card?.title,
-            actorName: user.name,
-          },
-        };
-      });
+      return {
+        recipientId,
+        actorId: user.id,
+        type: "card_comment" as const,
+        title: formatNotificationTitle("card_comment", {
+          cardTitle: card?.title,
+        }),
+        href: hrefForNotification("card_comment", {
+          urls,
+          recipientRole: "user",
+          boardId: input.boardId,
+          cardId: input.cardId,
+        }),
+        payload: {
+          boardId: input.boardId,
+          boardName: board?.name,
+          cardId: input.cardId,
+          cardTitle: card?.title,
+          actorName: user.name,
+        },
+      };
+    });
 
     await insertNotifications(tx, [...mentionRows, ...commentRows]);
   });
 
   const boardHref = `${getBoardsUrl().replace(/\/$/, "")}/boards/${input.boardId}?card=${input.cardId}`;
-  for (const recipient of mentionEmailRecipients) {
-    await sendBoardNotificationEmail({
-      to: recipient.email,
-      recipientName: recipient.name,
+  const bodyHtml = `<p>${escapeHtml(body).replaceAll("\n", "<br/>")}</p>`;
+  const emails = [
+    ...mentionEmailRecipients.map((recipient) => ({
+      recipient,
       subject: `${user.name} te mencionó en un comentario`,
-      title: `${user.name} te mencionó en un comentario`,
-      bodyHtml: `<p>${body.replaceAll("\n", "<br/>")}</p>`,
-      ctaLabel: "Ver comentario",
-      ctaHref: boardHref,
-    });
-  }
-
-  for (const recipient of commentEmailRecipients) {
-    await sendBoardNotificationEmail({
-      to: recipient.email,
-      recipientName: recipient.name,
+    })),
+    ...commentEmailRecipients.map((recipient) => ({
+      recipient,
       subject: `Nuevo comentario en «${cardTitle}»`,
-      title: `Nuevo comentario en «${cardTitle}»`,
-      bodyHtml: `<p>${body.replaceAll("\n", "<br/>")}</p>`,
-      ctaLabel: "Ver comentario",
-      ctaHref: boardHref,
-    });
+    })),
+  ];
+
+  for (const { recipient, subject } of emails) {
+    try {
+      await sendBoardNotificationEmail({
+        to: recipient.email,
+        recipientName: recipient.name,
+        subject,
+        title: subject,
+        bodyHtml,
+        ctaLabel: "Ver comentario",
+        ctaHref: boardHref,
+      });
+    } catch (err) {
+      log.error("boards.comment_email_failed", {
+        boardId: input.boardId,
+        cardId: input.cardId,
+        error: err,
+      });
+    }
   }
 
   revalidatePath(`/boards/${input.boardId}`);
