@@ -69,7 +69,7 @@ export function BoardList({
 
         return (
           <li key={board.id}>
-            <Link
+            <Link prefetch={false}
               href={`/boards/${board.id}`}
               className={cn(
                 "flex min-h-20 items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3.5",

@@ -18,7 +18,10 @@ export type AdminAccess = {
 };
 
 export const getAdminAccess = cache(async (): Promise<AdminAccess | null> => {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({
+    headers: await headers(),
+    query: { disableCookieCache: true },
+  });
   if (!session?.user) unauthorized();
 
   const role = session.user.role ?? "user";

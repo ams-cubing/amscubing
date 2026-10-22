@@ -103,7 +103,7 @@ export default async function AdminPage() {
                   </Pill>
                 </td>
                 <td className={tdClass}>
-                  <Link
+                  <Link prefetch={false}
                     href={`/admin/cursos/${c.id}`}
                     className={textLinkClass}
                   >

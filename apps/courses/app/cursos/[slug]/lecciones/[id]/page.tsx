@@ -45,7 +45,7 @@ export default async function LessonPage({
             El curso guarda tu progreso y tus evaluaciones.
           </p>
           <Button asChild variant="destructive">
-            <Link href={`/cursos/${slug}`}>Ir al curso</Link>
+            <Link prefetch={false} href={`/cursos/${slug}`}>Ir al curso</Link>
           </Button>
         </div>
       </section>
@@ -70,7 +70,7 @@ export default async function LessonPage({
           Mi aprendizaje
         </Link>{" "}
         /{" "}
-        <Link href={`/cursos/${slug}`} className="hover:text-ams-red">
+        <Link prefetch={false} href={`/cursos/${slug}`} className="hover:text-ams-red">
           {course.title}
         </Link>
       </div>
@@ -200,7 +200,7 @@ export default async function LessonPage({
           )}
           <div className="mt-8 flex justify-between gap-4 border-t border-ams-navy/10 pt-5">
             {previous ? (
-              <Link
+              <Link prefetch={false}
                 className={textLinkClass}
                 href={`/cursos/${slug}/lecciones/${previous.id}`}
               >
@@ -210,14 +210,14 @@ export default async function LessonPage({
               <span />
             )}
             {next ? (
-              <Link
+              <Link prefetch={false}
                 className={textLinkClass}
                 href={`/cursos/${slug}/lecciones/${next.id}`}
               >
                 Siguiente →
               </Link>
             ) : (
-              <Link className={textLinkClass} href={`/cursos/${slug}`}>
+              <Link prefetch={false} className={textLinkClass} href={`/cursos/${slug}`}>
                 Volver al curso →
               </Link>
             )}

@@ -1,16 +1,21 @@
 import type { MetadataRoute } from "next";
 
+import { AI_CRAWLERS } from "@workspace/server/robots";
+
 const baseUrl = (
   process.env.NEXT_PUBLIC_WEB_URL ?? "https://amscubing.org"
 ).replace(/\/$/, "");
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/admin", "/cuenta"],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin", "/cuenta", "/api"],
+      },
+      { userAgent: AI_CRAWLERS, disallow: "/" },
+    ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

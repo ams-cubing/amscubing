@@ -145,6 +145,14 @@ describe("requireSession", () => {
       expect(result.session.user.wcaId).toBe("2020TEST01");
     }
   });
+
+  it("uses the session cookie cache", async () => {
+    sessionFor("user");
+    await requireSession();
+    expect(getSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({ query: expect.anything() }),
+    );
+  });
 });
 
 describe("requireDelegate", () => {
@@ -174,6 +182,14 @@ describe("requireDelegate", () => {
     if (result.ok) {
       expect(result.session.user.role).toBe("delegate");
     }
+  });
+
+  it("bypasses the session cookie cache", async () => {
+    sessionFor("delegate");
+    await requireDelegate();
+    expect(getSession).toHaveBeenCalledWith(
+      expect.objectContaining({ query: { disableCookieCache: true } }),
+    );
   });
 
   it("rejects editors", async () => {

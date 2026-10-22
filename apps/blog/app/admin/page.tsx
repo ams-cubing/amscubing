@@ -76,8 +76,8 @@ export default async function Page() {
                 </td>
                 <td className={td}>{p.authorName}</td>
                 <td className={td}>
-                  <Link href={`/admin/entradas/${p.id}`}>Editar ↗</Link> ·{" "}
-                  <Link href={`/entradas/${p.slug}`}>Ver</Link>
+                  <Link prefetch={false} href={`/admin/entradas/${p.id}`}>Editar ↗</Link> ·{" "}
+                  <Link prefetch={false} href={`/entradas/${p.slug}`}>Ver</Link>
                 </td>
               </tr>
             ))}

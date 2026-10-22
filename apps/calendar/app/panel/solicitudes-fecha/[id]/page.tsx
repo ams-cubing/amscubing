@@ -114,7 +114,7 @@ export default async function DateRequestDetailPage({
 
         {request.status === "accepted" && request.competitionId && (
           <Button asChild>
-            <Link href={`/panel/competencias/${request.competitionId}`}>
+            <Link prefetch={false} href={`/panel/competencias/${request.competitionId}`}>
               Ver competencia creada
             </Link>
           </Button>

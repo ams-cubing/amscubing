@@ -4,7 +4,7 @@ import { blogPosts } from "@workspace/db/schema";
 import { Tag } from "./tag";
 export function PostCard({ post }: { post: typeof blogPosts.$inferSelect }) {
   return (
-    <Link
+    <Link prefetch={false}
       href={`/entradas/${post.slug}`}
       className="block overflow-hidden rounded-3xl bg-white shadow-[0_8px_32px_rgba(1,11,25,0.05)] transition-transform hover:-translate-y-1"
     >

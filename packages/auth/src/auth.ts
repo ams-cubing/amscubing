@@ -121,7 +121,23 @@ export function createAuth() {
         }),
     },
     account: { accountLinking: { enabled: true, allowDifferentEmails: true } },
-    rateLimit: { enabled: true, storage: "database", window: 60, max: 30 },
+    // Sessions are read from a signed cookie instead of Postgres for up to
+    // `maxAge`. Bump `version` to force every cached session to re-read the DB.
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 2 * 60 * 60,
+        strategy: "jwe",
+        version: "1",
+      },
+    },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 30,
+      customRules: { "/get-session": false },
+    },
     databaseHooks: {
       account: {
         create: {

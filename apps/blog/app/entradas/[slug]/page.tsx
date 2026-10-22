@@ -86,7 +86,7 @@ export default async function Page({
           </p>
           {viewer?.canManage && (
             <Button asChild variant="outline" className="text-ams-navy">
-              <Link href={`/admin/entradas/${post.id}`}>Editar entrada</Link>
+              <Link prefetch={false} href={`/admin/entradas/${post.id}`}>Editar entrada</Link>
             </Button>
           )}
           {post.coverUrl && (

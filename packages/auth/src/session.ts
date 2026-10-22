@@ -18,9 +18,11 @@ export type SessionResult =
   | { ok: false; message: string };
 
 export function createSessionHelpers(auth: Auth) {
-  async function requireSession(): Promise<SessionResult> {
+  /** `fresh` skips the session cookie cache so role checks see revocations immediately. */
+  async function fetchSession(fresh: boolean): Promise<SessionResult> {
     const session = await auth.api.getSession({
       headers: await headers(),
+      ...(fresh ? { query: { disableCookieCache: true } } : {}),
     });
 
     if (!session?.user) {
@@ -36,8 +38,12 @@ export function createSessionHelpers(auth: Auth) {
     };
   }
 
+  async function requireSession(): Promise<SessionResult> {
+    return fetchSession(false);
+  }
+
   async function requireDelegate(): Promise<SessionResult> {
-    const result = await requireSession();
+    const result = await fetchSession(true);
 
     if (!result.ok) {
       return result;
@@ -54,7 +60,7 @@ export function createSessionHelpers(auth: Auth) {
   }
 
   async function requireEditorOrDelegate(): Promise<SessionResult> {
-    const result = await requireSession();
+    const result = await fetchSession(true);
 
     if (!result.ok) {
       return result;

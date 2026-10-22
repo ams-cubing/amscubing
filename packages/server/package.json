@@ -16,7 +16,8 @@
       "types": "./src/security-headers.d.mts",
       "default": "./src/security-headers.mjs"
     },
-    "./action": "./src/action.ts"
+    "./action": "./src/action.ts",
+    "./robots": "./src/robots.ts"
   },
   "peerDependencies": {
     "next": "catalog:"

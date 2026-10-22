@@ -42,6 +42,21 @@ La home sigue la estructura visual del rediseño: hero, próximos torneos, ranki
 - Subidas a UploadThing: cada `onUploadComplete` debe llamar a `recordUpload` de `@workspace/db/uploads` para registrar la `key` en la tabla `uploaded_file` (base para limpiar huérfanos y la biblioteca de medios).
 - Rate limiting: `consumeRateLimit` de `@workspace/db/rate-limit` (contador de ventana fija sobre la tabla `rate_limit` de Better Auth). Las llaves deben ir con namespace `<app>:<acción>:<ámbito>:<id>`, p. ej. `blog:comment:user:<id>` o `calendar:date-request:ip:<ip>`. No crear tablas de rate limit por app.
 
+## Costos de Vercel/Neon
+
+Las apps corren con cuotas limitadas de Vercel (CDN Requests, Fluid Active CPU, Image Optimization) y Neon (horas de cómputo; Neon solo se suspende tras ~5 min sin consultas). Estas decisiones son intencionales; no revertirlas sin medir el costo.
+
+- Sesión en cookie: `packages/auth/src/auth.ts` activa `session.cookieCache` (2 h, JWE), así que `getSession` no consulta Postgres en cada página. Cambios de rol, revocaciones o reset de contraseña tardan hasta 2 h en reflejarse en checks normales; los checks que dan acceso privilegiado (`requireDelegate`, `requireEditorOrDelegate`, `getAdminAccess`, guard del panel de calendar) pasan `query: { disableCookieCache: true }`. Para invalidar todas las sesiones en caché, sube `cookieCache.version`. No uses `refreshCache` (Better Auth lo ignora con base de datos).
+- Cliente de auth sin `refetchOnWindowFocus`, y `/get-session` excluido del rate limit en BD de Better Auth.
+- Nada de polling en pestañas ocultas: la bandeja de notificaciones refresca cada 2 min solo si la pestaña está visible, al volver a ella o al abrirla. Cualquier polling nuevo debe seguir esa regla.
+- Prefetch: `partialPrefetching: false` en todas las apps y `prefetch={false}` en todo `<Link>` con `href` dinámico (template literal). La regla `no-restricted-syntax` de `@workspace/eslint-config/next-js` lo marca; usa `prefetch="auto"` solo en navegación corta donde el cambio instantáneo importe.
+- Imágenes: `images.unoptimized: true` en todas las apps para no gastar Image Optimization.
+- Cachés públicas largas (`"use cache"` con `cacheLife("hours")` o más) y `cacheTag`; calendar no puede invalidar la caché de web, así que una competencia recién anunciada aparece en la web en ~1 h.
+- No crear `proxy.ts` sin `matcher`: corre en cada request.
+- `robots.ts` de web, blog y cursos bloquea crawlers de IA (`AI_CRAWLERS` de `@workspace/server/robots`).
+- Sin Speed Insights; solo `@vercel/analytics`.
+- En producción `DATABASE_URL` debe usar el host pooled de Neon (`-pooler`).
+
 ## Web actual
 
 - Página principal: `apps/web/app/page.tsx`.
