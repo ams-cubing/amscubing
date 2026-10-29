@@ -1,5 +1,6 @@
 import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 
+import { isDelegatesBoard } from "./delegates-board";
 import { db } from "./index";
 import {
   boardMembers,
@@ -515,15 +516,33 @@ export type BoardTeamUser = NotificationUser & {
   image: string | null;
 };
 
+export async function allDelegateUsers(
+  dbOrTx: DbOrTx,
+): Promise<BoardTeamUser[]> {
+  return dbOrTx
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(user)
+    .where(eq(user.role, "delegate"))
+    .orderBy(user.name);
+}
+
 export async function boardTeamUsers(
   dbOrTx: DbOrTx,
   boardId: number,
 ): Promise<BoardTeamUser[]> {
   const board = await dbOrTx.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { competitionId: true },
+    columns: { name: true, isTemplate: true, competitionId: true },
   });
   if (!board) return [];
+  if (isDelegatesBoard(board)) return allDelegateUsers(dbOrTx);
 
   const byId = new Map<string, BoardTeamUser>();
 
@@ -620,13 +639,15 @@ export async function boardTeamByRole(dbOrTx: DbOrTx, boardId: number) {
   const all = await boardTeamUsers(dbOrTx, boardId);
   const board = await dbOrTx.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { competitionId: true },
+    columns: { name: true, isTemplate: true, competitionId: true },
   });
 
   let organizers: BoardTeamUser[] = [];
   let delegates: BoardTeamUser[] = [];
 
-  if (board?.competitionId) {
+  if (board && isDelegatesBoard(board)) {
+    delegates = all;
+  } else if (board?.competitionId) {
     [organizers, delegates] = await Promise.all([
       competitionOrganizersOnly(dbOrTx, board.competitionId),
       competitionDelegatesOnly(dbOrTx, board.competitionId),

@@ -20,7 +20,8 @@
     "./data/delegates": "./src/data/delegates.ts",
     "./data/ams-board-template": "./src/data/ams-board-template.ts",
     "./seed-board-template": "./src/seed-board-template.ts",
-    "./clone-board": "./src/clone-board.ts"
+    "./clone-board": "./src/clone-board.ts",
+    "./delegates-board": "./src/delegates-board.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
@@ -29,6 +30,7 @@
     "db:seed-template": "tsx src/seed-template.ts",
     "db:sync-template": "tsx src/sync-template.ts",
     "db:import-equipment": "tsx src/import-equipment.ts",
+    "db:import-trello": "tsx src/import-trello-board.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",

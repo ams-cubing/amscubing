@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 
 import { db } from "@workspace/db";
+import { isDelegatesBoard } from "@workspace/db/delegates-board";
 import {
   boardMembers,
   boards,
@@ -8,6 +9,7 @@ import {
   competitionOrganizers,
   competitions,
   type User,
+  user as userTable,
 } from "@workspace/db/schema";
 
 const boardListWith = {
@@ -26,7 +28,8 @@ const boardListWith = {
 
 /**
  * Delegates can open any board; everyone else needs to be a board member or an
- * organizer/delegate of the board's competition.
+ * organizer/delegate of the board's competition. The delegates board is only
+ * for delegates.
  */
 export async function canAccessBoard(user: User, boardId: number) {
   if (user.role === "delegate") {
@@ -35,10 +38,10 @@ export async function canAccessBoard(user: User, boardId: number) {
 
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { id: true, isTemplate: true, competitionId: true },
+    columns: { id: true, name: true, isTemplate: true, competitionId: true },
   });
 
-  if (!board || board.isTemplate) {
+  if (!board || board.isTemplate || isDelegatesBoard(board)) {
     return false;
   }
 
@@ -118,11 +121,14 @@ async function memberBoardIdsForUser(user: User) {
 
 export async function listAccessibleBoards(user: User) {
   if (user.role === "delegate") {
-    return db.query.boards.findMany({
+    const rows = await db.query.boards.findMany({
       where: and(eq(boards.isTemplate, false), isNull(boards.archivedAt)),
       with: boardListWith,
       orderBy: (board, { desc }) => [desc(board.createdAt)],
     });
+    return rows
+      .map((board) => ({ ...board, isDelegatesBoard: isDelegatesBoard(board) }))
+      .sort((a, b) => Number(b.isDelegatesBoard) - Number(a.isDelegatesBoard));
   }
 
   const [competitionIds, memberBoardIds] = await Promise.all([
@@ -235,6 +241,24 @@ export async function getBoardForUser(user: User, boardId: number) {
     return null;
   }
 
+  const board = await findBoardDetail(boardId);
+  if (!board) return null;
+
+  const delegatesBoard = isDelegatesBoard(board);
+  return {
+    ...board,
+    isDelegatesBoard: delegatesBoard,
+    delegateTeam: delegatesBoard
+      ? await db.query.user.findMany({
+          where: eq(userTable.role, "delegate"),
+          columns: { id: true, name: true, image: true, wcaId: true },
+          orderBy: (row, { asc }) => [asc(row.name)],
+        })
+      : [],
+  };
+}
+
+function findBoardDetail(boardId: number) {
   return db.query.boards.findFirst({
     where: eq(boards.id, boardId),
     with: {

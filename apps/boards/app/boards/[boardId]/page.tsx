@@ -19,6 +19,7 @@ import { BoardsAccessDenied } from "@/app/_components/boards-access-denied";
 import { BoardKanban } from "./_components/board-kanban";
 import { BoardReadinessBanner } from "./_components/board-readiness-banner";
 import { BoardDelegateControls } from "./_components/board-delegate-controls";
+import { getCompetitionTeam } from "./_lib/team";
 import { getBoardForUser } from "@/lib/boards";
 import {
   formatPublicStatus,
@@ -78,7 +79,7 @@ export default async function BoardPage({
     : null;
 
   const activeInvite =
-    isDelegate && !board.isTemplate
+    isDelegate && !board.isTemplate && !board.isDelegatesBoard
       ? await db.query.boardInvites.findFirst({
           where: and(
             eq(boardInvites.boardId, boardId),
@@ -87,54 +88,7 @@ export default async function BoardPage({
         })
       : null;
 
-  const teamPeople = (() => {
-    const byUserId = new Map<
-      string,
-      {
-        userId: string;
-        name: string;
-        image: string | null;
-        isPrimary: boolean;
-      }
-    >();
-
-    if (board.competition) {
-      for (const row of board.competition.delegates) {
-        if (!row.delegate) continue;
-        byUserId.set(row.delegate.id, {
-          userId: row.delegate.id,
-          name: row.delegate.name,
-          image: row.delegate.image,
-          isPrimary: row.isPrimary,
-        });
-      }
-      for (const row of board.competition.organizers) {
-        if (!row.organizer) continue;
-        const existing = byUserId.get(row.organizer.id);
-        byUserId.set(row.organizer.id, {
-          userId: row.organizer.id,
-          name: row.organizer.name,
-          image: row.organizer.image,
-          isPrimary: existing?.isPrimary || row.isPrimary,
-        });
-      }
-    }
-
-    for (const row of board.members ?? []) {
-      if (!row.user) continue;
-      if (byUserId.has(row.user.id)) continue;
-      byUserId.set(row.user.id, {
-        userId: row.user.id,
-        name: row.user.name,
-        image: row.user.image,
-        isPrimary: false,
-      });
-    }
-
-    return [...byUserId.values()].sort(
-      (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
-    );
-  })();
+  const teamPeople = getCompetitionTeam(board);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -153,8 +107,13 @@ export default async function BoardPage({
               </h1>
               {board.isTemplate && <Badge variant="secondary">Plantilla</Badge>}
               {isArchived && <Badge variant="outline">Archivado</Badge>}
-              {!board.isTemplate && !board.competition && (
-                <Badge variant="secondary">Sin competencia</Badge>
+              {board.isDelegatesBoard ? (
+                <Badge variant="secondary">Solo delegados</Badge>
+              ) : (
+                !board.isTemplate &&
+                !board.competition && (
+                  <Badge variant="secondary">Sin competencia</Badge>
+                )
               )}
             </div>
             {board.competition && (
@@ -203,7 +162,7 @@ export default async function BoardPage({
                 Ver en calendario
               </a>
             )}
-            {isDelegate && (
+            {isDelegate && !board.isDelegatesBoard && (
               <BoardDelegateControls
                 boardId={board.id}
                 boardName={board.name}
