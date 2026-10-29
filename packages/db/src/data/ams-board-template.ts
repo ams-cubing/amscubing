@@ -66,6 +66,7 @@ export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
 
 /** Card for preparing the WCA competition website and storing its public URL. */
 export const WCA_WEBSITE_CARD_TITLE = "Sitio web (WCA)";
+export const EQUIPMENT_CARD_TITLE = "Confirmación de equipo de competencia";
 
 export const TEMPLATE_CARDS: TemplateCard[] = [
   {
@@ -219,11 +220,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "**Objetivo:**  \nComparar de manera precisa los costos aproximados con los costos reales de la competencia.\n\n**Pasos:**\n\n1. Solicita a tu delegado que desbloquee la sección de **Primera Entrega de Costos** en el Drive compartido previamente.\n2. Completa todos los campos correspondientes a los **costos reales** (**no modifiques los costos esperados**).\n3. Sube los comprobantes de los costos a la carpeta compartida proporcionada previamente. Recuerda que todos los gastos deberán comprobarse mediante un comprobante válido: **ticket, factura o nota**. Las capturas de transferencias NO son comprobantes válidos.\n4. Adjunta los comprobantes directamente desde la carpeta en el documento de Excel.\n\n**Nota:**\n\n- El archivo de costos completo, incluyendo las inscripciones recaudadas, debe entregarse a más tardar cinco días antes de la competencia.\n- Cualquier costo adicional registrado durante la competencia deberá agregarse al finalizar el evento.\n- TODOS los costos realizados deberán tener comprobante o ticket. En caso de no contar con él, consulta con tu delegado antes de realizar la compra.",
   },
   {
-    title: "Confirmación de equipo de competencia",
+    title: EQUIPMENT_CARD_TITLE,
     list: "Por Hacer",
     phases: ["post_announce"],
     description:
-      "**Objetivo:**  \nAsegurar el buen uso y cuidado del equipo que los delegados llevan a las competencias.\n\n**Pasos:**\n\n1. Solicita al delegado una lista con el equipo disponible que se llevará a la competencia.\n2. Los organizadores deberán revisar esta lista, confirmar con el delegado qué equipo requerirán y acordar los detalles.\n3. Una vez confirmado, se debe descargar e imprimir la ficha de equipo para registrar la entrega y devolución del mismo durante la competencia.\n\n**Nota:**  \nEl cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban.",
+      "**Objetivo:**  \nAsegurar el buen uso y cuidado del equipo que los delegados llevan a las competencias.\n\n**Pasos:**\n\n1. Llena en esta tarjeta cuántos timers y displays requiere la competencia y envía la solicitud al delegado.\n2. El delegado revisará la solicitud con los organizadores, acordará los detalles y confirmará el equipo que llevará a la competencia.\n3. Una vez confirmado, descarga desde esta tarjeta la ficha de equipo (PDF) e imprímela para registrar la entrega y devolución del mismo durante la competencia.\n\n**Nota:**  \nEl cuidado del equipo es responsabilidad de los organizadores. Cualquier daño o pérdida será responsabilidad de quienes lo reciban.",
   },
   {
     title: "Correo Final y Encuesta de Calidad",

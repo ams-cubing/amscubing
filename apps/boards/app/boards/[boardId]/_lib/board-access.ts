@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@workspace/db";
+import { isDelegatesBoard } from "@workspace/db/delegates-board";
 import {
   boardLists,
   boardMembers,
@@ -163,7 +164,7 @@ export async function assertUserAssignableToBoard(
 ) {
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { competitionId: true },
+    columns: { name: true, isTemplate: true, competitionId: true },
   });
   if (!board) {
     throw new Error("Tablero no encontrado");
@@ -171,9 +172,16 @@ export async function assertUserAssignableToBoard(
 
   const memberUser = await db.query.user.findFirst({
     where: eq(user.id, userId),
-    columns: { id: true, wcaId: true },
+    columns: { id: true, wcaId: true, role: true },
   });
   if (!memberUser) throw new Error("Usuario no encontrado");
+
+  if (isDelegatesBoard(board)) {
+    if (memberUser.role !== "delegate") {
+      throw new Error("En este tablero solo se puede asignar a delegados");
+    }
+    return;
+  }
 
   const asBoardMember = await db.query.boardMembers.findFirst({
     where: and(

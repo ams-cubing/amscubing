@@ -1,5 +1,6 @@
 import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 
+import { isDelegatesBoard } from "./delegates-board";
 import { db } from "./index";
 import {
   boardMembers,
@@ -76,6 +77,7 @@ export function formatNotificationTitle(
     postTitle?: string;
     courseTitle?: string;
     roleLabel?: string;
+    equipmentLabel?: string;
   },
 ) {
   const post = ctx.postTitle?.trim() || "una entrada";
@@ -84,6 +86,7 @@ export function formatNotificationTitle(
   const board = ctx.boardName?.trim() || "un tablero";
   const actor = ctx.actorName?.trim() || "Alguien";
   const city = competitionLabel(ctx);
+  const equipment = ctx.equipmentLabel?.trim() || "equipo de competencia";
 
   switch (type) {
     case "card_assigned":
@@ -136,6 +139,16 @@ export function formatNotificationTitle(
       return `¡Completaste «${course}»!`;
     case "course_published":
       return `Nuevo curso: «${course}»`;
+    case "equipment_loaned":
+      return `Te prestaron equipo: ${equipment}`;
+    case "equipment_returned":
+      return `Se registró la devolución de equipo: ${equipment}`;
+    case "equipment_transferred":
+      return `Ahora eres guardián de: ${equipment}`;
+    case "equipment_requested":
+      return `Solicitud de equipo para ${city}`;
+    case "equipment_confirmed":
+      return `El delegado confirmó el equipo para ${city}`;
   }
 }
 
@@ -277,6 +290,100 @@ export function dateRequestNotificationRow(opts: {
   };
 }
 
+/** Delegates land on the panel; borrowers without the role see their loans in mis-competencias. */
+export function equipmentNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  type: Extract<
+    NotificationType,
+    "equipment_loaned" | "equipment_returned" | "equipment_transferred"
+  >;
+  calendarUrl: string;
+  equipmentLabel: string;
+  loanId?: number;
+  sku?: string;
+}): NewNotificationRow {
+  const calendar = opts.calendarUrl.replace(/\/$/, "");
+  let href = `${calendar}/mis-competencias`;
+  if (opts.recipient.role === "delegate") {
+    if (opts.loanId != null) {
+      href = `${calendar}/panel/equipo/prestamos/${opts.loanId}`;
+    } else if (opts.sku) {
+      href = `${calendar}/panel/equipo/${encodeURIComponent(opts.sku)}`;
+    } else {
+      href = `${calendar}/panel/equipo`;
+    }
+  }
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: opts.type,
+    title: formatNotificationTitle(opts.type, {
+      equipmentLabel: opts.equipmentLabel,
+    }),
+    href,
+    payload: { loanId: opts.loanId, sku: opts.sku },
+  };
+}
+
+/** Sent to the competition's delegates when organizers submit the equipment request. */
+export function equipmentRequestNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  calendarUrl: string;
+  competitionId: number;
+  requestId: number;
+  city: string;
+}): NewNotificationRow {
+  const calendar = opts.calendarUrl.replace(/\/$/, "");
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: "equipment_requested",
+    title: formatNotificationTitle("equipment_requested", { city: opts.city }),
+    href: `${calendar}/panel/competencias/${opts.competitionId}`,
+    payload: {
+      competitionId: opts.competitionId,
+      requestId: opts.requestId,
+      city: opts.city,
+    },
+  };
+}
+
+/** Sent to the organizers when a delegate confirms the equipment; opens the board card when there is one. */
+export function equipmentConfirmedNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  urls: AppUrls;
+  competitionId: number;
+  requestId: number;
+  city: string;
+  boardId?: number;
+  cardId?: number;
+}): NewNotificationRow {
+  const boards = opts.urls.boardsUrl.replace(/\/$/, "");
+  const calendar = opts.urls.calendarUrl.replace(/\/$/, "");
+  let href = `${calendar}/mis-competencias`;
+  if (opts.boardId != null) {
+    href = `${boards}/boards/${opts.boardId}`;
+    if (opts.cardId != null) href += `?card=${opts.cardId}`;
+  }
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: "equipment_confirmed",
+    title: formatNotificationTitle("equipment_confirmed", { city: opts.city }),
+    href,
+    payload: {
+      competitionId: opts.competitionId,
+      requestId: opts.requestId,
+      city: opts.city,
+      boardId: opts.boardId,
+      cardId: opts.cardId,
+    },
+  };
+}
+
 export async function insertNotifications(
   dbOrTx: DbOrTx,
   rows: NewNotificationRow[],
@@ -409,15 +516,33 @@ export type BoardTeamUser = NotificationUser & {
   image: string | null;
 };
 
+export async function allDelegateUsers(
+  dbOrTx: DbOrTx,
+): Promise<BoardTeamUser[]> {
+  return dbOrTx
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      wcaId: user.wcaId,
+    })
+    .from(user)
+    .where(eq(user.role, "delegate"))
+    .orderBy(user.name);
+}
+
 export async function boardTeamUsers(
   dbOrTx: DbOrTx,
   boardId: number,
 ): Promise<BoardTeamUser[]> {
   const board = await dbOrTx.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { competitionId: true },
+    columns: { name: true, isTemplate: true, competitionId: true },
   });
   if (!board) return [];
+  if (isDelegatesBoard(board)) return allDelegateUsers(dbOrTx);
 
   const byId = new Map<string, BoardTeamUser>();
 
@@ -514,13 +639,15 @@ export async function boardTeamByRole(dbOrTx: DbOrTx, boardId: number) {
   const all = await boardTeamUsers(dbOrTx, boardId);
   const board = await dbOrTx.query.boards.findFirst({
     where: eq(boards.id, boardId),
-    columns: { competitionId: true },
+    columns: { name: true, isTemplate: true, competitionId: true },
   });
 
   let organizers: BoardTeamUser[] = [];
   let delegates: BoardTeamUser[] = [];
 
-  if (board?.competitionId) {
+  if (board && isDelegatesBoard(board)) {
+    delegates = all;
+  } else if (board?.competitionId) {
     [organizers, delegates] = await Promise.all([
       competitionOrganizersOnly(dbOrTx, board.competitionId),
       competitionDelegatesOnly(dbOrTx, board.competitionId),

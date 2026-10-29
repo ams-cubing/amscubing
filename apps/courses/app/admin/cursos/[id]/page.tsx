@@ -106,7 +106,9 @@ export default async function EditCourse({
       <div className="mb-7 flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
         <PageHeading>{course.title}</PageHeading>
         <Button asChild variant="outline">
-          <Link prefetch={false} href={`/cursos/${course.slug}`}>Vista previa ↗</Link>
+          <Link prefetch={false} href={`/cursos/${course.slug}`}>
+            Vista previa ↗
+          </Link>
         </Button>
       </div>
       <div className="grid gap-5.5">
@@ -142,7 +144,10 @@ export default async function EditCourse({
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <h2 className="ams-heading text-2xl font-bold">Lecciones</h2>
             <Button asChild variant="destructive">
-              <Link prefetch={false} href={`/admin/cursos/${course.id}/lecciones/nueva`}>
+              <Link
+                prefetch={false}
+                href={`/admin/cursos/${course.id}/lecciones/nueva`}
+              >
                 + Agregar lección
               </Link>
             </Button>
@@ -150,7 +155,8 @@ export default async function EditCourse({
           <ul>
             {course.lessons.map((l) => (
               <li key={l.id}>
-                <Link prefetch={false}
+                <Link
+                  prefetch={false}
                   className="flex items-center gap-3 border-b border-ams-navy/5 py-3 text-sm hover:text-ams-red"
                   href={`/admin/cursos/${course.id}/lecciones/${l.id}`}
                 >

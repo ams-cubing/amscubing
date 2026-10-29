@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   CalendarDays,
   Inbox,
+  Package,
   PlusCircle,
   Trophy,
   type LucideIcon,
@@ -53,6 +54,12 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     name: "Feriados",
     href: "/panel/feriados",
     icon: CalendarDays,
+    badgeKey: null,
+  },
+  {
+    name: "Equipo",
+    href: "/panel/equipo",
+    icon: Package,
     badgeKey: null,
   },
   {

@@ -35,6 +35,16 @@ export function getCompetitionTeam(board: BoardDetail): TeamPerson[] {
     }
   }
 
+  for (const delegate of board.delegateTeam) {
+    byUserId.set(delegate.id, {
+      userId: delegate.id,
+      wcaId: delegate.wcaId,
+      name: delegate.name,
+      image: delegate.image,
+      isPrimary: false,
+    });
+  }
+
   for (const row of board.members ?? []) {
     if (!row.user) continue;
     if (byUserId.has(row.user.id)) continue;

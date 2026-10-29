@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@workspace/db";
+import { DELEGATES_BOARD_NAME } from "@workspace/db/delegates-board";
 import type { User } from "@workspace/db/schema";
 
 import { getBoardMocks, resetBoardMocks } from "@/test/setup-server-mocks";
@@ -71,6 +72,21 @@ describe("canAccessBoard", () => {
     });
 
     await expect(canAccessBoard(organizer, 5)).resolves.toBe(false);
+  });
+
+  it("keeps the delegates board for delegates, even for invited members", async () => {
+    getBoardMocks().findFirstBoard.mockResolvedValue({
+      id: 5,
+      name: DELEGATES_BOARD_NAME,
+      isTemplate: false,
+      competitionId: null,
+    });
+    query.boardMembers.findFirst.mockResolvedValue({ boardId: 5 });
+
+    await expect(canAccessBoard(organizer, 5)).resolves.toBe(false);
+    await expect(
+      canAccessBoard({ ...organizer, role: "delegate" } as User, 5),
+    ).resolves.toBe(true);
   });
 
   it("always allows delegates", async () => {
