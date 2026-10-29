@@ -86,6 +86,7 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
   }
 
   const wcaId = session.user.wcaId;
+  const canEdit = session.user.role === "delegate";
 
   const [
     organizerCompetitionIds,
@@ -361,29 +362,40 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
                       </span>
                     </div>
 
-                    {comp.boardId ? (
-                      <a
-                        href={`${getBoardsUrl()}/boards/${comp.boardId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                      >
-                        Ver tablero AMS
-                      </a>
-                    ) : comp.trelloUrl ? (
-                      <a
-                        href={comp.trelloUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                      >
-                        Ver en Trello
-                      </a>
-                    ) : (
-                      <p className="text-xs md:text-sm text-muted-foreground">
-                        Tablero aún no asignado
-                      </p>
-                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      {comp.boardId ? (
+                        <a
+                          href={`${getBoardsUrl()}/boards/${comp.boardId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver tablero AMS
+                        </a>
+                      ) : comp.trelloUrl ? (
+                        <a
+                          href={comp.trelloUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver en Trello
+                        </a>
+                      ) : (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Tablero aún no asignado
+                        </p>
+                      )}
+                      {canEdit && (
+                        <Link
+                          href={`/panel/competencias/${comp.id}/editar`}
+                          prefetch={false}
+                          className="inline-flex items-center rounded-md border border-black/15 px-3 py-1.5 text-xs md:text-sm font-semibold text-ams-navy hover:bg-ams-soft transition-colors"
+                        >
+                          Editar
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 );
               })}
