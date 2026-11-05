@@ -12,6 +12,25 @@ import {
 import { createQuizSession, verifyQuizSession } from "./quiz-session";
 import type { CourseQuestion } from "@workspace/db/schema";
 
+it("recupera las imágenes de referencia de Sensei sin importar HTML ejecutable", () => {
+  const source = "https://old.amscubing.org/wp-content/uploads/quiz.jpg";
+  const local = "/media/wordpress/quiz.jpg";
+  const question = convertQuestion(
+    {
+      Id: "493",
+      Question: "¿Qué muestra la imagen?",
+      Description: `<figure><img src="${source}" alt="Vista del cubo" onerror="alert(1)"><img src="javascript:alert(1)"></figure>`,
+      Type: "multiple-choice",
+      Grade: "2",
+      Answer: "Right:Correcta,Wrong:Incorrecta",
+    },
+    { [source]: local },
+  );
+  expect(question.images).toEqual([{ src: local, alt: "Vista del cubo" }]);
+  expect(question.answers).toEqual(["Correcta"]);
+  expect(question.points).toBe(2);
+});
+
 const quiz: CourseQuestion[] = [
   {
     id: "1",

@@ -14,6 +14,7 @@ import {
 import { user } from "./auth";
 
 export type CourseQuestion = {
+  images?: { src: string; alt: string }[];
   id: string;
   prompt: string;
   type: "choice" | "boolean" | "text";

@@ -7,7 +7,7 @@ import { AmsField } from "@workspace/ui/components/ams-field";
 import { cn } from "@workspace/ui/lib/utils";
 import { requireViewer } from "@/lib/auth";
 import { getCourse, getProgress } from "@/lib/data";
-import { cleanHtml } from "@/lib/content";
+import { cleanHtml, safeQuestionImage } from "@/lib/content";
 import { Curriculum } from "@/components/curriculum";
 import { Submit } from "@/components/submit";
 import {
@@ -165,6 +165,23 @@ export default async function LessonPage({
                       <legend className="px-1.5 font-bold">
                         {i + 1}. {q.prompt.replace(/<[^>]*>/g, "")}
                       </legend>
+                      {q.images?.map((image, index) => {
+                        const src = safeQuestionImage(image.src);
+                        return (
+                          src && (
+                            <img
+                              className="my-3 block h-auto max-w-[min(100%,36rem)]"
+                              key={src}
+                              src={src}
+                              alt={
+                                image.alt ||
+                                `Imagen de referencia ${index + 1} de la pregunta ${i + 1}`
+                              }
+                              loading="lazy"
+                            />
+                          )
+                        );
+                      })}
                       {q.type === "text" ? (
                         <AmsField label="Tu respuesta" className="mb-0">
                           <Input name={`question-${q.id}`} required />

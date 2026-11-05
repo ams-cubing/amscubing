@@ -109,6 +109,12 @@ excluido de Git por tamaño: para despliegue, copiarlo a almacenamiento persiste
 o CDN y actualizar sus URLs. Conservar también una copia segura de los exports
 fuera del repositorio. Los videos de YouTube mantienen sus enlaces originales.
 
+La migración `0047_restore_quiz_images` agrega las referencias de las imágenes
+originales a las preguntas ya importadas del curso de capacitación de staff. Los
+archivos están en `public/media/wordpress`. Aplica la migración con
+`pnpm --filter @workspace/db db:migrate` y despliega Courses; no hace falta
+reimportar el curso ni el historial de alumnos.
+
 ## Verificación
 
 ```sh

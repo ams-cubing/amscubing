@@ -138,7 +138,7 @@ await db.transaction(async (tx) => {
     const quiz = references(row.Questions!).map((id) => {
       const q = sourceQuestions.get(String(id));
       if (!q) throw new Error(`Falta pregunta ${id}`);
-      return convertQuestion(q);
+      return convertQuestion(q, mediaMap);
     });
     const values = {
       courseId: course.id,

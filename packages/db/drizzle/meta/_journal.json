@@ -330,6 +330,13 @@
       "when": 1792700943709,
       "tag": "0046_equipment_type_obsolete",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793918778510,
+      "tag": "0047_restore_quiz_images",
+      "breakpoints": true
     }
   ]
 }
