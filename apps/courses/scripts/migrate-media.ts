@@ -10,7 +10,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { resolve, extname } from "node:path";
 import { createHash } from "node:crypto";
-import { readCsv, references } from "../lib/sensei";
+import { readCsv, readQuestionImages, references } from "../lib/sensei";
 
 const directory = resolve(process.argv[2] ?? "../../.codex/migration/sensei");
 const files = readdirSync(directory);
@@ -28,6 +28,10 @@ const rows = [
   course,
   ...read("Lessons").filter((r) => ids.includes(Number(r.Id))),
 ];
+const questionIds = new Set(rows.flatMap((r) => references(r.Questions ?? "")));
+const questionImages = read("Questions")
+  .filter((r) => questionIds.has(Number(r.Id)))
+  .flatMap((r) => readQuestionImages(r).map(({ src }) => src));
 const candidates = rows
   .flatMap((r) => [
     r.Image,
@@ -36,7 +40,8 @@ const candidates = rows
       (m) => m[1],
     ),
   ])
-  .filter((v): v is string => !!v);
+  .filter((v): v is string => !!v)
+  .concat(questionImages);
 const urls = [...new Set(candidates)].filter((value) => {
   try {
     const u = new URL(value);

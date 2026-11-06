@@ -35,3 +35,9 @@ export function safeUrl(value: string) {
     return null;
   }
 }
+
+export function safeQuestionImage(value: string) {
+  if (/^\/media\/wordpress\/[\w.-]+\.(?:png|jpe?g|gif|webp)$/i.test(value))
+    return value;
+  return safeUrl(value);
+}
