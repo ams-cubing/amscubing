@@ -157,6 +157,7 @@ export default async function BoardPage({
             {competitionHref && (
               <a
                 href={competitionHref}
+                title="El nombre del tablero sigue al de la competencia; se cambia en el calendario"
                 className="text-sm text-muted-foreground underline-offset-4 hover:underline"
               >
                 Ver en calendario
@@ -167,6 +168,7 @@ export default async function BoardPage({
                 boardId={board.id}
                 boardName={board.name}
                 isTemplate={board.isTemplate}
+                canRename={!board.competition}
                 isArchived={isArchived}
                 inviteUrl={
                   activeInvite

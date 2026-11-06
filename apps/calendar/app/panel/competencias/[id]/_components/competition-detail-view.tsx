@@ -31,6 +31,7 @@ import type { ReassignmentOption } from "@/lib/reassignment-option";
 import { BoardAssignControls } from "../../_components/board-assign-controls";
 import { DateRequestResponseControls } from "./date-request-response-controls";
 import { CompetitionSocialStatusSection } from "./competition-social-status-section";
+import { MultiCompetitionToggle } from "./multi-competition-toggle";
 
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
@@ -56,10 +57,12 @@ export function CompetitionDetailView({
   competition,
   currentUserWcaId,
   reassignmentCandidates = [],
+  multiCompetitionOrganizerIds = [],
 }: {
   competition: CompetitionDetail;
   currentUserWcaId?: string | null;
   reassignmentCandidates?: ReassignmentOption[];
+  multiCompetitionOrganizerIds?: string[];
 }) {
   const boardsUrl = getBoardsUrl();
   const location = [
@@ -210,7 +213,7 @@ export function CompetitionDetailView({
                       {row.organizer?.name?.slice(0, 1) ?? "?"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0 text-sm">
+                  <div className="min-w-0 flex-1 text-sm">
                     <div className="font-medium truncate">
                       {row.organizer?.name ?? "Usuario"}
                       {row.isPrimary && (
@@ -221,6 +224,13 @@ export function CompetitionDetailView({
                       {row.organizer?.wcaId ?? row.organizer?.email}
                     </div>
                   </div>
+                  <MultiCompetitionToggle
+                    competitionId={competition.id}
+                    userId={row.organizerUserId}
+                    allowed={multiCompetitionOrganizerIds.includes(
+                      row.organizerUserId,
+                    )}
+                  />
                 </li>
               ))}
             </ul>

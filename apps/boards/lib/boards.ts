@@ -319,7 +319,12 @@ function findBoardDetail(boardId: number) {
                   items: true,
                 },
               },
-              attachments: true,
+              attachments: {
+                orderBy: (attachment, { desc }) => [
+                  desc(attachment.createdAt),
+                  desc(attachment.id),
+                ],
+              },
               members: {
                 with: {
                   user: true,

@@ -130,6 +130,24 @@ export const competitionOrganizers = pgTable("competition_organizer", {
   isPrimary: boolean("is_primary").default(false).notNull(),
 });
 
+/** Organizers a delegate allowed to run several unannounced competitions at once. */
+export const multiCompetitionOrganizers = pgTable(
+  "multi_competition_organizer",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    grantedByUserId: text("granted_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+);
+
+export type MultiCompetitionOrganizer = InferSelectModel<
+  typeof multiCompetitionOrganizers
+>;
+
 export const availability = pgTable(
   "availability",
   {

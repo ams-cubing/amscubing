@@ -37,6 +37,7 @@ export function BoardDelegateControls({
   boardId,
   boardName,
   isTemplate,
+  canRename,
   isArchived,
   inviteUrl,
   inviteId,
@@ -45,6 +46,8 @@ export function BoardDelegateControls({
   boardId: number;
   boardName: string;
   isTemplate: boolean;
+  /** Competition boards take their name from the competition. */
+  canRename: boolean;
   isArchived: boolean;
   inviteUrl: string | null;
   inviteId: number | null;
@@ -52,7 +55,9 @@ export function BoardDelegateControls({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <RenameBoardDialog boardId={boardId} currentName={boardName} />
+      {canRename && (
+        <RenameBoardDialog boardId={boardId} currentName={boardName} />
+      )}
       {!isTemplate && (
         <InviteBoardDialog
           boardId={boardId}

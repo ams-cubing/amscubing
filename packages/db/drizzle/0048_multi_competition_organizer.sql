@@ -1,0 +1,8 @@
+CREATE TABLE "multi_competition_organizer" (
+	"user_id" text PRIMARY KEY NOT NULL,
+	"granted_by_user_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "multi_competition_organizer" ADD CONSTRAINT "multi_competition_organizer_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "multi_competition_organizer" ADD CONSTRAINT "multi_competition_organizer_granted_by_user_id_user_id_fk" FOREIGN KEY ("granted_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;

@@ -30,6 +30,11 @@ const nextConfig = {
         destination: "/competencias",
         permanent: true,
       },
+      {
+        source: "/privacidad",
+        destination: "/aviso-de-privacidad",
+        permanent: true,
+      },
     ];
   },
   images: {

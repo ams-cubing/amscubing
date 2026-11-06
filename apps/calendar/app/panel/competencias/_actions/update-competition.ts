@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@workspace/db";
+import { competitionBoardName } from "@workspace/db/clone-board";
 import {
   resolveStatusChange,
   type ResolveStatusChangeResult,
@@ -262,6 +263,18 @@ export async function updateCompetition(
         .update(competitions)
         .set(updatePayload)
         .where(eq(competitions.id, competitionId));
+
+      await tx
+        .update(boards)
+        .set({
+          name: competitionBoardName({
+            name: updatePayload.name,
+            city: updatePayload.city,
+            startDate: updatePayload.startDate,
+          }),
+          updatedAt: new Date(),
+        })
+        .where(eq(boards.competitionId, competitionId));
 
       if (cancelling) {
         await tx

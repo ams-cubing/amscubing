@@ -27,6 +27,18 @@ export function formatCommentTime(createdAt: Date | string) {
   });
 }
 
+export function formatUploadTime(createdAt: Date | string) {
+  const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+  return date.toLocaleString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Mexico_City",
+  });
+}
+
 export function initials(name: string) {
   return name
     .split(" ")

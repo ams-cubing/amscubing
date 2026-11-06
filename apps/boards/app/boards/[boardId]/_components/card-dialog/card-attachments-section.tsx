@@ -15,9 +15,10 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
-import { isImageAttachmentUrl } from "@/lib/attachment-media";
+import { isImageAttachment } from "@/lib/attachment-media";
 import { useUploadThing } from "@/lib/uploadthing-client";
 
+import { formatUploadTime } from "../../_lib/card-format";
 import type { BoardCard } from "../../_lib/types";
 
 type Attachment = BoardCard["attachments"][number];
@@ -104,31 +105,45 @@ function AttachmentRow({
     );
   }
 
-  const isImage = isImageAttachmentUrl(attachment.url);
+  const isImage = isImageAttachment(attachment);
 
   return (
-    <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+    <div className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
       {isImage ? (
-        // eslint-disable-next-line @next/next/no-img-element -- attachment thumbnails from arbitrary URLs
-        <img
-          src={attachment.url}
-          alt=""
-          className="size-10 shrink-0 rounded object-cover"
-        />
+        <a
+          href={attachment.url}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 overflow-hidden rounded border bg-muted"
+          aria-label={`Abrir ${attachment.name}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- attachment thumbnails from arbitrary URLs */}
+          <img
+            src={attachment.url}
+            alt=""
+            loading="lazy"
+            className="h-16 w-24 object-cover"
+          />
+        </a>
       ) : (
-        <Link2 className="size-4 shrink-0 text-emerald-500" />
+        <span className="flex h-16 w-24 shrink-0 items-center justify-center rounded border bg-muted/40">
+          <Link2 className="size-5 text-emerald-500" />
+        </span>
       )}
-      <a
-        href={attachment.url}
-        target="_blank"
-        rel="noreferrer"
-        className="min-w-0 flex-1 truncate underline-offset-2 hover:underline"
-      >
-        {attachment.name}
-        {isCover ? (
-          <span className="ml-2 text-xs text-muted-foreground">(portada)</span>
-        ) : null}
-      </a>
+      <div className="min-w-0 flex-1">
+        <a
+          href={attachment.url}
+          target="_blank"
+          rel="noreferrer"
+          className="block truncate font-medium underline-offset-2 hover:underline"
+        >
+          {attachment.name}
+        </a>
+        <p className="text-xs text-muted-foreground">
+          Subido el {formatUploadTime(attachment.createdAt)}
+          {isCover ? " · Portada" : ""}
+        </p>
+      </div>
       {!readOnly && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

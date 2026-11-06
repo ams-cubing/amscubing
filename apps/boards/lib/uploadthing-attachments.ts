@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@workspace/db";
 import { cardAttachments, cards, type User } from "@workspace/db/schema";
 
-import { isImageAttachmentUrl } from "@/lib/attachment-media";
+import { isImageAttachment } from "@/lib/attachment-media";
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 
 export async function assertBoardUploadAccess(user: User, boardId: number) {
@@ -52,7 +52,7 @@ export async function insertUploadedCardAttachment(input: {
     })
     .returning({ id: cardAttachments.id });
 
-  if (isImageAttachmentUrl(url)) {
+  if (isImageAttachment({ name, url })) {
     await db
       .update(cards)
       .set({ coverUrl: url })
