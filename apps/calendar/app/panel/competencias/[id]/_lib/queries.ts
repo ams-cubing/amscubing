@@ -1,6 +1,9 @@
 import "server-only";
 
+import { inArray } from "drizzle-orm";
+
 import { db } from "@workspace/db";
+import { multiCompetitionOrganizers } from "@workspace/db/schema";
 import { hasWcaId } from "@workspace/db/utils";
 import { cacheLife, cacheTag } from "next/cache";
 
@@ -40,6 +43,15 @@ export async function getAllDelegates() {
     orderBy: (user, { asc }) => asc(user.name),
   });
   return rows.filter(hasWcaId);
+}
+
+export async function getMultiCompetitionOrganizerIds(userIds: string[]) {
+  if (userIds.length === 0) return [];
+  const rows = await db
+    .select({ userId: multiCompetitionOrganizers.userId })
+    .from(multiCompetitionOrganizers)
+    .where(inArray(multiCompetitionOrganizers.userId, userIds));
+  return rows.map((row) => row.userId);
 }
 
 export async function getCompetitionLogs(competitionId: number) {

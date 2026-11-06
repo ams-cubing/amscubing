@@ -12,6 +12,7 @@ import { DetailsDialog } from "./_components/details-dialog";
 import {
   getCompetitionLogs,
   getCompetitionWithRelations,
+  getMultiCompetitionOrganizerIds,
 } from "./_lib/queries";
 import Loading from "./loading";
 
@@ -29,10 +30,14 @@ async function PageContent({
     notFound();
   }
 
-  const [competitionLogs, authResult] = await Promise.all([
-    getCompetitionLogs(competition.id),
-    requireDelegate(),
-  ]);
+  const [competitionLogs, authResult, multiCompetitionOrganizerIds] =
+    await Promise.all([
+      getCompetitionLogs(competition.id),
+      requireDelegate(),
+      getMultiCompetitionOrganizerIds(
+        competition.organizers.map((row) => row.organizerUserId),
+      ),
+    ]);
 
   const currentUserWcaId = authResult.ok ? authResult.session.user.wcaId : null;
   const pendingForCurrentUser = competition.delegates.some(
@@ -63,6 +68,7 @@ async function PageContent({
           competition={competition}
           currentUserWcaId={currentUserWcaId}
           reassignmentCandidates={reassignmentCandidates}
+          multiCompetitionOrganizerIds={multiCompetitionOrganizerIds}
         />
 
         <CompetitionEquipmentSection competitionId={competition.id} />

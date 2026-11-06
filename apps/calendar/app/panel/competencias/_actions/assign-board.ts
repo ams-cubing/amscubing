@@ -2,7 +2,10 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 
-import { cloneBoardFromTemplate } from "@workspace/db/clone-board";
+import {
+  cloneBoardFromTemplate,
+  competitionBoardName,
+} from "@workspace/db/clone-board";
 import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
@@ -32,13 +35,9 @@ export async function assignBoardToCompetitionById(competitionId: number) {
   }
 
   try {
-    const boardName =
-      competition.name?.trim() ||
-      `${competition.city} — ${competition.startDate}`;
-
     const board = await cloneBoardFromTemplate({
       competitionId: competition.id,
-      boardName,
+      boardName: competitionBoardName(competition),
     });
 
     updateTag("competitions");

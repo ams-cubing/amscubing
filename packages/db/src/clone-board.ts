@@ -14,6 +14,18 @@ import {
   labels,
 } from "./schema";
 
+/** A competition board is always named after its competition. */
+export function competitionBoardName(competition: {
+  name: string | null;
+  city: string;
+  startDate: string;
+}) {
+  return (
+    competition.name?.trim() ||
+    `${competition.city.trim()} — ${competition.startDate}`
+  );
+}
+
 function must<T>(value: T | undefined, label: string): T {
   if (value === undefined) {
     throw new Error(`Expected ${label} from database insert`);

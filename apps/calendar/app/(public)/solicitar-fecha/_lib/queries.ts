@@ -5,17 +5,18 @@ import {
   availability,
   competitionOrganizers,
   competitions,
+  multiCompetitionOrganizers,
   regions,
   states,
   user,
 } from "@workspace/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { todayInMexico } from "@workspace/db/equipment";
+import { and, eq, gte, inArray } from "drizzle-orm";
 
-const PENDING_ANNOUNCEMENT_STATUSES = [
-  "open",
-  "reserved",
-  "confirmed",
-] as const;
+import {
+  blocksNewDateRequest,
+  PENDING_ANNOUNCEMENT_STATUSES,
+} from "./pending-competition";
 
 export async function getRecentRequestsCount(userId: string) {
   return db.query.dateRequests.findMany({
@@ -27,14 +28,27 @@ export async function getRecentRequestsCount(userId: string) {
   });
 }
 
-/** Competition the user organizes that has not been announced yet. */
+/**
+ * Active, unannounced competition the user organizes, which blocks a new date
+ * request. Cancelled, finished or past competitions don't count, and nothing
+ * blocks organizers a delegate allowed to run several at once.
+ */
 export async function getPendingAnnouncementCompetition(userId: string) {
+  const override = await db.query.multiCompetitionOrganizers.findFirst({
+    where: eq(multiCompetitionOrganizers.userId, userId),
+    columns: { userId: true },
+  });
+  if (override) return null;
+
+  const today = todayInMexico();
   const rows = await db
     .select({
       id: competitions.id,
       name: competitions.name,
       city: competitions.city,
       statusPublic: competitions.statusPublic,
+      statusInternal: competitions.statusInternal,
+      endDate: competitions.endDate,
     })
     .from(competitionOrganizers)
     .innerJoin(
@@ -45,11 +59,12 @@ export async function getPendingAnnouncementCompetition(userId: string) {
       and(
         eq(competitionOrganizers.organizerUserId, userId),
         inArray(competitions.statusPublic, [...PENDING_ANNOUNCEMENT_STATUSES]),
+        gte(competitions.endDate, today),
       ),
     )
-    .limit(1);
+    .orderBy(competitions.startDate);
 
-  return rows[0] ?? null;
+  return rows.find((row) => blocksNewDateRequest(row, today)) ?? null;
 }
 
 export async function getDelegatesForState(stateFilter: string) {

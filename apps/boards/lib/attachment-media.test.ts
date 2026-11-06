@@ -1,6 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import { isImageAttachmentUrl } from "./attachment-media";
+import { isImageAttachment, isImageAttachmentUrl } from "./attachment-media";
+
+describe("isImageAttachment", () => {
+  it("uses the file name when the URL has no extension", () => {
+    expect(
+      isImageAttachment({
+        name: "plano_tecnico.png",
+        url: "https://abc123.ufs.sh/f/Xyz789",
+      }),
+    ).toBe(true);
+    expect(
+      isImageAttachment({
+        name: "Recibo.pdf",
+        url: "https://abc123.ufs.sh/f/Xyz789",
+      }),
+    ).toBe(false);
+    expect(isImageAttachment({ name: "foto.png", url: "not-a-url" })).toBe(
+      false,
+    );
+  });
+});
 
 describe("isImageAttachmentUrl", () => {
   it("accepts common image extensions", () => {

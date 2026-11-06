@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
-import { isDelegatesBoard } from "@workspace/db/delegates-board";
 import {
   parseMentions,
   resolveAllMentionedUsers,
@@ -42,17 +41,10 @@ export async function addCardCommentAction(input: {
   await assertCardOnBoard(validated.boardId, validated.cardId);
   const body = validated.body;
 
-  const [team, roleGroups, boardRow] = await Promise.all([
+  const [team, roleGroups] = await Promise.all([
     boardTeamUsers(db, validated.boardId),
     boardTeamByRole(db, validated.boardId),
-    db.query.boards.findFirst({
-      where: eq(boards.id, validated.boardId),
-      columns: { name: true, isTemplate: true, competitionId: true },
-    }),
   ]);
-  // Every delegate is on the delegates board's team; plain comments there only
-  // reach the card's assignees so nobody gets mail for every card.
-  const broadcastTeam = boardRow && isDelegatesBoard(boardRow) ? [] : team;
   const parsedMentions = parseMentions(body);
   const mentioned = resolveAllMentionedUsers(parsedMentions, roleGroups);
 
@@ -129,7 +121,7 @@ export async function addCardCommentAction(input: {
     });
 
     const commentRows = commentRecipients({
-      team: broadcastTeam,
+      team,
       cardMemberIds: members.map((member) => member.userId),
       mentionedIds,
       actorId: user.id,

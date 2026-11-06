@@ -107,6 +107,15 @@ export async function renameBoard(input: { boardId: number; name: string }) {
     input.boardId,
     "El tablero de delegados no se puede renombrar",
   );
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, input.boardId),
+    columns: { competitionId: true },
+  });
+  if (board?.competitionId) {
+    throw new Error(
+      "El nombre de este tablero sigue al de la competencia; cámbialo en el calendario",
+    );
+  }
 
   await db
     .update(boards)
