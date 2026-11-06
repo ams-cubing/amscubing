@@ -18,7 +18,7 @@ import {
   type ActionResult,
 } from "@workspace/server/action";
 import { requireViewer, requireManager } from "@/lib/auth";
-import { cleanHtml, safeUrl } from "@/lib/content";
+import { cleanHtml, safeQuestionImage, safeUrl } from "@/lib/content";
 import { gradeQuiz } from "@/lib/grading";
 import {
   notifyCourseCompleted,
@@ -34,6 +34,17 @@ const questionSchema = z
   .object({
     id: z.string().min(1),
     prompt: z.string().min(1).max(5000),
+    images: z
+      .array(
+        z.object({
+          src: z
+            .string()
+            .max(2048)
+            .refine((src) => !!safeQuestionImage(src)),
+          alt: z.string().max(500),
+        }),
+      )
+      .optional(),
     type: z.enum(["choice", "boolean", "text"]),
     options: z.array(z.string().min(1).max(2000)).max(30),
     answers: z.array(z.string().min(1).max(2000)).min(1).max(30),

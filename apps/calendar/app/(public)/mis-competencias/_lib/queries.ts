@@ -1,6 +1,7 @@
 import "server-only";
 
 import { db } from "@workspace/db";
+import { listEquipmentLoans } from "@workspace/db/equipment";
 import {
   competitions,
   states,
@@ -16,6 +17,10 @@ function getTodayInMexicoCity() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
   }).format(new Date());
+}
+
+export async function getUserBorrowedEquipment(userId: string) {
+  return listEquipmentLoans(db, { borrowerUserId: userId, openOnly: true });
 }
 
 export async function getUserOrganizerCompetitionIds(userId: string) {

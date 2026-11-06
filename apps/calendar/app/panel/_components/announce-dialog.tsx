@@ -109,7 +109,9 @@ export function AnnounceDialog({
         setOpen(next);
       }}
     >
-      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
+      <DialogContent
+        className={`${preview ? "max-w-2xl" : "max-w-md"} max-h-[90dvh] overflow-y-auto`}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl font-semibold">
             {preview ? "Previsualizar publicación" : "Anunciar competencia"}
@@ -134,7 +136,7 @@ export function AnnounceDialog({
                 {preview.displayName}
               </p>
               {preview.imageUrl ? (
-                <div className="relative mx-auto aspect-square w-full max-w-60 overflow-hidden rounded-md bg-background">
+                <div className="relative mx-auto aspect-square w-full max-w-80 overflow-hidden rounded-md bg-background">
                   <Image
                     src={preview.imageUrl}
                     alt="Imagen del post"
@@ -148,7 +150,7 @@ export function AnnounceDialog({
                   Sin imagen: solo Facebook, Instagram se omitirá
                 </p>
               )}
-              <p className="max-h-64 overflow-y-auto whitespace-pre-line text-sm leading-6 text-foreground">
+              <p className="max-h-80 overflow-y-auto whitespace-pre-line text-sm leading-6 text-foreground">
                 {preview.caption}
               </p>
             </div>

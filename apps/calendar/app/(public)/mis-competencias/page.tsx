@@ -18,7 +18,9 @@ import {
   getUserDateRequests,
   getDelegatesForCompetitions,
   getOrganizersForCompetitions,
+  getUserBorrowedEquipment,
 } from "./_lib/queries";
+import { formatEquipmentDate } from "@/lib/equipment-format";
 import Loading from "./loading";
 import { PublicPageShell } from "../_components/public-page-shell";
 import { getBoardsUrl } from "@/lib/urls";
@@ -84,13 +86,19 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
   }
 
   const wcaId = session.user.wcaId;
+  const canEdit = session.user.role === "delegate";
 
-  const [organizerCompetitionIds, delegateAssignments, dateRequestRows] =
-    await Promise.all([
-      getUserOrganizerCompetitionIds(session.user.id),
-      wcaId ? getUserDelegateAssignments(wcaId) : [],
-      getUserDateRequests(session.user.id),
-    ]);
+  const [
+    organizerCompetitionIds,
+    delegateAssignments,
+    dateRequestRows,
+    borrowedEquipment,
+  ] = await Promise.all([
+    getUserOrganizerCompetitionIds(session.user.id),
+    wcaId ? getUserDelegateAssignments(wcaId) : [],
+    getUserDateRequests(session.user.id),
+    getUserBorrowedEquipment(session.user.id),
+  ]);
 
   const organizerIds = new Set(organizerCompetitionIds);
   const delegateStatusByCompetition = new Map(
@@ -136,7 +144,9 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
   );
 
   const hasAnything =
-    pendingDateRequests.length > 0 || userCompetitions.length > 0;
+    pendingDateRequests.length > 0 ||
+    userCompetitions.length > 0 ||
+    borrowedEquipment.length > 0;
 
   return (
     <PublicPageShell
@@ -163,6 +173,40 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
         </div>
       ) : (
         <>
+          {borrowedEquipment.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="ams-display text-2xl leading-none">
+                Equipo prestado
+              </h2>
+              {borrowedEquipment.map((loan) => (
+                <div
+                  key={loan.id}
+                  className="rounded-3xl border border-black/10 p-5 md:p-6 space-y-2"
+                >
+                  <h3 className="ams-heading font-bold text-base text-ams-navy md:text-lg">
+                    {loan.summary}
+                  </h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    Te lo prestó {loan.lentBy.name} el{" "}
+                    {formatEquipmentDate(loan.loanedAt)} · {loan.reason}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-xs md:text-sm",
+                      loan.status === "overdue"
+                        ? "font-semibold text-red-700"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {loan.dueAt
+                      ? `${loan.status === "overdue" ? "Venció" : "Devolver antes del"} ${formatEquipmentDate(loan.dueAt)}`
+                      : "Sin fecha de devolución acordada"}
+                  </p>
+                </div>
+              ))}
+            </section>
+          )}
+
           {pendingDateRequests.length > 0 && (
             <section className="space-y-3">
               <h2 className="ams-display text-2xl leading-none">
@@ -318,29 +362,40 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
                       </span>
                     </div>
 
-                    {comp.boardId ? (
-                      <a
-                        href={`${getBoardsUrl()}/boards/${comp.boardId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                      >
-                        Ver tablero AMS
-                      </a>
-                    ) : comp.trelloUrl ? (
-                      <a
-                        href={comp.trelloUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
-                      >
-                        Ver en Trello
-                      </a>
-                    ) : (
-                      <p className="text-xs md:text-sm text-muted-foreground">
-                        Tablero aún no asignado
-                      </p>
-                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      {comp.boardId ? (
+                        <a
+                          href={`${getBoardsUrl()}/boards/${comp.boardId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver tablero AMS
+                        </a>
+                      ) : comp.trelloUrl ? (
+                        <a
+                          href={comp.trelloUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs md:text-sm text-primary hover:underline transition-colors"
+                        >
+                          Ver en Trello
+                        </a>
+                      ) : (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Tablero aún no asignado
+                        </p>
+                      )}
+                      {canEdit && (
+                        <Link
+                          href={`/panel/competencias/${comp.id}/editar`}
+                          prefetch={false}
+                          className="inline-flex items-center rounded-md border border-black/15 px-3 py-1.5 text-xs md:text-sm font-semibold text-ams-navy hover:bg-ams-soft transition-colors"
+                        >
+                          Editar
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 );
               })}

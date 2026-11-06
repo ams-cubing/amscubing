@@ -1,6 +1,7 @@
 import { parse } from "csv-parse/sync";
 import type { CourseQuestion } from "@workspace/db/schema";
-import { cleanHtml } from "./content";
+import sanitize from "sanitize-html";
+import { cleanHtml, safeQuestionImage } from "./content";
 
 export type SenseiRow = Record<string, string>;
 export function readCsv(contents: string): SenseiRow[] {
@@ -40,13 +41,37 @@ export function uniqueRows(rows: SenseiRow[]) {
 export function references(value: string) {
   return [...value.matchAll(/(?:^|,)id:(\d+)/g)].map((m) => Number(m[1]));
 }
-export function convertQuestion(row: SenseiRow): CourseQuestion {
+export function readQuestionImages(row: SenseiRow) {
+  const images = new Map<string, { src: string; alt: string }>();
+  sanitize(`${row.Question ?? ""}\n${row.Description ?? ""}`, {
+    allowedTags: ["img"],
+    transformTags: {
+      img: (tagName, attribs) => {
+        const src = safeQuestionImage(attribs.src ?? "");
+        if (src && !images.has(src))
+          images.set(src, { src, alt: (attribs.alt ?? "").trim() });
+        return { tagName, attribs };
+      },
+    },
+  });
+  return [...images.values()];
+}
+export function convertQuestion(
+  row: SenseiRow,
+  mediaMap: Record<string, string> = {},
+): CourseQuestion {
+  const images = readQuestionImages(row).map(({ src, alt }) => ({
+    src: safeQuestionImage(mediaMap[src] ?? "") ?? src,
+    alt,
+  }));
+  const media = images.length ? { images } : {};
   const prompt = cleanHtml(row.Question!)
     .replace(/<[^>]*>/g, "")
     .trim();
   const points = Number(row.Grade) || 1;
   if (row.Type === "boolean")
     return {
+      ...media,
       id: row.Id!,
       prompt,
       type: "boolean",
@@ -73,6 +98,7 @@ export function convertQuestion(row: SenseiRow): CourseQuestion {
   )
     throw new Error(`Opciones inválidas en pregunta ${row.Id}`);
   return {
+    ...media,
     id: row.Id!,
     prompt,
     type: "choice",

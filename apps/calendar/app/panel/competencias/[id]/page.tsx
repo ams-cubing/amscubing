@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { SearchParamToast } from "@workspace/ui/components/search-param-toast";
 
 import { getReassignmentOptions } from "@/lib/reassignment-candidates";
 import { formatAction } from "@/lib/utils";
 import { requireDelegate } from "@/lib/session";
 
 import { CompetitionDetailView } from "./_components/competition-detail-view";
+import { CompetitionEquipmentSection } from "./_components/competition-equipment-section";
 import { DetailsDialog } from "./_components/details-dialog";
 import {
   getCompetitionLogs,
@@ -63,6 +65,8 @@ async function PageContent({
           reassignmentCandidates={reassignmentCandidates}
         />
 
+        <CompetitionEquipmentSection competitionId={competition.id} />
+
         <div className="bg-card border rounded-lg p-4 md:p-6 shadow-sm">
           <h2 className="text-lg md:text-xl font-bold mb-4">
             Registro de Actividades
@@ -105,8 +109,16 @@ async function PageContent({
 
 export default function Page({ params }: { params: Params }) {
   return (
-    <Suspense fallback={<Loading />}>
-      <PageContent params={params} />
-    </Suspense>
+    <>
+      <Suspense fallback={null}>
+        <SearchParamToast
+          param="guardado"
+          messages={{ equipo: "Equipo confirmado" }}
+        />
+      </Suspense>
+      <Suspense fallback={<Loading />}>
+        <PageContent params={params} />
+      </Suspense>
+    </>
   );
 }

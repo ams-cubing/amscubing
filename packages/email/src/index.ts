@@ -1,9 +1,9 @@
 import { Resend } from "resend";
 
-import { emailParagraph, renderEmailLayout } from "./layout";
+import { emailParagraph, escapeHtml, renderEmailLayout } from "./layout";
 import { log } from "@workspace/server/log";
 
-export { AMS_EMAIL, renderEmailLayout } from "./layout";
+export { AMS_EMAIL, escapeHtml, renderEmailLayout } from "./layout";
 
 const FROM = "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>";
 
@@ -378,12 +378,4 @@ export function competitionStatusChangedSubject(input: {
   statusLabel: string;
 }) {
   return `Estatus: ${input.statusLabel} — ${input.city}`;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }

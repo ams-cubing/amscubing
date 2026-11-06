@@ -106,7 +106,7 @@ export function emailParagraph(html: string) {
   return `<p style="margin:0 0 14px;font-family:${fontStack};font-size:15px;line-height:1.55;color:${navy};">${html}</p>`;
 }
 
-function escapeHtml(value: string) {
+export function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")

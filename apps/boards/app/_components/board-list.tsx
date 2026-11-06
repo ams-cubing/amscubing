@@ -14,6 +14,7 @@ type BoardListItem = {
   name: string;
   competitionId?: number | null;
   archivedAt?: Date | null;
+  isDelegatesBoard?: boolean;
   competition?: {
     id: number;
     name: string | null;
@@ -54,12 +55,15 @@ export function BoardList({
           </Badge>
         ) : null;
 
-        const blankBadge =
-          !board.competition && showBlankBadge ? (
-            <Badge variant="secondary" className="shrink-0">
-              Sin competencia
-            </Badge>
-          ) : null;
+        const blankBadge = board.isDelegatesBoard ? (
+          <Badge variant="secondary" className="shrink-0">
+            Solo delegados
+          </Badge>
+        ) : !board.competition && showBlankBadge ? (
+          <Badge variant="secondary" className="shrink-0">
+            Sin competencia
+          </Badge>
+        ) : null;
 
         const archivedBadge = board.archivedAt ? (
           <Badge variant="outline" className="shrink-0">
@@ -69,7 +73,8 @@ export function BoardList({
 
         return (
           <li key={board.id}>
-            <Link prefetch={false}
+            <Link
+              prefetch={false}
               href={`/boards/${board.id}`}
               className={cn(
                 "flex min-h-20 items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3.5",

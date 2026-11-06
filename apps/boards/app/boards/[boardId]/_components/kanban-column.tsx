@@ -95,11 +95,14 @@ export function BoardKanbanColumn({
               <KanbanCardFace
                 card={card}
                 unreadCount={unreadByCard[card.id] ?? 0}
-                relevant={isCardRelevantNow(
-                  card,
-                  board.competition?.statusPublic,
-                  board.competition?.statusInternal,
-                )}
+                relevant={
+                  !board.competition ||
+                  isCardRelevantNow(
+                    card,
+                    board.competition.statusPublic,
+                    board.competition.statusInternal,
+                  )
+                }
                 onOpen={() => onOpenCard(id)}
                 dragHandle={
                   !readOnly ? (

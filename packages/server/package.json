@@ -7,7 +7,8 @@
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "gen:letterhead": "node scripts/gen-letterhead.mjs"
   },
   "exports": {
     "./env": "./src/env.ts",
@@ -17,12 +18,15 @@
       "default": "./src/security-headers.mjs"
     },
     "./action": "./src/action.ts",
-    "./robots": "./src/robots.ts"
+    "./robots": "./src/robots.ts",
+    "./pdf/letterhead": "./src/pdf/letterhead.ts",
+    "./pdf/equipment-sheet": "./src/pdf/equipment-sheet.ts"
   },
   "peerDependencies": {
     "next": "catalog:"
   },
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "zod": "catalog:"
   },
   "devDependencies": {

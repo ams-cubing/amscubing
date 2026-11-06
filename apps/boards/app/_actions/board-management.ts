@@ -7,6 +7,11 @@ import { randomBytes } from "crypto";
 
 import { db } from "@workspace/db";
 import {
+  DELEGATES_BOARD_NAME,
+  isDelegatesBoard,
+  isDelegatesBoardName,
+} from "@workspace/db/delegates-board";
+import {
   formatNotificationTitle,
   hrefForNotification,
   insertNotifications,
@@ -28,11 +33,30 @@ async function requireDelegateUser() {
   return result.session.user;
 }
 
+function assertNameNotReserved(name: string) {
+  if (isDelegatesBoardName(name)) {
+    throw new Error(
+      `«${DELEGATES_BOARD_NAME}» es el nombre del tablero de delegados`,
+    );
+  }
+}
+
+async function assertNotDelegatesBoard(boardId: number, message: string) {
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, boardId),
+    columns: { name: true, isTemplate: true, competitionId: true },
+  });
+  if (board && isDelegatesBoard(board)) {
+    throw new Error(message);
+  }
+}
+
 export async function createBlankBoard(formData: FormData) {
   await requireDelegateUser();
   const { name } = createBlankBoardSchema.parse({
     name: String(formData.get("name") ?? ""),
   });
+  assertNameNotReserved(name);
 
   const [board] = await db
     .insert(boards)
@@ -56,6 +80,7 @@ export async function createTemplate(formData: FormData) {
   const { name } = createTemplateSchema.parse({
     name: String(formData.get("name") ?? ""),
   });
+  assertNameNotReserved(name);
 
   const [board] = await db
     .insert(boards)
@@ -77,6 +102,11 @@ export async function createTemplate(formData: FormData) {
 export async function renameBoard(input: { boardId: number; name: string }) {
   await requireDelegateUser();
   const { name } = createBlankBoardSchema.parse({ name: input.name });
+  assertNameNotReserved(name);
+  await assertNotDelegatesBoard(
+    input.boardId,
+    "El tablero de delegados no se puede renombrar",
+  );
 
   await db
     .update(boards)
@@ -89,6 +119,10 @@ export async function renameBoard(input: { boardId: number; name: string }) {
 
 export async function deleteBoard(input: { boardId: number }) {
   await requireDelegateUser();
+  await assertNotDelegatesBoard(
+    input.boardId,
+    "El tablero de delegados no se puede eliminar",
+  );
 
   await db.delete(boards).where(eq(boards.id, input.boardId));
 
@@ -116,7 +150,7 @@ export async function createBoardInvite(input: {
 
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, input.boardId),
-    columns: { id: true, isTemplate: true },
+    columns: { id: true, name: true, isTemplate: true, competitionId: true },
   });
 
   if (!board) {
@@ -124,6 +158,9 @@ export async function createBoardInvite(input: {
   }
   if (board.isTemplate) {
     throw new Error("No se pueden invitar a plantillas");
+  }
+  if (isDelegatesBoard(board)) {
+    throw new Error("El tablero de delegados no admite invitaciones");
   }
 
   if (input.rotate) {
@@ -217,7 +254,13 @@ export async function acceptBoardInvite(token: string) {
     where: eq(boardInvites.token, token),
     with: {
       board: {
-        columns: { id: true, name: true, isTemplate: true, archivedAt: true },
+        columns: {
+          id: true,
+          name: true,
+          isTemplate: true,
+          competitionId: true,
+          archivedAt: true,
+        },
       },
     },
   });
@@ -225,7 +268,11 @@ export async function acceptBoardInvite(token: string) {
   if (!invite || invite.revokedAt) {
     throw new Error("Invitación no válida o revocada");
   }
-  if (!invite.board || invite.board.isTemplate) {
+  if (
+    !invite.board ||
+    invite.board.isTemplate ||
+    isDelegatesBoard(invite.board)
+  ) {
     throw new Error("Invitación no válida");
   }
 

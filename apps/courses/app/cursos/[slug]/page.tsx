@@ -118,7 +118,10 @@ export default async function CoursePage({
           )}
           {p?.enrollment && next ? (
             <Button asChild variant="destructive" className="w-full">
-              <Link prefetch={false} href={`/cursos/${slug}/lecciones/${next.id}`}>
+              <Link
+                prefetch={false}
+                href={`/cursos/${slug}/lecciones/${next.id}`}
+              >
                 {p.enrollment.completedAt
                   ? "Repasar lecciones"
                   : "Continuar curso"}{" "}
@@ -149,7 +152,11 @@ export default async function CoursePage({
             <br />✓ Desde cualquier dispositivo
           </p>
           {viewer?.canManage && (
-            <Link prefetch={false} href={`/admin/cursos/${course.id}`} className={textLinkClass}>
+            <Link
+              prefetch={false}
+              href={`/admin/cursos/${course.id}`}
+              className={textLinkClass}
+            >
               Editar curso →
             </Link>
           )}

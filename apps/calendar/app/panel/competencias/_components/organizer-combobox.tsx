@@ -30,11 +30,20 @@ export function organizerSubtitle(organizer: OrganizerOption) {
   return organizer.wcaId ?? organizer.email ?? "";
 }
 
+/** How the picker names the person being chosen ("organizador", "persona"…). */
+export type PersonNoun = { singular: string; plural: string };
+
+const ORGANIZER_NOUN: PersonNoun = {
+  singular: "organizador",
+  plural: "organizadores",
+};
+
 type OrganizerComboboxProps = {
   value: string;
   onSelect: (organizer: OrganizerOption) => void;
   selectedOrganizers: string[];
   placeholder?: string;
+  noun?: PersonNoun;
 };
 
 export function OrganizerCombobox({
@@ -42,6 +51,7 @@ export function OrganizerCombobox({
   onSelect,
   selectedOrganizers,
   placeholder = "Buscar organizador...",
+  noun = ORGANIZER_NOUN,
 }: OrganizerComboboxProps) {
   const [search, setSearch] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -121,14 +131,14 @@ export function OrganizerCombobox({
         </ComboboxAnchor>
         <ComboboxContent>
           {isLoading ? (
-            <ComboboxLoading label="Buscando organizadores..." />
+            <ComboboxLoading label={`Buscando ${noun.plural}...`} />
           ) : null}
           <ComboboxEmpty
             keepVisible={!isLoading && availableUsers.length === 0}
           >
             <div className="flex flex-col items-center gap-2 p-2">
               <p className="text-sm text-muted-foreground">
-                No se encontraron organizadores
+                No se encontraron {noun.plural}
               </p>
               <Button
                 type="button"
@@ -138,7 +148,7 @@ export function OrganizerCombobox({
                 className="gap-2"
               >
                 <Plus />
-                Agregar nuevo organizador
+                Agregar con WCA ID
               </Button>
             </div>
           </ComboboxEmpty>
@@ -171,6 +181,7 @@ export function OrganizerCombobox({
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onUserAdded={handleUserAdded}
+        noun={noun.singular}
       />
     </>
   );

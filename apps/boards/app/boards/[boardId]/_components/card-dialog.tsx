@@ -66,6 +66,10 @@ import {
   isWcaWebsiteCard,
 } from "./card-dialog/card-wca-url-section";
 import {
+  CardEquipmentSection,
+  isEquipmentCard,
+} from "./card-dialog/card-equipment-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
@@ -547,6 +551,14 @@ export function CardDialog({
                 cardId={card.id}
                 readOnly={readOnly}
                 canManageSocialPublish={canManageSocialPublish}
+              />
+            ) : null}
+
+            {isEquipmentCard(card.title) ? (
+              <CardEquipmentSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
               />
             ) : null}
 

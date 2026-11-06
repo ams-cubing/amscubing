@@ -119,7 +119,10 @@ export function CompetitionDetailView({
           </div>
         </div>
         <Button asChild>
-          <Link prefetch={false} href={`/panel/competencias/${competition.id}/editar`}>
+          <Link
+            prefetch={false}
+            href={`/panel/competencias/${competition.id}/editar`}
+          >
             <Pencil className="size-4" />
             Editar
           </Link>
