@@ -47,6 +47,8 @@ type CubingMexicoState = {
 
 const CUBING_MEXICO_API = "https://api.cubingmexico.net";
 const RANKINGS_REVALIDATE_SECONDS = 60 * 60 * 12;
+// Without `size` the API returns every ranked Mexican competitor (~870 KB for 3x3x3).
+const RANKING_SIZE = 5;
 
 export const rankingEvents: RankingEvent[] = [
   { id: "333", name: "Cubo 3x3x3", supportsAverage: true },
@@ -97,7 +99,7 @@ async function getRanking(
 ): Promise<RankingResult[]> {
   try {
     const response = await fetch(
-      `${CUBING_MEXICO_API}/rank/${type}/${event.id}`,
+      `${CUBING_MEXICO_API}/rank/${type}/${event.id}?page=1&size=${RANKING_SIZE}`,
       {
         next: { revalidate: RANKINGS_REVALIDATE_SECONDS },
         headers: {
@@ -119,7 +121,7 @@ async function getRanking(
     return rows
       .slice()
       .sort((a, b) => a.rank.country - b.rank.country)
-      .slice(0, 5)
+      .slice(0, RANKING_SIZE)
       .map((row) => ({
         countryRank: row.rank.country,
         personId: row.personId,

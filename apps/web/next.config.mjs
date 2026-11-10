@@ -4,6 +4,10 @@ import { securityHeaders } from "@workspace/server/security-headers";
 const nextConfig = {
   cacheComponents: true,
   partialPrefetching: false,
+  // Next's default list (facebookexternalhit, Googlebot, Bingbot…) skips the cached
+  // shell and renders in a function on every crawl. All metadata here is static, so
+  // it is already in the shell's <head>. Use a pattern no user agent contains.
+  htmlLimitedBots: /ams-no-html-limited-bots/,
   reactCompiler: true,
   typedRoutes: true,
   transpilePackages: [

@@ -41,49 +41,50 @@ export async function getCommunityStats(): Promise<CommunityStats> {
   };
 }
 
+// Asks for one competition per state and reads `total`: listing every competition
+// downloads ~800 KB, mostly the markdown `information` field.
 async function countStatesWithCompetitions(): Promise<number | null> {
   try {
-    const stateIds = new Set<string>();
-    let page = 1;
-    let total = Number.POSITIVE_INFINITY;
-    const maxPages = 20;
+    const statesResponse = await fetch(`${CUBING_MEXICO_API}/states`, {
+      next: { revalidate: STATS_REVALIDATE_SECONDS },
+      headers: { accept: "application/json" },
+    });
 
-    while ((page - 1) * 100 < total && page <= maxPages) {
-      const response = await fetch(
-        `${CUBING_MEXICO_API}/competitions?page=${page}&size=100&cancelled=false`,
-        {
-          next: { revalidate: STATS_REVALIDATE_SECONDS },
-          headers: { accept: "application/json" },
-        },
-      );
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = (await response.json()) as CompetitionsPage;
-      const items = Array.isArray(data.items) ? data.items : [];
-
-      if (typeof data.total === "number") {
-        total = data.total;
-      } else if (items.length === 0) {
-        break;
-      }
-
-      for (const competition of items) {
-        if (competition.stateId) {
-          stateIds.add(competition.stateId);
-        }
-      }
-
-      if (items.length === 0) {
-        break;
-      }
-
-      page += 1;
+    if (!statesResponse.ok) {
+      return null;
     }
 
-    return stateIds.size > 0 ? stateIds.size : null;
+    const states = (await statesResponse.json()) as Array<{ id?: string }>;
+
+    if (!Array.isArray(states) || states.length === 0) {
+      return null;
+    }
+
+    const results = await Promise.all(
+      states.map(async (state) => {
+        if (!state.id) {
+          return false;
+        }
+
+        const response = await fetch(
+          `${CUBING_MEXICO_API}/competitions?stateId=${encodeURIComponent(state.id)}&size=1&cancelled=false`,
+          {
+            next: { revalidate: STATS_REVALIDATE_SECONDS },
+            headers: { accept: "application/json" },
+          },
+        );
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const data = (await response.json()) as CompetitionsPage;
+        return typeof data.total === "number" && data.total > 0;
+      }),
+    );
+
+    const count = results.filter(Boolean).length;
+    return count > 0 ? count : null;
   } catch {
     return null;
   }
