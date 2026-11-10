@@ -54,6 +54,8 @@ Las apps corren con cuotas limitadas de Vercel (CDN Requests, Fluid Active CPU, 
 - Imágenes: `images.unoptimized: true` en todas las apps para no gastar Image Optimization.
 - Cachés públicas largas (`"use cache"` con `cacheLife("hours")` o más) y `cacheTag`; calendar no puede invalidar la caché de web, así que una competencia recién anunciada aparece en la web en ~1 h.
 - No crear `proxy.ts` sin `matcher`: corre en cada request.
+- Bots HTML-limited: con `cacheComponents`, Next manda a `facebookexternalhit`, Googlebot, Bingbot, etc. a un render en función (`prerender_bypass`) en vez del shell en CDN. `apps/web` lo desactiva con `htmlLimitedBots` porque toda su metadata es estática; antes de copiarlo a otra app, confirma que su metadata no depende de datos dinámicos (p. ej. `generateMetadata` del blog).
+- `"use cache"` vive en memoria de cada instancia: en Vercel casi cada invocación vuelve a ejecutar la función. Pide a APIs externas solo lo que se muestra (p. ej. `?size=5` en `api.cubingmexico.net/rank/...`, que sin `size` devuelve ~870 KB).
 - `robots.ts` de web, blog y cursos bloquea crawlers de IA (`AI_CRAWLERS` de `@workspace/server/robots`).
 - Sin Speed Insights; solo `@vercel/analytics`.
 - En producción `DATABASE_URL` debe usar el host pooled de Neon (`-pooler`).
