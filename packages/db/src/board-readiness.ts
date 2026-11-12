@@ -29,7 +29,7 @@ type BoardCardRow = {
   labelColors: string[];
 };
 
-function cardPhase(labelColors: string[]): PhaseKey | null {
+export function cardPhase(labelColors: string[]): PhaseKey | null {
   if (labelColors.length === 0) return "pre_announce";
 
   const isPink = labelColors.some(
@@ -41,6 +41,12 @@ function cardPhase(labelColors: string[]): PhaseKey | null {
     (c) => c.includes("3b82f6") || c === "#3b82f6",
   );
   if (isBlue) return "post_celebrate";
+
+  // During-competition cards only get approved once the event happened.
+  const isPurple = labelColors.some(
+    (c) => c.includes("5e4db2") || c === "#5e4db2",
+  );
+  if (isPurple) return "post_celebrate";
 
   const isRed = labelColors.some(
     (c) => c.includes("ef4444") || c === "#ef4444",

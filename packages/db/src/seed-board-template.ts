@@ -1,13 +1,23 @@
-import { and, eq, gte, inArray, isNotNull, max, sql } from "drizzle-orm";
-
 import {
-  PHASE_LABELS,
-  REMOVED_TEMPLATE_CARD_TITLES,
-  TEMPLATE_BOARD_NAME,
-  TEMPLATE_CARDS,
-  TEMPLATE_LISTS,
-  type PhaseLabelKey,
-} from "./data/ams-board-template";
+  and,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  max,
+  or,
+  sql,
+} from "drizzle-orm";
+
+import { COMPETITION_BOARD_TEMPLATE } from "./data/ams-board-template";
+import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
+import {
+  BOARD_TEMPLATE_KEYS,
+  type BoardTemplateCard,
+  type BoardTemplateDefinition,
+  type BoardTemplateKey,
+} from "./data/board-templates";
 import { db } from "./index";
 import {
   boardLists,
@@ -20,6 +30,14 @@ import {
   labels,
 } from "./schema";
 
+export const BOARD_TEMPLATES: Record<
+  BoardTemplateKey,
+  BoardTemplateDefinition
+> = {
+  competition: COMPETITION_BOARD_TEMPLATE,
+  championship: CHAMPIONSHIP_BOARD_TEMPLATE,
+};
+
 type LabelRow = typeof labels.$inferSelect;
 type ListRow = typeof boardLists.$inferSelect;
 
@@ -30,13 +48,16 @@ type SyncBoardResult = {
 };
 
 async function insertTemplateCard(input: {
-  cardDef: (typeof TEMPLATE_CARDS)[number];
+  cardDef: BoardTemplateCard;
   position: number;
-  listByTitle: Record<(typeof TEMPLATE_LISTS)[number], ListRow>;
-  labelByKey: Record<PhaseLabelKey, LabelRow>;
+  listByTitle: Map<string, ListRow>;
+  labelByKey: Map<string, LabelRow>;
 }) {
   const { cardDef, position, listByTitle, labelByKey } = input;
-  const list = listByTitle[cardDef.list];
+  const list = listByTitle.get(cardDef.list);
+  if (!list) {
+    throw new Error(`Missing list «${cardDef.list}» for ${cardDef.title}`);
+  }
   const [cardRow] = await db
     .insert(cards)
     .values({
@@ -53,12 +74,17 @@ async function insertTemplateCard(input: {
   }
   const card = cardRow;
 
-  await db.insert(cardLabels).values(
-    cardDef.phases.map((phase) => ({
-      cardId: card.id,
-      labelId: labelByKey[phase].id,
-    })),
-  );
+  if (cardDef.labels.length > 0) {
+    await db.insert(cardLabels).values(
+      cardDef.labels.map((key) => {
+        const label = labelByKey.get(key);
+        if (!label) {
+          throw new Error(`Missing label «${key}» for ${cardDef.title}`);
+        }
+        return { cardId: card.id, labelId: label.id };
+      }),
+    );
+  }
 
   if (cardDef.checklist) {
     const [checklistRow] = await db
@@ -95,38 +121,41 @@ async function insertTemplateCard(input: {
   }
 }
 
-function buildLabelByKey(labelRows: LabelRow[]) {
+function buildLabelByKey(
+  template: BoardTemplateDefinition,
+  labelRows: LabelRow[],
+) {
   const byName = new Map(labelRows.map((row) => [row.name, row]));
-  const labelByKey = {} as Record<PhaseLabelKey, LabelRow>;
-  for (const phase of PHASE_LABELS) {
-    const row = byName.get(phase.name);
+  const labelByKey = new Map<string, LabelRow>();
+  for (const label of template.labels) {
+    const row = byName.get(label.name);
     if (!row) {
-      throw new Error(`Missing phase label on template: ${phase.name}`);
+      throw new Error(`Missing template label on board: ${label.name}`);
     }
-    labelByKey[phase.key] = row;
+    labelByKey.set(label.key, row);
   }
   return labelByKey;
 }
 
-function tryBuildListByTitle(listRows: ListRow[]): {
-  listByTitle: Record<(typeof TEMPLATE_LISTS)[number], ListRow>;
-  missing: string[];
-} {
-  const listByTitle = Object.fromEntries(
-    listRows.map((list) => [list.title, list]),
-  ) as Record<(typeof TEMPLATE_LISTS)[number], ListRow>;
-
-  const missing = TEMPLATE_LISTS.filter((title) => !listByTitle[title]);
+function tryBuildListByTitle(
+  template: BoardTemplateDefinition,
+  listRows: ListRow[],
+) {
+  const listByTitle = new Map(listRows.map((list) => [list.title, list]));
+  const missing = template.lists.filter((title) => !listByTitle.has(title));
   return { listByTitle, missing };
 }
 
-async function syncMissingTemplateLabels(boardId: number) {
+async function syncMissingTemplateLabels(
+  template: BoardTemplateDefinition,
+  boardId: number,
+) {
   const existing = await db.query.labels.findMany({
     where: eq(labels.boardId, boardId),
     columns: { name: true },
   });
   const existingNames = new Set(existing.map((l) => l.name));
-  const missing = PHASE_LABELS.filter((l) => !existingNames.has(l.name));
+  const missing = template.labels.filter((l) => !existingNames.has(l.name));
   if (missing.length === 0) return 0;
 
   await db.insert(labels).values(
@@ -140,23 +169,17 @@ async function syncMissingTemplateLabels(boardId: number) {
 }
 
 /**
- * Places template cards in TEMPLATE_CARDS order within each list.
+ * Places template cards in template order within each list.
  * Non-template (custom) cards keep their relative order after template cards.
  */
 async function reorderTemplateCardsToSeedOrder(
-  listByTitle: Record<(typeof TEMPLATE_LISTS)[number], ListRow>,
+  template: BoardTemplateDefinition,
+  listByTitle: Map<string, ListRow>,
 ) {
-  const templateTitlesByList = Object.fromEntries(
-    TEMPLATE_LISTS.map((title) => [title, [] as string[]]),
-  ) as Record<(typeof TEMPLATE_LISTS)[number], string[]>;
-
-  for (const cardDef of TEMPLATE_CARDS) {
-    templateTitlesByList[cardDef.list].push(cardDef.title);
-  }
-
   let reordered = 0;
-  for (const listTitle of TEMPLATE_LISTS) {
-    const list = listByTitle[listTitle];
+  for (const listTitle of template.lists) {
+    const list = listByTitle.get(listTitle);
+    if (!list) continue;
     const listCards = await db.query.cards.findMany({
       where: eq(cards.listId, list.id),
       columns: { id: true, title: true, position: true },
@@ -164,7 +187,9 @@ async function reorderTemplateCardsToSeedOrder(
     });
 
     const byTitle = new Map(listCards.map((card) => [card.title, card]));
-    const templateTitleOrder = templateTitlesByList[listTitle];
+    const templateTitleOrder = template.cards
+      .filter((cardDef) => cardDef.list === listTitle)
+      .map((cardDef) => cardDef.title);
     const templateTitleSet = new Set(templateTitleOrder);
 
     const orderedIds: number[] = [];
@@ -192,8 +217,9 @@ async function reorderTemplateCardsToSeedOrder(
 
 /** Insert position implied by neighbors already on the same list. */
 async function resolveInsertPosition(
+  template: BoardTemplateDefinition,
   listId: number,
-  cardDef: (typeof TEMPLATE_CARDS)[number],
+  cardDef: BoardTemplateCard,
 ) {
   const listCards = await db.query.cards.findMany({
     where: eq(cards.listId, listId),
@@ -201,9 +227,9 @@ async function resolveInsertPosition(
     orderBy: (c, { asc }) => [asc(c.position)],
   });
 
-  const sameListTitles = TEMPLATE_CARDS.filter(
-    (c) => c.list === cardDef.list,
-  ).map((c) => c.title);
+  const sameListTitles = template.cards
+    .filter((c) => c.list === cardDef.list)
+    .map((c) => c.title);
   const index = sameListTitles.indexOf(cardDef.title);
   const beforeTitles = sameListTitles.slice(0, index);
   const afterTitles = sameListTitles.slice(index + 1);
@@ -232,20 +258,24 @@ async function shiftCardsFromPosition(listId: number, fromPosition: number) {
 }
 
 /**
- * Inserts any TEMPLATE_CARDS missing from a board (by title across all lists).
+ * Inserts any template cards missing from a board (by title across all lists).
  * When `reorderToSeedOrder` is true (template board), also rewrites positions.
  */
 async function syncMissingCardsOntoBoard(
+  template: BoardTemplateDefinition,
   boardId: number,
   options: { reorderToSeedOrder: boolean; label?: string },
 ): Promise<SyncBoardResult> {
   const label = options.label ?? `board id=${boardId}`;
-  await syncMissingTemplateLabels(boardId);
+  await syncMissingTemplateLabels(template, boardId);
 
   const listRows = await db.query.boardLists.findMany({
     where: eq(boardLists.boardId, boardId),
   });
-  const { listByTitle, missing: missingLists } = tryBuildListByTitle(listRows);
+  const { listByTitle, missing: missingLists } = tryBuildListByTitle(
+    template,
+    listRows,
+  );
   if (missingLists.length > 0) {
     return {
       inserted: 0,
@@ -257,7 +287,7 @@ async function syncMissingCardsOntoBoard(
   const labelRows = await db.query.labels.findMany({
     where: eq(labels.boardId, boardId),
   });
-  const labelByKey = buildLabelByKey(labelRows);
+  const labelByKey = buildLabelByKey(template, labelRows);
 
   const allExistingTitles = new Set<string>();
   for (const list of listRows) {
@@ -271,17 +301,17 @@ async function syncMissingCardsOntoBoard(
   }
 
   let inserted = 0;
-  for (const cardDef of TEMPLATE_CARDS) {
+  for (const cardDef of template.cards) {
     if (allExistingTitles.has(cardDef.title)) continue;
 
-    const list = listByTitle[cardDef.list];
+    const list = listByTitle.get(cardDef.list)!;
     const insertPosition = options.reorderToSeedOrder
       ? await db
           .select({ value: max(cards.position) })
           .from(cards)
           .where(eq(cards.listId, list.id))
           .then((rows) => (rows[0]?.value ?? -1) + 1)
-      : await resolveInsertPosition(list.id, cardDef);
+      : await resolveInsertPosition(template, list.id, cardDef);
 
     if (!options.reorderToSeedOrder) {
       await shiftCardsFromPosition(list.id, insertPosition);
@@ -298,7 +328,7 @@ async function syncMissingCardsOntoBoard(
   }
 
   const listsReordered = options.reorderToSeedOrder
-    ? await reorderTemplateCardsToSeedOrder(listByTitle)
+    ? await reorderTemplateCardsToSeedOrder(template, listByTitle)
     : 0;
 
   if (inserted > 0 || listsReordered > 0) {
@@ -313,20 +343,29 @@ async function syncMissingCardsOntoBoard(
   return { inserted, listsReordered };
 }
 
-async function syncMissingTemplateCards(boardId: number) {
-  const result = await syncMissingCardsOntoBoard(boardId, {
+async function syncMissingTemplateCards(
+  template: BoardTemplateDefinition,
+  boardId: number,
+) {
+  const result = await syncMissingCardsOntoBoard(template, boardId, {
     reorderToSeedOrder: true,
-    label: `AMS board template (id=${boardId})`,
+    label: `«${template.name}» (id=${boardId})`,
   });
   if (result.inserted === 0 && result.listsReordered === 0) {
-    console.log("⏭️  AMS board template already up to date");
+    console.log(`⏭️  «${template.name}» already up to date`);
   }
 }
 
-/** Backfill missing TEMPLATE_CARDS onto every non-template competition board. */
-export async function syncMissingTemplateCardsOntoCompetitionBoards() {
+/** Backfill missing template cards onto every competition board cloned from it. */
+export async function syncMissingTemplateCardsOntoCompetitionBoards(
+  template: BoardTemplateDefinition,
+) {
   const targets = await db.query.boards.findMany({
-    where: and(eq(boards.isTemplate, false), isNotNull(boards.competitionId)),
+    where: and(
+      eq(boards.isTemplate, false),
+      isNotNull(boards.competitionId),
+      eq(boards.templateKey, template.key),
+    ),
     columns: { id: true, name: true, competitionId: true },
   });
 
@@ -335,7 +374,7 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards() {
   let boardsSkipped = 0;
 
   for (const board of targets) {
-    const result = await syncMissingCardsOntoBoard(board.id, {
+    const result = await syncMissingCardsOntoBoard(template, board.id, {
       reorderToSeedOrder: false,
       label: `board «${board.name}» (id=${board.id})`,
     });
@@ -354,10 +393,10 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards() {
 
   if (boardsUpdated > 0) {
     console.log(
-      `✅ Backfilled ${cardsInserted} card(s) across ${boardsUpdated} competition board(s)`,
+      `✅ Backfilled ${cardsInserted} card(s) across ${boardsUpdated} ${template.key} board(s)`,
     );
   } else {
-    console.log("⏭️  Competition boards already have all template cards");
+    console.log(`⏭️  ${template.key} boards already have all template cards`);
   }
 
   if (boardsSkipped > 0) {
@@ -367,65 +406,62 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards() {
   return { boardsUpdated, cardsInserted, boardsSkipped, total: targets.length };
 }
 
-const templateBoardWhere = and(
-  eq(boards.isTemplate, true),
-  eq(boards.name, TEMPLATE_BOARD_NAME),
-);
+function templateBoardWhere(template: BoardTemplateDefinition) {
+  return and(
+    eq(boards.isTemplate, true),
+    or(
+      eq(boards.templateKey, template.key),
+      and(isNull(boards.templateKey), eq(boards.name, template.name)),
+    ),
+  );
+}
 
-async function createFreshAmsBoardTemplate() {
-  console.log("⏳ Seeding AMS board template...");
+async function createFreshBoardTemplate(template: BoardTemplateDefinition) {
+  console.log(`⏳ Seeding «${template.name}»...`);
 
   const [boardRow] = await db
     .insert(boards)
     .values({
-      name: TEMPLATE_BOARD_NAME,
+      name: template.name,
       isTemplate: true,
+      templateKey: template.key,
       competitionId: null,
     })
     .returning();
 
   if (!boardRow) {
-    throw new Error("Failed to create AMS board template");
+    throw new Error(`Failed to create «${template.name}»`);
   }
   const board = boardRow;
 
   const labelRows = await db
     .insert(labels)
     .values(
-      PHASE_LABELS.map((label) => ({
+      template.labels.map((label) => ({
         boardId: board.id,
         name: label.name,
         color: label.color,
       })),
     )
     .returning();
-
-  const labelByKey = Object.fromEntries(
-    PHASE_LABELS.map((phase, index) => [phase.key, labelRows[index]!]),
-  ) as Record<PhaseLabelKey, (typeof labelRows)[number]>;
+  const labelByKey = buildLabelByKey(template, labelRows);
 
   const listRows = await db
     .insert(boardLists)
     .values(
-      TEMPLATE_LISTS.map((title, position) => ({
+      template.lists.map((title, position) => ({
         boardId: board.id,
         title,
         position,
       })),
     )
     .returning();
+  const listByTitle = new Map(listRows.map((list) => [list.title, list]));
 
-  const listByTitle = Object.fromEntries(
-    listRows.map((list) => [list.title, list]),
-  ) as Record<(typeof TEMPLATE_LISTS)[number], (typeof listRows)[number]>;
-
-  const positionByList = Object.fromEntries(
-    TEMPLATE_LISTS.map((title) => [title, 0]),
-  ) as Record<(typeof TEMPLATE_LISTS)[number], number>;
-
-  for (const cardDef of TEMPLATE_CARDS) {
-    const position = positionByList[cardDef.list];
-    positionByList[cardDef.list] = position + 1;
+  const positionByList = new Map<string, number>();
+  for (const cardDef of template.cards) {
+    const position = positionByList.get(cardDef.list) ?? 0;
+    positionByList.set(cardDef.list, position + 1);
     await insertTemplateCard({
       cardDef,
       position,
@@ -434,59 +470,77 @@ async function createFreshAmsBoardTemplate() {
     });
   }
 
-  console.log(`✅ Seeded AMS board template (id=${board.id})`);
+  console.log(`✅ Seeded «${template.name}» (id=${board.id})`);
   return board.id;
 }
 
-async function removeRetiredTemplateCards() {
-  if (REMOVED_TEMPLATE_CARD_TITLES.length === 0) return;
+async function removeRetiredTemplateCards(template: BoardTemplateDefinition) {
+  if (template.retiredCardTitles.length === 0) return;
 
   const removed = await db
     .delete(cards)
-    .where(inArray(cards.title, [...REMOVED_TEMPLATE_CARD_TITLES]))
+    .where(inArray(cards.title, [...template.retiredCardTitles]))
     .returning({ id: cards.id, title: cards.title });
 
   if (removed.length > 0) {
     console.log(
-      `🗑️  Removed ${removed.length} retired board card(s): ${REMOVED_TEMPLATE_CARD_TITLES.join(", ")}`,
+      `🗑️  Removed ${removed.length} retired board card(s): ${template.retiredCardTitles.join(", ")}`,
     );
   }
 }
 
-export async function seedAmsBoardTemplate() {
-  await removeRetiredTemplateCards();
+async function seedBoardTemplate(template: BoardTemplateDefinition) {
+  await removeRetiredTemplateCards(template);
 
   const existing = await db.query.boards.findFirst({
-    where: templateBoardWhere,
+    where: templateBoardWhere(template),
   });
 
   let templateId: number;
   if (existing) {
-    await syncMissingTemplateCards(existing.id);
+    if (existing.templateKey !== template.key) {
+      await db
+        .update(boards)
+        .set({ templateKey: template.key })
+        .where(eq(boards.id, existing.id));
+    }
+    await syncMissingTemplateCards(template, existing.id);
     templateId = existing.id;
   } else {
-    templateId = await createFreshAmsBoardTemplate();
+    templateId = await createFreshBoardTemplate(template);
   }
 
-  await syncMissingTemplateCardsOntoCompetitionBoards();
+  await syncMissingTemplateCardsOntoCompetitionBoards(template);
 
   return templateId;
 }
 
-/** Deletes the AMS template board (if any) and recreates it from seed data. */
-export async function reseedAmsBoardTemplate() {
-  await removeRetiredTemplateCards();
+/** Creates or syncs every AMS template, then backfills their competition boards. */
+export async function seedAmsBoardTemplate(
+  keys: readonly BoardTemplateKey[] = BOARD_TEMPLATE_KEYS,
+) {
+  const ids: Partial<Record<BoardTemplateKey, number>> = {};
+  for (const key of keys) {
+    ids[key] = await seedBoardTemplate(BOARD_TEMPLATES[key]);
+  }
+  return ids;
+}
+
+/** Deletes the given AMS template board (if any) and recreates it from seed data. */
+export async function reseedAmsBoardTemplate(key: BoardTemplateKey) {
+  const template = BOARD_TEMPLATES[key];
+  await removeRetiredTemplateCards(template);
 
   const removed = await db
     .delete(boards)
-    .where(templateBoardWhere)
+    .where(templateBoardWhere(template))
     .returning({ id: boards.id });
 
   if (removed.length > 0) {
     console.log(
-      `🗑️  Removed existing AMS board template (id=${removed.map((row) => row.id).join(", ")})`,
+      `🗑️  Removed existing «${template.name}» (id=${removed.map((row) => row.id).join(", ")})`,
     );
   }
 
-  return createFreshAmsBoardTemplate();
+  return createFreshBoardTemplate(template);
 }

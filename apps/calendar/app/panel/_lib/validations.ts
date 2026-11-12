@@ -6,6 +6,7 @@ import {
   parseAsStringEnum,
 } from "nuqs/server";
 import * as z from "zod";
+import { BOARD_TEMPLATE_KEYS } from "@workspace/db/data/board-templates";
 import { flagConfig } from "@/config/flag";
 import { type Competition, competitions } from "@workspace/db/schema";
 import {
@@ -83,6 +84,10 @@ export const createCompetitionSchema = z
       .min(1, "Selecciona un organizador principal"),
     notes: z.string().optional().or(z.literal("")),
     assignBoard: z.boolean().optional().default(false),
+    boardTemplate: z
+      .enum(BOARD_TEMPLATE_KEYS)
+      .optional()
+      .default("competition"),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date must be after start date",

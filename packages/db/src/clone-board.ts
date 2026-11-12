@@ -1,6 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { TEMPLATE_BOARD_NAME } from "./data/ams-board-template";
+import {
+  BOARD_TEMPLATE_LABELS,
+  type BoardTemplateKey,
+} from "./data/board-templates";
 import { db } from "./index";
 import {
   boardLists,
@@ -33,70 +37,63 @@ function must<T>(value: T | undefined, label: string): T {
   return value;
 }
 
-export async function getTemplateBoard() {
+const templateBoardWith = {
+  lists: {
+    orderBy: (list, { asc }) => [asc(list.position)],
+    with: {
+      cards: {
+        orderBy: (card, { asc }) => [asc(card.position)],
+        with: {
+          cardLabels: true,
+          checklists: {
+            orderBy: (checklist, { asc }) => [asc(checklist.position)],
+            with: {
+              items: {
+                orderBy: (item, { asc }) => [asc(item.position)],
+              },
+            },
+          },
+          attachments: true,
+        },
+      },
+    },
+  },
+  labels: true,
+} satisfies NonNullable<
+  Parameters<typeof db.query.boards.findFirst>[0]
+>["with"];
+
+export async function getTemplateBoard(
+  templateKey: BoardTemplateKey = "competition",
+) {
+  const byKey = await db.query.boards.findFirst({
+    where: and(
+      eq(boards.isTemplate, true),
+      eq(boards.templateKey, templateKey),
+    ),
+    with: templateBoardWith,
+  });
+  if (byKey || templateKey !== "competition") return byKey;
+
   const named = await db.query.boards.findFirst({
     where: and(
       eq(boards.isTemplate, true),
       eq(boards.name, TEMPLATE_BOARD_NAME),
     ),
-    with: {
-      lists: {
-        orderBy: (list, { asc }) => [asc(list.position)],
-        with: {
-          cards: {
-            orderBy: (card, { asc }) => [asc(card.position)],
-            with: {
-              cardLabels: true,
-              checklists: {
-                orderBy: (checklist, { asc }) => [asc(checklist.position)],
-                with: {
-                  items: {
-                    orderBy: (item, { asc }) => [asc(item.position)],
-                  },
-                },
-              },
-              attachments: true,
-            },
-          },
-        },
-      },
-      labels: true,
-    },
+    with: templateBoardWith,
   });
-
   if (named) return named;
 
   return db.query.boards.findFirst({
-    where: eq(boards.isTemplate, true),
-    with: {
-      lists: {
-        orderBy: (list, { asc }) => [asc(list.position)],
-        with: {
-          cards: {
-            orderBy: (card, { asc }) => [asc(card.position)],
-            with: {
-              cardLabels: true,
-              checklists: {
-                orderBy: (checklist, { asc }) => [asc(checklist.position)],
-                with: {
-                  items: {
-                    orderBy: (item, { asc }) => [asc(item.position)],
-                  },
-                },
-              },
-              attachments: true,
-            },
-          },
-        },
-      },
-      labels: true,
-    },
+    where: and(eq(boards.isTemplate, true), isNull(boards.templateKey)),
+    with: templateBoardWith,
   });
 }
 
 export async function cloneBoardFromTemplate(input: {
   competitionId: number;
   boardName: string;
+  templateKey?: BoardTemplateKey;
 }) {
   const existing = await db.query.boards.findFirst({
     where: eq(boards.competitionId, input.competitionId),
@@ -106,10 +103,11 @@ export async function cloneBoardFromTemplate(input: {
     return existing;
   }
 
-  const template = await getTemplateBoard();
+  const templateKey = input.templateKey ?? "competition";
+  const template = await getTemplateBoard(templateKey);
   if (!template) {
     throw new Error(
-      "AMS board template not found. Run pnpm db:seed or pnpm db:seed-template.",
+      `No se encontró la plantilla «${BOARD_TEMPLATE_LABELS[templateKey]}». Ejecuta pnpm --filter @workspace/db db:sync-template.`,
     );
   }
 
@@ -121,6 +119,7 @@ export async function cloneBoardFromTemplate(input: {
           .values({
             name: input.boardName,
             isTemplate: false,
+            templateKey,
             competitionId: input.competitionId,
           })
           .returning()

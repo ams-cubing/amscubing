@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BOARD_TEMPLATE_KEYS } from "@workspace/db/data/board-templates";
 import type { Competition } from "@workspace/db/schema";
 
 import type { OrganizerOption } from "../_components/organizer-combobox";
@@ -77,6 +78,10 @@ export const competitionSchema = z
       .string()
       .min(1, "Selecciona un organizador principal"),
     assignBoard: z.boolean().optional().default(false),
+    boardTemplate: z
+      .enum(BOARD_TEMPLATE_KEYS)
+      .optional()
+      .default("competition"),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
