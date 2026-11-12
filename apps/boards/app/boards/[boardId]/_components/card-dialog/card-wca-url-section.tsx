@@ -45,6 +45,7 @@ export function CardWcaUrlSection({
   }
 
   const savedUrl = competition.wcaCompetitionUrl?.trim() || null;
+  const announced = competition.statusPublic === "announced";
 
   const handleSave = () => {
     startTransition(async () => {
@@ -55,7 +56,11 @@ export function CardWcaUrlSection({
       });
       if (result.ok) {
         setUrl(result.wcaCompetitionUrl ?? "");
-        toast.success(result.message);
+        if (result.wcaCompetitionUrl && !result.isPublic) {
+          toast.info(result.message);
+        } else {
+          toast.success(result.message);
+        }
       } else {
         toast.error(result.message);
       }
@@ -67,23 +72,29 @@ export function CardWcaUrlSection({
       <div>
         <h3 className="text-sm font-semibold">URL WCA</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
-          Guarda el enlace público de la competencia en la WCA. Queda
-          sincronizado con el calendario AMS y se usa al anunciar en redes.
+          Pega el enlace de la competencia en la WCA aunque aún no sea pública;
+          es el mismo después de publicarse. Queda sincronizado con el
+          calendario AMS y se usa al anunciar en redes.
         </p>
       </div>
 
       {savedUrl ? (
-        <p className="text-sm">
-          Actual:{" "}
-          <a
-            href={savedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline-offset-2 hover:underline"
-          >
-            {savedUrl}
-          </a>
-        </p>
+        <div className="space-y-1">
+          <p className="text-sm break-all">
+            Actual:{" "}
+            <a
+              href={savedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {savedUrl}
+            </a>
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {announced ? "Publicada" : "Pendiente de publicar en la WCA"}
+          </p>
+        </div>
       ) : (
         <p className="text-muted-foreground text-xs">
           Sin URL guardada todavía

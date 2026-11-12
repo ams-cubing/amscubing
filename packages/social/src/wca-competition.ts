@@ -35,17 +35,25 @@ export function normalizeWcaCompetitionUrl(url: string): string {
   return trimmed;
 }
 
+/** `not_found` also covers competitions the WCA hasn't made public yet. */
+export type WcaCompetitionFetchFailureReason =
+  | "invalid_url"
+  | "not_found"
+  | "error";
+
+export type WcaCompetitionFetchResult =
+  | { ok: true; competition: WcaCompetitionDetails }
+  | { ok: false; reason: WcaCompetitionFetchFailureReason; message: string };
+
 /** Fetches a real WCA competition by URL. Logo is optional. */
 export async function fetchWcaCompetition(
   wcaCompetitionUrl: string,
-): Promise<
-  | { ok: true; competition: WcaCompetitionDetails }
-  | { ok: false; message: string }
-> {
+): Promise<WcaCompetitionFetchResult> {
   const id = extractWcaCompetitionId(wcaCompetitionUrl);
   if (!id) {
     return {
       ok: false,
+      reason: "invalid_url",
       message:
         "La URL de la WCA no es válida. Usa un enlace como https://www.worldcubeassociation.org/competitions/...",
     };
@@ -60,9 +68,19 @@ export async function fetchWcaCompetition(
       },
     );
 
+    if (response.status === 404) {
+      return {
+        ok: false,
+        reason: "not_found",
+        message:
+          "La competencia aún no es pública en la WCA (o su ID cambió). Verifica la URL.",
+      };
+    }
+
     if (!response.ok) {
       return {
         ok: false,
+        reason: "error",
         message: `No se pudo obtener la competencia de la WCA (${response.status}). Verifica la URL.`,
       };
     }
@@ -122,6 +140,7 @@ export async function fetchWcaCompetition(
     log.error("social.wca_competition_fetch_failed", { error });
     return {
       ok: false,
+      reason: "error",
       message: "Error al consultar la API de la WCA. Inténtalo de nuevo.",
     };
   }
