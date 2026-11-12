@@ -10,6 +10,7 @@ import {
   uniqueRows,
 } from "./sensei";
 import { createQuizSession, verifyQuizSession } from "./quiz-session";
+import { completedLessonIds } from "./course-score";
 import type { CourseQuestion } from "@workspace/db/schema";
 
 it("recupera las imágenes de referencia de Sensei sin importar HTML ejecutable", () => {
@@ -92,6 +93,19 @@ describe("evaluaciones", () => {
     expect(() =>
       verifyQuizSession(session.token + "bad", quiz, 1, 7, "student"),
     ).toThrow();
+  });
+  it("deja pendientes las evaluaciones sin progreso aunque el curso esté completo", () => {
+    const lessons = [
+      { id: 1, quiz: [] },
+      { id: 2, quiz },
+      { id: 3, quiz },
+    ];
+    expect(completedLessonIds(lessons, [{ lessonId: 3 }], true)).toEqual([
+      1, 3,
+    ]);
+    expect(completedLessonIds(lessons, [{ lessonId: 3 }], false)).toEqual([
+      3,
+    ]);
   });
 });
 describe("migración Sensei", () => {

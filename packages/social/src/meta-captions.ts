@@ -65,7 +65,6 @@ export function buildAnnouncementCaption(
   if (customText) {
     lines.push(customText, ``);
   }
-  lines.push(`¡BIENVENIDOS A ${input.name.toUpperCase()}!`);
   lines.push(`📅: ${dateLabel}`);
   if (venueLine) lines.push(`📍: ${venueLine}`);
   if (cityLine) lines.push(`🏙️: ${cityLine}`);

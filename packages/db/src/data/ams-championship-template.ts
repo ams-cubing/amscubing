@@ -5,6 +5,7 @@ import {
   ORGANIZER_RESOURCES_CARD,
   PHASE_LABELS,
   SOCIAL_PUBLISH_CARD,
+  STAFF_COURSE_URL,
   TEMPLATE_LISTS,
   WCA_WEBSITE_CARD,
   type TemplateListTitle,
@@ -45,6 +46,12 @@ type ChampionshipCard = BoardTemplateCard<
 
 export const CHAMPIONSHIP_TEMPLATE_BOARD_NAME =
   "Plantilla AMS — Organización de campeonato";
+
+/** Championship counterparts of `STAFF_PLANNING_CARD_TITLE` / `STAFF_TRAINING_CARD_TITLE`. */
+export const CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE =
+  "Construir un equipo de staff";
+export const CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE =
+  "Preparación y capacitación de staff";
 
 export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
@@ -148,7 +155,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     attachments: [
       {
         name: "Curso de Staff AMS",
-        url: "https://amscubing.org/detalle-cursos/",
+        url: STAFF_COURSE_URL,
       },
     ],
   },
@@ -199,18 +206,16 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     labels: ["pre_announce", "communication"],
   },
   {
-    title: "Construir un equipo de staff",
+    title: CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description:
-      "**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\nPublica en las redes del evento un formulario para los competidores interesados en ser staff y adjúntalo aquí.",
+    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\nPublica en las redes del evento un formulario para los competidores interesados en ser staff y adjúntalo aquí.\n\nRegistra en la sección **Staff** de esta tarjeta a las personas confirmadas (nombre, WCA ID o correo y sus actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
   },
   {
-    title: "Preparación y capacitación de staff",
+    title: CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description:
-      "**Objetivo:** Capacitar al staff nuevo y preparar los beneficios de staff.\n\nTodos los voluntarios deben estar capacitados y certificados por la AMS. Comparte aquí sus certificados y los beneficios acordados (comida, hidratación, registro gratuito, regalo, etc.).",
+    description: `**Objetivo:** Capacitar al staff nuevo y preparar los beneficios de staff.\n\nTodos los voluntarios deben estar capacitados y certificados por la AMS. En la sección **Staff** de esta tarjeta verás quién ya completó el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}); es la misma lista de **${CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE}**. Comparte aquí los beneficios acordados (comida, hidratación, registro gratuito, regalo, etc.).`,
     attachments: [
       {
         name: "Instrucciones para jueces",

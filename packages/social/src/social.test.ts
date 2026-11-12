@@ -154,7 +154,6 @@ describe("buildAnnouncementCaption", () => {
     expect(caption).toContain(
       "Hay desafíos que no se vencen solo con velocidad.",
     );
-    expect(caption).toContain("¡BIENVENIDOS A MEGA-MENTE PUEBLA 2026!");
     expect(caption).toContain("📅:");
     expect(caption).toContain("📍: Comité Directivo Estatal del PRI de Puebla");
     expect(caption).toContain("🏙️: Puebla, Puebla");

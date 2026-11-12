@@ -67,6 +67,14 @@ export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
 export const WCA_WEBSITE_CARD_TITLE = "Sitio web (WCA)";
 export const EQUIPMENT_CARD_TITLE = "Confirmación de equipo de competencia";
 
+/** Cards that show the competition staff roster (planning: editable list + course link). */
+export const STAFF_PLANNING_CARD_TITLE = "Planeación de Staff";
+/** Same roster with each person's staff course status. */
+export const STAFF_TRAINING_CARD_TITLE = "Organización/Capacitación de staff";
+
+export const STAFF_COURSE_URL =
+  "https://cursos.amscubing.org/cursos/capacitacion-de-staff-ams";
+
 export const WCA_WEBSITE_CARD: TemplateCard = {
   title: WCA_WEBSITE_CARD_TITLE,
   list: "Por Hacer",
@@ -100,7 +108,7 @@ export const ORGANIZER_RESOURCES_CARD: TemplateCard = {
   attachments: [
     {
       name: "Curso de Staff AMS",
-      url: "https://amscubing.org/detalle-cursos/",
+      url: STAFF_COURSE_URL,
     },
     {
       name: "Instrucciones para jueces",
@@ -230,11 +238,10 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     ],
   },
   {
-    title: "Planeación de Staff",
+    title: STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
-    description:
-      "**Objetivo:** Definir y corroborar el compromiso del staff.\n\nSi eres una comunidad emergente o pequeña, es recomendable contar con una base de staff confiable para el desarrollo de las tareas. El mínimo de staff recomendado se determina por la fórmula: **Estaciones + 4**; si se tiene más de una zona, aumenta **+4 por cada zona extra**.\n\nSi estás organizando una competencia silenciosa o con menos de 35 competidores, puedes optar por no tener una base de staff, pero deberás garantizar mezcladores para los eventos **5x5, SQ1, Megaminx y Clock**.\n\n**Actividades del staff:**\n\n- Jueces\n- Mezcladores\n- Corredores\n- Registro\n- Capturistas\n\nPara agregar los eventos **5x5, SQ-1, Megaminx, Clock y Skewb**, debes demostrar mediante un video que los staff pueden mezclar los cubos con eficiencia.\n\n- Competencias con menos de 80 competidores: mínimo **2 mezcladores**.\n- Competencias con más de 80 competidores: recomendable **4 mezcladores**.\n\n**Paso 1:** Comenta: ¿Cuántas personas de staff crees que necesitas?  \n**Paso 2:** Adjunta o comenta links o videos de mezcladores (si aplica).  \n**Paso 3:** Comenta cuál es tu plan de capacitación para el staff, cómo piensas llevar el control de sus actividades y qué beneficios planeas otorgarles (comida, hidratación, algún lunch, registro gratuito, apoyo de transporte, regalo especial, sorteo, etc).\n\n**Nota:** Si quieres saber más sobre el staff, puedes tomar el curso de **Capacitación de Staff** certificado por la **Asociación Mexicana de Speedcubing (AMS)**.",
+    description: `**Objetivo:** Definir y corroborar el compromiso del staff.\n\nSi eres una comunidad emergente o pequeña, es recomendable contar con una base de staff confiable para el desarrollo de las tareas. El mínimo de staff recomendado se determina por la fórmula: **Estaciones + 4**; si se tiene más de una zona, aumenta **+4 por cada zona extra**.\n\nSi estás organizando una competencia silenciosa o con menos de 35 competidores, puedes optar por no tener una base de staff, pero deberás garantizar mezcladores para los eventos **5x5, SQ1, Megaminx y Clock**.\n\n**Actividades del staff:**\n\n- Jueces\n- Mezcladores\n- Corredores\n- Registro\n- Capturistas\n\nPara agregar los eventos **5x5, SQ-1, Megaminx, Clock y Skewb**, debes demostrar mediante un video que los staff pueden mezclar los cubos con eficiencia.\n\n- Competencias con menos de 80 competidores: mínimo **2 mezcladores**.\n- Competencias con más de 80 competidores: recomendable **4 mezcladores**.\n\n**Paso 1:** Registra a tu staff en la sección **Staff** de esta tarjeta (nombre, WCA ID o correo y sus actividades). Si aún no sabes quiénes serán, comenta cuántas personas crees que necesitas.  \n**Paso 2:** Adjunta o comenta links o videos de mezcladores (si aplica).  \n**Paso 3:** Comenta cuál es tu plan de capacitación para el staff, cómo piensas llevar el control de sus actividades y qué beneficios planeas otorgarles (comida, hidratación, algún lunch, registro gratuito, apoyo de transporte, regalo especial, sorteo, etc).\n\n**Nota:** Comparte con tu staff el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}) certificado por la **Asociación Mexicana de Speedcubing (AMS)**. En la tarjeta **${STAFF_TRAINING_CARD_TITLE}** verás quién ya lo completó.`,
   },
   {
     title: "Excel de Costos",
@@ -267,11 +274,10 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "**Objetivo:** Reducir los costos de la competencia para hacerla más accesible.\n\n**TODOS LOS PATROCINIOS Y ACUERDOS DEBEN SER DECLARADOS EN ESTA SECCIÓN**\n\n- Todo patrocinio o acuerdo debe buscar un beneficio mutuo. Lo ideal es que los patrocinadores cubran los costos más importantes de la competencia, ya sea en efectivo o en especie.\n- Si un patrocinador no está dispuesto a aportar un beneficio al evento, no regales el trabajo del equipo, de los voluntarios ni de los miembros de la WCA.\n- No te limites a buscar patrocinadores solo en tiendas de cubos. Explora también opciones locales como restaurantes, hoteles, cafeterías y otros negocios cercanos. Esto puede abrir más oportunidades y fortalecer el apoyo de la comunidad local.\n\n**Pasos:**\n\n1. Comenta la siguiente información de todos y cada uno de los patrocinadores:\n  - Nombre del patrocinador\n  - Logo (para incluir en los tabs del sitio y/o en diseños)\n  - Tipo de patrocinio (efectivo o en especie)\n  - Condiciones del patrocinio\n2. Mantén actualizado el Drive de costos con esta información\n\n**Nota:** Para patrocinadores extranjeros considera una cuota de importación; si tienes dudas sobre esto, consulta a tu delegado.",
   },
   {
-    title: "Organización/Capacitación de staff",
+    title: STAFF_TRAINING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce"],
-    description:
-      "**Objetivo:**  \nDefinir los requisitos y responsabilidades de los voluntarios para que puedan acceder a los beneficios establecidos durante la competencia.\n\n**Requisitos mínimos de los voluntarios para recibir beneficios:**\n\n- Estar capacitados.\n- Asistir al montaje de la sede.\n- Asistir al desmontaje del equipo.\n- Tener tareas asignadas y cumplirlas.\n- Usar o portar su distintivo durante la competencia.\n\n**Pasos:**\n\n1. Adjunta las certificaciones de los voluntarios.\n2. Asigna sus actividades mediante **Groupifier**.\n3. Notifica de manera clara y oportuna los requisitos y la forma de control para que los voluntarios puedan recibir sus beneficios.\n  - Recuerda que, según el reglamento, todos los competidores deben estar disponibles para apoyar durante la competencia, pero ayudar una o dos veces sin una asignación formal no los convierte en voluntarios.\n\n**Notas importantes:**\n\n- Todos los voluntarios deberán estar capacitados y certificados por la **Asociación Mexicana de Speedcubing**. Solicita a tus voluntarios que tomen el curso y comparte aquí sus certificados.\n- Si se otorga reducción o devolución de la tarifa de inscripción, esta solo puede aplicarse una vez que la competencia haya concluido.\n- Puedes consultar **Recursos de organizador**, donde encontrarás un manual de [Instrucciones para Jueces](https://drive.google.com/file/d/1tfG-t7P9VvF90ZdXMX5nJkQkxAcVm_2t/view?usp=sharing)",
+    description: `**Objetivo:**  \nDefinir los requisitos y responsabilidades de los voluntarios para que puedan acceder a los beneficios establecidos durante la competencia.\n\n**Requisitos mínimos de los voluntarios para recibir beneficios:**\n\n- Estar capacitados.\n- Asistir al montaje de la sede.\n- Asistir al desmontaje del equipo.\n- Tener tareas asignadas y cumplirlas.\n- Usar o portar su distintivo durante la competencia.\n\n**Pasos:**\n\n1. Revisa en la sección **Staff** de esta tarjeta quién ya completó el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}). Es la misma lista que registraste en **${STAFF_PLANNING_CARD_TITLE}**.\n2. Asigna sus actividades mediante **Groupifier**.\n3. Notifica de manera clara y oportuna los requisitos y la forma de control para que los voluntarios puedan recibir sus beneficios.\n  - Recuerda que, según el reglamento, todos los competidores deben estar disponibles para apoyar durante la competencia, pero ayudar una o dos veces sin una asignación formal no los convierte en voluntarios.\n\n**Notas importantes:**\n\n- Todos los voluntarios deberán estar capacitados y certificados por la **Asociación Mexicana de Speedcubing**. Comparte con ellos el enlace del curso y pídeles que inicien sesión con su cuenta WCA; su avance aparece automáticamente en la sección **Staff**.\n- Si se otorga reducción o devolución de la tarifa de inscripción, esta solo puede aplicarse una vez que la competencia haya concluido.\n- Puedes consultar **Recursos de organizador**, donde encontrarás un manual de [Instrucciones para Jueces](https://drive.google.com/file/d/1tfG-t7P9VvF90ZdXMX5nJkQkxAcVm_2t/view?usp=sharing)`,
   },
   {
     title: "Organiza grupos, imprime papeletas",

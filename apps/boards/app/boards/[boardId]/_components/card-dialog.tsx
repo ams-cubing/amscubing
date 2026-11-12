@@ -73,6 +73,8 @@ import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
+import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { staffCardMode } from "../_lib/staff-cards";
 import { getCompetitionTeam } from "../_lib/team";
 
 export function CardDialog({
@@ -140,6 +142,7 @@ export function CardDialog({
 
   const labelIds = new Set(card.cardLabels.map((cl) => cl.labelId));
   const memberIds = new Set(card.members.map((m) => m.userId));
+  const staffMode = staffCardMode(card.title);
   const currentList = board.lists.find((list) => list.id === card.listId);
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
@@ -558,6 +561,15 @@ export function CardDialog({
               <CardEquipmentSection
                 board={board}
                 cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {staffMode ? (
+              <CardStaffRosterSection
+                board={board}
+                cardId={card.id}
+                mode={staffMode}
                 readOnly={readOnly}
               />
             ) : null}

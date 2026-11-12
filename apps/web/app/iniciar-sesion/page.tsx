@@ -3,6 +3,7 @@ import { PageHero } from "@/components/page-hero";
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { LoginForm, type LoginMode } from "./_components/login-form";
+import { LoginFormSkeleton } from "./_components/login-form-skeleton";
 import { Suspense } from "react";
 export const metadata = {
   title: "Iniciar sesión | AMS",
@@ -38,23 +39,6 @@ const GENERIC_ERROR =
 
 export default function Page(props: { searchParams: SearchParams }) {
   return (
-    <Suspense
-      fallback={
-        <main className="ams-container py-20" aria-busy="true">
-          Cargando acceso…
-        </main>
-      }
-    >
-      <LoginPage {...props} />
-    </Suspense>
-  );
-}
-async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
-  const { returnTo, error, modo } = await searchParams;
-  const callbackURL =
-    returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/cuenta";
-  const initialMode: LoginMode = modo === "registro" ? "register" : "login";
-  return (
     <main>
       <SiteNav />
       <PageHero
@@ -64,21 +48,35 @@ async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
       />
       <section className="bg-white py-16">
         <div className="ams-container max-w-2xl">
-          {error && (
-            <p role="alert" className="ams-copy mb-5 text-ams-red">
-              {ERROR_MESSAGES[error] ?? GENERIC_ERROR}
-            </p>
-          )}
-          <LoginForm
-            callbackURL={callbackURL}
-            initialMode={initialMode}
-            wcaEnabled={Boolean(
-              process.env.WCA_CLIENT_ID && process.env.WCA_CLIENT_SECRET,
-            )}
-          />
+          <Suspense fallback={<LoginFormSkeleton />}>
+            <LoginContent {...props} />
+          </Suspense>
         </div>
       </section>
       <SiteFooter />
     </main>
+  );
+}
+
+async function LoginContent({ searchParams }: { searchParams: SearchParams }) {
+  const { returnTo, error, modo } = await searchParams;
+  const callbackURL =
+    returnTo && isAllowedReturnTo(returnTo) ? returnTo : "/cuenta";
+  const initialMode: LoginMode = modo === "registro" ? "register" : "login";
+  return (
+    <>
+      {error && (
+        <p role="alert" className="ams-copy mb-5 text-ams-red">
+          {ERROR_MESSAGES[error] ?? GENERIC_ERROR}
+        </p>
+      )}
+      <LoginForm
+        callbackURL={callbackURL}
+        initialMode={initialMode}
+        wcaEnabled={Boolean(
+          process.env.WCA_CLIENT_ID && process.env.WCA_CLIENT_SECRET,
+        )}
+      />
+    </>
   );
 }

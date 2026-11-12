@@ -8,7 +8,7 @@ import {
   courseProgress,
   courseQuizAttempts,
 } from "@workspace/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -306,10 +306,17 @@ async function completeLessonData(data: FormData) {
         .values({ lessonId, userId: viewer.id, answers, score, passed });
     }
     if (passed) {
-      await tx
+      const progress = tx
         .insert(courseProgress)
-        .values({ lessonId, userId: viewer.id, score })
-        .onConflictDoNothing();
+        .values({ lessonId, userId: viewer.id, score });
+      // Imported progress can mark an exam done without a grade.
+      await (score === null
+        ? progress.onConflictDoNothing()
+        : progress.onConflictDoUpdate({
+            target: [courseProgress.lessonId, courseProgress.userId],
+            set: { score },
+            where: isNull(courseProgress.score),
+          }));
       const completed = await tx.execute(
         sql`update course_enrollment set completed_at = now() where course_id = ${course.id} and user_id = ${viewer.id} and completed_at is null and not exists (select 1 from course_lesson l where l.course_id = ${course.id} and not exists (select 1 from course_progress p where p.lesson_id = l.id and p.user_id = ${viewer.id})) returning course_id`,
       );

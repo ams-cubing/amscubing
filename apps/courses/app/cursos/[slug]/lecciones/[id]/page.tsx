@@ -20,6 +20,7 @@ import {
   textLinkClass,
 } from "@/components/ui";
 import { createQuizSession } from "@/lib/quiz-session";
+import { completedLessonIds } from "@/lib/course-score";
 import { completeLesson } from "@/app/actions";
 
 export default async function LessonPage({
@@ -52,9 +53,11 @@ export default async function LessonPage({
         </div>
       </section>
     );
-  const done = p.enrollment?.completedAt
-    ? course.lessons.map((l) => l.id)
-    : p.progress.map((p) => p.lessonId);
+  const done = completedLessonIds(
+    course.lessons,
+    p.progress,
+    !!p.enrollment?.completedAt,
+  );
   const position = course.lessons.findIndex((l) => l.id === lesson.id);
   const next = course.lessons[position + 1];
   const previous = course.lessons[position - 1];

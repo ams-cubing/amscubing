@@ -3,6 +3,7 @@ export {
   getAuthCookieDomain,
   getBoardsUrl,
   getCalendarUrl,
+  getCoursesUrl,
   getCrossAppSignInUrl,
   getTrustedOrigins,
   getWebUrl,
