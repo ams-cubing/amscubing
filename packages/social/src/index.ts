@@ -7,6 +7,8 @@ export {
   fetchWcaCompetition,
   plainTextFromWcaMarkup,
   type WcaCompetitionDetails,
+  type WcaCompetitionFetchFailureReason,
+  type WcaCompetitionFetchResult,
 } from "./wca-competition";
 export {
   formatDateRangeEs,

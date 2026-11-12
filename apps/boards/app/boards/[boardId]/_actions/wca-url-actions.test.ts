@@ -105,6 +105,7 @@ describe("saveCompetitionWcaUrl", () => {
     normalizeWcaCompetitionUrl.mockReturnValue("https://example.com/bad");
     fetchWcaCompetition.mockResolvedValue({
       ok: false,
+      reason: "invalid_url",
       message:
         "La URL de la WCA no es válida. Usa un enlace como https://www.worldcubeassociation.org/competitions/...",
     });
@@ -146,6 +147,7 @@ describe("saveCompetitionWcaUrl", () => {
       ok: true,
       message: "URL de la WCA eliminada",
       wcaCompetitionUrl: null,
+      isPublic: false,
     });
     expect(fetchWcaCompetition).not.toHaveBeenCalled();
     expect(setFn).toHaveBeenCalledWith(
@@ -199,6 +201,7 @@ describe("saveCompetitionWcaUrl", () => {
       ok: true,
       message: "URL de la WCA guardada",
       wcaCompetitionUrl: wcaUrl,
+      isPublic: true,
     });
     expect(setFn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -207,4 +210,48 @@ describe("saveCompetitionWcaUrl", () => {
     );
     expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
   });
+
+  it.each(["not_found", "error"] as const)(
+    "saves the normalized URL when the WCA lookup fails with %s",
+    async (reason) => {
+      const { findFirstCard, findFirstBoard, dbUpdate, revalidatePath } =
+        getBoardMocks();
+      mockAuthenticatedUser();
+      mockBoardAccessAllowed();
+      findFirstCard.mockResolvedValue(cardOnBoard(cardId));
+      findFirstBoard.mockResolvedValue({ competitionId: 42 });
+      normalizeWcaCompetitionUrl.mockReturnValue(wcaUrl);
+      fetchWcaCompetition.mockResolvedValue({
+        ok: false,
+        reason,
+        message: "La competencia aún no es pública en la WCA",
+      });
+
+      const setFn = vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      });
+      dbUpdate.mockReturnValue({ set: setFn });
+
+      const result = await saveCompetitionWcaUrl({
+        boardId,
+        cardId,
+        wcaCompetitionUrl: `${wcaUrl}/edit`,
+      });
+
+      expect(result).toEqual({
+        ok: true,
+        message:
+          "URL guardada. Aún no es pública en la WCA; se verificará al anunciar.",
+        wcaCompetitionUrl: wcaUrl,
+        isPublic: false,
+      });
+      expect(normalizeWcaCompetitionUrl).toHaveBeenCalledWith(`${wcaUrl}/edit`);
+      expect(setFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          wcaCompetitionUrl: wcaUrl,
+        }),
+      );
+      expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+    },
+  );
 });

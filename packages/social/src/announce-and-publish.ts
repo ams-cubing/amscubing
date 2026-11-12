@@ -7,6 +7,7 @@ import { extractSpanishIntroFromInformation } from "./competition-information";
 import {
   fetchWcaCompetition,
   normalizeWcaCompetitionUrl,
+  type WcaCompetitionFetchFailureReason,
 } from "./wca-competition";
 
 export type AnnounceSocialPublishInput = {
@@ -44,7 +45,11 @@ export type AnnouncementPreviewResult =
       flyerUrl: string | null;
       caption: string;
     }
-  | { ok: false; message: string };
+  | {
+      ok: false;
+      reason: WcaCompetitionFetchFailureReason | "missing_url";
+      message: string;
+    };
 
 /** Prefer custom text; else Spanish intro from WCA information; else empty. */
 export function resolveAnnouncementBodyText(
@@ -144,13 +149,14 @@ export async function buildAnnouncementPreview(
   if (!rawUrl) {
     return {
       ok: false,
+      reason: "missing_url",
       message: "Falta la URL de la competencia en la WCA.",
     };
   }
 
   const wca = await fetchWcaCompetition(normalizeWcaCompetitionUrl(rawUrl));
   if (!wca.ok) {
-    return { ok: false, message: wca.message };
+    return { ok: false, reason: wca.reason, message: wca.message };
   }
 
   const bodyText = resolveAnnouncementBodyText(

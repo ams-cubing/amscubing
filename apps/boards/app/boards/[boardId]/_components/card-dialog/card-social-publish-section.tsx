@@ -21,6 +21,7 @@ import {
   retryBoardCompetitionSocialPublish,
   saveCompetitionSocialFields,
 } from "../../_actions/social-publish-actions";
+import { saveCompetitionWcaUrl } from "../../_actions/wca-url-actions";
 import type { BoardDetail } from "../../_lib/types";
 
 export function isSocialPublishCard(title: string) {
@@ -31,7 +32,7 @@ type PreviewState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "ok"; caption: string; imageUrl: string | null }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; reason?: string };
 
 function facebookUrl(facebookPostId: string) {
   return `https://www.facebook.com/${facebookPostId}`;
@@ -54,6 +55,8 @@ export function CardSocialPublishSection({
     competition?.socialCustomText ?? "",
   );
   const [tags, setTags] = React.useState(competition?.socialTags ?? "");
+  const [wcaUrlInput, setWcaUrlInput] = React.useState("");
+  const [editingWcaUrl, setEditingWcaUrl] = React.useState(false);
   const [flyerUrl, setFlyerUrl] = React.useState(
     competition?.socialFlyerUrl ?? null,
   );
@@ -113,9 +116,13 @@ export function CardSocialPublishSection({
           });
           const data = (await res.json()) as
             | { ok: true; caption: string; imageUrl: string | null }
-            | { ok: false; message: string };
+            | { ok: false; message: string; reason?: string };
           if (!data.ok) {
-            setPreview({ status: "error", message: data.message });
+            setPreview({
+              status: "error",
+              message: data.message,
+              reason: data.reason,
+            });
             return;
           }
           setPreview({
@@ -171,6 +178,30 @@ export function CardSocialPublishSection({
         ? "Un delegado puede reintentar o completar la publicación desde aquí o en el calendario."
         : null;
 
+  const savedWcaUrl = competition.wcaCompetitionUrl?.trim() || null;
+
+  const handleSaveWcaUrl = () => {
+    startTransition(async () => {
+      const result = await saveCompetitionWcaUrl({
+        boardId: board.id,
+        cardId,
+        wcaCompetitionUrl: wcaUrlInput,
+      });
+      if (result.ok) {
+        setWcaUrlInput("");
+        setEditingWcaUrl(false);
+        if (result.wcaCompetitionUrl && !result.isPublic) {
+          toast.info(result.message);
+        } else {
+          toast.success(result.message);
+        }
+        router.refresh();
+      } else {
+        toast.error(result.message);
+      }
+    });
+  };
+
   const handleSave = () => {
     startTransition(async () => {
       const result = await saveCompetitionSocialFields({
@@ -219,6 +250,82 @@ export function CardSocialPublishSection({
           vacío, se usa la introducción en español de la página WCA.
         </p>
       </div>
+
+      {savedWcaUrl && !editingWcaUrl ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 text-sm break-all">
+            URL WCA:{" "}
+            <a
+              href={savedWcaUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {savedWcaUrl}
+            </a>
+          </p>
+          {!readOnly ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => {
+                setWcaUrlInput(savedWcaUrl);
+                setEditingWcaUrl(true);
+              }}
+            >
+              Editar
+            </Button>
+          ) : null}
+        </div>
+      ) : readOnly ? (
+        <p className="text-muted-foreground text-xs">
+          Sin URL de la WCA guardada todavía.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor={`social-wca-url-${cardId}`}>URL de la WCA</Label>
+          <p className="text-muted-foreground text-xs leading-5">
+            Pega el enlace aunque la competencia aún no sea pública. Si el ID
+            de la competencia cambió en la WCA, actualízalo aquí antes de
+            publicar.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              id={`social-wca-url-${cardId}`}
+              type="url"
+              value={wcaUrlInput}
+              onChange={(e) => setWcaUrlInput(e.target.value)}
+              disabled={pending}
+              placeholder="https://www.worldcubeassociation.org/competitions/..."
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending || !wcaUrlInput.trim()}
+              onClick={handleSaveWcaUrl}
+            >
+              Guardar URL
+            </Button>
+            {editingWcaUrl ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => {
+                  setWcaUrlInput("");
+                  setEditingWcaUrl(false);
+                }}
+              >
+                Cancelar
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor={`social-text-${cardId}`}>
@@ -315,7 +422,14 @@ export function CardSocialPublishSection({
         <p className="text-muted-foreground text-sm">Actualizando preview…</p>
       ) : null}
       {preview.status === "error" ? (
-        <p className="text-destructive text-sm">{preview.message}</p>
+        preview.reason === "not_found" &&
+        competition.statusPublic !== "announced" ? (
+          <p className="text-muted-foreground text-sm">
+            El preview aparecerá cuando la competencia sea pública en la WCA.
+          </p>
+        ) : preview.reason === "missing_url" ? null : (
+          <p className="text-destructive text-sm">{preview.message}</p>
+        )
       ) : null}
       {preview.status === "ok" ? (
         <div className="space-y-3 rounded-md border bg-muted/20 p-3">

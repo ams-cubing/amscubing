@@ -13,7 +13,12 @@ import {
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 
 export type SaveCompetitionWcaUrlResult =
-  | { ok: true; message: string; wcaCompetitionUrl: string | null }
+  | {
+      ok: true;
+      message: string;
+      wcaCompetitionUrl: string | null;
+      isPublic: boolean;
+    }
   | { ok: false; message: string };
 
 export async function saveCompetitionWcaUrl(input: {
@@ -38,14 +43,20 @@ export async function saveCompetitionWcaUrl(input: {
 
   const rawUrl = input.wcaCompetitionUrl.trim();
   let wcaCompetitionUrl: string | null = null;
+  let isPublic = false;
 
   if (rawUrl) {
     const normalized = normalizeWcaCompetitionUrl(rawUrl);
     const wca = await fetchWcaCompetition(normalized);
-    if (!wca.ok) {
+    if (wca.ok) {
+      wcaCompetitionUrl = wca.competition.url;
+      isPublic = true;
+    } else if (wca.reason === "invalid_url") {
       return { ok: false, message: wca.message };
+    } else {
+      // The WCA API hides competitions until they're public; the URL stays the same.
+      wcaCompetitionUrl = normalized;
     }
-    wcaCompetitionUrl = wca.competition.url;
   }
 
   await db
@@ -59,9 +70,12 @@ export async function saveCompetitionWcaUrl(input: {
   revalidatePath(`/boards/${input.boardId}`);
   return {
     ok: true,
-    message: wcaCompetitionUrl
-      ? "URL de la WCA guardada"
-      : "URL de la WCA eliminada",
+    message: !wcaCompetitionUrl
+      ? "URL de la WCA eliminada"
+      : isPublic
+        ? "URL de la WCA guardada"
+        : "URL guardada. Aún no es pública en la WCA; se verificará al anunciar.",
     wcaCompetitionUrl,
+    isPublic,
   };
 }
