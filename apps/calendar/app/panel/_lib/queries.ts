@@ -152,6 +152,7 @@ export async function getCompetitions(input: GetCompetitionsSchema) {
         .select({
           id: competitions.id,
           name: competitions.name,
+          isChampionship: competitions.isChampionship,
           city: competitions.city,
           state: states.name,
           delegates: sql<

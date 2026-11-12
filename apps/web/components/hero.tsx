@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Trophy } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import type { CompetitionSpotlight } from "@/lib/competitions";
 import type { CommunityStats } from "@/lib/community-stats";
@@ -58,6 +58,12 @@ export function Hero({
                 <span className="ams-badge-word">
                   {competition.status}
                 </span> ·{" "}
+                {competition.isChampionship && (
+                  <Trophy
+                    className="size-3.5 shrink-0 text-ams-orange"
+                    aria-label="Campeonato"
+                  />
+                )}
                 <span className="truncate">
                   {competition.name} · {formatDate(competition.startDate)} ·{" "}
                   {competition.state || competition.city}

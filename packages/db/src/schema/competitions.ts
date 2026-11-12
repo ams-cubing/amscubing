@@ -74,6 +74,8 @@ export const competitions = pgTable("competition", {
 
   capacity: integer("capacity").notNull().default(50),
 
+  isChampionship: boolean("is_championship").default(false).notNull(),
+
   statusPublic: publicStatusEnum("status_public").default("reserved").notNull(),
   statusInternal: internalStatusEnum("status_internal")
     .default("looking_for_venue")

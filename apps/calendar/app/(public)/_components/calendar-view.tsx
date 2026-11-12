@@ -8,6 +8,7 @@ import {
   Calendar,
   Users,
   ExternalLink,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -25,17 +26,10 @@ import {
   getInternalStatusColor,
   formatInternalStatus,
 } from "@/lib/utils";
-import type {
-  Competition,
-  Holiday,
-  Region,
-  State,
-  User,
-} from "@workspace/db/schema";
+import type { Holiday, User } from "@workspace/db/schema";
 import { Badge } from "@workspace/ui/components/badge";
-interface FullCompetition extends Competition {
-  state: State & { region: Region };
-}
+
+import type { CalendarCompetition as FullCompetition } from "../_lib/calendar-competition";
 
 interface CalendarViewProps {
   competitions: FullCompetition[];
@@ -191,6 +185,10 @@ export function CalendarView({
   };
 
   const isDelegate = role === "delegate";
+  const showSelectedChampionship = Boolean(
+    selectedCompetition?.isChampionship &&
+    (selectedCompetition.statusPublic === "announced" || isDelegate),
+  );
 
   return (
     <>
@@ -315,6 +313,13 @@ export function CalendarView({
                           : `Ver competencia en ${comp.state.region.displayName}`
                       }
                     >
+                      {(comp.statusPublic === "announced" || isDelegate) &&
+                        comp.isChampionship && (
+                          <Trophy
+                            className="mr-0.5 inline size-3 align-[-2px]"
+                            aria-label="Campeonato"
+                          />
+                        )}
                       {comp.statusPublic === "announced" || isDelegate
                         ? comp.name || comp.state.name
                         : comp.state.region.displayName}
@@ -353,7 +358,17 @@ export function CalendarView({
                 `Competencia en ${selectedCompetition?.state.region.displayName}`
               )}
             </DialogTitle>
-            <DialogDescription>Detalles de la competencia</DialogDescription>
+            <DialogDescription>
+              {showSelectedChampionship
+                ? "Detalles del campeonato"
+                : "Detalles de la competencia"}
+            </DialogDescription>
+            {showSelectedChampionship && (
+              <Badge className="w-fit">
+                <Trophy className="size-3" />
+                Campeonato
+              </Badge>
+            )}
           </DialogHeader>
 
           {selectedCompetition && (
@@ -412,7 +427,7 @@ export function CalendarView({
                 </span>
               </div>
 
-              {isDelegate && (
+              {isDelegate && selectedCompetition.statusInternal && (
                 <div>
                   <p className="font-semibold mb-1">Estado interno</p>
                   <span

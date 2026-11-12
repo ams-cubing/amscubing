@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import {
   cloneBoardFromTemplate,
   competitionBoardName,
+  switchBoardTemplate,
 } from "@workspace/db/clone-board";
 import { db } from "@workspace/db";
 import {
@@ -17,6 +18,16 @@ import { eq } from "drizzle-orm";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 import { log } from "@workspace/server/log";
+
+function revalidateCompetitionBoard(competitionId: number) {
+  updateTag("competitions");
+  updateTag(`competition-${competitionId}`);
+  revalidatePath("/panel/competencias");
+  revalidatePath("/panel");
+  revalidatePath(`/panel/competencias/${competitionId}`);
+  revalidatePath(`/panel/competencias/${competitionId}/editar`);
+  revalidatePath("/mis-competencias");
+}
 
 export async function assignBoardToCompetitionById(
   competitionId: number,
@@ -48,14 +59,7 @@ export async function assignBoardToCompetitionById(
       templateKey,
     });
 
-    updateTag("competitions");
-    updateTag(`competition-${competitionId}`);
-    revalidatePath("/panel/competencias");
-    revalidatePath("/panel");
-    revalidatePath(`/panel/competencias/${competitionId}`);
-    revalidatePath(`/panel/competencias/${competitionId}/editar`);
-    revalidatePath("/mis-competencias");
-
+    revalidateCompetitionBoard(competitionId);
     return { boardId: board.id };
   } catch (error) {
     log.error("calendar.assign_board_failed", { error });
@@ -78,4 +82,32 @@ export async function assignBoardToCompetition(
   }
 
   return assignBoardToCompetitionById(competitionId, templateKey);
+}
+
+export async function switchCompetitionBoardTemplate(
+  competitionId: number,
+  templateKey: BoardTemplateKey,
+) {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { error: authResult.message };
+  }
+  if (!isBoardTemplateKey(templateKey)) {
+    return { error: "Plantilla no válida" };
+  }
+
+  try {
+    const board = await switchBoardTemplate({ competitionId, templateKey });
+    log.info("calendar.board_template_switched", {
+      competitionId,
+      templateKey,
+      boardId: board.id,
+      actorId: authResult.session.user.id,
+    });
+    revalidateCompetitionBoard(competitionId);
+    return { boardId: board.id };
+  } catch (error) {
+    log.error("calendar.switch_board_template_failed", { error });
+    return { error: getErrorMessage(error) };
+  }
 }

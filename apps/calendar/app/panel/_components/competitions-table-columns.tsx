@@ -133,6 +133,7 @@ export function getCompetitionsTableColumns({
             ) : (
               <span className="text-muted-foreground text-sm">Sin nombre</span>
             )}
+            {row.original.isChampionship && <Badge>Campeonato</Badge>}
           </Link>
         );
       },

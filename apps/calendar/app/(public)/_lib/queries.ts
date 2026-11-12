@@ -10,7 +10,15 @@ import {
   user,
 } from "@workspace/db/schema";
 
-export async function getCompetitionsForRegion(regionFilter?: string) {
+import {
+  toCalendarCompetition,
+  type CalendarCompetition,
+} from "./calendar-competition";
+
+export async function getCompetitionsForRegion(
+  regionFilter: string | undefined,
+  viewerIsDelegate: boolean,
+): Promise<CalendarCompetition[]> {
   const compsRaw = await db
     .select()
     .from(competitions)
@@ -19,10 +27,13 @@ export async function getCompetitionsForRegion(regionFilter?: string) {
     .where(regionFilter ? eq(regions.id, regionFilter) : undefined)
     .orderBy(asc(competitions.startDate));
 
-  return compsRaw.map((row) => ({
-    ...row.competition,
-    state: { ...row.state, region: { ...row.region } },
-  }));
+  return compsRaw.flatMap((row) => {
+    const competition = toCalendarCompetition(
+      { ...row.competition, state: { ...row.state, region: row.region } },
+      viewerIsDelegate,
+    );
+    return competition ? [competition] : [];
+  });
 }
 
 export async function getAvailabilityDates(regionFilter?: string) {

@@ -28,7 +28,10 @@ import { getBoardsUrl } from "@/lib/urls";
 
 import type { ReassignmentOption } from "@/lib/reassignment-option";
 
-import { BoardAssignControls } from "../../_components/board-assign-controls";
+import {
+  BoardAssignControls,
+  type BoardTemplateState,
+} from "../../_components/board-assign-controls";
 import { DateRequestResponseControls } from "./date-request-response-controls";
 import { CompetitionSocialStatusSection } from "./competition-social-status-section";
 import { MultiCompetitionToggle } from "./multi-competition-toggle";
@@ -58,13 +61,20 @@ export function CompetitionDetailView({
   currentUserWcaId,
   reassignmentCandidates = [],
   multiCompetitionOrganizerIds = [],
+  boardState = null,
 }: {
   competition: CompetitionDetail;
   currentUserWcaId?: string | null;
   reassignmentCandidates?: ReassignmentOption[];
   multiCompetitionOrganizerIds?: string[];
+  boardState?: BoardTemplateState | null;
 }) {
   const boardsUrl = getBoardsUrl();
+  const expectedTemplate = competition.isChampionship
+    ? "championship"
+    : "competition";
+  const showBoardControls =
+    !competition.boardId || boardState?.templateKey !== expectedTemplate;
   const location = [
     competition.city,
     competition.state?.name,
@@ -103,6 +113,7 @@ export function CompetitionDetailView({
               ` – ${formatDate(competition.endDate)}`}
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
+            {competition.isChampionship && <Badge>Campeonato</Badge>}
             <Badge
               className={cn(
                 "border-transparent",
@@ -283,7 +294,14 @@ export function CompetitionDetailView({
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          {competition.boardId && (
+          {showBoardControls ? (
+            <BoardAssignControls
+              competitionId={competition.id}
+              boardId={competition.boardId}
+              isChampionship={competition.isChampionship}
+              boardState={boardState}
+            />
+          ) : (
             <Button asChild variant="outline" size="sm">
               <a
                 href={`${boardsUrl}/boards/${competition.boardId}`}
@@ -294,12 +312,6 @@ export function CompetitionDetailView({
                 Tablero AMS
               </a>
             </Button>
-          )}
-          {!competition.boardId && (
-            <BoardAssignControls
-              competitionId={competition.id}
-              boardId={competition.boardId}
-            />
           )}
           {!competition.boardId && competition.trelloUrl && (
             <Button asChild variant="outline" size="sm">

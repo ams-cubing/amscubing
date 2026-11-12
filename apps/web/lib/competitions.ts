@@ -19,6 +19,7 @@ export type PublicCompetition = {
   wcaCompetitionUrl: string | null;
   image: string;
   label: string;
+  isChampionship: boolean;
 };
 
 export type CompetitionSpotlight = {
@@ -29,6 +30,7 @@ export type CompetitionSpotlight = {
   startDate: string;
   status: "En curso" | "Próximo";
   url: string;
+  isChampionship: boolean;
 };
 
 type WcaCompetition = {
@@ -119,6 +121,7 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
         endDate: true,
         capacity: true,
         wcaCompetitionUrl: true,
+        isChampionship: true,
       },
       with: {
         state: {
@@ -187,6 +190,7 @@ export async function getPublicCompetitions(): Promise<PublicCompetition[]> {
             wca?.spots_left,
             wca?.["registration_full?"],
           ),
+          isChampionship: row.isChampionship,
         };
       }),
     );
@@ -206,6 +210,7 @@ function formatCompetitionSpotlight(
     state: competition.state,
     startDate: competition.startDate,
     status,
+    isChampionship: competition.isChampionship,
     url:
       status === "En curso"
         ? `https://live.worldcubeassociation.org/link/competitions/${getWcaCompetitionId(

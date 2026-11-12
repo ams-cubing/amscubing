@@ -27,15 +27,15 @@ async function PageContent({
   const resolvedSearchParams = await searchParams;
   const regionFilter = resolvedSearchParams?.region;
 
+  const session = await auth.api.getSession({ headers: await headers() });
+  const viewerIsDelegate = session?.user.role === "delegate";
+
   const [comps, avail, holidays, reg] = await Promise.all([
-    getCompetitionsForRegion(regionFilter),
+    getCompetitionsForRegion(regionFilter, viewerIsDelegate),
     getAvailabilityDates(regionFilter),
     getHolidays(),
     getRegions(),
   ]);
-
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
 
   return (
     <PublicPageShell
