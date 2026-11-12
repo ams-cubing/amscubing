@@ -33,6 +33,18 @@ export function calculateCourseScore(
   };
 }
 
+/** A finished course counts every reading as done, but an exam only once it has progress. */
+export function completedLessonIds(
+  lessons: { id: number; quiz: unknown[] }[],
+  progress: { lessonId: number }[],
+  courseCompleted: boolean,
+) {
+  const saved = new Set(progress.map((p) => p.lessonId));
+  return lessons
+    .filter((l) => saved.has(l.id) || (courseCompleted && !l.quiz.length))
+    .map((l) => l.id);
+}
+
 export function formatCourseScore(result: CourseScore) {
   return result.scoreStatus === "scored" && result.score !== null
     ? `${result.score}/100`

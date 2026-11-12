@@ -20,6 +20,7 @@ import {
   competitionDelegates,
   competitionOrganizers,
   competitions,
+  competitionStaffMembers,
   logs,
 } from "./competitions";
 import { dateRequests } from "./date-requests";
@@ -120,6 +121,7 @@ export const competitionsRelations = relations(
     }),
     delegates: many(competitionDelegates),
     organizers: many(competitionOrganizers),
+    staffMembers: many(competitionStaffMembers),
     dateRequests: many(dateRequests),
     board: one(boards, {
       fields: [competitions.boardId],
@@ -291,6 +293,20 @@ export const competitionOrganizersRelations = relations(
     }),
     organizer: one(user, {
       fields: [competitionOrganizers.organizerUserId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const competitionStaffMembersRelations = relations(
+  competitionStaffMembers,
+  ({ one }) => ({
+    competition: one(competitions, {
+      fields: [competitionStaffMembers.competitionId],
+      references: [competitions.id],
+    }),
+    createdBy: one(user, {
+      fields: [competitionStaffMembers.createdByUserId],
       references: [user.id],
     }),
   }),

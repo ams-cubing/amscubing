@@ -5,7 +5,7 @@ import { cleanHtml } from "@/lib/content";
 import { Curriculum } from "@/components/curriculum";
 import { Submit } from "@/components/submit";
 import { enroll } from "@/app/actions";
-import { formatCourseScore } from "@/lib/course-score";
+import { completedLessonIds, formatCourseScore } from "@/lib/course-score";
 import { ActionForm } from "@workspace/ui/components/action-form";
 import { AmsSignInLink } from "@workspace/ui/components/ams-sign-in-link";
 import { Button } from "@workspace/ui/components/button";
@@ -30,9 +30,11 @@ export default async function CoursePage({
   const viewer = await getLearner();
   const course = await getCourse(slug, viewer?.canManage);
   const p = viewer ? await getProgress(course.id, viewer.id) : null;
-  const done = p?.enrollment?.completedAt
-    ? course.lessons.map((l) => l.id)
-    : (p?.progress.map((p) => p.lessonId) ?? []);
+  const done = completedLessonIds(
+    course.lessons,
+    p?.progress ?? [],
+    !!p?.enrollment?.completedAt,
+  );
   const next =
     course.lessons.find((l) => !done.includes(l.id)) ?? course.lessons[0];
   return (

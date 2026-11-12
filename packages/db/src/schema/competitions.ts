@@ -1,7 +1,8 @@
-import { InferSelectModel } from "drizzle-orm";
+import { InferSelectModel, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -14,6 +15,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import type { StaffActivity } from "../staff-labels";
 import { user } from "./auth";
 import { boards } from "./boards";
 import { states } from "./geo";
@@ -131,6 +133,48 @@ export const competitionOrganizers = pgTable("competition_organizer", {
     .references(() => user.id, { onDelete: "cascade" }),
   isPrimary: boolean("is_primary").default(false).notNull(),
 });
+
+/** Volunteers organizers plan for a competition; not necessarily AMS users. */
+export const competitionStaffMembers = pgTable(
+  "competition_staff_member",
+  {
+    id: serial("id").primaryKey(),
+    competitionId: integer("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    wcaId: text("wca_id"),
+    email: text("email"),
+    activities: text("activities")
+      .array()
+      .$type<StaffActivity[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("competition_staff_member_wca_id_unique").on(
+      table.competitionId,
+      table.wcaId,
+    ),
+    unique("competition_staff_member_email_unique").on(
+      table.competitionId,
+      table.email,
+    ),
+    check(
+      "competition_staff_member_activities_check",
+      sql`${table.activities} <@ array['judge', 'scrambler', 'runner', 'registration', 'data_entry']::text[]`,
+    ),
+  ],
+);
+
+export type CompetitionStaffMember = InferSelectModel<
+  typeof competitionStaffMembers
+>;
 
 /** Organizers a delegate allowed to run several unannounced competitions at once. */
 export const multiCompetitionOrganizers = pgTable(

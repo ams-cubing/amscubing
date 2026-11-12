@@ -358,6 +358,13 @@
       "when": 1794455488731,
       "tag": "0050_competition_is_championship",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794498053233,
+      "tag": "0051_competition_staff_member",
+      "breakpoints": true
     }
   ]
 }
