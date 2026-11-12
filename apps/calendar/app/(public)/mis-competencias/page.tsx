@@ -6,6 +6,7 @@ import {
   getInternalStatusColor,
   formatInternalStatus,
 } from "@/lib/utils";
+import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
 import type { Route } from "next";
 import { headers } from "next/headers";
@@ -278,8 +279,9 @@ async function PageContent({ searchParams }: { searchParams: SearchParams }) {
                     className="rounded-3xl border border-black/10 p-5 md:p-6 space-y-3"
                   >
                     <div>
-                      <h3 className="ams-heading font-bold text-base text-ams-navy md:text-lg">
+                      <h3 className="ams-heading flex flex-wrap items-center gap-2 font-bold text-base text-ams-navy md:text-lg">
                         {comp.name || "Competencia sin nombre"}
+                        {comp.isChampionship && <Badge>Campeonato</Badge>}
                       </h3>
                       <p className="text-xs md:text-sm text-muted-foreground mt-1">
                         {comp.city}, {comp.stateName} ({comp.regionName})

@@ -11,6 +11,7 @@ import {
   statusVariant,
 } from "@/lib/competition-format";
 import { getCalendarUrl } from "@/lib/urls";
+import { ChampionshipRibbon } from "@/components/championship-ribbon";
 
 export function UpcomingCompetitions({
   competitions,
@@ -78,6 +79,7 @@ export function UpcomingCompetitions({
                     >
                       {competition.label}
                     </Badge>
+                    {competition.isChampionship && <ChampionshipRibbon />}
                   </div>
 
                   <div className="p-5.5">

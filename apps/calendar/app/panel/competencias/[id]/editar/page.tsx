@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { getBoardTemplateState } from "@workspace/db/clone-board";
+
 import { CompetitionForm } from "../../_components/competition-form";
 import { DeleteCompetitionDialog } from "../../_components/delete-competition";
 import { getAllDelegates, getCompetitionWithRelations } from "../_lib/queries";
@@ -23,6 +25,10 @@ async function PageContent({
   if (!competition) {
     notFound();
   }
+
+  const boardState = competition.boardId
+    ? await getBoardTemplateState(competition.boardId)
+    : null;
 
   const formattedCompetition = {
     ...competition,
@@ -58,6 +64,7 @@ async function PageContent({
         <CompetitionForm
           delegates={delegates}
           competition={formattedCompetition}
+          boardState={boardState}
         />
         <DeleteCompetitionDialog competitionId={competition.id} />
       </div>

@@ -18,6 +18,7 @@ import {
   statusClassName,
 } from "@/lib/competition-format";
 import { getCalendarUrl } from "@/lib/urls";
+import { ChampionshipRibbon } from "@/components/championship-ribbon";
 
 export const metadata: Metadata = {
   title: "Competencias | Asociación Mexicana de Speedcubing",
@@ -163,6 +164,7 @@ export default async function CompetitionsPage({
                     >
                       {competition.label}
                     </span>
+                    {competition.isChampionship && <ChampionshipRibbon />}
                   </div>
                   <div className="p-6">
                     <p className="ams-heading text-xs font-bold uppercase tracking-[0.04em] text-ams-red">

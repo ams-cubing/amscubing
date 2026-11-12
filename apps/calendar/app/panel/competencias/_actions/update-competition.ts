@@ -236,6 +236,7 @@ export async function updateCompetition(
           validatedData.wcaCompetitionUrl ||
           null,
         capacity: validatedData.capacity ?? 50,
+        isChampionship: validatedData.isChampionship,
         startDate: startDateStr!,
         endDate: endDateStr!,
         statusPublic: resolvedStatuses.statusPublic,

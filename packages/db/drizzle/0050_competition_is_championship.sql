@@ -1,0 +1,1 @@
+ALTER TABLE "competition" ADD COLUMN "is_championship" boolean DEFAULT false NOT NULL;

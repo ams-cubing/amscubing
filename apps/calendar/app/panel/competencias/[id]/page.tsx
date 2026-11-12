@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { getBoardTemplateState } from "@workspace/db/clone-board";
 import { SearchParamToast } from "@workspace/ui/components/search-param-toast";
 
 import { getReassignmentOptions } from "@/lib/reassignment-candidates";
@@ -30,14 +31,21 @@ async function PageContent({
     notFound();
   }
 
-  const [competitionLogs, authResult, multiCompetitionOrganizerIds] =
-    await Promise.all([
-      getCompetitionLogs(competition.id),
-      requireDelegate(),
-      getMultiCompetitionOrganizerIds(
-        competition.organizers.map((row) => row.organizerUserId),
-      ),
-    ]);
+  const [
+    competitionLogs,
+    authResult,
+    multiCompetitionOrganizerIds,
+    boardState,
+  ] = await Promise.all([
+    getCompetitionLogs(competition.id),
+    requireDelegate(),
+    getMultiCompetitionOrganizerIds(
+      competition.organizers.map((row) => row.organizerUserId),
+    ),
+    competition.boardId
+      ? getBoardTemplateState(competition.boardId)
+      : Promise.resolve(null),
+  ]);
 
   const currentUserWcaId = authResult.ok ? authResult.session.user.wcaId : null;
   const pendingForCurrentUser = competition.delegates.some(
@@ -69,6 +77,7 @@ async function PageContent({
           currentUserWcaId={currentUserWcaId}
           reassignmentCandidates={reassignmentCandidates}
           multiCompetitionOrganizerIds={multiCompetitionOrganizerIds}
+          boardState={boardState}
         />
 
         <CompetitionEquipmentSection competitionId={competition.id} />

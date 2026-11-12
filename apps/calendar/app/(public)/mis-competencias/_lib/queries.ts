@@ -80,6 +80,7 @@ export async function getUserCompetitions(
     .select({
       id: competitions.id,
       name: competitions.name,
+      isChampionship: competitions.isChampionship,
       city: competitions.city,
       startDate: competitions.startDate,
       endDate: competitions.endDate,

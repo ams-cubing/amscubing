@@ -28,6 +28,7 @@ function competition(
     wcaCompetitionUrl: "https://www.worldcubeassociation.org/competitions/Test",
     image: "/source/photos/ponny-3.jpg",
     label: "Próximamente",
+    isChampionship: false,
     ...overrides,
   };
 }

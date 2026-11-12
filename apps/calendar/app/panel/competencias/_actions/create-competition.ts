@@ -107,6 +107,7 @@ export async function createCompetition(
             validatedData.wcaCompetitionUrl ||
             null,
           capacity: validatedData.capacity ?? 50,
+          isChampionship: validatedData.isChampionship,
           startDate: startDateStr!,
           endDate: endDateStr!,
           statusPublic: initialStatuses.statusPublic,
@@ -257,7 +258,7 @@ export async function createCompetition(
     if (validatedData.assignBoard && newCompetitionId) {
       const assignResult = await assignBoardToCompetitionById(
         newCompetitionId,
-        validatedData.boardTemplate,
+        validatedData.isChampionship ? "championship" : "competition",
       );
       if (assignResult.error) {
         message = `Competencia creada, pero no se pudo asignar el tablero: ${assignResult.error}`;

@@ -14,11 +14,6 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
-import { NativeSelect } from "@workspace/ui/components/native-select";
-import {
-  BOARD_TEMPLATE_KEYS,
-  BOARD_TEMPLATE_LABELS,
-} from "@workspace/db/data/board-templates";
 import { addWeeks } from "date-fns";
 import { createCompetition } from "../_actions/create-competition";
 import { updateCompetition } from "../_actions/update-competition";
@@ -26,7 +21,10 @@ import { toast } from "sonner";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { useRouter } from "next/navigation";
 import { type OrganizerOption } from "./organizer-combobox";
-import { BoardAssignControls } from "./board-assign-controls";
+import {
+  BoardAssignControls,
+  type BoardTemplateState,
+} from "./board-assign-controls";
 import { Textarea } from "@workspace/ui/components/textarea";
 import {
   competitionSchema,
@@ -47,9 +45,11 @@ import {
 export function CompetitionForm({
   delegates,
   competition,
+  boardState = null,
 }: {
   delegates: DelegateOption[];
   competition?: FullCompetition;
+  boardState?: BoardTemplateState | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [selectedOrganizers, setSelectedOrganizers] = useState<
@@ -84,6 +84,7 @@ export function CompetitionForm({
           statusPublic: competition.statusPublic,
           statusInternal: competition.statusInternal,
           notes: competition.notes || "",
+          isChampionship: competition.isChampionship,
           delegateWcaIds: competition.delegates.map((d) => d.delegateWcaId),
           primaryDelegateWcaId:
             competition.delegates.find((d) => d.isPrimary)?.delegateWcaId || "",
@@ -111,12 +112,16 @@ export function CompetitionForm({
           organizerUserIds: [],
           primaryOrganizerUserId: "",
           assignBoard: true,
-          boardTemplate: "competition",
+          isChampionship: false,
         },
   });
   const shouldAssignBoard = useWatch({
     control: form.control,
     name: "assignBoard",
+  });
+  const isChampionship = useWatch({
+    control: form.control,
+    name: "isChampionship",
   });
 
   const handleAddOrganizer = (organizer: OrganizerOption) => {
@@ -144,11 +149,11 @@ export function CompetitionForm({
   async function onSubmit(data: CompetitionFormValues) {
     startTransition(async () => {
       try {
-        const { assignBoard, boardTemplate, capacity, ...fields } = data;
+        const { assignBoard, capacity, ...fields } = data;
         const rest = { ...fields, capacity: capacity ?? undefined };
         const result = isEditing
           ? await updateCompetition(competition.id, rest)
-          : await createCompetition({ ...rest, assignBoard, boardTemplate });
+          : await createCompetition({ ...rest, assignBoard });
 
         if (result.success) {
           if (
@@ -190,10 +195,37 @@ export function CompetitionForm({
           minDate={minDate}
         />
 
+        <FormField
+          control={form.control}
+          name="isChampionship"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-lg border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value ?? false}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked === true)
+                  }
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Campeonato</FormLabel>
+                <FormDescription>
+                  Campeonato nacional o regional: usa la plantilla de campeonato
+                  para el tablero y se destaca en el calendario público y en la
+                  web.
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
         {isEditing && competition && (
           <BoardAssignControls
             competitionId={competition.id}
             boardId={competition.boardId}
+            isChampionship={isChampionship ?? false}
+            boardState={boardState}
           />
         )}
 
@@ -205,7 +237,9 @@ export function CompetitionForm({
               <div className="space-y-2 rounded-lg border p-4">
                 <div className="text-sm font-medium">Tablero AMS</div>
                 <p className="text-sm text-muted-foreground">
-                  Se clonará la plantilla AMS elegida para los organizadores.
+                  Se clonará la plantilla AMS de{" "}
+                  {isChampionship ? "campeonato" : "competencia"} para los
+                  organizadores.
                 </p>
                 <FormItem className="flex flex-row items-start gap-3 space-y-0">
                   <FormControl>
@@ -218,29 +252,6 @@ export function CompetitionForm({
                     <FormLabel>Crear tablero AMS automáticamente</FormLabel>
                   </div>
                 </FormItem>
-                {shouldAssignBoard && (
-                  <FormField
-                    control={form.control}
-                    name="boardTemplate"
-                    render={({ field: templateField }) => (
-                      <FormItem>
-                        <FormLabel>Plantilla</FormLabel>
-                        <FormControl>
-                          <NativeSelect
-                            {...templateField}
-                            value={templateField.value ?? "competition"}
-                          >
-                            {BOARD_TEMPLATE_KEYS.map((key) => (
-                              <option key={key} value={key}>
-                                {BOARD_TEMPLATE_LABELS[key]}
-                              </option>
-                            ))}
-                          </NativeSelect>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
             )}
           />
