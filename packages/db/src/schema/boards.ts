@@ -11,6 +11,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import type { BoardTemplateKey } from "../data/board-templates";
 import { user } from "./auth";
 import { competitions } from "./competitions";
 
@@ -18,6 +19,8 @@ export const boards = pgTable("board", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   isTemplate: boolean("is_template").default(false).notNull(),
+  /** AMS template the board is (or was cloned from); null for custom boards. */
+  templateKey: text("template_key").$type<BoardTemplateKey>(),
   competitionId: integer("competition_id")
     .unique()
     .references((): AnyPgColumn => competitions.id, { onDelete: "cascade" }),

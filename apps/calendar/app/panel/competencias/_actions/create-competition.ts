@@ -255,7 +255,10 @@ export async function createCompetition(
     let message = "Competencia creada exitosamente";
 
     if (validatedData.assignBoard && newCompetitionId) {
-      const assignResult = await assignBoardToCompetitionById(newCompetitionId);
+      const assignResult = await assignBoardToCompetitionById(
+        newCompetitionId,
+        validatedData.boardTemplate,
+      );
       if (assignResult.error) {
         message = `Competencia creada, pero no se pudo asignar el tablero: ${assignResult.error}`;
       } else {

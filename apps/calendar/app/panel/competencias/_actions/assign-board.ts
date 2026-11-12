@@ -7,6 +7,10 @@ import {
   competitionBoardName,
 } from "@workspace/db/clone-board";
 import { db } from "@workspace/db";
+import {
+  isBoardTemplateKey,
+  type BoardTemplateKey,
+} from "@workspace/db/data/board-templates";
 import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -14,7 +18,10 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 import { log } from "@workspace/server/log";
 
-export async function assignBoardToCompetitionById(competitionId: number) {
+export async function assignBoardToCompetitionById(
+  competitionId: number,
+  templateKey: BoardTemplateKey = "competition",
+) {
   const competition = await db.query.competitions.findFirst({
     where: eq(competitions.id, competitionId),
     columns: {
@@ -38,6 +45,7 @@ export async function assignBoardToCompetitionById(competitionId: number) {
     const board = await cloneBoardFromTemplate({
       competitionId: competition.id,
       boardName: competitionBoardName(competition),
+      templateKey,
     });
 
     updateTag("competitions");
@@ -57,11 +65,17 @@ export async function assignBoardToCompetitionById(competitionId: number) {
   }
 }
 
-export async function assignBoardToCompetition(competitionId: number) {
+export async function assignBoardToCompetition(
+  competitionId: number,
+  templateKey: BoardTemplateKey,
+) {
   const authResult = await requireDelegate();
   if (!authResult.ok) {
     return { error: authResult.message };
   }
+  if (!isBoardTemplateKey(templateKey)) {
+    return { error: "Plantilla no válida" };
+  }
 
-  return assignBoardToCompetitionById(competitionId);
+  return assignBoardToCompetitionById(competitionId, templateKey);
 }

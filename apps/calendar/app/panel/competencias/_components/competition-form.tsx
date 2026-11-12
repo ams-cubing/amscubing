@@ -14,6 +14,11 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
+import { NativeSelect } from "@workspace/ui/components/native-select";
+import {
+  BOARD_TEMPLATE_KEYS,
+  BOARD_TEMPLATE_LABELS,
+} from "@workspace/db/data/board-templates";
 import { addWeeks } from "date-fns";
 import { createCompetition } from "../_actions/create-competition";
 import { updateCompetition } from "../_actions/update-competition";
@@ -106,6 +111,7 @@ export function CompetitionForm({
           organizerUserIds: [],
           primaryOrganizerUserId: "",
           assignBoard: true,
+          boardTemplate: "competition",
         },
   });
   const shouldAssignBoard = useWatch({
@@ -138,11 +144,11 @@ export function CompetitionForm({
   async function onSubmit(data: CompetitionFormValues) {
     startTransition(async () => {
       try {
-        const { assignBoard, capacity, ...fields } = data;
+        const { assignBoard, boardTemplate, capacity, ...fields } = data;
         const rest = { ...fields, capacity: capacity ?? undefined };
         const result = isEditing
           ? await updateCompetition(competition.id, rest)
-          : await createCompetition({ ...rest, assignBoard });
+          : await createCompetition({ ...rest, assignBoard, boardTemplate });
 
         if (result.success) {
           if (
@@ -199,7 +205,7 @@ export function CompetitionForm({
               <div className="space-y-2 rounded-lg border p-4">
                 <div className="text-sm font-medium">Tablero AMS</div>
                 <p className="text-sm text-muted-foreground">
-                  Se clonará la plantilla AMS estándar para los organizadores.
+                  Se clonará la plantilla AMS elegida para los organizadores.
                 </p>
                 <FormItem className="flex flex-row items-start gap-3 space-y-0">
                   <FormControl>
@@ -212,6 +218,29 @@ export function CompetitionForm({
                     <FormLabel>Crear tablero AMS automáticamente</FormLabel>
                   </div>
                 </FormItem>
+                {shouldAssignBoard && (
+                  <FormField
+                    control={form.control}
+                    name="boardTemplate"
+                    render={({ field: templateField }) => (
+                      <FormItem>
+                        <FormLabel>Plantilla</FormLabel>
+                        <FormControl>
+                          <NativeSelect
+                            {...templateField}
+                            value={templateField.value ?? "competition"}
+                          >
+                            {BOARD_TEMPLATE_KEYS.map((key) => (
+                              <option key={key} value={key}>
+                                {BOARD_TEMPLATE_LABELS[key]}
+                              </option>
+                            ))}
+                          </NativeSelect>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
             )}
           />

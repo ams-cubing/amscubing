@@ -19,6 +19,7 @@
     "./data/mexico": "./src/data/mexico.ts",
     "./data/delegates": "./src/data/delegates.ts",
     "./data/ams-board-template": "./src/data/ams-board-template.ts",
+    "./data/board-templates": "./src/data/board-templates.ts",
     "./seed-board-template": "./src/seed-board-template.ts",
     "./clone-board": "./src/clone-board.ts",
     "./delegates-board": "./src/delegates-board.ts"
