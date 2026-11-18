@@ -53,9 +53,19 @@ export const CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE =
 export const CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE =
   "Preparación y capacitación de staff";
 
+/** Old long titles left on the prod template after sync; seed deletes them. */
+export const CHAMPIONSHIP_RETIRED_CARD_TITLES = [
+  "Establecer las bases técnicas del campeonato",
+  "Definir y asegurar la sede ideal para el campeonato",
+  "Elaborar un plano funcional de la sede",
+  "Estimar y planear necesidades financieras clave",
+  "Buscar alianzas que aporten recursos o visibilidad",
+  "Asegurar un manejo claro de los fondos del evento",
+] as const;
+
 export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
-    title: "Establecer las bases técnicas del campeonato",
+    title: "Categorías y Horario",
     list: "Por Hacer",
     labels: ["pre_announce", "scoring"],
     description:
@@ -72,7 +82,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Definir y asegurar la sede ideal para el campeonato",
+    title: "Permiso de sede",
     list: "Por Hacer",
     labels: ["pre_announce", "logistics"],
     description:
@@ -98,14 +108,14 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Elaborar un plano funcional de la sede",
+    title: "Mapeo de sede",
     list: "Por Hacer",
     labels: ["pre_announce", "logistics"],
     description:
       "**Objetivo:** Tener un mapeo de la sede con la disposición de todas las áreas.\n\nConsidera:\n\n- Zonas de competencia (principal y silenciosa)\n- Zona de entrega de cubos\n- Zona de mezcla (aislada visualmente)\n- Zona de espera de competidores\n- Zona de espectadores\n- Zona de registro\n- Zona de captura\n- Zona de staff\n- Zona de streaming\n- Zona de patrocinadores y convivencia\n\nSube el mapeo final en JPG o PNG (además del archivo editable) para que todos puedan consultarlo.",
   },
   {
-    title: "Estimar y planear necesidades financieras clave",
+    title: "Excel de costos y viabilidad",
     list: "Por Hacer",
     labels: ["pre_announce", "finance"],
     description:
@@ -119,7 +129,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "**Objetivo:** Decidir qué categorías tendrán un costo de inscripción adicional.\n\nSi es necesario, levanta una encuesta con la comunidad y comparte aquí los resultados y la decisión final.",
   },
   {
-    title: "Buscar alianzas que aporten recursos o visibilidad",
+    title: "Contactar patrocinadores",
     list: "Por Hacer",
     labels: ["pre_announce", "finance", "communication"],
     description:
@@ -191,7 +201,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     labels: ["pre_announce", "communication", "scoring"],
     description: WCA_WEBSITE_CARD.description?.replace(
       "la tarjeta de Horario y Categorías",
-      "la tarjeta de bases técnicas del campeonato",
+      "la tarjeta de Categorías y Horario",
     ),
   },
   {
@@ -307,7 +317,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Asegurar un manejo claro de los fondos del evento",
+    title: "Manejo de fondos del evento",
     list: "Por Hacer",
     labels: ["post_announce", "finance"],
     description:
@@ -389,5 +399,5 @@ export const CHAMPIONSHIP_BOARD_TEMPLATE: BoardTemplateDefinition = {
   labels: CHAMPIONSHIP_LABELS,
   lists: TEMPLATE_LISTS,
   cards: CHAMPIONSHIP_TEMPLATE_CARDS,
-  retiredCardTitles: [],
+  retiredCardTitles: CHAMPIONSHIP_RETIRED_CARD_TITLES,
 };
