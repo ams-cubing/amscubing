@@ -121,8 +121,8 @@ try {
     .insert(courseEnrollments)
     .values({ courseId: courseId!, userId: userId! });
   const linking = await request(
-    "/oauth2/link",
-    { providerId: "wca", callbackURL: `${base}/cuenta` },
+    "/link-social",
+    { provider: "wca", callbackURL: `${base}/cuenta` },
     cookie,
   );
   assert.equal(linking.status, 200);
@@ -144,8 +144,8 @@ try {
     .from(account)
     .where(and(eq(account.userId, userId!), eq(account.providerId, "wca")));
   assert.equal(linked?.accountId, numeric);
-  const signin = await request("/sign-in/oauth2", {
-    providerId: "wca",
+  const signin = await request("/sign-in/social", {
+    provider: "wca",
     callbackURL: `${base}/cuenta`,
   });
   assert.equal(signin.status, 200);

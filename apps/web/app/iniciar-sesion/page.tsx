@@ -32,6 +32,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_token:
     "El enlace ya no es válido. Solicita uno nuevo desde tu perfil.",
   token_expired: "El enlace expiró. Solicita uno nuevo desde tu perfil.",
+  invalid_code:
+    "No se pudo validar el acceso con WCA. Vuelve a intentarlo desde esta página.",
+  oauth_code_verification_failed:
+    "No se pudo validar el acceso con WCA. Vuelve a intentarlo desde esta página.",
 };
 
 const GENERIC_ERROR =

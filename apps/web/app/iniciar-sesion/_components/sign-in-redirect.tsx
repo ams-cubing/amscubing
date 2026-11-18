@@ -18,8 +18,8 @@ export function SignInRedirect({ callbackURL }: { callbackURL: string }) {
     started.current = true;
 
     void authClient.signIn
-      .oauth2({
-        providerId: "wca",
+      .social({
+        provider: "wca",
         callbackURL,
       })
       .catch(() => {

@@ -120,7 +120,13 @@ export function createAuth() {
           kind: "verify",
         }),
     },
-    account: { accountLinking: { enabled: true, allowDifferentEmails: true } },
+    account: {
+      accountLinking: {
+        enabled: true,
+        allowDifferentEmails: true,
+        trustedProviders: ["wca"],
+      },
+    },
     // Sessions are read from a signed cookie instead of Postgres for up to
     // `maxAge`. Bump `version` to force every cached session to re-read the DB.
     session: {
@@ -214,8 +220,14 @@ export function createAuth() {
             clientId: process.env.WCA_CLIENT_ID || "",
             clientSecret: process.env.WCA_CLIENT_SECRET || "",
             redirectURI: `${authBaseUrl}/api/auth/callback/wca`,
-            discoveryUrl:
-              "https://www.worldcubeassociation.org/.well-known/openid-configuration",
+            // Explicit endpoints: Better Auth 1.7 fetches discovery at startup and
+            // verifies id_tokens; WCA's /api/v0/me flow does not need that path.
+            authorizationUrl:
+              "https://www.worldcubeassociation.org/oauth/authorize",
+            tokenUrl: "https://www.worldcubeassociation.org/oauth/token",
+            userInfoUrl: "https://www.worldcubeassociation.org/api/v0/me",
+            // PKCE defaults to on in 1.7; keep it explicit for WCA Doorkeeper.
+            pkce: true,
             scopes: ["public", "email"],
             getUserInfo: async ({ accessToken }) => {
               const response = await fetch(
@@ -299,15 +311,17 @@ export function createAuth() {
                 delegateLocation: claimed?.delegateLocation ?? null,
               };
             },
-            mapProfileToUser: (profile: Record<string, unknown>) => {
+            // Provider identity comes from getUserInfo().id (WCA account id), not
+            // from this mapper — Better Auth 1.7 forbids remapping `id` here.
+            mapProfileToUser: (profile) => {
               if (!profile.role) {
                 throw new Error("Invalid profile: missing role");
               }
               return {
-                id: profile.id as string,
                 name: profile.name as string,
                 email: profile.email as string,
                 image: profile.image as string | undefined,
+                emailVerified: true,
                 wcaId: (profile.wcaId as string | null | undefined) ?? null,
                 role: profile.role as "delegate" | "user" | "editor",
                 regionId: profile.regionId as string | null,

@@ -17,8 +17,8 @@ catalog:
   eslint: ^9.32.0
   vitest: ^3.2.7
   zod: ^4.1.13
-  drizzle-orm: ^0.44.7
-  better-auth: ^1.4.10
+  drizzle-orm: ^0.45.2
+  better-auth: ~1.7.13
   "@types/node": ^20.19.9
   "@types/react": ^19.2.1
   "@types/react-dom": ^19.2.1
