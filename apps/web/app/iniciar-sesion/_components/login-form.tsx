@@ -79,8 +79,8 @@ export function LoginForm({
     setBusy(true);
     setError("");
     try {
-      const result = await authClient.signIn.oauth2({
-        providerId: "wca",
+      const result = await authClient.signIn.social({
+        provider: "wca",
         callbackURL,
         errorCallbackURL: errorCallbackURL(),
       });

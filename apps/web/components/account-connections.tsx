@@ -42,8 +42,8 @@ export function AccountConnections({
     setBusy(true);
     setMessage("");
     try {
-      const result = await authClient.oauth2.link({
-        providerId: "wca",
+      const result = await authClient.linkSocial({
+        provider: "wca",
         callbackURL: `${window.location.origin}/cuenta`,
         errorCallbackURL: `${window.location.origin}/iniciar-sesion?returnTo=${encodeURIComponent("/cuenta")}`,
       });

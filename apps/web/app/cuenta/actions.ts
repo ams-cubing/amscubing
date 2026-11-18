@@ -78,22 +78,26 @@ export async function unlinkWca(): Promise<ProfileResult> {
       message: "Verifica tu correo antes de desvincular WCA.",
     };
   const { account } = await import("@workspace/db/schema");
-  const { and } = await import("drizzle-orm");
-  const [credential] = await db
-    .select({ id: account.id })
+  const accounts = await db
+    .select({ id: account.id, providerId: account.providerId })
     .from(account)
-    .where(
-      and(eq(account.userId, member.id), eq(account.providerId, "credential")),
-    );
+    .where(eq(account.userId, member.id));
+  const credential = accounts.find((row) => row.providerId === "credential");
+  const wcaAccount = accounts.find((row) => row.providerId === "wca");
   if (!credential)
     return {
       ok: false,
       message: "Necesitas una contraseña AMS para conservar el acceso.",
     };
+  if (!wcaAccount)
+    return {
+      ok: false,
+      message: "No hay una cuenta WCA vinculada.",
+    };
   try {
     await auth.api.unlinkAccount({
       headers: await headers(),
-      body: { providerId: "wca" },
+      body: { accountId: wcaAccount.id },
     });
     revalidatePath("/cuenta");
     return {
