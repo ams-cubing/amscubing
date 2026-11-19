@@ -20,6 +20,8 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 
+import { getCalendarUrl } from "@/lib/urls";
+
 import {
   loadBudgetCard,
   proposeBudgetSpendFromCard,
@@ -64,11 +66,13 @@ export function CardBudgetSection({
   cardId,
   mode,
   readOnly,
+  isDelegate = false,
 }: {
   board: BoardDetail;
   cardId: number;
   mode: Exclude<BudgetCardMode, "sponsors">;
   readOnly?: boolean;
+  isDelegate?: boolean;
 }) {
   const [data, setData] = React.useState<BudgetCardData | null>();
   const [fee, setFee] = React.useState("");
@@ -295,6 +299,17 @@ export function CardBudgetSection({
     });
   }
 
+  const awaitingStageReview =
+    data.budget.status === "plan_submitted" ||
+    data.budget.status === "mid_submitted" ||
+    data.budget.status === "final_submitted";
+  const awaitingSpendReview = data.lines.some(
+    (line) => line.spendStatus === "proposed",
+  );
+  const costsReviewHref = board.competition
+    ? `${getCalendarUrl()}/panel/competencias/${board.competition.id}/costos`
+    : null;
+
   return (
     <section className="space-y-4 border-t pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -304,14 +319,22 @@ export function CardBudgetSection({
         </Badge>
       </div>
 
-      {data.budget.status === "plan_submitted" ||
-      data.budget.status === "mid_submitted" ||
-      data.budget.status === "final_submitted" ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          Enviado al delegado. Si también eres delegado de esta competencia,
-          revísalo en el panel → Competencias → Costos (no te llega
-          notificación a ti mismo).
-        </p>
+      {awaitingStageReview || awaitingSpendReview ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <p>
+            {awaitingStageReview
+              ? "Enviado al delegado."
+              : "Hay gastos esperando aprobación del delegado."}
+          </p>
+          {isDelegate && costsReviewHref ? (
+            <Button asChild size="sm" variant="outline">
+              <a href={costsReviewHref} target="_blank" rel="noreferrer">
+                Revisar costos
+                <ExternalLink className="size-3.5" />
+              </a>
+            </Button>
+          ) : null}
+        </div>
       ) : null}
 
       {data.budget.reviewNote ? (

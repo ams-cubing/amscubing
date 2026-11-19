@@ -610,6 +610,7 @@ export function CardDialog({
                 board={board}
                 cardId={card.id}
                 readOnly={readOnly}
+                isDelegate={canApproveCards}
               />
             ) : null}
 
@@ -652,6 +653,7 @@ export function CardDialog({
                 cardId={card.id}
                 mode={budgetMode}
                 readOnly={readOnly}
+                isDelegate={canApproveCards}
               />
             ) : null}
 
