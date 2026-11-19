@@ -3,13 +3,17 @@
 import * as React from "react";
 import { toast } from "sonner";
 
-import { estimateRoundPlan } from "@workspace/db/competition-format-rules";
+import {
+  estimateRoundPlan,
+  GROUP_COMPETITORS_PER_STATION,
+} from "@workspace/db/competition-format-rules";
 import {
   CATEGORIES_CARD_TITLE,
   COMPETITION_DETAILS_CARD_TITLE,
 } from "@workspace/db/data/ams-board-template";
 import {
   estimateRoundDurationMinutes,
+  getHorarioEventEstimate,
   horarioEstimateCorpusLabel,
 } from "@workspace/db/horario-estimates";
 import { Badge } from "@workspace/ui/components/badge";
@@ -96,10 +100,12 @@ export function CardScheduleSection({
       <div className="space-y-1">
         <h3 className="text-sm font-semibold">Cálculo de rondas</h3>
         <p className="text-muted-foreground text-sm">
-          Grupos = ceil(competidores / estaciones). Rondas siguientes acotadas
-          por WCA 9m; competidores de rondas 2+ usan el techo de avance 9p
-          (máx. 75%). Duración estimada a partir de horarios WCIF recientes
-          ({corpusLabel}; slots programados). Completa el formato en{" "}
+          Grupos ≈ ceil(competidores / ({GROUP_COMPETITORS_PER_STATION} ×
+          estaciones)), empaquetando más de un competidor por estación. Rondas
+          siguientes acotadas por WCA 9m; intermedias usan el techo 9p (máx.
+          75%) y la final suele igualar el número de estaciones. Duración
+          estimada a partir de horarios WCIF recientes ({corpusLabel}; slots
+          programados). Completa el formato en{" "}
           <span className="font-medium">{CATEGORIES_CARD_TITLE}</span>
           {stations == null ? (
             <>
@@ -133,11 +139,15 @@ export function CardScheduleSection({
         <ul className="space-y-3">
           {plan.map((item) => {
             const event = eventsById.get(item.eventId);
+            const packSize = getHorarioEventEstimate(item.eventId, {
+              regionId,
+            })?.estimate.medianCompetitorsPerGroup;
             const rounds = estimateRoundPlan({
               expectedCompetitors: item.expectedCompetitors,
               rounds: item.rounds,
               stationCount: stations,
               eventId: item.eventId,
+              medianCompetitorsPerGroup: packSize,
               estimateDurationMinutes: (args) =>
                 estimateRoundDurationMinutes({ ...args, regionId }),
             });
@@ -170,7 +180,7 @@ export function CardScheduleSection({
                         <th className="py-1 pr-3 font-medium">Ronda</th>
                         <th className="py-1 pr-3 font-medium">
                           Competidores
-                          {item.rounds > 1 ? " (techo 9p)" : ""}
+                          {item.rounds > 1 ? " (9p / final≈est.)" : ""}
                         </th>
                         <th className="py-1 pr-3 font-medium">Grupos</th>
                         <th className="py-1 pr-3 font-medium">Duración est.</th>

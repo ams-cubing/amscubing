@@ -41,6 +41,7 @@
     "db:sync-template": "tsx src/sync-template.ts",
     "analyze:horario": "tsx src/analyze-horario.ts",
     "db:import-equipment": "tsx src/import-equipment.ts",
+    "db:import-mx": "tsx src/import-mx-competitions.ts",
     "db:import-trello": "tsx src/import-trello-board.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",

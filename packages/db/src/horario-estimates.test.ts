@@ -24,15 +24,25 @@ describe("horario estimate lookup", () => {
     expect(missingRegion?.source).toBe("national");
   });
 
-  it("estimates duration from groups using the selected corpus", () => {
+  it("estimates multi-group rounds from group slots", () => {
     const minutes = estimateRoundDurationMinutes({
       eventId: "333",
-      competitors: 80,
+      competitors: 78,
       groups: 5,
       regionId: "occidente",
     });
-    expect(minutes).toBeGreaterThan(0);
+    // 5 × regional medianMinutesPerGroup, rounded up to 5 min
+    expect(minutes).toBeGreaterThanOrEqual(90);
     expect(minutes! % 5).toBe(0);
+  });
+
+  it("floors single-group finals at 30 minutes", () => {
+    const minutes = estimateRoundDurationMinutes({
+      eventId: "333",
+      competitors: 10,
+      groups: 1,
+    });
+    expect(minutes).toBeGreaterThanOrEqual(30);
   });
 
   it("labels the corpus for UI copy", () => {

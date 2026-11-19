@@ -164,7 +164,14 @@ export function flattenWcifRounds(
   return rows;
 }
 
-/** Infer stations as max ceil(competitors/groups) over round 1s. */
+/**
+ * Max first-round competitors-per-group (`ceil(competitors/groups)`).
+ *
+ * This is NOT physical station count: Mexican comps often pack ~1.5–1.6×
+ * stations into a group, so this overestimates stations (e.g. Chiconcuac
+ * had 10 stations but ~16 people/group → 16 here). Prefer leaving
+ * `stationCount` unset on import unless you know the real figure.
+ */
 export function inferStationCount(rows: FlatRoundMetric[]): number | null {
   const firstRounds = rows.filter((row) => row.roundNumber === 1);
   if (firstRounds.length === 0) return null;

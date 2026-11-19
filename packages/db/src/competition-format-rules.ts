@@ -150,9 +150,41 @@ export function maxAdvancingCompetitors(competitors: number): number {
   return Math.floor(n * 0.75);
 }
 
+/**
+ * Typical competitors assigned to one group per station (solving + waiting).
+ * Mexican AMS comps often pack ~1.6× stations into a group rather than 1:1.
+ */
+export const GROUP_COMPETITORS_PER_STATION = 1.6;
+
+/**
+ * How many groups a round needs. Packs denser than 1 competitor/station so
+ * first rounds match real schedules (e.g. 78 @ 10 stations → 5 groups).
+ */
+export function estimateGroupCount(
+  competitors: number,
+  stationCount: number,
+  options?: { medianCompetitorsPerGroup?: number | null },
+): number {
+  const stations = Math.max(1, Math.floor(stationCount));
+  const n = Math.max(0, Math.floor(competitors));
+  if (n === 0) return 0;
+
+  const fromStations = stations * GROUP_COMPETITORS_PER_STATION;
+  const empirical = options?.medianCompetitorsPerGroup;
+  const perGroup = Math.max(
+    stations,
+    fromStations,
+    empirical != null && empirical > 0 ? empirical : 0,
+  );
+  return Math.max(1, Math.ceil(n / perGroup));
+}
+
 export type EstimatedRound = {
   roundNumber: number;
-  /** Round 1 = expected; later rounds = 9p advance ceiling from previous. */
+  /**
+   * Round 1 = expected; intermediate = 9p advance ceiling; final (when
+   * stations are set) ≈ stations (usual AMS final field).
+   */
   competitors: number;
   /** null when stations are unset or zero. */
   groups: number | null;
@@ -169,6 +201,8 @@ export function estimateRoundPlan(input: {
   rounds: number;
   stationCount: number | null;
   eventId?: string;
+  /** Empirical pack size from horario medians; denser → fewer groups. */
+  medianCompetitorsPerGroup?: number | null;
   estimateDurationMinutes?: (args: {
     eventId: string;
     competitors: number;
@@ -186,8 +220,19 @@ export function estimateRoundPlan(input: {
 
   for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
     const remainingAfter = rounds - roundNumber;
+    const isFinal = rounds > 1 && roundNumber === rounds;
+    if (isFinal && stations != null) {
+      // Usual AMS final: about one competitor per station (Ao5 / podium field).
+      competitors = Math.min(stations, competitors);
+    }
+
     const maxSubsequent = maxSubsequentRounds(competitors);
-    const groups = stations == null ? null : Math.ceil(competitors / stations);
+    const groups =
+      stations == null
+        ? null
+        : estimateGroupCount(competitors, stations, {
+            medianCompetitorsPerGroup: input.medianCompetitorsPerGroup,
+          });
     const estimatedMinutes =
       input.eventId && input.estimateDurationMinutes
         ? input.estimateDurationMinutes({
@@ -204,7 +249,14 @@ export function estimateRoundPlan(input: {
       exceedsSubsequentLimit: remainingAfter > maxSubsequent,
       estimatedMinutes,
     });
-    competitors = maxAdvancingCompetitors(competitors);
+
+    const advanced = maxAdvancingCompetitors(competitors);
+    const nextIsFinal = rounds > 1 && roundNumber + 1 === rounds;
+    if (nextIsFinal && stations != null) {
+      competitors = Math.min(stations, advanced);
+    } else {
+      competitors = advanced;
+    }
   }
 
   return result;

@@ -32,24 +32,29 @@ describe("maxRoundsAllowed (9m)", () => {
 });
 
 describe("estimateRoundPlan", () => {
-  it("estimates groups and flags 9m breaches on later rounds", () => {
+  it("packs groups denser than 1:1 stations and sizes finals to stations", () => {
     const plan = estimateRoundPlan({
-      expectedCompetitors: 100,
-      rounds: 4,
+      expectedCompetitors: 78,
+      rounds: 3,
       stationCount: 10,
       eventId: "333",
       estimateDurationMinutes: () => 45,
     });
-    expect(plan).toHaveLength(4);
+    expect(plan).toHaveLength(3);
+    // 78 / (10 × 1.6) → 5 groups (Chiconcuac 2026 actual)
     expect(plan[0]).toMatchObject({
       roundNumber: 1,
-      competitors: 100,
-      groups: 10,
+      competitors: 78,
+      groups: 5,
       exceedsSubsequentLimit: false,
       estimatedMinutes: 45,
     });
-    expect(plan[1]?.competitors).toBe(75);
-    expect(plan[1]?.groups).toBe(8);
+    expect(plan[1]?.competitors).toBe(58); // 9p ceiling from R1
+    expect(plan[2]).toMatchObject({
+      roundNumber: 3,
+      competitors: 10, // final ≈ stations
+      groups: 1,
+    });
   });
 
   it("leaves groups null without stations", () => {

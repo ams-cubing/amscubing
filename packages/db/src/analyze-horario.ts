@@ -350,8 +350,10 @@ async function seedBoardFromWcif(wcif: Wcif) {
     );
   }
 
+  // Keep existing stations when set — WCIF "approxStations" is group size,
+  // not physical stations (see inferStationCount docs).
   await saveCompetitionFormat(db, competition.id, {
-    stationCount,
+    stationCount: competition.stationCount ?? stationCount,
     zoneCount: competition.zoneCount,
     eventsPlan: cappedPlan,
   });

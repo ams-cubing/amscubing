@@ -23,6 +23,10 @@ describe("resolveMexicoStateFromWcaCity", () => {
     expect(resolveMexicoStateFromWcaCity("Tijuana, Baja California, Mexico")).toBe(
       "BCN",
     );
+    expect(resolveMexicoStateFromWcaCity("Tijuana")).toBe("BCN");
+    expect(resolveMexicoStateFromWcaCity("Mexicali")).toBe("BCN");
+    expect(resolveMexicoStateFromWcaCity("Monterrey")).toBe("NLE");
+    expect(resolveMexicoStateFromWcaCity("Ahome, Los Mochis")).toBe("SIN");
   });
 
   it("maps state to AMS region", () => {

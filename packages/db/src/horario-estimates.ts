@@ -69,6 +69,14 @@ export function roundUpScheduleMinutes(minutes: number): number {
   return Math.max(5, Math.ceil(minutes / 5) * 5);
 }
 
+/**
+ * Estimate scheduled slot length for a round.
+ *
+ * Large multi-group rounds track `groups × medianMinutesPerGroup` (matches
+ * first-round soft events better than per-competitor medians inflated by
+ * finals). Small fields use the denser of group- vs competitor-based timing,
+ * with a 30-minute floor for single-group finals.
+ */
 export function estimateRoundDurationMinutes(input: {
   eventId: string;
   competitors: number;
@@ -80,17 +88,32 @@ export function estimateRoundDurationMinutes(input: {
   });
   if (!lookup) return null;
   const { estimate } = lookup;
-  if (input.groups != null && input.groups > 0) {
-    return roundUpScheduleMinutes(
-      input.groups * estimate.medianMinutesPerGroup,
-    );
+  const groups =
+    input.groups != null && input.groups > 0 ? input.groups : null;
+  const competitors =
+    input.competitors > 0 ? Math.floor(input.competitors) : 0;
+
+  const fromGroups =
+    groups != null ? groups * estimate.medianMinutesPerGroup : null;
+  const fromCompetitors =
+    competitors > 0
+      ? competitors * estimate.medianMinutesPerCompetitor
+      : null;
+
+  if (fromGroups == null && fromCompetitors == null) return null;
+
+  // First rounds with several groups: group slots dominate (Chiconcuac 333
+  // R1 was 5×18≈90; per-competitor national medians overshoot).
+  if (fromGroups != null && groups! >= 3) {
+    return roundUpScheduleMinutes(fromGroups);
   }
-  if (input.competitors > 0) {
-    return roundUpScheduleMinutes(
-      input.competitors * estimate.medianMinutesPerCompetitor,
-    );
+
+  let minutes = Math.max(fromGroups ?? 0, fromCompetitors ?? 0);
+  if (groups === 1) {
+    // Single-group finals / tiny fields are usually a fixed ~30 min Ao5 slot.
+    minutes = Math.max(minutes, 30);
   }
-  return null;
+  return roundUpScheduleMinutes(minutes);
 }
 
 /** Label for UI helper text: regional display name or “México”. */
