@@ -10,6 +10,7 @@ import {
   SOCIAL_PUBLISH_CARD,
   STAFF_COURSE_URL,
   TEMPLATE_LISTS,
+  VENUE_PERMISSION_CARD_TITLE,
   WCA_WEBSITE_CARD,
   type TemplateListTitle,
 } from "./ams-board-template";
@@ -82,7 +83,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "**Objetivo:** Elaborar el horario de todos los días del campeonato.\n\n**Pasos:**\n\n1. Completa primero **Categorías**. Esta tarjeta muestra grupos y topes 9m por ronda.\n2. Misma hora de inicio cada día; incluye inauguración, registro, comida, finales y premiación.\n3. Súbelo aquí para aprobación.",
   },
   {
-    title: "Permiso de sede",
+    title: VENUE_PERMISSION_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "logistics"],
     description:

@@ -35,6 +35,8 @@ interface BoardColumnProps extends Omit<
   cardsById: Map<string, BoardCard>;
   board: BoardDetail;
   readOnly?: boolean;
+  /** When true, cards in this column cannot be dragged. */
+  lockCards?: boolean;
   unreadByCard?: Record<number, number>;
   onOpenCard: (cardId: string) => void;
 }
@@ -46,11 +48,13 @@ export function BoardKanbanColumn({
   cardsById,
   board,
   readOnly = false,
+  lockCards = false,
   unreadByCard = {},
   onOpenCard,
   className,
   ...props
 }: BoardColumnProps) {
+  const cardsLocked = readOnly || lockCards;
   return (
     <KanbanColumn
       value={value}
@@ -105,7 +109,7 @@ export function BoardKanbanColumn({
                 }
                 onOpen={() => onOpenCard(id)}
                 dragHandle={
-                  !readOnly ? (
+                  !cardsLocked ? (
                     <KanbanItemHandle asChild>
                       <Button
                         variant="ghost"

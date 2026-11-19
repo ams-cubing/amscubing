@@ -2,11 +2,17 @@ import { eq } from "drizzle-orm";
 
 import { getTransition, type TransitionId } from "./competition-transitions";
 import { db } from "./index";
-import { TEMPLATE_LISTS } from "./data/ams-board-template";
+import {
+  TEMPLATE_LISTS,
+  VENUE_PERMISSION_CARD_TITLE,
+} from "./data/ams-board-template";
 import { boardLists, boards, competitions } from "./schema";
+
+export { VENUE_PERMISSION_CARD_TITLE };
 
 export const APPROVED_LIST_TITLE = TEMPLATE_LISTS[3]; // Aprobado
 export const HECHO_LIST_TITLE = TEMPLATE_LISTS[2]; // Hecho
+export const RESOURCES_LIST_TITLE = TEMPLATE_LISTS[4]; // Recursos
 
 export function normalizeListTitle(title: string) {
   return title.trim().toLowerCase();
@@ -228,32 +234,44 @@ export async function evaluateBoardReadiness(
   const postAnnounceReady = allInApprovedList(postAnnounce);
   const postCelebrateReady = allInApprovedList(postCelebrate);
 
-  if (
-    (statusPublic === "open" || statusPublic === "reserved") &&
-    preAnnounceReady &&
-    preAnnounce.length > 0
-  ) {
-    suggestion = buildSuggestion(
-      "confirm_venue",
-      preAnnounce,
-      "Sede confirmada",
-      "Todas las tarjetas de pre-anuncio están aprobadas. Puedes marcar la sede como confirmada.",
-      "apply_status",
-      true,
-      "confirm_venue",
-    );
-  } else if (
-    statusPublic === "confirmed" &&
-    preAnnounceReady &&
-    preAnnounce.length > 0
-  ) {
+  // Venue confirmation keys off Permiso de sede only (semáforo «Sede confirmada»).
+  const venueCards = cardRows.filter((row) =>
+    isListTitle(row.title, VENUE_PERMISSION_CARD_TITLE),
+  );
+  const venueReady = venueCards.length > 0 && allInApprovedList(venueCards);
+
+  if (statusPublic === "open" || statusPublic === "reserved") {
+    if (venueReady) {
+      suggestion = buildSuggestion(
+        "confirm_venue",
+        venueCards,
+        "Sede confirmada",
+        "La tarjeta Permiso de sede está aprobada. Puedes marcar la sede como confirmada.",
+        "apply_status",
+        true,
+        "confirm_venue",
+      );
+    } else if (venueCards.length > 0) {
+      suggestion = buildSuggestion(
+        "confirm_venue",
+        venueCards,
+        "Permiso de sede pendiente",
+        "Aprueba la tarjeta Permiso de sede para confirmar la sede.",
+        "apply_status",
+        false,
+        "confirm_venue",
+      );
+    }
+  } else if (statusPublic === "confirmed" && preAnnounce.length > 0) {
     suggestion = buildSuggestion(
       "announce_ready",
       preAnnounce,
-      "Lista para anunciar",
-      "Todas las tarjetas de pre-anuncio están aprobadas. La competencia está lista para anunciarse en el calendario.",
+      preAnnounceReady ? "Lista para anunciar" : "Pre-anuncio en progreso",
+      preAnnounceReady
+        ? "Todas las tarjetas de pre-anuncio están aprobadas. La competencia está lista para anunciarse en el calendario."
+        : "Completa y aprueba las tarjetas de pre-anuncio para anunciar la competencia.",
       "announce_ready",
-      true,
+      preAnnounceReady,
     );
   } else if (
     statusPublic === "announced" &&
@@ -286,16 +304,6 @@ export async function evaluateBoardReadiness(
       "apply_status",
       true,
       "celebrate",
-    );
-  } else if (preAnnounce.length > 0 && !preAnnounceReady) {
-    suggestion = buildSuggestion(
-      "confirm_venue",
-      preAnnounce,
-      "Pre-anuncio en progreso",
-      "Completa y aprueba las tarjetas de pre-anuncio para confirmar la sede.",
-      "apply_status",
-      false,
-      "confirm_venue",
     );
   } else if (
     postAnnounce.length > 0 &&

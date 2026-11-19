@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { COMPETITION_BOARD_TEMPLATE } from "./data/ams-board-template";
+import {
+  COMPETITION_BOARD_TEMPLATE,
+  VENUE_PERMISSION_CARD_TITLE,
+} from "./data/ams-board-template";
 import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
 import {
   APPROVED_LIST_TITLE,
   HECHO_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
   cardPhase,
   isListTitle,
   normalizeListTitle,
@@ -18,6 +22,7 @@ describe("list title helpers", () => {
   it("matches template list titles", () => {
     expect(isListTitle("hecho", HECHO_LIST_TITLE)).toBe(true);
     expect(isListTitle("Aprobado", APPROVED_LIST_TITLE)).toBe(true);
+    expect(isListTitle("Recursos", RESOURCES_LIST_TITLE)).toBe(true);
     expect(isListTitle("Por Hacer", HECHO_LIST_TITLE)).toBe(false);
   });
 });
@@ -26,6 +31,24 @@ describe("cardPhase", () => {
   it("counts during-competition cards as post-celebration", () => {
     expect(cardPhase(["#5e4db2"])).toBe("post_celebrate");
     expect(cardPhase(["#5e4db2", "#9f8fef"])).toBe("post_celebrate");
+  });
+});
+
+describe("venue permission card", () => {
+  it("is present in both board templates under a stable title", () => {
+    expect(
+      COMPETITION_BOARD_TEMPLATE.cards.some(
+        (card) => card.title === VENUE_PERMISSION_CARD_TITLE,
+      ),
+    ).toBe(true);
+    expect(
+      CHAMPIONSHIP_BOARD_TEMPLATE.cards.some(
+        (card) => card.title === VENUE_PERMISSION_CARD_TITLE,
+      ),
+    ).toBe(true);
+    expect(isListTitle("permiso de sede", VENUE_PERMISSION_CARD_TITLE)).toBe(
+      true,
+    );
   });
 });
 

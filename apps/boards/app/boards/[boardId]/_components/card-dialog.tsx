@@ -27,6 +27,12 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
+import {
+  APPROVED_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  isListTitle,
+} from "@workspace/db/board-readiness";
+
 import { runBoardAction } from "@/lib/run-board-action";
 
 import {
@@ -91,6 +97,7 @@ export function CardDialog({
   open,
   onOpenChange,
   readOnly = false,
+  canApproveCards = false,
   canManageSocialPublish = false,
 }: {
   board: BoardDetail;
@@ -98,6 +105,7 @@ export function CardDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
+  canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
@@ -152,6 +160,11 @@ export function CardDialog({
   const memberIds = new Set(card.members.map((m) => m.userId));
   const staffMode = staffCardMode(card.title);
   const currentList = board.lists.find((list) => list.id === card.listId);
+  const isResourcesCard = isListTitle(
+    currentList?.title ?? "",
+    RESOURCES_LIST_TITLE,
+  );
+  const canMoveCard = !readOnly && !isResourcesCard;
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
   const displayDescription = description || card.description || "";
@@ -224,10 +237,16 @@ export function CardDialog({
   }
 
   function moveToList(toListId: number) {
-    if (readOnly) return;
+    if (!canMoveCard) return;
     if (toListId === card!.listId) return;
     const targetList = board.lists.find((list) => list.id === toListId);
     if (!targetList) return;
+    if (
+      isListTitle(targetList.title, APPROVED_LIST_TITLE) &&
+      !canApproveCards
+    ) {
+      return;
+    }
     const ordered = [...targetList.cards.map((c) => c.id), card!.id];
     run("No se pudo mover la tarjeta", () =>
       moveCardAction({
@@ -263,7 +282,7 @@ export function CardDialog({
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
-            {readOnly ? (
+            {!canMoveCard ? (
               <Badge
                 variant="secondary"
                 className="max-w-[min(100%,14rem)] min-w-0 truncate"
@@ -288,20 +307,37 @@ export function CardDialog({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {board.lists.map((list) => (
-                    <DropdownMenuItem
-                      key={list.id}
-                      onClick={() => moveToList(list.id)}
-                      disabled={list.id === card.listId || pending}
-                    >
-                      <span
-                        className="block max-w-64 truncate"
-                        title={list.title}
+                  {board.lists.map((list) => {
+                    const isApprovedTarget = isListTitle(
+                      list.title,
+                      APPROVED_LIST_TITLE,
+                    );
+                    const blockedForOrganizer =
+                      isApprovedTarget && !canApproveCards;
+                    return (
+                      <DropdownMenuItem
+                        key={list.id}
+                        onClick={() => moveToList(list.id)}
+                        disabled={
+                          list.id === card.listId ||
+                          pending ||
+                          blockedForOrganizer
+                        }
+                        title={
+                          blockedForOrganizer
+                            ? "Solo un delegado puede mover tarjetas a Aprobado"
+                            : undefined
+                        }
                       >
-                        {list.title}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                        <span
+                          className="block max-w-64 truncate"
+                          title={list.title}
+                        >
+                          {list.title}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

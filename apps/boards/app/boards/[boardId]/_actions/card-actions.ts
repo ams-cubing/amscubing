@@ -4,7 +4,12 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@workspace/db";
-import { HECHO_LIST_TITLE, isListTitle } from "@workspace/db/board-readiness";
+import {
+  APPROVED_LIST_TITLE,
+  HECHO_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  isListTitle,
+} from "@workspace/db/board-readiness";
 import {
   formatNotificationTitle,
   hrefForNotification,
@@ -20,6 +25,7 @@ import {
 } from "@workspace/db/schema";
 
 import {
+  maybeConfirmVenueFromApprovedCard,
   maybeNotifyReadinessSuggestion,
   notifyHechoReview,
 } from "@/lib/board-notifications";
@@ -54,9 +60,24 @@ export async function moveCardAction(input: {
 
   const fromListTitle = card.list?.title ?? "";
   const toListTitle = list.title;
+
+  if (isListTitle(fromListTitle, RESOURCES_LIST_TITLE)) {
+    throw new Error("Las tarjetas de Recursos no se pueden mover");
+  }
+
+  if (
+    isListTitle(toListTitle, APPROVED_LIST_TITLE) &&
+    actor.role !== "delegate"
+  ) {
+    throw new Error("Solo un delegado puede mover tarjetas a Aprobado");
+  }
+
   const movedIntoHecho =
     !isListTitle(fromListTitle, HECHO_LIST_TITLE) &&
     isListTitle(toListTitle, HECHO_LIST_TITLE);
+  const movedIntoApproved =
+    !isListTitle(fromListTitle, APPROVED_LIST_TITLE) &&
+    isListTitle(toListTitle, APPROVED_LIST_TITLE);
 
   await db
     .update(cards)
@@ -100,6 +121,15 @@ export async function moveCardAction(input: {
       city: board.competition.city,
       competitionId: board.competitionId,
       actor: { id: actor.id, name: actor.name },
+      urls,
+    });
+  }
+
+  if (movedIntoApproved && board?.competitionId && actor.role === "delegate") {
+    await maybeConfirmVenueFromApprovedCard({
+      boardId: input.boardId,
+      cardTitle: card.title,
+      actorId: actor.id,
       urls,
     });
   }

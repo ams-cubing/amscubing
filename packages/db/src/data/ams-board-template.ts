@@ -90,6 +90,9 @@ export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
 export const WCA_WEBSITE_CARD_TITLE = "Sitio web (WCA)";
 export const EQUIPMENT_CARD_TITLE = "Confirmación de equipo de competencia";
 
+/** Approving this card confirms the venue (status → confirmed / venue_found). */
+export const VENUE_PERMISSION_CARD_TITLE = "Permiso de sede";
+
 /** Cards that show the competition staff roster (planning: editable list + course link). */
 export const STAFF_PLANNING_CARD_TITLE = "Planeación de Staff";
 /** Same roster with each person's staff course status. */
@@ -208,7 +211,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "**Objetivo:** Establecer los detalles básicos de la competencia antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Detalles** de esta tarjeta: nombre, razón del nombre, cupo, estaciones y evento principal.\n2. Revisa el bloque **Tabuladores AMS**: nivel de experiencia requerido, delegados sugeridos y máximos de estaciones/categorías (se calculan con el cupo y las estaciones).\n3. Confirma fechas y ciudad (vienen del calendario) y cuántas categorías hay en **Categorías**.\n\n**Nota:** Cupo y estaciones se comparten con **Categorías** y con **Planeación de Staff**. Si el tabulador pide más de un delegado, coordínalo con tu delegado principal.",
   },
   {
-    title: "Permiso de sede",
+    title: VENUE_PERMISSION_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
