@@ -57,9 +57,19 @@ export const delegateAssignmentStatusEnum = pgEnum(
   ["pending", "accepted", "declined"],
 );
 
+export type CompetitionEventPlanItem = {
+  eventId: string;
+  expectedCompetitors: number;
+  rounds: number;
+  cutoffCs: number | null;
+  timeLimitCs: number | null;
+};
+
 export const competitions = pgTable("competition", {
   id: serial("id").primaryKey(),
   name: text("name"),
+  /** WCA "name reason" / justificación del nombre (Detalles de competencia). */
+  nameReason: text("name_reason"),
   city: text("city").notNull(),
 
   stateId: text("state_id")
@@ -75,6 +85,18 @@ export const competitions = pgTable("competition", {
   endDate: date("end_date").notNull(),
 
   capacity: integer("capacity").notNull().default(50),
+
+  /** Competition stations; null until set on Categorías y Horario. */
+  stationCount: integer("station_count"),
+  /** Competition zones (default one main area). */
+  zoneCount: integer("zone_count").notNull().default(1),
+  /** Planned events with expected counts, rounds, cutoffs and limits. */
+  eventsPlan: jsonb("events_plan")
+    .$type<CompetitionEventPlanItem[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** Featured event for Detalles de competencia (defaults to 333 when unset). */
+  mainEventId: text("main_event_id"),
 
   isChampionship: boolean("is_championship").default(false).notNull(),
 

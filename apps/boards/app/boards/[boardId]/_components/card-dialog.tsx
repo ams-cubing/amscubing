@@ -73,7 +73,11 @@ import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
+import { CardCategoriesScheduleSection } from "./card-dialog/card-categories-schedule-section";
+import { CardCompetitionDetailsSection } from "./card-dialog/card-competition-details-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { isCategoriesScheduleCard } from "../_lib/categories-schedule-card";
+import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 import { staffCardMode } from "../_lib/staff-cards";
 import { getCompetitionTeam } from "../_lib/team";
 
@@ -559,6 +563,22 @@ export function CardDialog({
 
             {isEquipmentCard(card.title) ? (
               <CardEquipmentSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isCategoriesScheduleCard(card.title) ? (
+              <CardCategoriesScheduleSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isCompetitionDetailsCard(card.title) ? (
+              <CardCompetitionDetailsSection
                 board={board}
                 cardId={card.id}
                 readOnly={readOnly}

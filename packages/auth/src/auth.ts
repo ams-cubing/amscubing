@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { account, user } from "@workspace/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -7,7 +7,10 @@ import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins";
 
 import { claimWcaStubUser } from "./claim-wca-stub";
-import { mergeUserIntoStub } from "./merge-wca-user";
+import {
+  mergeEarlierUsersIntoWcaStub,
+  stubNeedsWcaEmailClaim,
+} from "./reconcile-wca-stub";
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
 import { resolveWcaRole } from "./wca-role";
 import { sendAuthEmail } from "./mail";
@@ -61,20 +64,8 @@ async function syncLinkedWca(linked: {
     .where(eq(user.id, member.id));
 }
 
-async function findUserWithoutWcaIdByAccount(wcaAccountId: string) {
-  const [row] = await db
-    .select({ id: user.id })
-    .from(account)
-    .innerJoin(user, eq(user.id, account.userId))
-    .where(
-      and(
-        eq(account.providerId, "wca"),
-        eq(account.accountId, wcaAccountId),
-        isNull(user.wcaId),
-      ),
-    )
-    .limit(1);
-  return row ?? null;
+function normalizeAuthEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
 /**
@@ -243,16 +234,7 @@ export function createAuth() {
                 throw new Error("No se pudo consultar el perfil WCA");
               const data = (await response.json()) as WCAProfile;
               const wcaId = data.me.wca_id || null;
-              const emailOwner = await db.query.user.findFirst({
-                where: eq(user.email, data.me.email.trim().toLowerCase()),
-              });
-              if (
-                emailOwner &&
-                !emailOwner.emailVerified &&
-                !emailOwner.email.includes("@ams.placeholder")
-              ) {
-                throw new Error("Verifica tu correo AMS antes de vincular WCA");
-              }
+              const nextEmail = normalizeAuthEmail(data.me.email);
 
               // Prefer a seeded/stub row (matched by WCA ID) so region/title/role
               // survive login. Claim placeholders to the real email so Better Auth
@@ -264,11 +246,24 @@ export function createAuth() {
                 : null;
 
               if (existing) {
-                const earlier = await findUserWithoutWcaIdByAccount(
-                  String(data.me.id),
-                );
-                if (earlier && earlier.id !== existing.id) {
-                  await mergeUserIntoStub(earlier.id, existing.id);
+                await mergeEarlierUsersIntoWcaStub({
+                  stubId: existing.id,
+                  stubWcaId: existing.wcaId,
+                  wcaAccountId: String(data.me.id),
+                  email: nextEmail,
+                });
+              } else {
+                const emailOwner = await db.query.user.findFirst({
+                  where: eq(user.email, nextEmail),
+                });
+                if (
+                  emailOwner &&
+                  !emailOwner.emailVerified &&
+                  !emailOwner.email.includes("@ams.placeholder")
+                ) {
+                  throw new Error(
+                    "Verifica tu correo AMS antes de vincular WCA",
+                  );
                 }
               }
 
@@ -277,6 +272,11 @@ export function createAuth() {
                 existingRole: existing?.role,
               });
 
+              // Claim whenever the stub still needs the real WCA email — even if a
+              // password credential was just merged onto it from an earlier signup.
+              const needsClaim =
+                !!existing &&
+                stubNeedsWcaEmailClaim(existing.email, nextEmail);
               const credential = existing
                 ? await db.query.account.findFirst({
                     where: and(
@@ -286,7 +286,7 @@ export function createAuth() {
                   })
                 : null;
               const claimed =
-                existing && !credential
+                existing && (needsClaim || !credential)
                   ? await claimWcaStubUser(existing, {
                       email: data.me.email,
                       name: data.me.name,

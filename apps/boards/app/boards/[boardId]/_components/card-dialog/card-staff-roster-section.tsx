@@ -4,7 +4,15 @@ import * as React from "react";
 import { Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  recommendedScramblers,
+  recommendedStaffMinimum,
+} from "@workspace/db/competition-format-rules";
 import type { CompetitionStaffEntry } from "@workspace/db/competition-staff";
+import {
+  CATEGORIES_SCHEDULE_CARD_TITLE,
+  COMPETITION_DETAILS_CARD_TITLE,
+} from "@workspace/db/data/ams-board-template";
 import {
   STAFF_ACTIVITIES,
   STAFF_ACTIVITY_LABELS,
@@ -164,6 +172,25 @@ export function CardStaffRosterSection({
     count: members.filter((member) => member.activities.includes(activity))
       .length,
   }));
+  const scramblerCount =
+    activityCounts.find((row) => row.activity === "scrambler")?.count ?? 0;
+  const competition = board.competition;
+  const eventIds = (competition?.eventsPlan ?? []).map(
+    (event) => event.eventId,
+  );
+  const staffMinimum =
+    competition?.stationCount == null
+      ? null
+      : recommendedStaffMinimum({
+          stationCount: competition.stationCount,
+          zoneCount: competition.zoneCount,
+        });
+  const scramblerRec = competition
+    ? recommendedScramblers({
+        capacity: competition.capacity,
+        eventIds,
+      })
+    : null;
 
   const runMutation = (
     action: () => Promise<StaffRosterMutationResult>,
@@ -366,11 +393,54 @@ export function CardStaffRosterSection({
               )
               .join(" · ")}
           </p>
-          <p className="text-muted-foreground text-xs">
-            Mínimo recomendado: estaciones + 4 (+4 por cada zona extra).
-            Mezcladores: mínimo 2 con menos de 80 competidores, recomendable 4
-            con más de 80.
-          </p>
+          {staffMinimum == null ? (
+            <p className="text-muted-foreground text-xs">
+              Mínimo recomendado: estaciones + 4 (+4 por cada zona extra).
+              Define estaciones en{" "}
+              <span className="font-medium">
+                {COMPETITION_DETAILS_CARD_TITLE}
+              </span>{" "}
+              o{" "}
+              <span className="font-medium">
+                {CATEGORIES_SCHEDULE_CARD_TITLE}
+              </span>
+              .
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              Mínimo recomendado:{" "}
+              <span className="text-foreground font-medium">{staffMinimum}</span>{" "}
+              ({competition?.stationCount} estaciones
+              {competition && competition.zoneCount > 1
+                ? `, ${competition.zoneCount} zonas`
+                : ""}
+              ). Lista actual: {members.length}.
+            </p>
+          )}
+          {scramblerRec ? (
+            <p className="text-muted-foreground text-xs">
+              Mezcladores: mínimo{" "}
+              <span className="text-foreground font-medium">
+                {scramblerRec.count}
+              </span>
+              ; en la lista hay {scramblerCount}.
+              {scramblerRec.demoEventIds.length > 0
+                ? " Hay categorías que requieren demostrar eficiencia de mezclado."
+                : null}
+              {scramblerCount < scramblerRec.count &&
+              scramblerRec.demoEventIds.length > 0 ? (
+                <span className="text-foreground">
+                  {" "}
+                  Faltan mezcladores para las categorías exigentes.
+                </span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              Mezcladores: mínimo 2 con menos de 80 competidores, recomendable 4
+              con más de 80.
+            </p>
+          )}
         </div>
       ) : null}
 

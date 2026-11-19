@@ -1,6 +1,7 @@
 /** AMS championship org board template (based on the Mexican Championship 2025 Trello). */
 
 import {
+  CATEGORIES_SCHEDULE_CARD_TITLE,
   EQUIPMENT_CARD,
   ORGANIZER_RESOURCES_CARD,
   PHASE_LABELS,
@@ -65,11 +66,11 @@ export const CHAMPIONSHIP_RETIRED_CARD_TITLES = [
 
 export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
-    title: "Categorías y Horario",
+    title: CATEGORIES_SCHEDULE_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "scoring"],
     description:
-      "**Objetivo:** Definir el formato técnico del campeonato antes del anuncio.\n\n**Pasos:**\n\n1. Determina las categorías, rondas, cortes, límites y tiempos de clasificación.\n2. Define el número de zonas de competencia y de estaciones por zona (p. ej. zonas en el área principal y una en el área silenciosa).\n3. Elabora el horario de todos los días del campeonato. Procura que la hora de inicio sea la misma todos los días para que el staff tenga la misma logística de llegada.\n4. Considera en el horario la inauguración, el registro, la comida, las finales y la premiación.\n5. Comparte aquí la versión final de categorías y horario para su aprobación.\n\n**Nota:** Revisa con los delegados el tabulador de delegados por número de competidores y estaciones.",
+      "**Objetivo:** Definir el formato técnico del campeonato antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas (p. ej. área principal y silenciosa), categorías, rondas, cortes y límites.\n2. Revisa recomendaciones de staff y avisos del tabulador AMS (máximo de categorías según cupo/estaciones).\n3. Elabora el horario de todos los días con la plantilla adjunta. Misma hora de inicio cada día; incluye inauguración, registro, comida, finales y premiación. Súbelo aquí para aprobación.\n\n**Nota:** Coordina con los delegados el tabulador de competidores/estaciones. El mínimo de staff se calcula con estaciones y zonas.",
     attachments: [
       {
         name: "Cálculo de horarios",
@@ -199,10 +200,6 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
     ...WCA_WEBSITE_CARD,
     labels: ["pre_announce", "communication", "scoring"],
-    description: WCA_WEBSITE_CARD.description?.replace(
-      "la tarjeta de Horario y Categorías",
-      "la tarjeta de Categorías y Horario",
-    ),
   },
   {
     title: "Aviso de filmación",
@@ -219,7 +216,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     title: CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\nPublica en las redes del evento un formulario para los competidores interesados en ser staff y adjúntalo aquí.\n\nRegistra en la sección **Staff** de esta tarjeta a las personas confirmadas (nombre, WCA ID o correo y sus actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
+    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\n**Pasos:**\n\n1. Publica en las redes del evento un formulario para competidores interesados en ser staff y adjúntalo aquí.\n2. Revisa en la sección **Staff** el mínimo recomendado (estaciones + 4 / zonas de **Categorías y Horario**).\n3. Registra a las personas confirmadas (nombre, WCA ID o correo y actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
   },
   {
     title: CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE,
