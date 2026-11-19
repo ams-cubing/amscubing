@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  displayCityFromWcaCity,
   regionIdForState,
   resolveMexicoRegionFromWcaCity,
   resolveMexicoStateFromWcaCity,
@@ -40,5 +41,27 @@ describe("resolveMexicoStateFromWcaCity", () => {
   it("returns null for unknown places", () => {
     expect(resolveMexicoStateFromWcaCity("Somewhere, Nowhere")).toBeNull();
     expect(resolveMexicoStateFromWcaCity(null)).toBeNull();
+  });
+});
+
+describe("displayCityFromWcaCity", () => {
+  it("keeps the city and drops the comma state segment", () => {
+    expect(displayCityFromWcaCity("Tepic, Nayarit")).toBe("Tepic");
+    expect(
+      displayCityFromWcaCity("Chiconcuac, Estado de México, Mexico"),
+    ).toBe("Chiconcuac");
+  });
+
+  it("pops an embedded state name when there is no comma", () => {
+    expect(displayCityFromWcaCity("Tepic Nayarit")).toBe("Tepic");
+  });
+
+  it("keeps a city that shares its name with the state", () => {
+    expect(displayCityFromWcaCity("Puebla, Puebla, Mexico")).toBe("Puebla");
+  });
+
+  it("returns null for empty input", () => {
+    expect(displayCityFromWcaCity(null)).toBeNull();
+    expect(displayCityFromWcaCity("   ")).toBeNull();
   });
 });

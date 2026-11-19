@@ -32,6 +32,7 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { createCompetitionSchema } from "../../_lib/validations";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { requireDelegate } from "@/lib/session";
+import { syncAnnouncedCompetitionFromWcaBestEffort } from "@/lib/sync-competition-from-wca";
 import { assignBoardToCompetitionById } from "./assign-board";
 import { log } from "@workspace/server/log";
 
@@ -267,7 +268,15 @@ export async function createCompetition(
       }
     }
 
-    if (announcedSocial) {
+    if (announcedSocial && newCompetitionId) {
+      const sync = await syncAnnouncedCompetitionFromWcaBestEffort({
+        competitionId: newCompetitionId,
+        actorId: session.user.id,
+        wcaCompetitionUrl: announcedSocial.wcaCompetitionUrl,
+      });
+      if (!sync.ok) {
+        message = `${message}. Aviso: no se sincronizaron los datos desde la WCA.`;
+      }
       await refreshTorneoDeRubikCoverBestEffort();
     }
 

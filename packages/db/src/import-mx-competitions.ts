@@ -22,7 +22,10 @@ import {
   competitionBoardName,
 } from "./clone-board";
 import { saveCompetitionFormat } from "./competition-format";
-import { resolveMexicoStateFromWcaCity } from "./data/mexico";
+import {
+  displayCityFromWcaCity,
+  resolveMexicoStateFromWcaCity,
+} from "./data/mexico";
 import { db } from "./index";
 import {
   boards,
@@ -141,10 +144,6 @@ function mexicoCityToday(): string {
   }).format(new Date());
 }
 
-function displayCity(wcaCity: string): string {
-  const first = wcaCity.split(",")[0]?.trim();
-  return first && first.length > 0 ? first : wcaCity.trim();
-}
 
 function isChampionshipName(name: string): boolean {
   return /championship|campeonato/i.test(name);
@@ -313,7 +312,7 @@ async function importCompetition(
     return { ok: false, reason: `unresolved state for city «${row.city}»` };
   }
 
-  const city = displayCity(row.city);
+  const city = displayCityFromWcaCity(row.city) ?? row.city.trim();
   const isChampionship = isChampionshipName(row.name);
   const capacity = row.competitor_limit && row.competitor_limit > 0
     ? row.competitor_limit

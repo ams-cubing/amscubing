@@ -96,6 +96,12 @@ vi.mock("@workspace/social", () => ({
     "Esta competencia ya se está publicando o ya fue publicada",
 }));
 
+vi.mock("@/lib/sync-competition-from-wca", () => ({
+  syncAnnouncedCompetitionFromWcaBestEffort: vi
+    .fn()
+    .mockResolvedValue({ ok: true, message: "synced" }),
+}));
+
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
 
 const confirmedCompetition = {

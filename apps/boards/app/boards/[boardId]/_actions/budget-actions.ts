@@ -20,12 +20,16 @@ import {
   insertNotifications,
 } from "@workspace/db/notifications";
 import { consumeRateLimit } from "@workspace/db/rate-limit";
-import { boards } from "@workspace/db/schema";
+import { boards, competitions } from "@workspace/db/schema";
 import { log } from "@workspace/server/log";
 
 import { canAccessBoard } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getCalendarUrl } from "@/lib/urls";
+import {
+  fetchWcaRegistrationRevenueEstimate,
+  type WcaRegistrationRevenueEstimate,
+} from "@/lib/wca-registration-revenue";
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import {
   budgetCardMode,
@@ -306,6 +310,61 @@ export async function saveBudgetActualsFromCard(
     log.error("boards.budget.actuals_failed", { error, competitionId });
     return { ok: false, message: "No se pudieron guardar los costos reales" };
   }
+}
+
+export type EstimateRegistrationRevenueResult =
+  | { ok: true; estimate: WcaRegistrationRevenueEstimate }
+  | { ok: false; message: string };
+
+/** Prefills inscription revenue from accepted WCA competitors (excl. staff). */
+export async function estimateRegistrationRevenueFromWca(input: {
+  boardId: number;
+  cardId: number;
+}): Promise<EstimateRegistrationRevenueResult> {
+  const session = await requireSessionOrUnauthorized();
+  if (!(await canAccessBoard(session.user, input.boardId))) {
+    return { ok: false, message: "No tienes acceso a este tablero" };
+  }
+  if (!(await rateLimit(session.user.id))) {
+    return {
+      ok: false,
+      message: "Espera unos minutos antes de consultar la WCA de nuevo",
+    };
+  }
+
+  const { competitionId } = await budgetCardCompetition(
+    input.boardId,
+    input.cardId,
+    ["mid", "final"],
+  );
+  if (!competitionId) {
+    return {
+      ok: false,
+      message: "Este tablero no está ligado a una competencia",
+    };
+  }
+
+  const [competition, sheet] = await Promise.all([
+    db.query.competitions.findFirst({
+      where: eq(competitions.id, competitionId),
+      columns: { wcaCompetitionUrl: true },
+    }),
+    ensureCompetitionBudget(db, competitionId),
+  ]);
+
+  const wcaUrl = competition?.wcaCompetitionUrl?.trim();
+  if (!wcaUrl) {
+    return {
+      ok: false,
+      message:
+        "Falta la URL de la WCA en la tarjeta Sitio web para consultar inscritos.",
+    };
+  }
+
+  return fetchWcaRegistrationRevenueEstimate({
+    wcaCompetitionUrl: wcaUrl,
+    budgetFeeCents: sheet.budget.proposedRegistrationFeeCents,
+  });
 }
 
 const sponsorSchema = cardSchema.extend({

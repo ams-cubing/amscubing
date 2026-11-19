@@ -104,8 +104,20 @@ export function formatMxnCents(cents: number) {
   }).format(cents / 100);
 }
 
+/** Plain amount for money inputs (no `$`), e.g. `1,200.50`. */
+export function formatMxnInput(cents: number) {
+  return new Intl.NumberFormat("es-MX", {
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
 export function parseMxnToCents(raw: string): number | null {
-  const cleaned = raw.trim().replace(/,/g, "").replace(/\$/g, "");
+  const cleaned = raw
+    .trim()
+    .replace(/\$/g, "")
+    .replace(/\s/g, "")
+    .replace(/,/g, "");
   if (!cleaned) return 0;
   const value = Number(cleaned);
   if (!Number.isFinite(value) || value < 0) return null;

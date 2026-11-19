@@ -48,6 +48,7 @@ describe("parseMxnToCents", () => {
   it("parses pesos to centavos", () => {
     expect(parseMxnToCents("150")).toBe(150_00);
     expect(parseMxnToCents("150.50")).toBe(150_50);
+    expect(parseMxnToCents("$1,200.50")).toBe(1200_50);
     expect(parseMxnToCents("")).toBe(0);
     expect(parseMxnToCents("-1")).toBeNull();
   });

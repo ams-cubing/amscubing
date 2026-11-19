@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import {
   formatMxnCents,
+  formatMxnInput,
   parseMxnToCents,
   SPONSOR_TYPE_LABELS,
   type SponsorType,
@@ -23,6 +24,7 @@ import {
   type BudgetCardData,
 } from "../../_actions/budget-actions";
 import type { BoardDetail } from "../../_lib/types";
+import { MoneyInput } from "./money-input";
 
 type Draft = {
   sponsorId?: number;
@@ -193,7 +195,7 @@ export function CardSponsorsSection({
                         type: sponsor.type,
                         amount:
                           sponsor.amountCents != null
-                            ? String(sponsor.amountCents / 100)
+                            ? formatMxnInput(sponsor.amountCents)
                             : "",
                         conditions: sponsor.conditions ?? "",
                         logoUrl: sponsor.logoUrl ?? "",
@@ -270,18 +272,15 @@ export function CardSponsorsSection({
             <div className="space-y-1">
               <Label htmlFor="sponsor-amount">
                 {draft.type === "cash"
-                  ? "Monto (MXN, va al presupuesto)"
-                  : "Monto estimado (MXN, opcional)"}
+                  ? "Monto (va al presupuesto)"
+                  : "Monto estimado (opcional)"}
               </Label>
-              <Input
+              <MoneyInput
                 id="sponsor-amount"
                 value={draft.amount}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, amount: e.target.value }))
-                }
+                onChange={(amount) => setDraft((d) => ({ ...d, amount }))}
                 disabled={pending}
-                inputMode="decimal"
-                required={draft.type === "cash"}
+                aria-label="Monto del patrocinio"
               />
             </div>
             <div className="space-y-1">

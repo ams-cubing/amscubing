@@ -12,6 +12,7 @@
     "./board-readiness": "./src/board-readiness.ts",
     "./board-readiness-labels": "./src/board-readiness-labels.ts",
     "./competition-transitions": "./src/competition-transitions.ts",
+    "./sync-competition-from-wca": "./src/sync-competition-from-wca.ts",
     "./utils": "./src/utils.ts",
     "./rate-limit": "./src/rate-limit.ts",
     "./uploads": "./src/uploads.ts",

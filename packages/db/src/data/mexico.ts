@@ -250,3 +250,101 @@ export function resolveMexicoRegionFromWcaCity(
   const stateId = resolveMexicoStateFromWcaCity(city);
   return stateId ? regionIdForState(stateId) : null;
 }
+
+/** State-name spellings only (not city aliases like "Tijuana" → BCN). */
+const STATE_DISPLAY_ALIASES: Record<string, string[]> = {
+  CMX: ["ciudad de mexico", "mexico city", "cdmx", "df", "distrito federal"],
+  MEX: ["estado de mexico", "mexico state", "edomex"],
+  NLE: ["nuevo leon"],
+  QUE: ["queretaro"],
+  MIC: ["michoacan"],
+  YUC: ["yucatan"],
+  SLP: ["san luis potosi"],
+  BCN: ["baja california"],
+  BCS: ["baja california sur"],
+  ROO: ["quintana roo"],
+};
+
+/**
+ * Display city for AMS from a WCA `city` string.
+ * Prefer the first comma segment, then strip any remaining state name/alias.
+ */
+export function displayCityFromWcaCity(
+  wcaCity: string | null | undefined,
+): string | null {
+  if (!wcaCity?.trim()) return null;
+
+  const trimmed = wcaCity.trim();
+  const firstSegment = trimmed.split(",")[0]?.trim() || trimmed;
+  const stateId = resolveMexicoStateFromWcaCity(trimmed);
+  if (!stateId) return firstSegment;
+
+  const stripped = stripStateNameFromCity(firstSegment, stateId);
+  return stripped.length > 0 ? stripped : firstSegment;
+}
+
+function stripStateNameFromCity(city: string, stateId: string): string {
+  const state = mexicoStateById(stateId);
+  const labels = new Set<string>();
+  if (state) labels.add(normalizeMexicoPlaceKey(state.name));
+  for (const alias of STATE_DISPLAY_ALIASES[stateId] ?? []) {
+    labels.add(normalizeMexicoPlaceKey(alias));
+  }
+
+  // Prefer longer labels so "estado de mexico" wins over shorter fragments.
+  const ordered = [...labels]
+    .filter((label) => label.length > 0)
+    .sort((a, b) => b.length - a.length);
+
+  let remaining = city.trim();
+  for (const label of ordered) {
+    const without = removeNormalizedSubstring(remaining, label);
+    if (without !== null && without !== remaining) {
+      remaining = without;
+      break;
+    }
+  }
+
+  return remaining
+    .replace(/^[\s,.\-/]+|[\s,.\-/]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Remove the first occurrence of a normalized label from an original string. */
+function removeNormalizedSubstring(
+  original: string,
+  normalizedLabel: string,
+): string | null {
+  const tokens = normalizedLabel.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+
+  // Match token sequence against original words (accent/case folded).
+  const wordRe = /[A-Za-zÀ-ÿ0-9]+/g;
+  const words: { text: string; start: number; end: number; key: string }[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = wordRe.exec(original)) !== null) {
+    words.push({
+      text: match[0],
+      start: match.index,
+      end: match.index + match[0].length,
+      key: normalizeMexicoPlaceKey(match[0]),
+    });
+  }
+
+  for (let i = 0; i <= words.length - tokens.length; i += 1) {
+    let ok = true;
+    for (let j = 0; j < tokens.length; j += 1) {
+      if (words[i + j]!.key !== tokens[j]) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+    const from = words[i]!.start;
+    const to = words[i + tokens.length - 1]!.end;
+    return `${original.slice(0, from)}${original.slice(to)}`;
+  }
+
+  return null;
+}

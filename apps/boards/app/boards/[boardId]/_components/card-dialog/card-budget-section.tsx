@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ExternalLink, FileDown, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, FileDown, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +9,7 @@ import {
   BUDGET_RECEIPT_STATUS_LABELS,
   BUDGET_STATUS_LABELS,
   formatMxnCents,
+  formatMxnInput,
   parseMxnToCents,
   type BudgetLineCategory,
   type BudgetReceiptStatus,
@@ -22,6 +23,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { getCalendarUrl } from "@/lib/urls";
 
 import {
+  estimateRegistrationRevenueFromWca,
   loadBudgetCard,
   saveBudgetActualsFromCard,
   saveBudgetPlanFromCard,
@@ -29,6 +31,7 @@ import {
 } from "../../_actions/budget-actions";
 import type { BudgetCardMode } from "../../_lib/budget-cards";
 import type { BoardDetail } from "../../_lib/types";
+import { MoneyInput } from "./money-input";
 
 type PlanLineDraft = {
   id?: number;
@@ -53,10 +56,6 @@ type ActualLineDraft = {
   notes: string;
 };
 
-function pesosInput(cents: number) {
-  return (cents / 100).toFixed(cents % 100 === 0 ? 0 : 2);
-}
-
 export function CardBudgetSection({
   board,
   cardId,
@@ -77,16 +76,18 @@ export function CardBudgetSection({
   const [actualLines, setActualLines] = React.useState<ActualLineDraft[]>([]);
   const [revenue, setRevenue] = React.useState("");
   const [remanenteNote, setRemanenteNote] = React.useState("");
+  const [wcaHint, setWcaHint] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
 
   const apply = React.useCallback((next: BudgetCardData | null) => {
     setData(next);
+    setWcaHint(null);
     if (!next) return;
-    setFee(pesosInput(next.budget.proposedRegistrationFeeCents));
+    setFee(formatMxnInput(next.budget.proposedRegistrationFeeCents));
     setCompetitors(String(next.budget.expectedCompetitorCount));
     setRevenue(
       next.budget.registrationRevenueCents != null
-        ? pesosInput(next.budget.registrationRevenueCents)
+        ? formatMxnInput(next.budget.registrationRevenueCents)
         : "",
     );
     setRemanenteNote(next.budget.remanenteNote ?? "");
@@ -96,7 +97,7 @@ export function CardBudgetSection({
         kind: line.kind,
         category: line.category,
         label: line.label,
-        expected: pesosInput(line.expectedCents),
+        expected: formatMxnInput(line.expectedCents),
         notes: line.notes ?? "",
         isSystem: line.isSystem,
         fromSponsor: line.sponsorId != null,
@@ -110,7 +111,7 @@ export function CardBudgetSection({
         isSystem: line.isSystem,
         expectedCents: line.expectedCents,
         actual:
-          line.actualCents != null ? pesosInput(line.actualCents) : "",
+          line.actualCents != null ? formatMxnInput(line.actualCents) : "",
         receiptStatus: line.receiptStatus,
         receiptMissingReason: line.receiptMissingReason ?? "",
         notes: line.notes ?? "",
@@ -182,7 +183,7 @@ export function CardBudgetSection({
 
   const planDirty =
     data.budget.status === "plan_submitted" &&
-    (fee !== pesosInput(data.budget.proposedRegistrationFeeCents) ||
+    (parseMxnToCents(fee) !== data.budget.proposedRegistrationFeeCents ||
       competitors !== String(data.budget.expectedCompetitorCount) ||
       planLines.length !== data.lines.length ||
       planLines.some((line, index) => {
@@ -193,7 +194,7 @@ export function CardBudgetSection({
           line.kind !== saved.kind ||
           line.category !== saved.category ||
           line.label !== saved.label ||
-          line.expected !== pesosInput(saved.expectedCents) ||
+          parseMxnToCents(line.expected) !== saved.expectedCents ||
           line.notes !== (saved.notes ?? "")
         );
       }));
@@ -393,13 +394,13 @@ export function CardBudgetSection({
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="budget-fee">Cuota de inscripción (MXN)</Label>
-              <Input
+              <Label htmlFor="budget-fee">Cuota de inscripción</Label>
+              <MoneyInput
                 id="budget-fee"
                 value={fee}
-                onChange={(e) => setFee(e.target.value)}
+                onChange={setFee}
                 disabled={!canEditPlan || pending}
-                inputMode="decimal"
+                aria-label="Cuota de inscripción"
               />
             </div>
             <div className="space-y-1">
@@ -449,14 +450,12 @@ export function CardBudgetSection({
                   ) : null}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Input
+                  <MoneyInput
                     value={line.expected}
-                    onChange={(e) =>
+                    onChange={(expected) =>
                       setPlanLines((rows) =>
                         rows.map((row, i) =>
-                          i === index
-                            ? { ...row, expected: e.target.value }
-                            : row,
+                          i === index ? { ...row, expected } : row,
                         ),
                       )
                     }
@@ -466,7 +465,6 @@ export function CardBudgetSection({
                       line.isSystem ||
                       line.fromSponsor
                     }
-                    inputMode="decimal"
                     aria-label="Monto esperado"
                   />
                   {!line.isSystem && !line.fromSponsor ? (
@@ -568,17 +566,70 @@ export function CardBudgetSection({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="space-y-1">
-            <Label htmlFor="budget-revenue">
-              Ingresos de inscripción recaudados (MXN)
-            </Label>
-            <Input
-              id="budget-revenue"
-              value={revenue}
-              onChange={(e) => setRevenue(e.target.value)}
-              disabled={!canEditActuals || pending}
-              inputMode="decimal"
-            />
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <Label htmlFor="budget-revenue">
+                Ingresos de inscripción recaudados
+              </Label>
+              <MoneyInput
+                id="budget-revenue"
+                value={revenue}
+                onChange={(next) => {
+                  setRevenue(next);
+                  setWcaHint(null);
+                }}
+                disabled={!canEditActuals || pending}
+                aria-label="Ingresos de inscripción recaudados"
+              />
+            </div>
+            {canEditActuals ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      const result = await estimateRegistrationRevenueFromWca({
+                        boardId: board.id,
+                        cardId,
+                      });
+                      if (!result.ok) {
+                        toast.error(result.message);
+                        return;
+                      }
+                      const { estimate } = result;
+                      setRevenue(formatMxnInput(estimate.revenueCents));
+                      const feeLabel = formatMxnCents(estimate.feeCents);
+                      const feeNote =
+                        estimate.feeSource === "wca"
+                          ? `cuota WCA ${feeLabel}`
+                          : `cuota del presupuesto ${feeLabel}`;
+                      const staffNote =
+                        estimate.excludedStaff > 0
+                          ? ` · excluye ${estimate.excludedStaff} delegado(s)/organizador(es)`
+                          : "";
+                      setWcaHint(
+                        `${estimate.payingCompetitors} de ${estimate.acceptedCompeting} inscritos aceptados × ${feeNote}${staffNote}`,
+                      );
+                      toast.success("Ingresos prefijados desde la WCA");
+                    });
+                  }}
+                >
+                  <RefreshCw className="size-3.5" />
+                  Prefijar desde la WCA
+                </Button>
+              </div>
+            ) : null}
+            {wcaHint ? (
+              <p className="text-muted-foreground text-xs">{wcaHint}</p>
+            ) : canEditActuals ? (
+              <p className="text-muted-foreground text-xs">
+                Consulta inscritos aceptados en la WCA. Suele excluir
+                delegados y organizadores; puedes editar el monto.
+              </p>
+            ) : null}
           </div>
 
           <ul className="space-y-2">
@@ -594,19 +645,16 @@ export function CardBudgetSection({
                   </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Input
+                  <MoneyInput
                     value={line.actual}
-                    onChange={(e) =>
+                    onChange={(actual) =>
                       setActualLines((rows) =>
                         rows.map((row) =>
-                          row.id === line.id
-                            ? { ...row, actual: e.target.value }
-                            : row,
+                          row.id === line.id ? { ...row, actual } : row,
                         ),
                       )
                     }
                     disabled={!canEditActuals || pending || line.isSystem}
-                    inputMode="decimal"
                     aria-label="Monto real"
                   />
                   {line.kind === "expense" && !line.isSystem ? (

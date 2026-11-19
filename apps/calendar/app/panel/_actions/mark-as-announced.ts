@@ -20,6 +20,7 @@ import { sendCompetitionStatusChangedEmail } from "@/lib/calendar-emails";
 import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
+import { syncAnnouncedCompetitionFromWcaBestEffort } from "@/lib/sync-competition-from-wca";
 import { log } from "@workspace/server/log";
 
 export async function markAsAnnounced(
@@ -184,6 +185,12 @@ export async function markAsAnnounced(
       log.error("calendar.notify_organizers_failed", { error: err });
     }
 
+    const sync = await syncAnnouncedCompetitionFromWcaBestEffort({
+      competitionId,
+      actorId: session.user.id,
+      wcaCompetitionUrl: social.wcaCompetitionUrl,
+    });
+
     updateTag("competitions");
     updateTag("competition-public-status-counts");
     updateTag("competition-status-internal-counts");
@@ -194,11 +201,15 @@ export async function markAsAnnounced(
 
     await refreshTorneoDeRubikCoverBestEffort();
 
+    const baseMessage = social.instagramMediaId
+      ? "Competencia anunciada y publicada en Facebook e Instagram"
+      : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)";
+
     return {
       success: true,
-      message: social.instagramMediaId
-        ? "Competencia anunciada y publicada en Facebook e Instagram"
-        : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)",
+      message: sync.ok
+        ? baseMessage
+        : `${baseMessage}. Aviso: no se sincronizaron los datos desde la WCA.`,
     };
   } catch (error) {
     log.error("calendar.mark_announced_failed", { error });
