@@ -17,7 +17,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 
-import { getCalendarUrl } from "@/lib/urls";
+import { getWebUrl } from "@/lib/urls";
 
 import {
   loadEquipmentCard,
@@ -205,7 +205,7 @@ export function CardEquipmentSection({
           {isDelegate ? (
             <Button asChild size="sm" variant="outline">
               <a
-                href={`${getCalendarUrl()}/panel/equipo/solicitudes/${request.id}`}
+                href={`${getWebUrl()}/admin/equipo/solicitudes/${request.id}`}
                 target="_blank"
                 rel="noreferrer"
               >

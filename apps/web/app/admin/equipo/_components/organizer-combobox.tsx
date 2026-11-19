@@ -1,0 +1,202 @@
+"use client";
+
+import { ChevronDown, Plus } from "lucide-react";
+import * as React from "react";
+import {
+  Combobox,
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxLoading,
+  ComboboxTrigger,
+} from "@workspace/ui/components/combobox";
+import { searchUsers } from "../_actions/wca-users";
+import { AddWCAUserDialog } from "./add-wca-user-dialog";
+import { Button } from "@workspace/ui/components/button";
+import Image from "next/image";
+
+export type OrganizerOption = {
+  id: string;
+  name: string;
+  wcaId: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+/** WCA ID when linked; otherwise the email so users without WCA ID are identifiable. */
+export function organizerSubtitle(organizer: OrganizerOption) {
+  return organizer.wcaId ?? organizer.email ?? "";
+}
+
+/** How the picker names the person being chosen ("organizador", "persona"…). */
+export type PersonNoun = { singular: string; plural: string };
+
+const ORGANIZER_NOUN: PersonNoun = {
+  singular: "organizador",
+  plural: "organizadores",
+};
+
+type OrganizerComboboxProps = {
+  value: string;
+  onSelect: (organizer: OrganizerOption) => void;
+  selectedOrganizers: string[];
+  placeholder?: string;
+  noun?: PersonNoun;
+};
+
+export function OrganizerCombobox({
+  value,
+  onSelect,
+  selectedOrganizers,
+  placeholder = "Buscar organizador...",
+  noun = ORGANIZER_NOUN,
+}: OrganizerComboboxProps) {
+  const [search, setSearch] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [users, setUsers] = React.useState<OrganizerOption[]>([]);
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
+
+  // Initial load - fetch 5 random users
+  React.useEffect(() => {
+    const loadInitialUsers = async () => {
+      setIsLoading(true);
+      const results = await searchUsers("");
+      setUsers(results);
+      setIsLoading(false);
+    };
+    loadInitialUsers();
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearch = React.useCallback(
+    debounce(async (searchTerm: string) => {
+      setIsLoading(true);
+      const results = await searchUsers(searchTerm);
+      setUsers(results);
+      setIsLoading(false);
+    }, 300),
+    [],
+  );
+
+  const onInputValueChange = React.useCallback(
+    (value: string) => {
+      setSearch(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
+
+  const handleValueChange = React.useCallback(
+    (newValue: string) => {
+      const selected = users.find((user) => user.id === newValue);
+      if (selected) onSelect(selected);
+      // Clear the input after selection
+      setSearch("");
+    },
+    [users, onSelect],
+  );
+
+  const handleUserAdded = React.useCallback(
+    (user: OrganizerOption) => {
+      // Refresh the list
+      searchUsers(search).then(setUsers);
+      // Auto-select the new user
+      onSelect(user);
+      // Clear the input
+      setSearch("");
+    },
+    [search, onSelect],
+  );
+
+  const availableUsers = users.filter(
+    (user) => !selectedOrganizers.includes(user.id),
+  );
+
+  return (
+    <>
+      <Combobox
+        value={value}
+        onValueChange={handleValueChange}
+        inputValue={search}
+        onInputValueChange={onInputValueChange}
+        manualFiltering
+      >
+        <ComboboxAnchor>
+          <ComboboxInput placeholder={placeholder} />
+          <ComboboxTrigger>
+            <ChevronDown className="h-4 w-4" />
+          </ComboboxTrigger>
+        </ComboboxAnchor>
+        <ComboboxContent>
+          {isLoading ? (
+            <ComboboxLoading label={`Buscando ${noun.plural}...`} />
+          ) : null}
+          <ComboboxEmpty
+            keepVisible={!isLoading && availableUsers.length === 0}
+          >
+            <div className="flex flex-col items-center gap-2 p-2">
+              <p className="text-sm text-muted-foreground">
+                No se encontraron {noun.plural}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAddDialog(true)}
+                className="gap-2"
+              >
+                <Plus />
+                Agregar con WCA ID
+              </Button>
+            </div>
+          </ComboboxEmpty>
+          {!isLoading &&
+            availableUsers.map((user) => (
+              <ComboboxItem key={user.id} value={user.id} outset>
+                <div className="flex items-center gap-2">
+                  {user.image && (
+                    <Image
+                      src={user.image}
+                      alt={user.name}
+                      className="h-6 w-6 rounded-full"
+                      width={24}
+                      height={24}
+                    />
+                  )}
+                  <div className="flex flex-col">
+                    <span>{user.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {organizerSubtitle(user)}
+                    </span>
+                  </div>
+                </div>
+              </ComboboxItem>
+            ))}
+        </ComboboxContent>
+      </Combobox>
+
+      <AddWCAUserDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onUserAdded={handleUserAdded}
+        noun={noun.singular}
+      />
+    </>
+  );
+}
+
+function debounce<TFunction extends (...args: never[]) => unknown>(
+  func: TFunction,
+  wait: number,
+): (...args: Parameters<TFunction>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  return function (this: unknown, ...args: Parameters<TFunction>): void {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, wait);
+  };
+}

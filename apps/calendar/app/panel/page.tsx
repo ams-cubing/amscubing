@@ -33,7 +33,7 @@ export default async function PanelHubPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Panel de delegado</h1>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
-          Accede a competencias, solicitudes y herramientas de delegado.
+          Accede a competencias, solicitudes de fecha y disponibilidad.
         </p>
       </div>
 
@@ -92,8 +92,6 @@ function hubDescription(href: string) {
       return "Consulta y actualiza disponibilidad.";
     case "/panel/feriados":
       return "Administra feriados y fechas inhábiles.";
-    case "/panel/equipo":
-      return "Inventario, solicitudes, préstamos y adquisiciones.";
     case "/panel/actividad":
       return "Revisa el historial de actividad.";
     default:

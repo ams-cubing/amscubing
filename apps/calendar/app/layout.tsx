@@ -84,13 +84,7 @@ async function CalendarAppNavWrapper() {
       ? (await getDelegatePanelBadges(normalizedUser.wcaId)).total
       : 0;
 
-  return (
-    <CalendarAppNav
-      isSignedIn={normalizedUser != null}
-      isDelegate={isDelegate}
-      delegateBadgeCount={delegateBadgeCount}
-    />
-  );
+  return <CalendarAppNav delegateBadgeCount={delegateBadgeCount} />;
 }
 
 function calendarNavUrls() {
@@ -161,11 +155,7 @@ export default function RootLayout({
             <CalendarAmsNavWrapper />
           </Suspense>
           <div className="sticky top-0 z-40">
-            <Suspense
-              fallback={
-                <CalendarAppNav isSignedIn={false} isDelegate={false} />
-              }
-            >
+            <Suspense fallback={<CalendarAppNav />}>
               <CalendarAppNavWrapper />
             </Suspense>
           </div>

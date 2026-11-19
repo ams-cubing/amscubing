@@ -2,7 +2,7 @@
 
 import { ActionForm } from "@workspace/ui/components/action-form";
 
-import { SubmitButton } from "@/app/panel/equipo/_components/submit-button";
+import { SubmitButton } from "./submit-button";
 
 import { setMultiCompetitionOrganizerAction } from "../_actions/multi-competition-organizer";
 

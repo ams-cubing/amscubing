@@ -55,14 +55,10 @@ function NavLink({
 }
 
 type CalendarAppNavProps = {
-  isSignedIn?: boolean;
-  isDelegate?: boolean;
   delegateBadgeCount?: number;
 };
 
 function CalendarAppNavShell({
-  isSignedIn = false,
-  isDelegate = false,
   delegateBadgeCount = 0,
   pathname,
 }: CalendarAppNavProps & {
@@ -80,11 +76,7 @@ function CalendarAppNavShell({
         >
           {inPanel ? (
             <>
-              <NavLink
-                href="/"
-                label="Calendario"
-                active={false}
-              />
+              <NavLink href="/" label="Calendario" active={false} />
               <NavLink
                 href="/panel"
                 label="Panel"
@@ -93,36 +85,16 @@ function CalendarAppNavShell({
               />
             </>
           ) : (
-            <>
-              {CALENDAR_LINKS.map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.name}
-                  active={
-                    pathname != null && isActivePath(activePath, item.href)
-                  }
-                />
-              ))}
-              {isSignedIn ? (
-                <NavLink
-                  href="/mis-competencias"
-                  label="Mis competencias"
-                  active={
-                    pathname != null &&
-                    isActivePath(activePath, "/mis-competencias")
-                  }
-                />
-              ) : null}
-              {isDelegate ? (
-                <NavLink
-                  href="/panel"
-                  label="Panel"
-                  active={false}
-                  badgeCount={delegateBadgeCount}
-                />
-              ) : null}
-            </>
+            CALENDAR_LINKS.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.name}
+                active={
+                  pathname != null && isActivePath(activePath, item.href)
+                }
+              />
+            ))
           )}
         </nav>
       </div>

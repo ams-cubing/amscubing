@@ -68,6 +68,7 @@ describe("equipmentNotificationRow", () => {
   const base = {
     actorId: "lender",
     calendarUrl: "https://calendario.example/",
+    webUrl: "https://www.example/",
     equipmentLabel: "8 Timer SpeedStack G4",
   };
 
@@ -83,7 +84,7 @@ describe("equipmentNotificationRow", () => {
     expect(row.payload).toEqual({ loanId: 4, sku: undefined });
   });
 
-  it("sends delegates to the loan or unit in the panel", () => {
+  it("sends delegates to the loan or unit in web admin", () => {
     const delegate = {
       id: "d1",
       role: "delegate" as const,
@@ -96,7 +97,7 @@ describe("equipmentNotificationRow", () => {
         type: "equipment_returned",
         loanId: 4,
       }).href,
-    ).toBe("https://calendario.example/panel/equipo/prestamos/4");
+    ).toBe("https://www.example/admin/equipo/prestamos/4");
     expect(
       equipmentNotificationRow({
         ...base,
@@ -107,7 +108,7 @@ describe("equipmentNotificationRow", () => {
       }),
     ).toMatchObject({
       title: "Ahora eres guardián de: DS3-2318",
-      href: "https://calendario.example/panel/equipo/DS3-2318",
+      href: "https://www.example/admin/equipo/DS3-2318",
     });
   });
 });

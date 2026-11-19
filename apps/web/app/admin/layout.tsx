@@ -31,7 +31,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-white/75">
             {access.isDelegate
-              ? "Gestiona perfiles públicos de delegados, las publicaciones en redes y los permisos del equipo."
+              ? "Gestiona perfiles públicos, redes, inventario de equipo y permisos del equipo AMS."
               : "Gestiona los permisos del equipo AMS."}
           </p>
           <nav className="mt-6 flex flex-wrap gap-3">
@@ -48,6 +48,9 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
                   className={TAB_CLASS}
                 >
                   Tabuladores
+                </Link>
+                <Link href={"/admin/equipo" as Route} className={TAB_CLASS}>
+                  Equipo
                 </Link>
               </>
             )}

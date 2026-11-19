@@ -39,16 +39,13 @@ describe("getAccountSections", () => {
     expect(titles(organization)).toEqual(["Administrar Blog"]);
   });
 
-  it("gives non-delegate permission managers the admin panel", () => {
+  it("gives non-delegate permission managers the association admin", () => {
     const { organization } = getAccountSections({
       ...base,
       hasBlogPermission: true,
       canManagePermissions: true,
     });
-    expect(titles(organization)).toEqual([
-      "Panel de administración",
-      "Administrar Blog",
-    ]);
+    expect(titles(organization)).toEqual(["Asociación", "Administrar Blog"]);
   });
 
   it("gives delegates every tool once, with no duplicate destinations", () => {
@@ -59,8 +56,9 @@ describe("getAccountSections", () => {
       hasCoursePermission: true,
     });
     expect(titles(organization)).toEqual([
-      "Panel de administración",
-      "Panel de delegado",
+      "Asociación",
+      "Competencias",
+      "Equipo",
       "Tableros de organización",
       "Administrar Blog",
       "Administrar Cursos",
@@ -68,7 +66,10 @@ describe("getAccountSections", () => {
     const hrefs = [...member, ...organization].map((a) => a.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(
-      organization.find((a) => a.title === "Panel de delegado")?.href,
+      organization.find((a) => a.title === "Competencias")?.href,
     ).toMatch(/\/panel$/);
+    expect(organization.find((a) => a.title === "Equipo")?.href).toBe(
+      "/admin/equipo",
+    );
   });
 });

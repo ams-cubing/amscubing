@@ -322,7 +322,7 @@ export function dateRequestNotificationRow(opts: {
   };
 }
 
-/** Delegates land on the panel; borrowers without the role see their loans in mis-competencias. */
+/** Delegates land on web admin inventory; borrowers without the role see loans in mis-competencias. */
 export function equipmentNotificationRow(opts: {
   recipient: NotificationUser;
   actorId: string;
@@ -331,19 +331,21 @@ export function equipmentNotificationRow(opts: {
     "equipment_loaned" | "equipment_returned" | "equipment_transferred"
   >;
   calendarUrl: string;
+  webUrl: string;
   equipmentLabel: string;
   loanId?: number;
   sku?: string;
 }): NewNotificationRow {
   const calendar = opts.calendarUrl.replace(/\/$/, "");
+  const web = opts.webUrl.replace(/\/$/, "");
   let href = `${calendar}/mis-competencias`;
   if (opts.recipient.role === "delegate") {
     if (opts.loanId != null) {
-      href = `${calendar}/panel/equipo/prestamos/${opts.loanId}`;
+      href = `${web}/admin/equipo/prestamos/${opts.loanId}`;
     } else if (opts.sku) {
-      href = `${calendar}/panel/equipo/${encodeURIComponent(opts.sku)}`;
+      href = `${web}/admin/equipo/${encodeURIComponent(opts.sku)}`;
     } else {
-      href = `${calendar}/panel/equipo`;
+      href = `${web}/admin/equipo`;
     }
   }
   return {

@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageSquareText,
   Newspaper,
+  Package,
   ShieldCheck,
 } from "lucide-react";
 
@@ -75,9 +76,9 @@ export function getAccountSections({
   const organization: AccountAction[] = [];
   if (isDelegate || canManagePermissions) {
     organization.push({
-      title: "Panel de administración",
+      title: "Asociación",
       description: isDelegate
-        ? "Edita delegados públicos, redes y permisos del equipo AMS."
+        ? "Delegados públicos, redes, inventario de equipo y permisos del equipo AMS."
         : "Asigna permisos de Blog y Cursos al equipo AMS.",
       href: "/admin",
       icon: Newspaper,
@@ -86,11 +87,18 @@ export function getAccountSections({
   if (isDelegate) {
     organization.push(
       {
-        title: "Panel de delegado",
+        title: "Competencias",
         description:
-          "Revisa solicitudes, administra competencias y gestiona el equipo.",
+          "Revisa solicitudes de fecha, administra competencias y disponibilidad.",
         href: `${calendarUrl}/panel`,
         icon: ShieldCheck,
+      },
+      {
+        title: "Equipo",
+        description:
+          "Inventario AMS: unidades, guardianes, préstamos y confirmaciones.",
+        href: "/admin/equipo",
+        icon: Package,
       },
       {
         title: "Tableros de organización",
