@@ -8,7 +8,6 @@ import { ensureCompetitionBudget } from "@workspace/db/budget";
 import {
   BUDGET_LINE_KIND_LABELS,
   BUDGET_RECEIPT_STATUS_LABELS,
-  BUDGET_SPEND_STATUS_LABELS,
   BUDGET_STATUS_LABELS,
   formatMxnCents,
 } from "@workspace/db/budget-labels";
@@ -22,7 +21,6 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { requireDelegate } from "@/lib/session";
 
 import {
-  decideBudgetSpendAction,
   decideBudgetStageAction,
   setBudgetDriveUrlsAction,
 } from "../_actions/budget-actions";
@@ -50,9 +48,6 @@ export default async function CompetitionBudgetPage({
   if (!competition) notFound();
 
   const sheet = await ensureCompetitionBudget(db, competitionId);
-  const pendingSpends = sheet.lines.filter(
-    (line) => line.kind === "expense" && line.spendStatus === "proposed",
-  );
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -74,8 +69,8 @@ export default async function CompetitionBudgetPage({
                 {competition.name?.trim() || competition.city}
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                Aprueba el presupuesto, gastos y entregas. Los comprobantes
-                viven en Drive.
+                Aprueba el presupuesto y las entregas. Los comprobantes viven
+                en Drive.
               </p>
             </div>
             <Badge variant="outline">
@@ -183,53 +178,6 @@ export default async function CompetitionBudgetPage({
           </div>
         </section>
 
-        {pendingSpends.length > 0 ? (
-          <section className="bg-card space-y-3 rounded-lg border p-4 shadow-sm md:p-5">
-            <h2 className="font-semibold">Gastos por aprobar</h2>
-            <ul className="space-y-3">
-              {pendingSpends.map((line) => (
-                <li
-                  key={line.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{line.label}</p>
-                    <p className="text-muted-foreground text-xs">
-                      Esperado {formatMxnCents(line.expectedCents)}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <ActionForm action={decideBudgetSpendAction}>
-                      <input
-                        type="hidden"
-                        name="competitionId"
-                        value={competitionId}
-                      />
-                      <input type="hidden" name="lineId" value={line.id} />
-                      <input type="hidden" name="decision" value="approved" />
-                      <Button type="submit" size="sm">
-                        Aprobar
-                      </Button>
-                    </ActionForm>
-                    <ActionForm action={decideBudgetSpendAction}>
-                      <input
-                        type="hidden"
-                        name="competitionId"
-                        value={competitionId}
-                      />
-                      <input type="hidden" name="lineId" value={line.id} />
-                      <input type="hidden" name="decision" value="rejected" />
-                      <Button type="submit" size="sm" variant="outline">
-                        Rechazar
-                      </Button>
-                    </ActionForm>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
         <section className="bg-card space-y-3 rounded-lg border p-4 shadow-sm md:p-5">
           <h2 className="font-semibold">Renglones</h2>
           <ul className="divide-y rounded-lg border text-sm">
@@ -251,7 +199,7 @@ export default async function CompetitionBudgetPage({
                       ? ` · Real ${formatMxnCents(line.actualCents)}`
                       : null}
                     {line.kind === "expense"
-                      ? ` · ${BUDGET_SPEND_STATUS_LABELS[line.spendStatus]} · ${BUDGET_RECEIPT_STATUS_LABELS[line.receiptStatus]}`
+                      ? ` · ${BUDGET_RECEIPT_STATUS_LABELS[line.receiptStatus]}`
                       : null}
                   </p>
                 </div>

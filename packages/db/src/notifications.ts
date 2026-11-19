@@ -152,7 +152,8 @@ export function formatNotificationTitle(
     case "budget_plan_submitted":
       return `Presupuesto enviado para ${city}`;
     case "budget_expense_proposed":
-      return `Gasto pendiente de aprobación en ${city}`;
+      // Legacy notification type; per-line spend approval was removed.
+      return `Actualización de costos en ${city}`;
     case "budget_mid_submitted":
       return `Primer avance de costos enviado — ${city}`;
     case "budget_final_submitted":
@@ -228,7 +229,7 @@ export function hrefForNotification(
 
   if (
     type === "budget_plan_submitted" ||
-    type === "budget_expense_proposed" ||
+    type === "budget_expense_proposed" || // legacy href
     type === "budget_mid_submitted" ||
     type === "budget_final_submitted"
   ) {
@@ -424,7 +425,6 @@ export function budgetSubmittedNotificationRow(opts: {
   city: string;
   type:
     | "budget_plan_submitted"
-    | "budget_expense_proposed"
     | "budget_mid_submitted"
     | "budget_final_submitted";
 }): NewNotificationRow {

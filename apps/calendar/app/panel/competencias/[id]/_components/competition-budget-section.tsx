@@ -29,10 +29,6 @@ export async function CompetitionBudgetSection({
   competitionId: number;
 }) {
   const sheet = await getCompetitionBudgetSheet(db, competitionId);
-  const pendingSpends =
-    sheet?.lines.filter(
-      (line) => line.kind === "expense" && line.spendStatus === "proposed",
-    ).length ?? 0;
 
   return (
     <section className="bg-card space-y-4 rounded-lg border p-4 shadow-sm md:p-5">
@@ -72,11 +68,6 @@ export async function CompetitionBudgetSection({
               {formatMxnCents(sheet.summary.actualNetCents)}
             </span>
           </p>
-          {pendingSpends > 0 ? (
-            <p className="text-amber-800 text-xs">
-              {pendingSpends} gasto(s) pendiente(s) de aprobación
-            </p>
-          ) : null}
           {sheet.budget.receiptsDriveUrl ? (
             <a
               href={sheet.budget.receiptsDriveUrl}

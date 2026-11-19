@@ -425,31 +425,6 @@ export async function updateBudgetActuals(
         "Indica el motivo si no hay comprobante para un gasto",
       );
     }
-    if (
-      existing.kind === "expense" &&
-      line.actualCents > 0 &&
-      existing.spendStatus !== "approved" &&
-      existing.spendStatus !== "none"
-    ) {
-      // allow recording only after approval when a spend was proposed
-    }
-    if (
-      existing.kind === "expense" &&
-      line.actualCents > 0 &&
-      existing.spendStatus === "proposed"
-    ) {
-      throw new BudgetError(
-        `«${existing.label}» aún espera aprobación del delegado`,
-      );
-    }
-    if (
-      existing.kind === "expense" &&
-      line.actualCents > 0 &&
-      existing.spendStatus === "rejected"
-    ) {
-      throw new BudgetError(`«${existing.label}» fue rechazado por el delegado`);
-    }
-
     await dbx
       .update(competitionBudgetLines)
       .set({
@@ -477,67 +452,6 @@ export async function updateBudgetActuals(
     })
     .where(eq(competitionBudgets.id, sheet.budget.id));
 
-  return ensureCompetitionBudget(dbx, input.competitionId);
-}
-
-export async function proposeExpenseSpend(
-  dbx: DbOrTx,
-  input: { competitionId: number; lineId: number },
-) {
-  const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
-  if (
-    sheet.budget.status !== "plan_approved" &&
-    sheet.budget.status !== "mid_approved"
-  ) {
-    throw new BudgetError(
-      "Solo puedes solicitar gastos con el presupuesto aprobado",
-    );
-  }
-  const line = sheet.lines.find((row) => row.id === input.lineId);
-  if (!line || line.kind !== "expense" || line.isSystem) {
-    throw new BudgetError("Gasto no válido");
-  }
-  if (line.spendStatus === "approved") {
-    throw new BudgetError("Este gasto ya está aprobado");
-  }
-  await dbx
-    .update(competitionBudgetLines)
-    .set({
-      spendStatus: "proposed",
-      spendApprovedByUserId: null,
-      spendApprovedAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(competitionBudgetLines.id, line.id));
-  return ensureCompetitionBudget(dbx, input.competitionId);
-}
-
-export async function decideExpenseSpend(
-  dbx: DbOrTx,
-  input: {
-    competitionId: number;
-    lineId: number;
-    decision: "approved" | "rejected";
-    actorUserId: string;
-  },
-) {
-  const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
-  const line = sheet.lines.find((row) => row.id === input.lineId);
-  if (!line || line.kind !== "expense") {
-    throw new BudgetError("Gasto no válido");
-  }
-  if (line.spendStatus !== "proposed") {
-    throw new BudgetError("Este gasto no está pendiente de aprobación");
-  }
-  await dbx
-    .update(competitionBudgetLines)
-    .set({
-      spendStatus: input.decision,
-      spendApprovedByUserId: input.actorUserId,
-      spendApprovedAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(competitionBudgetLines.id, line.id));
   return ensureCompetitionBudget(dbx, input.competitionId);
 }
 

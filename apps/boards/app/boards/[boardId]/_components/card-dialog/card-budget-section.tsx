@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import {
   BUDGET_LINE_CATEGORY_LABELS,
   BUDGET_RECEIPT_STATUS_LABELS,
-  BUDGET_SPEND_STATUS_LABELS,
   BUDGET_STATUS_LABELS,
   formatMxnCents,
   parseMxnToCents,
@@ -24,7 +23,6 @@ import { getCalendarUrl } from "@/lib/urls";
 
 import {
   loadBudgetCard,
-  proposeBudgetSpendFromCard,
   saveBudgetActualsFromCard,
   saveBudgetPlanFromCard,
   type BudgetCardData,
@@ -41,7 +39,6 @@ type PlanLineDraft = {
   notes: string;
   isSystem: boolean;
   fromSponsor: boolean;
-  spendStatus?: string;
 };
 
 type ActualLineDraft = {
@@ -53,7 +50,6 @@ type ActualLineDraft = {
   actual: string;
   receiptStatus: BudgetReceiptStatus;
   receiptMissingReason: string;
-  spendStatus: string;
   notes: string;
 };
 
@@ -104,7 +100,6 @@ export function CardBudgetSection({
         notes: line.notes ?? "",
         isSystem: line.isSystem,
         fromSponsor: line.sponsorId != null,
-        spendStatus: line.spendStatus,
       })),
     );
     setActualLines(
@@ -118,7 +113,6 @@ export function CardBudgetSection({
           line.actualCents != null ? pesosInput(line.actualCents) : "",
         receiptStatus: line.receiptStatus,
         receiptMissingReason: line.receiptMissingReason ?? "",
-        spendStatus: line.spendStatus,
         notes: line.notes ?? "",
       })),
     );
@@ -303,9 +297,6 @@ export function CardBudgetSection({
     data.budget.status === "plan_submitted" ||
     data.budget.status === "mid_submitted" ||
     data.budget.status === "final_submitted";
-  const awaitingSpendReview = data.lines.some(
-    (line) => line.spendStatus === "proposed",
-  );
   const costsReviewHref = board.competition
     ? `${getCalendarUrl()}/panel/competencias/${board.competition.id}/costos`
     : null;
@@ -319,13 +310,9 @@ export function CardBudgetSection({
         </Badge>
       </div>
 
-      {awaitingStageReview || awaitingSpendReview ? (
+      {awaitingStageReview ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          <p>
-            {awaitingStageReview
-              ? "Enviado al delegado."
-              : "Hay gastos esperando aprobación del delegado."}
-          </p>
+          <p>Enviado al delegado.</p>
           {isDelegate && costsReviewHref ? (
             <Button asChild size="sm" variant="outline">
               <a href={costsReviewHref} target="_blank" rel="noreferrer">
@@ -600,52 +587,11 @@ export function CardBudgetSection({
                 key={line.id}
                 className="bg-muted/40 space-y-2 rounded-md border p-3"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium">{line.label}</p>
-                    <p className="text-muted-foreground text-xs">
-                      Esperado {formatMxnCents(line.expectedCents)}
-                      {line.kind === "expense" ? (
-                        <>
-                          {" "}
-                          ·{" "}
-                          {
-                            BUDGET_SPEND_STATUS_LABELS[
-                              line.spendStatus as keyof typeof BUDGET_SPEND_STATUS_LABELS
-                            ]
-                          }
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-                  {line.kind === "expense" &&
-                  !line.isSystem &&
-                  canEditActuals &&
-                  line.spendStatus !== "approved" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={pending || line.spendStatus === "proposed"}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const result = await proposeBudgetSpendFromCard({
-                            boardId: board.id,
-                            cardId,
-                            lineId: line.id,
-                          });
-                          if (!result.ok) {
-                            toast.error(result.message);
-                            return;
-                          }
-                          apply(result.data);
-                          toast.success(result.message);
-                        });
-                      }}
-                    >
-                      Pedir aprobación
-                    </Button>
-                  ) : null}
+                <div>
+                  <p className="text-sm font-medium">{line.label}</p>
+                  <p className="text-muted-foreground text-xs">
+                    Esperado {formatMxnCents(line.expectedCents)}
+                  </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Input

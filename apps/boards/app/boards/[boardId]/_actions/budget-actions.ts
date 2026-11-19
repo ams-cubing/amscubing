@@ -7,7 +7,6 @@ import { db } from "@workspace/db";
 import {
   BudgetError,
   ensureCompetitionBudget,
-  proposeExpenseSpend,
   removeCompetitionSponsor,
   submitBudgetStage,
   updateBudgetActuals,
@@ -306,70 +305,6 @@ export async function saveBudgetActualsFromCard(
     }
     log.error("boards.budget.actuals_failed", { error, competitionId });
     return { ok: false, message: "No se pudieron guardar los costos reales" };
-  }
-}
-
-const proposeSchema = cardSchema.extend({
-  lineId: z.number().int().positive(),
-});
-
-export async function proposeBudgetSpendFromCard(
-  raw: z.input<typeof proposeSchema>,
-): Promise<BudgetMutationResult> {
-  const parsed = proposeSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { ok: false, message: "Gasto inválido" };
-  }
-  const input = parsed.data;
-  const actor = await requireBoardAccess(input.boardId);
-  if (!(await rateLimit(actor.id))) {
-    return {
-      ok: false,
-      message: "Espera unos minutos antes de solicitar más gastos",
-    };
-  }
-  const { competitionId } = await budgetCardCompetition(
-    input.boardId,
-    input.cardId,
-    ["mid", "final"],
-  );
-  if (!competitionId) {
-    return {
-      ok: false,
-      message: "Este tablero no está ligado a una competencia",
-    };
-  }
-
-  try {
-    const data = await db.transaction(async (tx) => {
-      const sheet = await proposeExpenseSpend(tx, {
-        competitionId,
-        lineId: input.lineId,
-      });
-      const delegates = await competitionDelegatesOnly(tx, competitionId);
-      await insertNotifications(
-        tx,
-        delegates.map((delegate) =>
-          budgetSubmittedNotificationRow({
-            recipient: delegate,
-            actorId: actor.id,
-            calendarUrl: getCalendarUrl(),
-            competitionId,
-            budgetId: sheet.budget.id,
-            city: sheet.competition.name?.trim() || sheet.competition.city,
-            type: "budget_expense_proposed",
-          }),
-        ),
-      );
-      return sheet;
-    });
-    return { ok: true, message: "Gasto enviado a aprobación", data };
-  } catch (error) {
-    if (error instanceof BudgetError) {
-      return { ok: false, message: error.message };
-    }
-    log.error("boards.budget.propose_failed", { error, competitionId });
-    return { ok: false, message: "No se pudo solicitar la aprobación" };
   }
 }
 

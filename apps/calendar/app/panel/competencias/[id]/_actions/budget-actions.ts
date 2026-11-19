@@ -7,7 +7,6 @@ import { db } from "@workspace/db";
 import {
   BudgetError,
   decideBudgetStage,
-  decideExpenseSpend,
   setBudgetDriveUrls,
 } from "@workspace/db/budget";
 import {
@@ -216,47 +215,3 @@ export async function decideBudgetStageAction(
   });
 }
 
-export async function decideBudgetSpendAction(
-  _state: ActionResult | null,
-  data: FormData,
-): Promise<ActionResult> {
-  return runAction(async () => {
-    const actor = await requireBudgetDelegate();
-    const competitionId = Number(data.get("competitionId"));
-    const lineId = Number(data.get("lineId"));
-    const decision = String(data.get("decision") ?? "");
-    const parsed = z
-      .object({
-        competitionId: z.number().int().positive(),
-        lineId: z.number().int().positive(),
-        decision: z.enum(["approved", "rejected"]),
-      })
-      .safeParse({ competitionId, lineId, decision });
-    if (!parsed.success) throw new ActionError("Solicitud inválida");
-
-    try {
-      await decideExpenseSpend(db, {
-        competitionId: parsed.data.competitionId,
-        lineId: parsed.data.lineId,
-        decision: parsed.data.decision,
-        actorUserId: actor.id,
-      });
-    } catch (error) {
-      if (error instanceof BudgetError) throw new ActionError(error.message);
-      throw error;
-    }
-    log.info("calendar.budget.spend_decided", {
-      competitionId: parsed.data.competitionId,
-      lineId: parsed.data.lineId,
-      decision: parsed.data.decision,
-      actorId: actor.id,
-    });
-    return {
-      ok: true,
-      message:
-        parsed.data.decision === "approved"
-          ? "Gasto aprobado"
-          : "Gasto rechazado",
-    };
-  });
-}
