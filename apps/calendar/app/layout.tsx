@@ -84,7 +84,12 @@ async function CalendarAppNavWrapper() {
       ? (await getDelegatePanelBadges(normalizedUser.wcaId)).total
       : 0;
 
-  return <CalendarAppNav delegateBadgeCount={delegateBadgeCount} />;
+  return (
+    <CalendarAppNav
+      isDelegate={isDelegate}
+      delegateBadgeCount={delegateBadgeCount}
+    />
+  );
 }
 
 function calendarNavUrls() {

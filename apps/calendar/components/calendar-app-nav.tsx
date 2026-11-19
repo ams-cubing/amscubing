@@ -55,10 +55,12 @@ function NavLink({
 }
 
 type CalendarAppNavProps = {
+  isDelegate?: boolean;
   delegateBadgeCount?: number;
 };
 
 function CalendarAppNavShell({
+  isDelegate = false,
   delegateBadgeCount = 0,
   pathname,
 }: CalendarAppNavProps & {
@@ -85,16 +87,26 @@ function CalendarAppNavShell({
               />
             </>
           ) : (
-            CALENDAR_LINKS.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.name}
-                active={
-                  pathname != null && isActivePath(activePath, item.href)
-                }
-              />
-            ))
+            <>
+              {CALENDAR_LINKS.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.name}
+                  active={
+                    pathname != null && isActivePath(activePath, item.href)
+                  }
+                />
+              ))}
+              {isDelegate ? (
+                <NavLink
+                  href="/panel"
+                  label="Panel"
+                  active={false}
+                  badgeCount={delegateBadgeCount}
+                />
+              ) : null}
+            </>
           )}
         </nav>
       </div>

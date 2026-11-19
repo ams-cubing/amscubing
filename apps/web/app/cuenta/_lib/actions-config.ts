@@ -78,7 +78,7 @@ export function getAccountSections({
     organization.push({
       title: "Asociación",
       description: isDelegate
-        ? "Delegados públicos, redes, inventario de equipo y permisos del equipo AMS."
+        ? "Delegados, redes, equipo, varias competencias y permisos del equipo AMS."
         : "Asigna permisos de Blog y Cursos al equipo AMS.",
       href: "/admin",
       icon: Newspaper,
