@@ -11,3 +11,4 @@ export * from "./blog";
 export * from "./profiles";
 export * from "./uploads";
 export * from "./equipment";
+export * from "./ams-scale";

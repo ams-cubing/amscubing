@@ -8,8 +8,11 @@ import { db } from "@workspace/db";
 import {
   formatDelegatesLabel,
   resolveCompetitionScale,
+  serializeScaleTiers,
+  type AmsCompetitionTierStored,
   type CompetitionScale,
 } from "@workspace/db/ams-competition-scale";
+import { getCompetitionScaleTiers } from "@workspace/db/ams-competition-scale-store";
 import {
   isWcaEventId,
   listWcaEvents,
@@ -39,6 +42,7 @@ export type CompetitionDetailsData = {
   mainEventId: string | null;
   eventCount: number;
   events: readonly WcaEvent[];
+  tiers: AmsCompetitionTierStored[];
   scale: CompetitionScale;
   delegatesLabel: string;
   recommendations: {
@@ -97,9 +101,11 @@ async function loadData(
     capacity: row.capacity,
     eventIds,
   });
+  const { tiers } = await getCompetitionScaleTiers(db);
   const scale = resolveCompetitionScale({
     capacity: row.capacity,
     stationCount: row.stationCount,
+    tiers,
   });
 
   return {
@@ -115,6 +121,7 @@ async function loadData(
     mainEventId: row.mainEventId,
     eventCount: eventsPlan.length,
     events: listWcaEvents(),
+    tiers: serializeScaleTiers(tiers),
     scale,
     delegatesLabel: formatDelegatesLabel(scale),
     recommendations: {

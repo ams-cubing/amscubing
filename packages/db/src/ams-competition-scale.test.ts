@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  AMS_COMPETITION_TIERS,
+  DEFAULT_AMS_COMPETITION_TIERS,
   formatCompetitorsBand,
   formatDelegatesLabel,
   formatStationsBand,
+  normalizeScaleTiers,
   resolveCompetitionScale,
+  serializeScaleTiers,
 } from "./ams-competition-scale";
 
 describe("resolveCompetitionScale", () => {
@@ -68,10 +70,20 @@ describe("resolveCompetitionScale", () => {
   });
 
   it("formats table band labels", () => {
-    expect(formatCompetitorsBand(AMS_COMPETITION_TIERS[0]!, 0)).toBe("1-80");
-    expect(formatCompetitorsBand(AMS_COMPETITION_TIERS[1]!, 1)).toBe("81-120");
-    expect(formatCompetitorsBand(AMS_COMPETITION_TIERS[4]!, 4)).toBe("241+");
-    expect(formatStationsBand(AMS_COMPETITION_TIERS[0]!)).toBe("8");
-    expect(formatStationsBand(AMS_COMPETITION_TIERS[4]!)).toBe("30+");
+    const tiers = DEFAULT_AMS_COMPETITION_TIERS;
+    expect(formatCompetitorsBand(tiers[0]!, 0, tiers)).toBe("1-80");
+    expect(formatCompetitorsBand(tiers[1]!, 1, tiers)).toBe("81-120");
+    expect(formatCompetitorsBand(tiers[4]!, 4, tiers)).toBe("241+");
+    expect(formatStationsBand(tiers[0]!)).toBe("8");
+    expect(formatStationsBand(tiers[4]!, tiers[3]!.maxStations)).toBe("21+");
+  });
+
+  it("round-trips serialize/normalize defaults", () => {
+    const stored = serializeScaleTiers(DEFAULT_AMS_COMPETITION_TIERS);
+    expect(stored[4]!.maxCompetitors).toBeNull();
+    const tiers = normalizeScaleTiers(stored);
+    expect(tiers).toHaveLength(5);
+    expect(tiers[4]!.maxCompetitors).toBe(Number.POSITIVE_INFINITY);
+    expect(tiers[0]!.level).toBe("debutante");
   });
 });

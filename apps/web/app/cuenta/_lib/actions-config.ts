@@ -86,10 +86,10 @@ export function getAccountSections({
   if (isDelegate) {
     organization.push(
       {
-        title: "Crear competencias",
+        title: "Panel de delegado",
         description:
-          "Abre el calendario para revisar solicitudes y administrar competencias.",
-        href: `${calendarUrl}/panel/competencias/nueva`,
+          "Revisa solicitudes, administra competencias y gestiona el equipo.",
+        href: `${calendarUrl}/panel`,
         icon: ShieldCheck,
       },
       {

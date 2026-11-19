@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { Suspense } from "react";
 import { forbidden } from "next/navigation";
 
@@ -41,6 +42,12 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <Link href="/admin/redes" className={TAB_CLASS}>
                   Redes
+                </Link>
+                <Link
+                  href={"/admin/tabuladores" as Route}
+                  className={TAB_CLASS}
+                >
+                  Tabuladores
                 </Link>
               </>
             )}

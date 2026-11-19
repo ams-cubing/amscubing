@@ -4,7 +4,10 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { resolveCompetitionScale } from "@workspace/db/ams-competition-scale";
+import {
+  deserializeScaleTiers,
+  resolveCompetitionScale,
+} from "@workspace/db/ams-competition-scale";
 import type { CompetitionEventPlanItem } from "@workspace/db/competition-format";
 import {
   recommendedScramblers,
@@ -208,12 +211,14 @@ export function CardCategoriesScheduleSection({
     capacity: data.capacity,
     eventIds: selectedIds,
   });
+  const tiers = deserializeScaleTiers(data.tiers);
   const liveScale = resolveCompetitionScale({
     capacity: data.capacity,
     stationCount:
       liveStations != null && Number.isInteger(liveStations) && liveStations >= 1
         ? liveStations
         : data.format.stationCount,
+    tiers,
   });
   const eventsOverMax = selectedCount > liveScale.maxEvents;
 

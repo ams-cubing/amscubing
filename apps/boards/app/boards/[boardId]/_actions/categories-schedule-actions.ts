@@ -6,6 +6,11 @@ import { z } from "zod";
 
 import { db } from "@workspace/db";
 import {
+  serializeScaleTiers,
+  type AmsCompetitionTierStored,
+} from "@workspace/db/ams-competition-scale";
+import { getCompetitionScaleTiers } from "@workspace/db/ams-competition-scale-store";
+import {
   CompetitionFormatError,
   listWcaEvents,
   recommendedScramblers,
@@ -28,6 +33,7 @@ export type CategoriesScheduleData = {
   format: CompetitionFormat;
   capacity: number;
   events: readonly WcaEvent[];
+  tiers: AmsCompetitionTierStored[];
   recommendations: {
     staffMinimum: number | null;
     scramblers: number;
@@ -93,11 +99,13 @@ async function loadData(
     zoneCount: row.zoneCount,
     eventsPlan: Array.isArray(row.eventsPlan) ? row.eventsPlan : [],
   };
+  const { tiers } = await getCompetitionScaleTiers(db);
 
   return {
     format,
     capacity: row.capacity,
     events: listWcaEvents(),
+    tiers: serializeScaleTiers(tiers),
     recommendations: recommendationsFor(format, row.capacity),
   };
 }

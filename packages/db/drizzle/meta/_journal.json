@@ -379,6 +379,13 @@
       "when": 1795054447830,
       "tag": "0053_vengeful_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795058357492,
+      "tag": "0054_curly_starhawk",
+      "breakpoints": true
     }
   ]
 }

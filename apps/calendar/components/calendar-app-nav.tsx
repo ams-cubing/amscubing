@@ -10,7 +10,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { isDelegatePanelPath } from "@/lib/delegate-panel-nav";
 
 const CALENDAR_LINKS = [
-  { name: "Inicio", href: "/" },
+  { name: "Calendario", href: "/" },
   { name: "Regiones", href: "/regiones" },
   { name: "Solicitar fecha", href: "/solicitar-fecha" },
 ] as const;
@@ -69,40 +69,61 @@ function CalendarAppNavShell({
   pathname: string | null;
 }) {
   const activePath = pathname ?? "";
+  const inPanel = pathname != null && isDelegatePanelPath(activePath);
 
   return (
     <div className="border-b border-border bg-card">
       <div className="mx-auto flex items-center gap-2 px-4 py-2 md:gap-3 md:px-5">
         <nav
-          aria-label="Calendario"
+          aria-label={inPanel ? "Panel de delegado" : "Calendario"}
           className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {CALENDAR_LINKS.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.name}
-              active={pathname != null && isActivePath(activePath, item.href)}
-            />
-          ))}
-          {isSignedIn ? (
-            <NavLink
-              href="/mis-competencias"
-              label="Mis competencias"
-              active={
-                pathname != null &&
-                isActivePath(activePath, "/mis-competencias")
-              }
-            />
-          ) : null}
-          {isDelegate ? (
-            <NavLink
-              href="/panel"
-              label="Panel"
-              active={pathname != null && isDelegatePanelPath(activePath)}
-              badgeCount={delegateBadgeCount}
-            />
-          ) : null}
+          {inPanel ? (
+            <>
+              <NavLink
+                href="/"
+                label="Calendario"
+                active={false}
+              />
+              <NavLink
+                href="/panel"
+                label="Panel"
+                active
+                badgeCount={delegateBadgeCount}
+              />
+            </>
+          ) : (
+            <>
+              {CALENDAR_LINKS.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.name}
+                  active={
+                    pathname != null && isActivePath(activePath, item.href)
+                  }
+                />
+              ))}
+              {isSignedIn ? (
+                <NavLink
+                  href="/mis-competencias"
+                  label="Mis competencias"
+                  active={
+                    pathname != null &&
+                    isActivePath(activePath, "/mis-competencias")
+                  }
+                />
+              ) : null}
+              {isDelegate ? (
+                <NavLink
+                  href="/panel"
+                  label="Panel"
+                  active={false}
+                  badgeCount={delegateBadgeCount}
+                />
+              ) : null}
+            </>
+          )}
         </nav>
       </div>
     </div>

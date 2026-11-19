@@ -60,12 +60,15 @@ describe("getAccountSections", () => {
     });
     expect(titles(organization)).toEqual([
       "Panel de administración",
-      "Crear competencias",
+      "Panel de delegado",
       "Tableros de organización",
       "Administrar Blog",
       "Administrar Cursos",
     ]);
     const hrefs = [...member, ...organization].map((a) => a.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(
+      organization.find((a) => a.title === "Panel de delegado")?.href,
+    ).toMatch(/\/panel$/);
   });
 });

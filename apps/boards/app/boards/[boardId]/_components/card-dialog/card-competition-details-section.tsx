@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
-  AMS_COMPETITION_TIERS,
+  deserializeScaleTiers,
   formatCompetitorsBand,
   formatDelegatesLabel,
   formatStationsBand,
@@ -41,8 +41,16 @@ function formatDate(value: string) {
   return dateFormat.format(new Date(`${value}T12:00:00`));
 }
 
-function formatMaxStations(maxStations: number) {
-  return Number.isFinite(maxStations) ? String(maxStations) : "30+";
+function formatMaxStations(maxStations: number, previousMaxStations?: number) {
+  if (Number.isFinite(maxStations)) return String(maxStations);
+  if (
+    previousMaxStations != null &&
+    Number.isFinite(previousMaxStations) &&
+    previousMaxStations >= 1
+  ) {
+    return `${previousMaxStations + 1}+`;
+  }
+  return "∞";
 }
 
 export function CardCompetitionDetailsSection({
@@ -130,6 +138,7 @@ export function CardCompetitionDetailsSection({
   }
 
   const editable = !readOnly && !pending;
+  const tiers = deserializeScaleTiers(data.tiers);
   const liveCapacity = Number(capacity);
   const liveStations = stationCount.trim() ? Number(stationCount) : null;
   const scaleReady =
@@ -144,6 +153,7 @@ export function CardCompetitionDetailsSection({
           liveStations != null && Number.isInteger(liveStations)
             ? liveStations
             : null,
+        tiers,
       })
     : data.scale;
   const liveDelegatesLabel = formatDelegatesLabel(liveScale);
@@ -264,7 +274,12 @@ export function CardCompetitionDetailsSection({
             min={1}
             max={200}
             inputMode="numeric"
-            placeholder={`guía ≤ ${formatMaxStations(liveScale.maxStations)}`}
+            placeholder={`guía ≤ ${formatMaxStations(
+              liveScale.maxStations,
+              liveScale.index > 0
+                ? tiers[liveScale.index - 1]?.maxStations
+                : undefined,
+            )}`}
             value={stationCount}
             disabled={!editable}
             onChange={(event) => setStationCount(event.target.value)}
@@ -309,7 +324,12 @@ export function CardCompetitionDetailsSection({
             {" · "}
             categorías {data.eventCount}/{liveScale.maxEvents}
             {liveStations != null
-              ? ` · estaciones ${liveStations}/${formatMaxStations(liveScale.maxStations)}`
+              ? ` · estaciones ${liveStations}/${formatMaxStations(
+                  liveScale.maxStations,
+                  liveScale.index > 0
+                    ? tiers[liveScale.index - 1]?.maxStations
+                    : undefined,
+                )}`
               : null}
           </p>
         </div>
@@ -333,7 +353,7 @@ export function CardCompetitionDetailsSection({
               </tr>
             </thead>
             <tbody>
-              {AMS_COMPETITION_TIERS.map((tier, index) => {
+              {tiers.map((tier, index) => {
                 const active = index === liveScale.index;
                 return (
                   <tr
@@ -344,10 +364,13 @@ export function CardCompetitionDetailsSection({
                       {tier.minOrganizerCompetitions}
                     </td>
                     <td className="border px-2 py-1.5">
-                      {formatCompetitorsBand(tier, index)}
+                      {formatCompetitorsBand(tier, index, tiers)}
                     </td>
                     <td className="border px-2 py-1.5">
-                      {formatStationsBand(tier)}
+                      {formatStationsBand(
+                        tier,
+                        index > 0 ? tiers[index - 1]!.maxStations : undefined,
+                      )}
                     </td>
                     <td className="border px-2 py-1.5">{tier.maxEvents}</td>
                     <td className="border px-2 py-1.5">{tier.labelEs}</td>
@@ -373,7 +396,7 @@ export function CardCompetitionDetailsSection({
               </tr>
             </thead>
             <tbody>
-              {AMS_COMPETITION_TIERS.map((tier, index) => {
+              {tiers.map((tier, index) => {
                 const active = index === liveScale.index;
                 return (
                   <tr
@@ -381,10 +404,13 @@ export function CardCompetitionDetailsSection({
                     className={active ? "bg-primary/10 font-medium" : undefined}
                   >
                     <td className="border px-2 py-1.5">
-                      {formatCompetitorsBand(tier, index)}
+                      {formatCompetitorsBand(tier, index, tiers)}
                     </td>
                     <td className="border px-2 py-1.5">
-                      {formatStationsBand(tier)}
+                      {formatStationsBand(
+                        tier,
+                        index > 0 ? tiers[index - 1]!.maxStations : undefined,
+                      )}
                     </td>
                     <td className="border px-2 py-1.5">
                       {formatDelegatesLabel(tier)}

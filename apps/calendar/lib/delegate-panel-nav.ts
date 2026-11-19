@@ -25,6 +25,7 @@ export type DelegatePanelLink = {
   badgeKey: DelegatePanelBadgeKey | null;
 };
 
+/** Primary panel sections shown in the subnav. */
 export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
   {
     name: "Competencias",
@@ -37,12 +38,6 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     href: "/panel/solicitudes-fecha",
     icon: Inbox,
     badgeKey: "dateRequests",
-  },
-  {
-    name: "Nueva competencia",
-    href: "/panel/competencias/nueva",
-    icon: PlusCircle,
-    badgeKey: null,
   },
   {
     name: "Disponibilidad",
@@ -69,6 +64,14 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     badgeKey: null,
   },
 ] as const;
+
+/** Create action for the panel hub tile (not in the always-on subnav). */
+export const CREATE_COMPETITION_LINK: DelegatePanelLink = {
+  name: "Nueva competencia",
+  href: "/panel/competencias/nueva",
+  icon: PlusCircle,
+  badgeKey: null,
+};
 
 export function isDelegatePanelPath(pathname: string) {
   return pathname === "/panel" || pathname.startsWith("/panel/");
