@@ -10,6 +10,8 @@ import {
 } from "@workspace/db/ams-competition-scale";
 import type { CompetitionEventPlanItem } from "@workspace/db/competition-format";
 import {
+  DEFAULT_TIME_LIMIT_CS,
+  maxRoundsAllowed,
   recommendedScramblers,
   recommendedStaffMinimum,
 } from "@workspace/db/competition-format-rules";
@@ -21,31 +23,29 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
 import {
+  centisecondsToDigits,
+  digitsToCentiseconds,
+} from "@/lib/digit-time";
+
+import {
   loadCategoriesScheduleCard,
   saveCategoriesScheduleFromCard,
   type CategoriesScheduleData,
 } from "../../_actions/categories-schedule-actions";
 import type { BoardDetail } from "../../_lib/types";
+import { DigitTimeInput } from "./digit-time-input";
+import { WcaEventIcon, WcaEventLabel } from "./wca-event-label";
 
-function csToSecondsInput(cs: number | null): string {
-  if (cs == null) return "";
-  return String(Math.round(cs / 100));
-}
-
-function secondsInputToCs(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const seconds = Number(trimmed);
-  if (!Number.isFinite(seconds) || seconds < 0) return null;
-  return Math.round(seconds * 100);
-}
+const DEFAULT_TIME_LIMIT_DIGITS = centisecondsToDigits(DEFAULT_TIME_LIMIT_CS);
 
 type EventDraft = {
   selected: boolean;
   expectedCompetitors: string;
   rounds: string;
-  cutoffSeconds: string;
-  timeLimitSeconds: string;
+  /** Digit-pad digits for cutoff (Cubing México style). */
+  cutoffDigits: string;
+  /** Digit-pad digits for time limit. */
+  timeLimitDigits: string;
 };
 
 function draftsFrom(data: CategoriesScheduleData): Record<string, EventDraft> {
@@ -65,15 +65,37 @@ function draftsFrom(data: CategoriesScheduleData): Record<string, EventDraft> {
         ? String(existing.expectedCompetitors)
         : defaultExpected,
       rounds: existing ? String(existing.rounds) : "1",
-      cutoffSeconds: csToSecondsInput(existing?.cutoffCs ?? null),
-      timeLimitSeconds: csToSecondsInput(existing?.timeLimitCs ?? null),
+      cutoffDigits:
+        existing?.cutoffCs == null
+          ? ""
+          : centisecondsToDigits(existing.cutoffCs),
+      timeLimitDigits: existing
+        ? existing.timeLimitCs == null
+          ? ""
+          : centisecondsToDigits(existing.timeLimitCs)
+        : DEFAULT_TIME_LIMIT_DIGITS,
     };
   }
   return map;
 }
 
+function parseDraftTime(
+  digits: string,
+  label: string,
+  eventId: string,
+): number | null | { error: string } {
+  const parsed = digitsToCentiseconds(digits);
+  if (parsed === "invalid") {
+    return {
+      error: `${label} inválido en ${eventId} (usa solo números, p. ej. 50000 = 5:00.00)`,
+    };
+  }
+  return parsed;
+}
+
 function buildPlan(
   drafts: Record<string, EventDraft>,
+  capacity: number,
 ): CompetitionEventPlanItem[] | { error: string } {
   const plan: CompetitionEventPlanItem[] = [];
   for (const [eventId, draft] of Object.entries(drafts)) {
@@ -87,29 +109,48 @@ function buildPlan(
     ) {
       return { error: `Competidores inválidos en ${eventId}` };
     }
+    if (expectedCompetitors > capacity) {
+      return {
+        error: `Esperados en ${eventId} no pueden superar el cupo (${capacity})`,
+      };
+    }
     if (!Number.isFinite(rounds) || rounds < 1 || rounds > 4) {
       return { error: `Rondas inválidas en ${eventId}` };
     }
-    const cutoffCs = secondsInputToCs(draft.cutoffSeconds);
-    const timeLimitCs = secondsInputToCs(draft.timeLimitSeconds);
-    if (draft.cutoffSeconds.trim() && cutoffCs == null) {
-      return { error: `Corte inválido en ${eventId} (usa segundos)` };
+    const allowed = maxRoundsAllowed(expectedCompetitors);
+    if (rounds > allowed) {
+      return {
+        error: `Con ${expectedCompetitors} esperados en ${eventId}, 9m permite máximo ${allowed} ${allowed === 1 ? "ronda" : "rondas"}`,
+      };
     }
-    if (draft.timeLimitSeconds.trim() && timeLimitCs == null) {
-      return { error: `Límite inválido en ${eventId} (usa segundos)` };
+    const cutoffCs = parseDraftTime(draft.cutoffDigits, "Corte", eventId);
+    if (cutoffCs && typeof cutoffCs === "object" && "error" in cutoffCs) {
+      return cutoffCs;
+    }
+    const timeLimitCs = parseDraftTime(
+      draft.timeLimitDigits,
+      "Límite",
+      eventId,
+    );
+    if (
+      timeLimitCs &&
+      typeof timeLimitCs === "object" &&
+      "error" in timeLimitCs
+    ) {
+      return timeLimitCs;
     }
     plan.push({
       eventId,
       expectedCompetitors,
       rounds,
-      cutoffCs,
-      timeLimitCs,
+      cutoffCs: cutoffCs as number | null,
+      timeLimitCs: timeLimitCs as number | null,
     });
   }
   return plan;
 }
 
-export function CardCategoriesScheduleSection({
+export function CardCategoriesSection({
   board,
   cardId,
   readOnly,
@@ -150,7 +191,7 @@ export function CardCategoriesScheduleSection({
       .catch(() => {
         if (!cancelled) {
           setData(null);
-          toast.error("No se pudo cargar categorías y horario");
+          toast.error("No se pudo cargar categorías");
         }
       });
     return () => {
@@ -161,7 +202,7 @@ export function CardCategoriesScheduleSection({
   if (!board.competition) {
     return (
       <section className="space-y-2 rounded-lg border border-dashed p-4">
-        <h3 className="text-sm font-semibold">Categorías y horario</h3>
+        <h3 className="text-sm font-semibold">Categorías</h3>
         <p className="text-muted-foreground text-sm">
           Este tablero no está ligado a una competencia.
         </p>
@@ -172,7 +213,7 @@ export function CardCategoriesScheduleSection({
   if (data === undefined) {
     return (
       <section className="space-y-2 rounded-lg border p-4">
-        <h3 className="text-sm font-semibold">Categorías y horario</h3>
+        <h3 className="text-sm font-semibold">Categorías</h3>
         <p className="text-muted-foreground text-sm">Cargando…</p>
       </section>
     );
@@ -181,7 +222,7 @@ export function CardCategoriesScheduleSection({
   if (data === null) {
     return (
       <section className="space-y-2 rounded-lg border border-dashed p-4">
-        <h3 className="text-sm font-semibold">Categorías y horario</h3>
+        <h3 className="text-sm font-semibold">Categorías</h3>
         <p className="text-muted-foreground text-sm">
           No se pudo cargar el formato de la competencia.
         </p>
@@ -230,7 +271,9 @@ export function CardCategoriesScheduleSection({
   }
 
   function save() {
-    const plan = buildPlan(drafts);
+    if (!data) return;
+    const capacity = data.capacity;
+    const plan = buildPlan(drafts, capacity);
     if ("error" in plan) {
       toast.error(plan.error);
       return;
@@ -277,7 +320,6 @@ export function CardCategoriesScheduleSection({
           Define estaciones, zonas y categorías antes del anuncio. Cupo y
           estaciones también se editan en{" "}
           <span className="font-medium">{COMPETITION_DETAILS_CARD_TITLE}</span>.
-          El horario detallado sigue en la plantilla de cálculo adjunta.
         </p>
       </div>
 
@@ -323,12 +365,16 @@ export function CardCategoriesScheduleSection({
           {data.events.map((event) => {
             const draft = drafts[event.id];
             if (!draft) return null;
+            const expected = Number(draft.expectedCompetitors);
+            const roundMax = Number.isFinite(expected)
+              ? maxRoundsAllowed(expected)
+              : 4;
             return (
               <li
                 key={event.id}
                 className="space-y-2 rounded-md border px-3 py-2"
               >
-                <label className="flex items-center gap-2 text-sm font-medium">
+                <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={draft.selected}
                     disabled={!editable}
@@ -340,13 +386,12 @@ export function CardCategoriesScheduleSection({
                           (event.id === "333" || event.id === "222"
                             ? String(data.capacity)
                             : draft.expectedCompetitors),
+                        timeLimitDigits:
+                          draft.timeLimitDigits || DEFAULT_TIME_LIMIT_DIGITS,
                       })
                     }
                   />
-                  <span>{event.shortName}</span>
-                  <span className="text-muted-foreground font-normal">
-                    {event.name}
-                  </span>
+                  <WcaEventLabel event={event} />
                 </label>
                 {draft.selected ? (
                   <div className="grid gap-2 sm:grid-cols-4">
@@ -355,14 +400,35 @@ export function CardCategoriesScheduleSection({
                       <Input
                         type="number"
                         min={0}
+                        max={data.capacity}
                         inputMode="numeric"
                         value={draft.expectedCompetitors}
                         disabled={!editable}
-                        onChange={(change) =>
+                        onChange={(change) => {
+                          const raw = change.target.value;
+                          if (raw === "") {
+                            updateDraft(event.id, {
+                              expectedCompetitors: "",
+                            });
+                            return;
+                          }
+                          const value = Number(raw);
+                          if (!Number.isFinite(value)) return;
+                          const nextExpected = Math.min(
+                            data.capacity,
+                            Math.max(0, Math.floor(value)),
+                          );
+                          const allowed = maxRoundsAllowed(nextExpected);
+                          const currentRounds = Number(draft.rounds);
                           updateDraft(event.id, {
-                            expectedCompetitors: change.target.value,
-                          })
-                        }
+                            expectedCompetitors: String(nextExpected),
+                            rounds:
+                              Number.isFinite(currentRounds) &&
+                              currentRounds > allowed
+                                ? String(allowed)
+                                : draft.rounds,
+                          });
+                        }}
                       />
                     </div>
                     <div className="space-y-1">
@@ -370,51 +436,52 @@ export function CardCategoriesScheduleSection({
                       <Input
                         type="number"
                         min={1}
-                        max={4}
+                        max={roundMax}
                         inputMode="numeric"
                         value={draft.rounds}
                         disabled={!editable}
-                        onChange={(change) =>
+                        onChange={(change) => {
+                          const raw = change.target.value;
+                          if (raw === "") {
+                            updateDraft(event.id, { rounds: "" });
+                            return;
+                          }
+                          const value = Number(raw);
+                          if (!Number.isFinite(value)) return;
                           updateDraft(event.id, {
-                            rounds: change.target.value,
-                          })
-                        }
+                            rounds: String(
+                              Math.min(
+                                roundMax,
+                                Math.max(1, Math.floor(value)),
+                              ),
+                            ),
+                          });
+                        }}
                       />
+                      <p className="text-muted-foreground text-[11px]">
+                        Máx. {roundMax} (9m)
+                      </p>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Corte (s)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="1"
-                        inputMode="numeric"
-                        placeholder="—"
-                        value={draft.cutoffSeconds}
-                        disabled={!editable}
-                        onChange={(change) =>
-                          updateDraft(event.id, {
-                            cutoffSeconds: change.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Límite (s)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="1"
-                        inputMode="numeric"
-                        placeholder="—"
-                        value={draft.timeLimitSeconds}
-                        disabled={!editable}
-                        onChange={(change) =>
-                          updateDraft(event.id, {
-                            timeLimitSeconds: change.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                    <DigitTimeInput
+                      id={`cutoff-${event.id}`}
+                      label="Corte"
+                      placeholder="ej. 50000 = 5:00.00"
+                      digits={draft.cutoffDigits}
+                      disabled={!editable}
+                      onDigitsChange={(cutoffDigits) =>
+                        updateDraft(event.id, { cutoffDigits })
+                      }
+                    />
+                    <DigitTimeInput
+                      id={`limit-${event.id}`}
+                      label="Límite"
+                      placeholder="ej. 100000 = 10:00.00"
+                      digits={draft.timeLimitDigits}
+                      disabled={!editable}
+                      onDigitsChange={(timeLimitDigits) =>
+                        updateDraft(event.id, { timeLimitDigits })
+                      }
+                    />
                   </div>
                 ) : null}
               </li>
@@ -448,11 +515,15 @@ export function CardCategoriesScheduleSection({
             <span className="text-muted-foreground text-xs">
               Requiere video de mezcladores:
             </span>
-            {liveScramblers.demoEventIds.map((id) => (
-              <Badge key={id} variant="outline">
-                {data.events.find((event) => event.id === id)?.shortName ?? id}
-              </Badge>
-            ))}
+            {liveScramblers.demoEventIds.map((id) => {
+              const event = data.events.find((item) => item.id === id);
+              return (
+                <Badge key={id} variant="outline" className="gap-1.5">
+                  <WcaEventIcon eventId={id} className="text-sm leading-none" />
+                  {event?.name ?? id}
+                </Badge>
+              );
+            })}
           </div>
         ) : null}
         {eventsOverMax ? (
@@ -475,3 +546,6 @@ export function CardCategoriesScheduleSection({
     </section>
   );
 }
+
+/** @deprecated Use CardCategoriesSection. */
+export const CardCategoriesScheduleSection = CardCategoriesSection;

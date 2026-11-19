@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 
+import "@cubing/icons/css";
 import "@workspace/ui/globals.css";
 
 import { AmsAppNav } from "@workspace/ui/components/ams-app-nav";

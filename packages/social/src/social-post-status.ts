@@ -56,7 +56,7 @@ export function competitionSocialStatusDescription(
     case "fb_ig":
       return "Publicada en Facebook e Instagram.";
     case "fb_only":
-      return "Publicada en Facebook. Falta Instagram (suele requerir imagen).";
+      return "Publicada en Facebook. Siguiente paso: Completar Instagram (hace falta flyer o logo WCA).";
     case "manual":
       return "Marcada como publicada manualmente (sin Meta).";
     case "missing":

@@ -1,10 +1,12 @@
 /** AMS championship org board template (based on the Mexican Championship 2025 Trello). */
 
 import {
-  CATEGORIES_SCHEDULE_CARD_TITLE,
+  CATEGORIES_CARD_TITLE,
+  CATEGORIES_SCHEDULE_RENAMED_TITLES,
   EQUIPMENT_CARD,
   ORGANIZER_RESOURCES_CARD,
   PHASE_LABELS,
+  SCHEDULE_CARD_TITLE,
   SOCIAL_PUBLISH_CARD,
   STAFF_COURSE_URL,
   TEMPLATE_LISTS,
@@ -66,21 +68,18 @@ export const CHAMPIONSHIP_RETIRED_CARD_TITLES = [
 
 export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
-    title: CATEGORIES_SCHEDULE_CARD_TITLE,
+    title: CATEGORIES_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "scoring"],
     description:
-      "**Objetivo:** Definir el formato técnico del campeonato antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas (p. ej. área principal y silenciosa), categorías, rondas, cortes y límites.\n2. Revisa recomendaciones de staff y avisos del tabulador AMS (máximo de categorías según cupo/estaciones).\n3. Elabora el horario de todos los días con la plantilla adjunta. Misma hora de inicio cada día; incluye inauguración, registro, comida, finales y premiación. Súbelo aquí para aprobación.\n\n**Nota:** Coordina con los delegados el tabulador de competidores/estaciones. El mínimo de staff se calcula con estaciones y zonas.",
-    attachments: [
-      {
-        name: "Cálculo de horarios",
-        url: "https://docs.google.com/spreadsheets/d/192O8wqPQooYoXJBC9iF2-Q0EJ7k40Y_0m6iawqL7UY4/edit?usp=sharing",
-      },
-      {
-        name: "Categorías",
-        url: "https://docs.google.com/spreadsheets/d/1cUFXbyrLA1NhRZTpia9g-U6KC-BKv44b/edit?usp=sharing&ouid=115645000405842078592&rtpof=true&sd=true",
-      },
-    ],
+      "**Objetivo:** Definir el formato técnico del campeonato antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas (p. ej. área principal y silenciosa), categorías, rondas, cortes y límites.\n2. Revisa recomendaciones de staff y avisos del tabulador AMS (máximo de categorías según cupo/estaciones).\n\n**Nota:** Coordina con los delegados el tabulador de competidores/estaciones. El número de rondas debe cumplir WCA 9m. El mínimo de staff se calcula con estaciones y zonas.",
+  },
+  {
+    title: SCHEDULE_CARD_TITLE,
+    list: "Por Hacer",
+    labels: ["pre_announce", "scoring"],
+    description:
+      "**Objetivo:** Elaborar el horario de todos los días del campeonato.\n\n**Pasos:**\n\n1. Completa primero **Categorías**. Esta tarjeta muestra grupos y topes 9m por ronda.\n2. Misma hora de inicio cada día; incluye inauguración, registro, comida, finales y premiación.\n3. Súbelo aquí para aprobación.",
   },
   {
     title: "Permiso de sede",
@@ -216,7 +215,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     title: CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\n**Pasos:**\n\n1. Publica en las redes del evento un formulario para competidores interesados en ser staff y adjúntalo aquí.\n2. Revisa en la sección **Staff** el mínimo recomendado (estaciones + 4 / zonas de **Categorías y Horario**).\n3. Registra a las personas confirmadas (nombre, WCA ID o correo y actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
+    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\n**Pasos:**\n\n1. Publica en las redes del evento un formulario para competidores interesados en ser staff y adjúntalo aquí.\n2. Revisa en la sección **Staff** el mínimo recomendado (estaciones + 4 / zonas de **Categorías**).\n3. Registra a las personas confirmadas (nombre, WCA ID o correo y actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
   },
   {
     title: CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE,
@@ -397,4 +396,5 @@ export const CHAMPIONSHIP_BOARD_TEMPLATE: BoardTemplateDefinition = {
   lists: TEMPLATE_LISTS,
   cards: CHAMPIONSHIP_TEMPLATE_CARDS,
   retiredCardTitles: CHAMPIONSHIP_RETIRED_CARD_TITLES,
+  renamedCardTitles: CATEGORIES_SCHEDULE_RENAMED_TITLES,
 };

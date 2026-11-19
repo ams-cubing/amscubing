@@ -12,7 +12,7 @@ import {
   resolveCompetitionScale,
 } from "@workspace/db/ams-competition-scale";
 import {
-  CATEGORIES_SCHEDULE_CARD_TITLE,
+  CATEGORIES_CARD_TITLE,
   STAFF_PLANNING_CARD_TITLE,
 } from "@workspace/db/data/ams-board-template";
 import {
@@ -31,6 +31,7 @@ import {
   type CompetitionDetailsData,
 } from "../../_actions/competition-details-actions";
 import type { BoardDetail } from "../../_lib/types";
+import { WcaEventIcon } from "./wca-event-label";
 
 const dateFormat = new Intl.DateTimeFormat("es-MX", {
   dateStyle: "medium",
@@ -183,6 +184,13 @@ export function CardCompetitionDetailsSection({
     Number.isFinite(liveScale.maxStations) &&
     liveStations > liveScale.maxStations;
   const delegatesShort = assignedDelegates < liveScale.minDelegates;
+  const experience = data.organizerExperience;
+  const experienceRequired = liveScale.minOrganizerCompetitions;
+  const experienceMeets =
+    experience.assessedCount == null
+      ? null
+      : experience.assessedCount >= experienceRequired;
+  const experienceIndex = experience.experienceIndex;
 
   function save() {
     const nextCapacity = Number(capacity);
@@ -225,7 +233,7 @@ export function CardCompetitionDetailsSection({
         <h3 className="text-sm font-semibold">Detalles</h3>
         <p className="text-muted-foreground text-sm">
           Cupo y estaciones se comparten con{" "}
-          <span className="font-medium">{CATEGORIES_SCHEDULE_CARD_TITLE}</span>{" "}
+          <span className="font-medium">{CATEGORIES_CARD_TITLE}</span>{" "}
           y {STAFF_PLANNING_CARD_TITLE}.
         </p>
       </div>
@@ -287,19 +295,25 @@ export function CardCompetitionDetailsSection({
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="details-main-event">Evento principal</Label>
-          <select
-            id="details-main-event"
-            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-            value={mainEventId}
-            disabled={!editable}
-            onChange={(event) => setMainEventId(event.target.value)}
-          >
-            {data.events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.shortName} — {event.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <WcaEventIcon
+              eventId={mainEventId || "333"}
+              className="text-xl leading-none"
+            />
+            <select
+              id="details-main-event"
+              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              value={mainEventId}
+              disabled={!editable}
+              onChange={(event) => setMainEventId(event.target.value)}
+            >
+              {data.events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </div>
           {mainEventId !== "333" ? (
             <p className="text-muted-foreground text-xs">
               Si no es 3x3, explica el motivo en un comentario de esta tarjeta.
@@ -338,6 +352,46 @@ export function CardCompetitionDetailsSection({
           <p className="text-xs font-semibold tracking-wide uppercase">
             Experiencia del organizador
           </p>
+          <p className="text-muted-foreground text-xs">
+            Competencias WCA en México organizadas en los últimos 2 años (
+            {experience.windowStart} – {experience.windowEnd}). Requisito del
+            nivel por cupo/estaciones:{" "}
+            <span className="text-foreground font-medium">
+              {experienceRequired}
+            </span>
+            {experience.assessedCount != null ? (
+              <>
+                {" · "}
+                {experience.assessedOrganizerName ?? "Organizador"}:{" "}
+                <span className="text-foreground font-medium">
+                  {experience.assessedCount}
+                </span>
+                {experience.experienceLevel
+                  ? ` (${experience.experienceLevel})`
+                  : null}
+              </>
+            ) : !experience.countsAvailable ? (
+              <> · no se pudo consultar la WCA</>
+            ) : data.organizers.length === 0 ? (
+              <> · sin organizadores asignados</>
+            ) : (
+              <> · ningún organizador tiene WCA ID</>
+            )}
+          </p>
+          {data.organizers.length > 0 ? (
+            <ul className="text-muted-foreground space-y-0.5 text-xs">
+              {data.organizers.map((organizer) => (
+                <li key={`${organizer.name}-${organizer.wcaId ?? "none"}`}>
+                  {organizer.name}
+                  {organizer.isPrimary ? " (principal)" : null}
+                  {organizer.wcaId ? ` · ${organizer.wcaId}` : " · sin WCA ID"}
+                  {organizer.organizedCountLastTwoYears != null
+                    ? ` · ${organizer.organizedCountLastTwoYears} comps`
+                    : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <table className="w-full min-w-[28rem] border-collapse text-left text-xs">
             <thead>
               <tr className="bg-muted/60">
@@ -354,11 +408,18 @@ export function CardCompetitionDetailsSection({
             </thead>
             <tbody>
               {tiers.map((tier, index) => {
-                const active = index === liveScale.index;
+                const sizeActive = index === liveScale.index;
+                const experienceActive = experienceIndex === index;
                 return (
                   <tr
                     key={tier.level}
-                    className={active ? "bg-primary/10 font-medium" : undefined}
+                    className={
+                      experienceActive
+                        ? "bg-primary/10 font-medium"
+                        : sizeActive
+                          ? "bg-muted/40"
+                          : undefined
+                    }
                   >
                     <td className="border px-2 py-1.5">
                       {tier.minOrganizerCompetitions}
@@ -433,13 +494,18 @@ export function CardCompetitionDetailsSection({
             <span className="font-semibold">{liveStaffMinimum}</span> ·
             mezcladores: <span className="font-semibold">{liveScramblers}</span>
             {" · "}
-            eventos en {CATEGORIES_SCHEDULE_CARD_TITLE}: {data.eventCount}
+            eventos en {CATEGORIES_CARD_TITLE}: {data.eventCount}
           </p>
         )}
         <div className="flex flex-wrap gap-1.5">
           {delegatesShort ? (
             <Badge variant="outline">
               Faltan delegados según el tabulador
+            </Badge>
+          ) : null}
+          {experienceMeets === false ? (
+            <Badge variant="outline">
+              Experiencia de organizador por debajo del tabulador
             </Badge>
           ) : null}
           {stationsOverMax ? (

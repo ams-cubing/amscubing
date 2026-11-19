@@ -8,11 +8,18 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 import { log } from "@workspace/server/log";
 
+export type AnnouncementPreviewSources = {
+  bodyText: "custom" | "wca_intro";
+  hasTags: boolean;
+  imageSource: "flyer" | "logo" | "none";
+};
+
 export type AnnouncementPreview = {
   displayName: string;
   wcaUrl: string;
   imageUrl: string | null;
   caption: string;
+  sources: AnnouncementPreviewSources;
 };
 
 export async function previewAnnouncement(
@@ -66,6 +73,14 @@ export async function previewAnnouncement(
       return { success: false, message: result.message };
     }
 
+    const hasCustomText = Boolean(competition.socialCustomText?.trim());
+    const imageSource: AnnouncementPreviewSources["imageSource"] = result
+      .flyerUrl
+      ? "flyer"
+      : result.logoUrl
+        ? "logo"
+        : "none";
+
     return {
       success: true,
       preview: {
@@ -73,6 +88,11 @@ export async function previewAnnouncement(
         wcaUrl: result.wcaUrl,
         imageUrl: result.imageUrl,
         caption: result.caption,
+        sources: {
+          bodyText: hasCustomText ? "custom" : "wca_intro",
+          hasTags: Boolean(competition.socialTags?.trim()),
+          imageSource,
+        },
       },
     };
   } catch (error) {

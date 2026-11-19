@@ -73,10 +73,14 @@ import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
-import { CardCategoriesScheduleSection } from "./card-dialog/card-categories-schedule-section";
+import { CardCategoriesSection } from "./card-dialog/card-categories-schedule-section";
 import { CardCompetitionDetailsSection } from "./card-dialog/card-competition-details-section";
+import { CardScheduleSection } from "./card-dialog/card-schedule-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
-import { isCategoriesScheduleCard } from "../_lib/categories-schedule-card";
+import {
+  isCategoriesCard,
+  isScheduleCard,
+} from "../_lib/categories-schedule-card";
 import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 import { staffCardMode } from "../_lib/staff-cards";
 import { getCompetitionTeam } from "../_lib/team";
@@ -569,8 +573,16 @@ export function CardDialog({
               />
             ) : null}
 
-            {isCategoriesScheduleCard(card.title) ? (
-              <CardCategoriesScheduleSection
+            {isCategoriesCard(card.title) ? (
+              <CardCategoriesSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isScheduleCard(card.title) ? (
+              <CardScheduleSection
                 board={board}
                 cardId={card.id}
                 readOnly={readOnly}

@@ -10,7 +10,12 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { COMPETITION_BOARD_TEMPLATE } from "./data/ams-board-template";
+import {
+  CATEGORIES_CARD_TITLE,
+  CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS,
+  SCHEDULE_CARD_TITLE,
+  COMPETITION_BOARD_TEMPLATE,
+} from "./data/ams-board-template";
 import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
 import {
   BOARD_TEMPLATE_KEYS,
@@ -45,6 +50,7 @@ type SyncBoardResult = {
   inserted: number;
   listsReordered: number;
   descriptionsUpdated: number;
+  attachmentsRemoved: number;
   skipped?: string;
 };
 
@@ -289,6 +295,42 @@ async function syncSeedDescriptionsOntoBoard(
   return updated;
 }
 
+/** Drops retired spreadsheet links from Categorías / Horario cards. */
+async function removeRetiredCategoriesScheduleAttachments(listIds: number[]) {
+  if (listIds.length === 0) return 0;
+  if (CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS.length === 0) return 0;
+
+  const scheduleCards = await db.query.cards.findMany({
+    where: and(
+      inArray(cards.listId, listIds),
+      inArray(cards.title, [
+        CATEGORIES_CARD_TITLE,
+        SCHEDULE_CARD_TITLE,
+        "Categorías y Horario",
+      ]),
+    ),
+    columns: { id: true },
+  });
+  if (scheduleCards.length === 0) return 0;
+
+  const removed = await db
+    .delete(cardAttachments)
+    .where(
+      and(
+        inArray(
+          cardAttachments.cardId,
+          scheduleCards.map((card) => card.id),
+        ),
+        inArray(cardAttachments.url, [
+          ...CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS,
+        ]),
+      ),
+    )
+    .returning({ id: cardAttachments.id });
+
+  return removed.length;
+}
+
 /**
  * Inserts any template cards missing from a board (by title across all lists).
  * When `reorderToSeedOrder` is true (template board), also rewrites positions.
@@ -313,6 +355,7 @@ async function syncMissingCardsOntoBoard(
       inserted: 0,
       listsReordered: 0,
       descriptionsUpdated: 0,
+      attachmentsRemoved: 0,
       skipped: `missing lists (${missingLists.join(", ")})`,
     };
   }
@@ -360,20 +403,31 @@ async function syncMissingCardsOntoBoard(
     inserted += 1;
   }
 
+  const listIds = listRows.map((list) => list.id);
   const descriptionsUpdated = await syncSeedDescriptionsOntoBoard(
     template,
-    listRows.map((list) => list.id),
+    listIds,
   );
+  const attachmentsRemoved =
+    await removeRetiredCategoriesScheduleAttachments(listIds);
 
   const listsReordered = options.reorderToSeedOrder
     ? await reorderTemplateCardsToSeedOrder(template, listByTitle)
     : 0;
 
-  if (inserted > 0 || listsReordered > 0 || descriptionsUpdated > 0) {
+  if (
+    inserted > 0 ||
+    listsReordered > 0 ||
+    descriptionsUpdated > 0 ||
+    attachmentsRemoved > 0
+  ) {
     const parts: string[] = [];
     if (inserted > 0) parts.push(`${inserted} missing card(s)`);
     if (descriptionsUpdated > 0) {
       parts.push(`${descriptionsUpdated} description(s)`);
+    }
+    if (attachmentsRemoved > 0) {
+      parts.push(`${attachmentsRemoved} retired attachment(s)`);
     }
     if (listsReordered > 0) {
       parts.push(`reordered ${listsReordered} list(s)`);
@@ -381,7 +435,12 @@ async function syncMissingCardsOntoBoard(
     console.log(`✅ Synced ${label}: ${parts.join(", ")}`);
   }
 
-  return { inserted, listsReordered, descriptionsUpdated };
+  return {
+    inserted,
+    listsReordered,
+    descriptionsUpdated,
+    attachmentsRemoved,
+  };
 }
 
 async function syncMissingTemplateCards(
@@ -413,6 +472,7 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
   let boardsUpdated = 0;
   let cardsInserted = 0;
   let descriptionsUpdated = 0;
+  let attachmentsRemoved = 0;
   let boardsSkipped = 0;
 
   for (const board of targets) {
@@ -427,10 +487,15 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
       );
       continue;
     }
-    if (result.inserted > 0 || result.descriptionsUpdated > 0) {
+    if (
+      result.inserted > 0 ||
+      result.descriptionsUpdated > 0 ||
+      result.attachmentsRemoved > 0
+    ) {
       boardsUpdated += 1;
       cardsInserted += result.inserted;
       descriptionsUpdated += result.descriptionsUpdated;
+      attachmentsRemoved += result.attachmentsRemoved;
     }
   }
 
@@ -438,6 +503,9 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
     const parts = [`${cardsInserted} card(s)`];
     if (descriptionsUpdated > 0) {
       parts.push(`${descriptionsUpdated} description(s)`);
+    }
+    if (attachmentsRemoved > 0) {
+      parts.push(`${attachmentsRemoved} retired attachment(s)`);
     }
     console.log(
       `✅ Backfilled ${parts.join(" + ")} across ${boardsUpdated} ${template.key} board(s)`,

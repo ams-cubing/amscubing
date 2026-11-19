@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@cubing/icons": "^3.0.5",
     "@hookform/resolvers": "catalog:",
     "@tiptap/extension-image": "^3.10.6",
     "@tiptap/extension-link": "^3.10.6",
@@ -47,12 +48,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
-    "babel-plugin-react-compiler": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*",
+    "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -8,6 +8,7 @@ import { db } from "@workspace/db";
 import {
   formatDelegatesLabel,
   resolveCompetitionScale,
+  resolveOrganizerExperienceLevel,
   serializeScaleTiers,
   type AmsCompetitionTierStored,
   type CompetitionScale,
@@ -25,9 +26,34 @@ import { boards, competitions } from "@workspace/db/schema";
 import { log } from "@workspace/server/log";
 
 import { canAccessBoard } from "@/lib/boards";
+import {
+  getMexicoOrganizerCountsLastTwoYears,
+  organizerExperienceWindow,
+} from "@/lib/wca-organizer-counts";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
+
+export type CompetitionOrganizerExperience = {
+  name: string;
+  wcaId: string | null;
+  isPrimary: boolean;
+  /** Ended MX WCA comps organized in the last two years; null if no WCA ID. */
+  organizedCountLastTwoYears: number | null;
+};
+
+export type OrganizerExperienceSummary = {
+  windowStart: string;
+  windowEnd: string;
+  requiredCount: number;
+  /** Primary organizer count if available, else max among organizers with WCA ID. */
+  assessedCount: number | null;
+  assessedOrganizerName: string | null;
+  experienceLevel: string | null;
+  experienceIndex: number | null;
+  meetsRequirement: boolean | null;
+  countsAvailable: boolean;
+};
 
 export type CompetitionDetailsData = {
   name: string | null;
@@ -45,6 +71,8 @@ export type CompetitionDetailsData = {
   tiers: AmsCompetitionTierStored[];
   scale: CompetitionScale;
   delegatesLabel: string;
+  organizers: CompetitionOrganizerExperience[];
+  organizerExperience: OrganizerExperienceSummary;
   recommendations: {
     staffMinimum: number | null;
     scramblers: number;
@@ -75,24 +103,35 @@ async function detailsCardCompetition(boardId: number, cardId: number) {
 async function loadData(
   competitionId: number,
 ): Promise<CompetitionDetailsData | null> {
-  const row = await db.query.competitions.findFirst({
-    where: eq(competitions.id, competitionId),
-    columns: {
-      name: true,
-      nameReason: true,
-      city: true,
-      startDate: true,
-      endDate: true,
-      capacity: true,
-      stationCount: true,
-      zoneCount: true,
-      mainEventId: true,
-      eventsPlan: true,
-    },
-    with: {
-      state: { columns: { name: true } },
-    },
-  });
+  const [row, counts, scaleConfig] = await Promise.all([
+    db.query.competitions.findFirst({
+      where: eq(competitions.id, competitionId),
+      columns: {
+        name: true,
+        nameReason: true,
+        city: true,
+        startDate: true,
+        endDate: true,
+        capacity: true,
+        stationCount: true,
+        zoneCount: true,
+        mainEventId: true,
+        eventsPlan: true,
+      },
+      with: {
+        state: { columns: { name: true } },
+        organizers: {
+          with: {
+            organizer: {
+              columns: { name: true, wcaId: true },
+            },
+          },
+        },
+      },
+    }),
+    getMexicoOrganizerCountsLastTwoYears(),
+    getCompetitionScaleTiers(db),
+  ]);
   if (!row) return null;
 
   const eventsPlan = Array.isArray(row.eventsPlan) ? row.eventsPlan : [];
@@ -101,12 +140,51 @@ async function loadData(
     capacity: row.capacity,
     eventIds,
   });
-  const { tiers } = await getCompetitionScaleTiers(db);
+  const { tiers } = scaleConfig;
   const scale = resolveCompetitionScale({
     capacity: row.capacity,
     stationCount: row.stationCount,
     tiers,
   });
+
+  const countsAvailable = counts.ok;
+  const organizers: CompetitionOrganizerExperience[] = row.organizers.map(
+    (entry) => {
+      const wcaId = entry.organizer.wcaId?.trim().toUpperCase() || null;
+      return {
+        name: entry.organizer.name,
+        wcaId,
+        isPrimary: entry.isPrimary,
+        organizedCountLastTwoYears:
+          wcaId && countsAvailable ? (counts.counts[wcaId] ?? 0) : null,
+      };
+    },
+  );
+
+  const withCounts = organizers.filter(
+    (organizer) => organizer.organizedCountLastTwoYears != null,
+  );
+  const primaryWithCount = withCounts.find((organizer) => organizer.isPrimary);
+  const assessed =
+    primaryWithCount ??
+    withCounts
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.organizedCountLastTwoYears ?? 0) -
+          (a.organizedCountLastTwoYears ?? 0),
+      )[0] ??
+    null;
+
+  const assessedCount = assessed?.organizedCountLastTwoYears ?? null;
+  const experience =
+    assessedCount == null
+      ? null
+      : resolveOrganizerExperienceLevel({
+          organizedCount: assessedCount,
+          tiers,
+        });
+  const window = organizerExperienceWindow();
 
   return {
     name: row.name,
@@ -124,6 +202,21 @@ async function loadData(
     tiers: serializeScaleTiers(tiers),
     scale,
     delegatesLabel: formatDelegatesLabel(scale),
+    organizers,
+    organizerExperience: {
+      windowStart: window.start,
+      windowEnd: window.end,
+      requiredCount: scale.minOrganizerCompetitions,
+      assessedCount,
+      assessedOrganizerName: assessed?.name ?? null,
+      experienceLevel: experience?.tier.labelEs ?? null,
+      experienceIndex: experience?.index ?? null,
+      meetsRequirement:
+        assessedCount == null
+          ? null
+          : assessedCount >= scale.minOrganizerCompetitions,
+      countsAvailable,
+    },
     recommendations: {
       staffMinimum:
         row.stationCount == null

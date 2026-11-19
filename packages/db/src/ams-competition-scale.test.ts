@@ -7,6 +7,7 @@ import {
   formatStationsBand,
   normalizeScaleTiers,
   resolveCompetitionScale,
+  resolveOrganizerExperienceLevel,
   serializeScaleTiers,
 } from "./ams-competition-scale";
 
@@ -85,5 +86,23 @@ describe("resolveCompetitionScale", () => {
     expect(tiers).toHaveLength(5);
     expect(tiers[4]!.maxCompetitors).toBe(Number.POSITIVE_INFINITY);
     expect(tiers[0]!.level).toBe("debutante");
+  });
+
+  it("maps organizer experience from competition count", () => {
+    expect(
+      resolveOrganizerExperienceLevel({ organizedCount: 1 }).tier.level,
+    ).toBe("debutante");
+    expect(
+      resolveOrganizerExperienceLevel({ organizedCount: 2 }).tier.level,
+    ).toBe("super");
+    expect(
+      resolveOrganizerExperienceLevel({ organizedCount: 4 }).tier.level,
+    ).toBe("experto");
+    expect(
+      resolveOrganizerExperienceLevel({ organizedCount: 5 }).tier.level,
+    ).toBe("maestro");
+    expect(
+      resolveOrganizerExperienceLevel({ organizedCount: 9 }).tier.level,
+    ).toBe("leyenda");
   });
 });

@@ -18,7 +18,12 @@ import {
 export type { CompetitionEventPlanItem, CompetitionFormat, WcaEvent };
 export {
   CompetitionFormatError,
+  DEFAULT_TIME_LIMIT_CS,
+  estimateRoundPlan,
   listWcaEvents,
+  maxAdvancingCompetitors,
+  maxRoundsAllowed,
+  maxSubsequentRounds,
   normalizeEventsPlan,
   normalizeFormatInput,
   recommendedScramblers,
@@ -26,6 +31,7 @@ export {
   SCRAMBLER_DEMO_EVENT_IDS,
   WCA_EVENTS,
   isWcaEventId,
+  type EstimatedRound,
 } from "./competition-format-rules";
 
 type DbOrTx = Pick<typeof db, "select" | "update" | "query">;
@@ -59,7 +65,18 @@ export async function saveCompetitionFormat(
     eventsPlan: CompetitionEventPlanItem[];
   },
 ): Promise<CompetitionFormat> {
-  const format = normalizeFormatInput(input);
+  const competition = await client.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { capacity: true },
+  });
+  if (!competition) {
+    throw new CompetitionFormatError("Competencia no encontrada");
+  }
+
+  const format = normalizeFormatInput({
+    ...input,
+    maxExpectedCompetitors: competition.capacity,
+  });
   const updated = await client
     .update(competitions)
     .set({

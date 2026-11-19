@@ -10,7 +10,7 @@ import {
 } from "@workspace/db/competition-format-rules";
 import type { CompetitionStaffEntry } from "@workspace/db/competition-staff";
 import {
-  CATEGORIES_SCHEDULE_CARD_TITLE,
+  CATEGORIES_CARD_TITLE,
   COMPETITION_DETAILS_CARD_TITLE,
 } from "@workspace/db/data/ams-board-template";
 import {
@@ -402,7 +402,7 @@ export function CardStaffRosterSection({
               </span>{" "}
               o{" "}
               <span className="font-medium">
-                {CATEGORIES_SCHEDULE_CARD_TITLE}
+                {CATEGORIES_CARD_TITLE}
               </span>
               .
             </p>

@@ -58,21 +58,30 @@ export const TEMPLATE_BOARD_NAME =
 /** Removed from template; seed deletes leftover cards with this title. */
 export const REMOVED_TEMPLATE_CARD_TITLES = [
   "Publicación FB Torneo de Rubik",
-  "Horario",
-  "Categorías",
 ] as const;
 
-/** Basics card: name, capacity, stations — linked to Categorías y Horario / staff. */
+/** Basics card: name, capacity, stations — linked to Categorías / staff. */
 export const COMPETITION_DETAILS_CARD_TITLE = "Detalles de competencia";
 
-/** Merged categorías + horario planning card (competition and championship). */
-export const CATEGORIES_SCHEDULE_CARD_TITLE = "Categorías y Horario";
+/** Format planning card (events, rounds, cutoffs, limits, stations, zones). */
+export const CATEGORIES_CARD_TITLE = "Categorías";
 
-/** Old competition titles that map onto `CATEGORIES_SCHEDULE_CARD_TITLE`. */
+/** Schedule planning card (round calculations + uploaded timetable). */
+export const SCHEDULE_CARD_TITLE = "Horario";
+
+/** @deprecated Use CATEGORIES_CARD_TITLE; kept for one-release import aliases. */
+export const CATEGORIES_SCHEDULE_CARD_TITLE = CATEGORIES_CARD_TITLE;
+
+/** Merged card title → Categorías so sync can insert a fresh Horario. */
 export const CATEGORIES_SCHEDULE_RENAMED_TITLES = {
-  Horario: CATEGORIES_SCHEDULE_CARD_TITLE,
-  Categorías: CATEGORIES_SCHEDULE_CARD_TITLE,
+  "Categorías y Horario": CATEGORIES_CARD_TITLE,
 } as const;
+
+/** Spreadsheet links removed from Categorías / Horario; sync deletes leftovers. */
+export const CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS = [
+  "https://docs.google.com/spreadsheets/d/192O8wqPQooYoXJBC9iF2-Q0EJ7k40Y_0m6iawqL7UY4/edit?usp=sharing",
+  "https://docs.google.com/spreadsheets/d/1cUFXbyrLA1NhRZTpia9g-U6KC-BKv44b/edit?usp=sharing&ouid=115645000405842078592&rtpof=true&sd=true",
+] as const;
 
 /** Card that collects custom copy / tags / flyer for Torneo de Rubik posts. */
 export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
@@ -94,7 +103,7 @@ export const WCA_WEBSITE_CARD: TemplateCard = {
   list: "Por Hacer",
   labels: ["pre_announce"],
   description:
-    "Objetivo: Tener lista la competencia en el sitio web de la WCA para su anuncio:\n\n**Paso 1.-** Solicita a tu delegado la creación del sitio de la competencia. Entra a tu perfil de la WCA y en la sección **Competitions → My Competitions**, encontrarás la web de la competencia.\n\n**Paso 2.-** Coloca toda la información de la competencia. Puedes usar de referencia la siguiente competencia: *Competencia de ejemplo*, y rellenar todos los datos. Revisa que todo esté correcto.\n\n- El **ID**, **Name** y **Nickname** deben ser idénticos (excepto si son más de 30 caracteres).\n- Revisa que la dirección, mapa y coordenadas estén exactamente correctos.\n- Los campos **Razón de nombre** y **Comentarios finales** deben ser llenados en **inglés**.\n- Todas las secciones de texto deben estar en **Español e Inglés**.\n\n**Paso 3.-** Edita la información de eventos y horarios.  \nEn **Edit → Manage Events → Manage Schedule**, debes agregar las categorías, rondas y horarios según lo aceptado en la tarjeta de Categorías y Horario.\n\n**Paso 4.-** Añade pestañas con información adicional.  \nEn **Manage Tab** puedes agregar pestañas con información adicional (Cómo llegar, recomendaciones de hospedaje, patrocinadores). Recuerda que todo debe ir en **inglés y español**.\n\n**Paso 5.-** Guarda la URL pública de la competencia en la sección **URL WCA** de esta tarjeta (queda sincronizada con el calendario AMS).\n\n**Paso 6.-** Revisa a detalle que todo esté correcto y mueve esta tarjeta a **Hecho** cuando esté lista para su revisión.\n\n**Nota:** Si tu competencia tiene alguna condición especial como:\n\n- Registro por depósito\n- Donaciones activadas\n- Políticas de Check-In obligatorias (Regla 2k1)\n- Políticas de acompañantes\n\nDeberás colocarlas en la sección de **Extra Registration Requirements**; de lo contrario, puedes dejar esa sección vacía.",
+    "Objetivo: Tener lista la competencia en el sitio web de la WCA para su anuncio:\n\n**Paso 1.-** Solicita a tu delegado la creación del sitio de la competencia. Entra a tu perfil de la WCA y en la sección **Competitions → My Competitions**, encontrarás la web de la competencia.\n\n**Paso 2.-** Coloca toda la información de la competencia. Puedes usar de referencia la siguiente competencia: *Competencia de ejemplo*, y rellenar todos los datos. Revisa que todo esté correcto.\n\n- El **ID**, **Name** y **Nickname** deben ser idénticos (excepto si son más de 30 caracteres).\n- Revisa que la dirección, mapa y coordenadas estén exactamente correctos.\n- Los campos **Razón de nombre** y **Comentarios finales** deben ser llenados en **inglés**.\n- Todas las secciones de texto deben estar en **Español e Inglés**.\n\n**Paso 3.-** Edita la información de eventos y horarios.  \nEn **Edit → Manage Events → Manage Schedule**, debes agregar las categorías, rondas y horarios según lo aceptado en las tarjetas de **Categorías** y **Horario**.\n\n**Paso 4.-** Añade pestañas con información adicional.  \nEn **Manage Tab** puedes agregar pestañas con información adicional (Cómo llegar, recomendaciones de hospedaje, patrocinadores). Recuerda que todo debe ir en **inglés y español**.\n\n**Paso 5.-** Guarda la URL pública de la competencia en la sección **URL WCA** de esta tarjeta (queda sincronizada con el calendario AMS).\n\n**Paso 6.-** Revisa a detalle que todo esté correcto y mueve esta tarjeta a **Hecho** cuando esté lista para su revisión.\n\n**Nota:** Si tu competencia tiene alguna condición especial como:\n\n- Registro por depósito\n- Donaciones activadas\n- Políticas de Check-In obligatorias (Regla 2k1)\n- Políticas de acompañantes\n\nDeberás colocarlas en la sección de **Extra Registration Requirements**; de lo contrario, puedes dejar esa sección vacía.",
 };
 
 export const SOCIAL_PUBLISH_CARD: TemplateCard = {
@@ -102,7 +111,7 @@ export const SOCIAL_PUBLISH_CARD: TemplateCard = {
   list: "Por Hacer",
   labels: ["pre_announce"],
   description:
-    "**Objetivo:** Preparar el post de anuncio en Facebook e Instagram de Torneo de Rubik.\n\nLa mayoría de los datos (fechas, sede, ciudad, categorías, cupo y enlace WCA) se toman automáticamente de la página WCA de la competencia. En esta tarjeta puedes completar:\n\n1. **Texto personalizado** del post (historia / copy creativo) — **opcional**. Si lo dejas vacío, se usa la introducción en español de la página WCA.\n2. **Equipos o cuentas a etiquetar** (opcional), p. ej. `@rubik_teampuebla Puebla Rubik's Team`.\n3. **Flyer** (opcional): súbelo con el formulario de esta tarjeta. Si no hay flyer, se usa el logo de la WCA; si tampoco hay logo, solo se publica texto en Facebook.\n\nUsa la sección **Publicación redes** de esta tarjeta para guardar los campos. Cuando esté listo, mueve la tarjeta a **Hecho** / **Aprobado**.\n\n**Nota:** Para anunciar hace falta la URL de la competencia en la WCA.",
+    "**Objetivo:** Preparar el post de anuncio en Facebook e Instagram de Torneo de Rubik.\n\nLa mayoría de los datos (fechas, sede, ciudad, categorías, cupo y enlace WCA) se toman automáticamente de la página WCA de la competencia. En esta tarjeta puedes completar:\n\n1. **Texto personalizado** del post (historia / copy creativo) — **opcional**. Si lo dejas vacío, se usa la introducción en español de la página WCA.\n2. **Equipos o cuentas a etiquetar** (opcional), p. ej. `@rubik_teampuebla Puebla Rubik's Team`.\n3. **Flyer** (opcional): súbelo con el formulario de esta tarjeta. Si no hay flyer, se usa el logo de la WCA; si tampoco hay logo, solo se publica texto en Facebook.\n\nLos campos se guardan solos. Cuando esté listo, mueve la tarjeta a **Hecho** / **Aprobado**. La publicación en redes ocurre cuando un delegado anuncia la competencia en el calendario.\n\n**Nota:** La URL de la competencia en la WCA se guarda en la tarjeta **Sitio web (WCA)**.",
 };
 
 export const EQUIPMENT_CARD: TemplateCard = {
@@ -196,7 +205,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
-      "**Objetivo:** Establecer los detalles básicos de la competencia antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Detalles** de esta tarjeta: nombre, razón del nombre, cupo, estaciones y evento principal.\n2. Revisa el bloque **Tabuladores AMS**: nivel de experiencia requerido, delegados sugeridos y máximos de estaciones/categorías (se calculan con el cupo y las estaciones).\n3. Confirma fechas y ciudad (vienen del calendario) y cuántas categorías hay en **Categorías y Horario**.\n\n**Nota:** Cupo y estaciones se comparten con **Categorías y Horario** y con **Planeación de Staff**. Si el tabulador pide más de un delegado, coordínalo con tu delegado principal.",
+      "**Objetivo:** Establecer los detalles básicos de la competencia antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Detalles** de esta tarjeta: nombre, razón del nombre, cupo, estaciones y evento principal.\n2. Revisa el bloque **Tabuladores AMS**: nivel de experiencia requerido, delegados sugeridos y máximos de estaciones/categorías (se calculan con el cupo y las estaciones).\n3. Confirma fechas y ciudad (vienen del calendario) y cuántas categorías hay en **Categorías**.\n\n**Nota:** Cupo y estaciones se comparten con **Categorías** y con **Planeación de Staff**. Si el tabulador pide más de un delegado, coordínalo con tu delegado principal.",
   },
   {
     title: "Permiso de sede",
@@ -219,21 +228,18 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     },
   },
   {
-    title: CATEGORIES_SCHEDULE_CARD_TITLE,
+    title: CATEGORIES_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
-      "**Objetivo:** Definir el formato técnico de la competencia antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas, categorías oficiales, competidores esperados, rondas, cortes y límites (en segundos).\n2. Revisa las recomendaciones de staff y el aviso si te pasas del máximo de categorías del tabulador AMS (cupo/estaciones también se editan en **Detalles de competencia**).\n3. Descarga la plantilla de horarios adjunta, estima competidores (3x3 y 2x2 = 100% de registros) y elabora el horario. Máximo 9 horas por día; incluye registro, tutorial, instalación, Multi-Blind (si aplica), comida y premiación. Súbela a esta tarjeta.\n4. Consulta [“Categorías y Formatos”](https://docs.google.com/document/d/1HtJbibZnOWJdK3x6Lr25WutW38AtlIYs). Categorías no oficiales (FTO, Team-Blind, etc.): coméntalas con nombre, formato y tiempo.\n\n**Nota:** Puedes solapar instalación y registro. El desmontaje no va en el horario, pero debe planearse. El mínimo de staff aparece aquí y en **Planeación de Staff**.",
-    attachments: [
-      {
-        name: "Cálculo de horarios",
-        url: "https://docs.google.com/spreadsheets/d/192O8wqPQooYoXJBC9iF2-Q0EJ7k40Y_0m6iawqL7UY4/edit?usp=sharing",
-      },
-      {
-        name: "Categorías",
-        url: "https://docs.google.com/spreadsheets/d/1cUFXbyrLA1NhRZTpia9g-U6KC-BKv44b/edit?usp=sharing&ouid=115645000405842078592&rtpof=true&sd=true",
-      },
-    ],
+      "**Objetivo:** Elegir las categorías y definir el formato técnico antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas, categorías oficiales, competidores esperados, rondas, cortes y límites.\n2. Revisa las recomendaciones de staff y el aviso si te pasas del máximo de categorías del tabulador AMS (cupo/estaciones también se editan en **Detalles de competencia**).\n3. Consulta [“Categorías y Formatos”](https://docs.google.com/document/d/1HtJbibZnOWJdK3x6Lr25WutW38AtlIYs). Categorías no oficiales (Team-Blind, etc.): coméntalas con nombre, formato y tiempo.\n\n**Nota:** El número de rondas debe cumplir la regulación WCA 9m según los competidores esperados. El mínimo de staff aparece aquí y en **Planeación de Staff**.",
+  },
+  {
+    title: SCHEDULE_CARD_TITLE,
+    list: "Por Hacer",
+    labels: ["pre_announce"],
+    description:
+      "**Objetivo:** Organizar el horario de la competencia.\n\n**Pasos:**\n\n1. Completa primero **Categorías** (estaciones, esperados y rondas). Esta tarjeta muestra el cálculo de grupos y el tope de rondas (9m) por categoría.\n2. Elabora el horario (máximo 9 horas por día; incluye registro, tutorial, instalación, Multi-Blind si aplica, comida y premiación). Estima competidores (3x3 y 2x2 = 100% de registros).\n3. Súbelo a esta tarjeta y pásala a hecho cuando el delegado lo apruebe.\n\n**Nota:** Puedes solapar instalación y registro. El desmontaje no va en el horario, pero debe planearse.",
   },
   {
     title: "Mapeo de sede",
@@ -246,7 +252,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     title: STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
-    description: `**Objetivo:** Definir y corroborar el compromiso del staff.\n\n**Pasos:**\n\n1. Revisa el mínimo recomendado en la sección **Staff** de esta tarjeta (se calcula con estaciones y zonas de **Detalles de competencia** / **Categorías y Horario**: estaciones + 4, +4 por zona extra). Mezcladores: 2 si hay menos de 80 competidores, 4 si hay 80 o más.\n2. Registra al staff en esa misma sección (nombre, WCA ID o correo y actividades: jueces, mezcladores, corredores, registro, capturistas). Si aún no tienes nombres, comenta cuántas personas necesitas.\n3. Para **5x5, SQ-1, Megaminx, Clock y Skewb**, adjunta o comenta videos que demuestren mezclado eficiente. En competencias silenciosas o con menos de 35 competidores puedes omitir base de staff, pero garantizando mezcladores para **5x5, SQ1, Megaminx y Clock**.\n4. Comenta el plan de capacitación, control de actividades y beneficios (comida, hidratación, lunch, registro gratuito, transporte, regalo, sorteo, etc.).\n\n**Nota:** Comparte el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}) certificado por la AMS. En **${STAFF_TRAINING_CARD_TITLE}** verás quién ya lo completó.`,
+    description: `**Objetivo:** Definir y corroborar el compromiso del staff.\n\n**Pasos:**\n\n1. Revisa el mínimo recomendado en la sección **Staff** de esta tarjeta (se calcula con estaciones y zonas de **Detalles de competencia** / **Categorías**: estaciones + 4, +4 por zona extra). Mezcladores: 2 si hay menos de 80 competidores, 4 si hay 80 o más.\n2. Registra al staff en esa misma sección (nombre, WCA ID o correo y actividades: jueces, mezcladores, corredores, registro, capturistas). Si aún no tienes nombres, comenta cuántas personas necesitas.\n3. Para **5x5, SQ-1, Megaminx, Clock y Skewb**, adjunta o comenta videos que demuestren mezclado eficiente. En competencias silenciosas o con menos de 35 competidores puedes omitir base de staff, pero garantizando mezcladores para **5x5, SQ1, Megaminx y Clock**.\n4. Comenta el plan de capacitación, control de actividades y beneficios (comida, hidratación, lunch, registro gratuito, transporte, regalo, sorteo, etc.).\n\n**Nota:** Comparte el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}) certificado por la AMS. En **${STAFF_TRAINING_CARD_TITLE}** verás quién ya lo completó.`,
   },
   {
     title: "Excel de Costos",

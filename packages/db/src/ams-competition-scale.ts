@@ -289,6 +289,28 @@ function tierIndexByStations(
 }
 
 /**
+ * Highest AMS tier whose `minOrganizerCompetitions` the organizer count meets.
+ * `count` is typically WCA-organized comps in Mexico over the last two years.
+ */
+export function resolveOrganizerExperienceLevel(input: {
+  organizedCount: number;
+  tiers?: readonly AmsCompetitionTier[];
+}): { index: number; tier: AmsCompetitionTier } {
+  const tiers =
+    input.tiers && input.tiers.length > 0
+      ? input.tiers
+      : DEFAULT_AMS_COMPETITION_TIERS;
+  const count = Math.max(0, Math.floor(input.organizedCount));
+  let index = 0;
+  for (let i = 0; i < tiers.length; i += 1) {
+    if (count >= tiers[i]!.minOrganizerCompetitions) {
+      index = i;
+    }
+  }
+  return { index, tier: tiers[index]! };
+}
+
+/**
  * Resolve the AMS scale tier for a competition from cupo and (optional) estaciones.
  * Uses the stricter of the two dimensions.
  */

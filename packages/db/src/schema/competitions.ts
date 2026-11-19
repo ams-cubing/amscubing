@@ -86,7 +86,7 @@ export const competitions = pgTable("competition", {
 
   capacity: integer("capacity").notNull().default(50),
 
-  /** Competition stations; null until set on Categorías y Horario. */
+  /** Competition stations; null until set on Categorías / Detalles. */
   stationCount: integer("station_count"),
   /** Competition zones (default one main area). */
   zoneCount: integer("zone_count").notNull().default(1),

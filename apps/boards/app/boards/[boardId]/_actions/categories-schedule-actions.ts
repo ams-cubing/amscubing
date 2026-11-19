@@ -27,7 +27,10 @@ import { log } from "@workspace/server/log";
 import { canAccessBoard } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
-import { isCategoriesScheduleCard } from "../_lib/categories-schedule-card";
+import {
+  isCategoriesCard,
+  isScheduleCard,
+} from "../_lib/categories-schedule-card";
 
 export type CategoriesScheduleData = {
   format: CompetitionFormat;
@@ -49,10 +52,24 @@ export type CategoriesScheduleMutationResult =
   | { ok: true; message: string; data: CategoriesScheduleData }
   | { ok: false; message: string };
 
-async function formatCardCompetition(boardId: number, cardId: number) {
+async function formatCardCompetition(
+  boardId: number,
+  cardId: number,
+  mode: "categories" | "schedule" | "either",
+) {
   const card = await assertCardOnBoard(boardId, cardId);
-  if (!isCategoriesScheduleCard(card.title)) {
-    throw new Error("Esta tarjeta no maneja categorías y horario");
+  const allowed =
+    mode === "categories"
+      ? isCategoriesCard(card.title)
+      : mode === "schedule"
+        ? isScheduleCard(card.title)
+        : isCategoriesCard(card.title) || isScheduleCard(card.title);
+  if (!allowed) {
+    throw new Error(
+      mode === "schedule"
+        ? "Esta tarjeta no maneja el horario"
+        : "Esta tarjeta no maneja categorías",
+    );
   }
   const board = await db.query.boards.findFirst({
     where: eq(boards.id, boardId),
@@ -122,6 +139,7 @@ export async function loadCategoriesScheduleCard(input: {
   const competitionId = await formatCardCompetition(
     input.boardId,
     input.cardId,
+    "either",
   );
   if (!competitionId) return { ok: true, data: null };
   return { ok: true, data: await loadData(competitionId) };
@@ -160,6 +178,7 @@ export async function saveCategoriesScheduleFromCard(input: {
     const competitionId = await formatCardCompetition(
       parsed.data.boardId,
       parsed.data.cardId,
+      "categories",
     );
     if (!competitionId) {
       return {
