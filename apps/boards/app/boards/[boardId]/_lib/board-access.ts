@@ -20,27 +20,29 @@ import {
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 
+/** Stale cookie-cache sessions sometimes keep `user.id === wcaId` after a stub merge. */
+const WCA_ID_AS_USER_ID_RE = /^\d{4}[A-Z]{4}\d{2}$/i;
+
 /**
  * Cookie-cached sessions can keep a stale `user.id` after a WCA stub merge
  * (e.g. id still equal to the WCA ID). Resolve to the live `user.id` before
- * writing foreign keys.
+ * writing foreign keys. Normal Better Auth ids skip the DB round-trip.
  */
 export async function resolveSessionUserId(actor: {
   id: string;
   wcaId: string | null;
 }): Promise<string> {
-  const byId = await db.query.user.findFirst({
-    where: eq(user.id, actor.id),
+  if (!WCA_ID_AS_USER_ID_RE.test(actor.id)) {
+    return actor.id;
+  }
+
+  const wcaId = actor.wcaId?.trim().toUpperCase() || actor.id.toUpperCase();
+  const byWca = await db.query.user.findFirst({
+    where: eq(user.wcaId, wcaId),
     columns: { id: true },
   });
-  if (byId) return byId.id;
-  if (actor.wcaId) {
-    const byWca = await db.query.user.findFirst({
-      where: eq(user.wcaId, actor.wcaId),
-      columns: { id: true },
-    });
-    if (byWca) return byWca.id;
-  }
+  if (byWca) return byWca.id;
+
   throw new Error("Sesión desactualizada; cierra sesión y vuelve a entrar");
 }
 
