@@ -65,4 +65,8 @@ export type FlatRoundMetric = {
   competitorsPerGroup: number;
   minutesPerCompetitor: number;
   approxStations: number;
+  /** AMS state id when known (from WCA city or local competition). */
+  stateId: string | null;
+  /** AMS region id when known. */
+  regionId: string | null;
 };

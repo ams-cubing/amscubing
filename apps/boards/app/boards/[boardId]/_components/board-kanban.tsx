@@ -7,7 +7,7 @@ import {
   APPROVED_LIST_TITLE,
   RESOURCES_LIST_TITLE,
   isListTitle,
-} from "@workspace/db/board-readiness";
+} from "@workspace/db/board-readiness-labels";
 import { Badge } from "@workspace/ui/components/badge";
 import {
   Kanban,

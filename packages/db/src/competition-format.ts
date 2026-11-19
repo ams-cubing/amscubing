@@ -19,7 +19,12 @@ export type { CompetitionEventPlanItem, CompetitionFormat, WcaEvent };
 export {
   CompetitionFormatError,
   DEFAULT_TIME_LIMIT_CS,
+  FIXED_TIME_LIMIT_EVENT_IDS,
+  HOUR_DEFAULT_TIME_LIMIT_EVENT_IDS,
+  HOUR_TIME_LIMIT_CS,
+  defaultTimeLimitCs,
   estimateRoundPlan,
+  isTimeLimitEditable,
   listWcaEvents,
   maxAdvancingCompetitors,
   maxRoundsAllowed,

@@ -20,6 +20,7 @@ import {
   type CompetitionFormat,
   type WcaEvent,
 } from "@workspace/db/competition-format";
+import { regionIdForState } from "@workspace/db/data/mexico";
 import { consumeRateLimit } from "@workspace/db/rate-limit";
 import { boards, competitions } from "@workspace/db/schema";
 import { log } from "@workspace/server/log";
@@ -35,6 +36,8 @@ import {
 export type CategoriesScheduleData = {
   format: CompetitionFormat;
   capacity: number;
+  stateId: string | null;
+  regionId: string | null;
   events: readonly WcaEvent[];
   tiers: AmsCompetitionTierStored[];
   recommendations: {
@@ -107,6 +110,7 @@ async function loadData(
       stationCount: true,
       zoneCount: true,
       eventsPlan: true,
+      stateId: true,
     },
   });
   if (!row) return null;
@@ -117,10 +121,14 @@ async function loadData(
     eventsPlan: Array.isArray(row.eventsPlan) ? row.eventsPlan : [],
   };
   const { tiers } = await getCompetitionScaleTiers(db);
+  const stateId = row.stateId ?? null;
+  const regionId = stateId ? regionIdForState(stateId) : null;
 
   return {
     format,
     capacity: row.capacity,
+    stateId,
+    regionId,
     events: listWcaEvents(),
     tiers: serializeScaleTiers(tiers),
     recommendations: recommendationsFor(format, row.capacity),

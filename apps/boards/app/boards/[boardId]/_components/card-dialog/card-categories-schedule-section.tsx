@@ -10,7 +10,8 @@ import {
 } from "@workspace/db/ams-competition-scale";
 import type { CompetitionEventPlanItem } from "@workspace/db/competition-format";
 import {
-  DEFAULT_TIME_LIMIT_CS,
+  defaultTimeLimitCs,
+  isTimeLimitEditable,
   maxRoundsAllowed,
   recommendedScramblers,
   recommendedStaffMinimum,
@@ -36,7 +37,9 @@ import type { BoardDetail } from "../../_lib/types";
 import { DigitTimeInput } from "./digit-time-input";
 import { WcaEventIcon, WcaEventLabel } from "./wca-event-label";
 
-const DEFAULT_TIME_LIMIT_DIGITS = centisecondsToDigits(DEFAULT_TIME_LIMIT_CS);
+function defaultTimeLimitDigits(eventId: string): string {
+  return centisecondsToDigits(defaultTimeLimitCs(eventId));
+}
 
 type EventDraft = {
   selected: boolean;
@@ -69,11 +72,13 @@ function draftsFrom(data: CategoriesScheduleData): Record<string, EventDraft> {
         existing?.cutoffCs == null
           ? ""
           : centisecondsToDigits(existing.cutoffCs),
-      timeLimitDigits: existing
-        ? existing.timeLimitCs == null
-          ? ""
-          : centisecondsToDigits(existing.timeLimitCs)
-        : DEFAULT_TIME_LIMIT_DIGITS,
+      timeLimitDigits: !isTimeLimitEditable(event.id)
+        ? defaultTimeLimitDigits(event.id)
+        : existing
+          ? existing.timeLimitCs == null
+            ? ""
+            : centisecondsToDigits(existing.timeLimitCs)
+          : defaultTimeLimitDigits(event.id),
     };
   }
   return map;
@@ -127,11 +132,9 @@ function buildPlan(
     if (cutoffCs && typeof cutoffCs === "object" && "error" in cutoffCs) {
       return cutoffCs;
     }
-    const timeLimitCs = parseDraftTime(
-      draft.timeLimitDigits,
-      "Límite",
-      eventId,
-    );
+    const timeLimitCs = isTimeLimitEditable(eventId)
+      ? parseDraftTime(draft.timeLimitDigits, "Límite", eventId)
+      : defaultTimeLimitCs(eventId);
     if (
       timeLimitCs &&
       typeof timeLimitCs === "object" &&
@@ -387,7 +390,10 @@ export function CardCategoriesSection({
                             ? String(data.capacity)
                             : draft.expectedCompetitors),
                         timeLimitDigits:
-                          draft.timeLimitDigits || DEFAULT_TIME_LIMIT_DIGITS,
+                          !isTimeLimitEditable(event.id) ||
+                          !draft.timeLimitDigits
+                            ? defaultTimeLimitDigits(event.id)
+                            : draft.timeLimitDigits,
                       })
                     }
                   />
@@ -477,7 +483,12 @@ export function CardCategoriesSection({
                       label="Límite"
                       placeholder="ej. 100000 = 10:00.00"
                       digits={draft.timeLimitDigits}
-                      disabled={!editable}
+                      disabled={!editable || !isTimeLimitEditable(event.id)}
+                      hint={
+                        isTimeLimitEditable(event.id)
+                          ? undefined
+                          : "Fijo en 60:00.00"
+                      }
                       onDigitsChange={(timeLimitDigits) =>
                         updateDraft(event.id, { timeLimitDigits })
                       }

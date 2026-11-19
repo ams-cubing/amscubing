@@ -12,7 +12,7 @@ import {
   cardPhase,
   isListTitle,
   normalizeListTitle,
-} from "./board-readiness";
+} from "./board-readiness-labels";
 
 describe("list title helpers", () => {
   it("normalizes titles", () => {

@@ -10,6 +10,7 @@
     "./notifications": "./src/notifications.ts",
     "./mentions": "./src/mentions.ts",
     "./board-readiness": "./src/board-readiness.ts",
+    "./board-readiness-labels": "./src/board-readiness-labels.ts",
     "./competition-transitions": "./src/competition-transitions.ts",
     "./utils": "./src/utils.ts",
     "./rate-limit": "./src/rate-limit.ts",

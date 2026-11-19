@@ -98,9 +98,19 @@ function timeLimitCs(round: WcifRound): number | null {
   return Math.floor(value);
 }
 
+export type FlattenWcifOptions = {
+  stateId?: string | null;
+  regionId?: string | null;
+};
+
 /** Flatten a public WCIF into one metrics row per round with results. */
-export function flattenWcifRounds(wcif: Wcif): FlatRoundMetric[] {
+export function flattenWcifRounds(
+  wcif: Wcif,
+  options?: FlattenWcifOptions,
+): FlatRoundMetric[] {
   const competitionId = wcif.id;
+  const stateId = options?.stateId ?? null;
+  const regionId = options?.regionId ?? null;
   const activities = walkActivities(
     (wcif.schedule?.venues ?? []).flatMap((venue) =>
       (venue.rooms ?? []).flatMap((room) => room.activities ?? []),
@@ -140,6 +150,8 @@ export function flattenWcifRounds(wcif: Wcif): FlatRoundMetric[] {
         competitorsPerGroup,
         minutesPerCompetitor,
         approxStations,
+        stateId,
+        regionId,
       });
     }
   }
@@ -197,6 +209,18 @@ export type HorarioEventEstimate = {
   medianCompetitorsPerGroup: number;
 };
 
+export type HorarioEstimatesAggregate = {
+  national: HorarioEventEstimate[];
+  byRegion: Record<string, HorarioEventEstimate[]>;
+  meta: {
+    competitionCount: number;
+    roundCount: number;
+  };
+};
+
+/** Minimum regional sample size before we trust a regional cell. */
+export const HORARIO_REGIONAL_MIN_SAMPLE = 5;
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -210,14 +234,18 @@ function median(values: number[]): number {
 /** Skip multi-day / broken activity envelopes when aggregating. */
 const MAX_ROUND_MINUTES_FOR_ESTIMATE = 240;
 
-/** Aggregate flat rows into per-event planning coefficients. */
-export function aggregateHorarioEstimates(
-  rows: FlatRoundMetric[],
-): HorarioEventEstimate[] {
+function qualifyingRows(rows: FlatRoundMetric[]): FlatRoundMetric[] {
+  return rows.filter(
+    (row) =>
+      row.scheduledMinutes > 0 &&
+      row.competitors > 0 &&
+      row.scheduledMinutes <= MAX_ROUND_MINUTES_FOR_ESTIMATE,
+  );
+}
+
+function estimatesFromRows(rows: FlatRoundMetric[]): HorarioEventEstimate[] {
   const byEvent = new Map<string, FlatRoundMetric[]>();
   for (const row of rows) {
-    if (row.scheduledMinutes <= 0 || row.competitors <= 0) continue;
-    if (row.scheduledMinutes > MAX_ROUND_MINUTES_FOR_ESTIMATE) continue;
     const list = byEvent.get(row.eventId) ?? [];
     list.push(row);
     byEvent.set(row.eventId, list);
@@ -238,6 +266,42 @@ export function aggregateHorarioEstimates(
     });
   }
   return estimates.sort((a, b) => a.eventId.localeCompare(b.eventId));
+}
+
+/** Aggregate flat rows into national + per-region planning coefficients. */
+export function aggregateHorarioEstimates(
+  rows: FlatRoundMetric[],
+): HorarioEstimatesAggregate {
+  const qualified = qualifyingRows(rows);
+  const national = estimatesFromRows(qualified);
+
+  const byRegionRows = new Map<string, FlatRoundMetric[]>();
+  for (const row of qualified) {
+    if (!row.regionId) continue;
+    const list = byRegionRows.get(row.regionId) ?? [];
+    list.push(row);
+    byRegionRows.set(row.regionId, list);
+  }
+
+  const byRegion: Record<string, HorarioEventEstimate[]> = {};
+  for (const [regionId, regionRows] of byRegionRows) {
+    const estimates = estimatesFromRows(regionRows).filter(
+      (item) => item.sampleSize >= HORARIO_REGIONAL_MIN_SAMPLE,
+    );
+    if (estimates.length > 0) byRegion[regionId] = estimates;
+  }
+
+  const competitionCount = new Set(qualified.map((row) => row.competitionId))
+    .size;
+
+  return {
+    national,
+    byRegion,
+    meta: {
+      competitionCount,
+      roundCount: qualified.length,
+    },
+  };
 }
 
 export function formatRoundTable(rows: FlatRoundMetric[]): string {

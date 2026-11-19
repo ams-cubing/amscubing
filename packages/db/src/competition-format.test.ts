@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   CompetitionFormatError,
+  DEFAULT_TIME_LIMIT_CS,
+  HOUR_TIME_LIMIT_CS,
+  defaultTimeLimitCs,
   estimateRoundPlan,
+  isTimeLimitEditable,
   maxAdvancingCompetitors,
   maxRoundsAllowed,
   maxSubsequentRounds,
@@ -227,5 +231,74 @@ describe("normalizeFormatInput", () => {
         ],
       }),
     ).toThrow(/duplicada/);
+  });
+
+  it("forces a 1-hour limit for FMC and Multi-Blind", () => {
+    const plan = normalizeFormatInput({
+      stationCount: 4,
+      zoneCount: 1,
+      eventsPlan: [
+        {
+          eventId: "333fm",
+          expectedCompetitors: 10,
+          rounds: 1,
+          cutoffCs: null,
+          timeLimitCs: 60_000,
+        },
+        {
+          eventId: "333mbf",
+          expectedCompetitors: 5,
+          rounds: 1,
+          cutoffCs: null,
+          timeLimitCs: null,
+        },
+      ],
+    }).eventsPlan;
+
+    expect(plan[0]?.timeLimitCs).toBe(HOUR_TIME_LIMIT_CS);
+    expect(plan[1]?.timeLimitCs).toBe(HOUR_TIME_LIMIT_CS);
+  });
+
+  it("keeps custom limits for 4BLD and 5BLD", () => {
+    const plan = normalizeFormatInput({
+      stationCount: 4,
+      zoneCount: 1,
+      eventsPlan: [
+        {
+          eventId: "444bf",
+          expectedCompetitors: 8,
+          rounds: 1,
+          cutoffCs: null,
+          timeLimitCs: 240_000,
+        },
+        {
+          eventId: "555bf",
+          expectedCompetitors: 6,
+          rounds: 1,
+          cutoffCs: null,
+          timeLimitCs: 300_000,
+        },
+      ],
+    }).eventsPlan;
+
+    expect(plan[0]?.timeLimitCs).toBe(240_000);
+    expect(plan[1]?.timeLimitCs).toBe(300_000);
+  });
+});
+
+describe("defaultTimeLimitCs", () => {
+  it("uses 1 hour for FMC, big BLD, and Multi-Blind", () => {
+    expect(defaultTimeLimitCs("333fm")).toBe(HOUR_TIME_LIMIT_CS);
+    expect(defaultTimeLimitCs("444bf")).toBe(HOUR_TIME_LIMIT_CS);
+    expect(defaultTimeLimitCs("555bf")).toBe(HOUR_TIME_LIMIT_CS);
+    expect(defaultTimeLimitCs("333mbf")).toBe(HOUR_TIME_LIMIT_CS);
+    expect(defaultTimeLimitCs("333")).toBe(DEFAULT_TIME_LIMIT_CS);
+  });
+
+  it("locks FMC and Multi-Blind limits", () => {
+    expect(isTimeLimitEditable("333fm")).toBe(false);
+    expect(isTimeLimitEditable("333mbf")).toBe(false);
+    expect(isTimeLimitEditable("444bf")).toBe(true);
+    expect(isTimeLimitEditable("555bf")).toBe(true);
   });
 });

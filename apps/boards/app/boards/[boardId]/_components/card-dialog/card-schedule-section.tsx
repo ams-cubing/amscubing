@@ -8,7 +8,10 @@ import {
   CATEGORIES_CARD_TITLE,
   COMPETITION_DETAILS_CARD_TITLE,
 } from "@workspace/db/data/ams-board-template";
-import { estimateRoundDurationMinutes } from "@workspace/db/horario-estimates";
+import {
+  estimateRoundDurationMinutes,
+  horarioEstimateCorpusLabel,
+} from "@workspace/db/horario-estimates";
 import { Badge } from "@workspace/ui/components/badge";
 
 import {
@@ -85,6 +88,8 @@ export function CardScheduleSection({
   const stations = data.format.stationCount;
   const eventsById = new Map(data.events.map((event) => [event.id, event]));
   const plan = data.format.eventsPlan;
+  const regionId = data.regionId;
+  const corpusLabel = horarioEstimateCorpusLabel(regionId);
 
   return (
     <section className="space-y-4 rounded-lg border p-4">
@@ -93,8 +98,8 @@ export function CardScheduleSection({
         <p className="text-muted-foreground text-sm">
           Grupos = ceil(competidores / estaciones). Rondas siguientes acotadas
           por WCA 9m; competidores de rondas 2+ usan el techo de avance 9p
-          (máx. 75%). Duración estimada a partir de horarios WCIF de
-          competencias MX (slots programados). Completa el formato en{" "}
+          (máx. 75%). Duración estimada a partir de horarios WCIF recientes
+          ({corpusLabel}; slots programados). Completa el formato en{" "}
           <span className="font-medium">{CATEGORIES_CARD_TITLE}</span>
           {stations == null ? (
             <>
@@ -133,7 +138,8 @@ export function CardScheduleSection({
               rounds: item.rounds,
               stationCount: stations,
               eventId: item.eventId,
-              estimateDurationMinutes: estimateRoundDurationMinutes,
+              estimateDurationMinutes: (args) =>
+                estimateRoundDurationMinutes({ ...args, regionId }),
             });
             const hasBreach = rounds.some(
               (round) => round.exceedsSubsequentLimit,

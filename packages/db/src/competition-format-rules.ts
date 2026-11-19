@@ -93,6 +93,40 @@ export class CompetitionFormatError extends Error {}
 /** Default per-attempt time limit when selecting a category (10:00.00). */
 export const DEFAULT_TIME_LIMIT_CS = 60_000;
 
+/** 1-hour limit used for FMC, big BLD, and Multi-Blind (60:00.00). */
+export const HOUR_TIME_LIMIT_CS = 360_000;
+
+/** Events that default to a 1-hour time limit when selected. */
+export const HOUR_DEFAULT_TIME_LIMIT_EVENT_IDS = [
+  "333fm",
+  "444bf",
+  "555bf",
+  "333mbf",
+] as const;
+
+/**
+ * Events whose time limit is fixed by WCA practice (60 minutes) and must not
+ * be edited in the categorías form.
+ */
+export const FIXED_TIME_LIMIT_EVENT_IDS = ["333fm", "333mbf"] as const;
+
+const HOUR_DEFAULT_TIME_LIMIT_EVENT_ID_SET = new Set<string>(
+  HOUR_DEFAULT_TIME_LIMIT_EVENT_IDS,
+);
+const FIXED_TIME_LIMIT_EVENT_ID_SET = new Set<string>(FIXED_TIME_LIMIT_EVENT_IDS);
+
+/** Default time limit for a category when first selected. */
+export function defaultTimeLimitCs(eventId: string): number {
+  return HOUR_DEFAULT_TIME_LIMIT_EVENT_ID_SET.has(eventId)
+    ? HOUR_TIME_LIMIT_CS
+    : DEFAULT_TIME_LIMIT_CS;
+}
+
+/** Whether organizers may edit the time limit for this category. */
+export function isTimeLimitEditable(eventId: string): boolean {
+  return !FIXED_TIME_LIMIT_EVENT_ID_SET.has(eventId);
+}
+
 /**
  * Max total rounds for an event given this round’s competitor count (WCA 9m/9m1–9m3).
  * Counting from the current round inclusive.
@@ -227,10 +261,9 @@ export function normalizeEventsPlan(
     }
 
     const cutoffCs = normalizeOptionalCs(raw.cutoffCs, `corte de ${eventId}`);
-    const timeLimitCs = normalizeOptionalCs(
-      raw.timeLimitCs,
-      `límite de ${eventId}`,
-    );
+    const timeLimitCs = isTimeLimitEditable(eventId)
+      ? normalizeOptionalCs(raw.timeLimitCs, `límite de ${eventId}`)
+      : defaultTimeLimitCs(eventId);
 
     plan.push({
       eventId,

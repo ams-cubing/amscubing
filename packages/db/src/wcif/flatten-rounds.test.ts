@@ -45,10 +45,34 @@ describe("flattenWcifRounds (Chiconcuac trimmed)", () => {
     expect(inferStationCount(rows)).toBe(17); // ceil(75/5)=15, ceil(78/5)=16, ceil(65/4)=17
   });
 
-  it("aggregates per-event medians", () => {
-    const estimates = aggregateHorarioEstimates(rows);
-    const three = estimates.find((item) => item.eventId === "333");
+  it("aggregates national per-event medians", () => {
+    const aggregate = aggregateHorarioEstimates(rows);
+    const three = aggregate.national.find((item) => item.eventId === "333");
     expect(three?.sampleSize).toBe(3);
     expect(three?.medianMinutesPerGroup).toBeGreaterThan(0);
+    expect(aggregate.byRegion).toEqual({});
+  });
+
+  it("emits regional cells only when sampleSize >= 5", () => {
+    const tagged = flattenWcifRounds(CHICONCUAC_2026_TRIMMED, {
+      stateId: "MEX",
+      regionId: "centro",
+    });
+    expect(tagged.every((row) => row.regionId === "centro")).toBe(true);
+
+    const sparse = aggregateHorarioEstimates(tagged);
+    expect(sparse.byRegion.centro).toBeUndefined();
+
+    const padded = [
+      ...tagged,
+      ...tagged.map((row) => ({
+        ...row,
+        competitionId: `${row.competitionId}-b`,
+        roundId: `${row.roundId}-b`,
+      })),
+    ];
+    const rich = aggregateHorarioEstimates(padded);
+    const centro333 = rich.byRegion.centro?.find((item) => item.eventId === "333");
+    expect(centro333?.sampleSize).toBe(6);
   });
 });

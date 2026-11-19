@@ -6,9 +6,14 @@ import { fileURLToPath } from "node:url";
 
 import { eq, ilike, or, sql } from "drizzle-orm";
 
+import {
+  regionIdForState,
+  resolveMexicoStateFromWcaCity,
+} from "./data/mexico";
 import { db } from "./index";
 import { saveCompetitionFormat } from "./competition-format";
 import { boards, competitions } from "./schema";
+import type { HorarioEstimatesData } from "./horario-estimates";
 import {
   aggregateHorarioEstimates,
   eventsPlanFromWcifMetrics,
@@ -85,7 +90,7 @@ Options:
   --seed-board         Write eventsPlan + stations into the linked local competition
   --mx-years <n>       Also fetch ended MX comps from the last n years
   --from-cache         Analyze every WCIF already in packages/db/.cache/wcif
-  --write-estimates    Write packages/db/src/horario-estimates.ts from aggregates
+  --write-estimates    Write packages/db/src/horario-estimates-data.ts from aggregates
   --help               Show this help
 `);
 }
@@ -110,6 +115,29 @@ async function loadCachedWcif(competitionId: string): Promise<Wcif | null> {
   }
 }
 
+async function fetchWithRetry(
+  url: string,
+  options?: { tries?: number },
+): Promise<Response> {
+  const tries = options?.tries ?? 3;
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= tries; attempt += 1) {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+    if (response.ok) return response;
+    if (response.status === 429 && attempt < tries) {
+      const waitMs = 1000 * 2 ** attempt;
+      console.warn(`⏳ 429 for ${url}; retry in ${waitMs}ms`);
+      await sleep(waitMs);
+      continue;
+    }
+    lastError = new Error(`HTTP ${response.status} for ${url}`);
+    if (response.status !== 429) break;
+  }
+  throw lastError ?? new Error(`Fetch failed for ${url}`);
+}
+
 async function fetchWcif(competitionId: string): Promise<Wcif> {
   const cached = await loadCachedWcif(competitionId);
   if (cached) {
@@ -119,10 +147,7 @@ async function fetchWcif(competitionId: string): Promise<Wcif> {
 
   const url = `${WCA_WCIF_PUBLIC}/${encodeURIComponent(competitionId)}/wcif/public`;
   console.log(`⬇️  Fetching ${url}`);
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!response.ok) {
-    throw new Error(`WCIF fetch failed for ${competitionId}: ${response.status}`);
-  }
+  const response = await fetchWithRetry(url);
   const wcif = (await response.json()) as Wcif;
   await ensureCacheDir();
   await writeFile(
@@ -133,13 +158,39 @@ async function fetchWcif(competitionId: string): Promise<Wcif> {
   return wcif;
 }
 
-async function listMexicoCompetitionIds(years: number): Promise<string[]> {
+/** WCA competition id → city string from the list API / cities sidecar. */
+const competitionCityById = new Map<string, string>();
+const CITIES_CACHE_PATH = path.join(CACHE_DIR, "cities.json");
+
+async function loadCitiesCache(): Promise<void> {
+  try {
+    const raw = await readFile(CITIES_CACHE_PATH, "utf8");
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    for (const [id, city] of Object.entries(parsed)) {
+      if (typeof city === "string" && city.length > 0) {
+        competitionCityById.set(id, city);
+      }
+    }
+  } catch {
+    // no sidecar yet
+  }
+}
+
+async function saveCitiesCache(): Promise<void> {
+  await ensureCacheDir();
+  const payload = Object.fromEntries(competitionCityById.entries());
+  await writeFile(CITIES_CACHE_PATH, JSON.stringify(payload, null, 2), "utf8");
+}
+
+async function listMexicoCompetitions(
+  years: number,
+): Promise<Array<{ id: string; city: string | null }>> {
   const end = new Date();
   const start = new Date(end);
   start.setUTCFullYear(start.getUTCFullYear() - years);
   const startIso = start.toISOString().slice(0, 10);
   const endIso = end.toISOString().slice(0, 10);
-  const ids: string[] = [];
+  const comps: Array<{ id: string; city: string | null }> = [];
 
   for (let page = 1; page <= 12; page += 1) {
     const url = new URL(WCA_COMPETITIONS_API);
@@ -149,14 +200,10 @@ async function listMexicoCompetitionIds(years: number): Promise<string[]> {
     url.searchParams.set("per_page", "100");
     url.searchParams.set("page", String(page));
 
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error(`MX list failed: ${response.status}`);
-    }
+    const response = await fetchWithRetry(url.toString());
     const rows = (await response.json()) as Array<{
       id: string;
+      city?: string | null;
       end_date: string;
       cancelled_at?: string | null;
     }>;
@@ -165,13 +212,43 @@ async function listMexicoCompetitionIds(years: number): Promise<string[]> {
     for (const row of rows) {
       if (row.cancelled_at) continue;
       if (row.end_date > endIso) continue;
-      ids.push(row.id);
+      comps.push({ id: row.id, city: row.city ?? null });
+      if (row.city) competitionCityById.set(row.id, row.city);
     }
     if (rows.length < 100) break;
-    await sleep(250);
+    await sleep(350);
   }
 
-  return [...new Set(ids)];
+  await saveCitiesCache();
+  return comps;
+}
+
+async function resolveLocationForCompetition(competitionId: string): Promise<{
+  stateId: string | null;
+  regionId: string | null;
+}> {
+  const city = competitionCityById.get(competitionId) ?? null;
+  let stateId = resolveMexicoStateFromWcaCity(city);
+
+  if (!stateId) {
+    try {
+      const local = await db.query.competitions.findFirst({
+        where: ilike(
+          competitions.wcaCompetitionUrl,
+          `%/competitions/${competitionId}%`,
+        ),
+        columns: { stateId: true },
+      });
+      stateId = local?.stateId ?? null;
+    } catch {
+      // DB optional for offline analyze runs
+    }
+  }
+
+  return {
+    stateId,
+    regionId: stateId ? regionIdForState(stateId) : null,
+  };
 }
 
 function wcaIdFromUrl(url: string | null | undefined): string | null {
@@ -294,68 +371,59 @@ async function seedBoardFromWcif(wcif: Wcif) {
   );
 }
 
-function estimatesSource(estimates: HorarioEventEstimate[]): string {
-  const lines = estimates.map((item) => {
-    return `  ${JSON.stringify(item.eventId)}: {
+function estimateRecord(
+  estimates: HorarioEventEstimate[],
+): Record<string, HorarioEventEstimate> {
+  const out: Record<string, HorarioEventEstimate> = {};
+  for (const item of estimates) out[item.eventId] = item;
+  return out;
+}
+
+function formatEstimateConstants(item: HorarioEventEstimate): string {
+  return `{
     sampleSize: ${item.sampleSize},
     medianMinutesPerGroup: ${Number(item.medianMinutesPerGroup.toFixed(2))},
     medianMinutesPerCompetitor: ${Number(item.medianMinutesPerCompetitor.toFixed(4))},
     medianCompetitorsPerGroup: ${Number(item.medianCompetitorsPerGroup.toFixed(2))},
-  },`;
-  });
+  }`;
+}
+
+function estimatesDataSource(data: HorarioEstimatesData): string {
+  const nationalLines = Object.entries(data.national).map(
+    ([eventId, item]) =>
+      `    ${JSON.stringify(eventId)}: ${formatEstimateConstants(item)},`,
+  );
+
+  const regionBlocks = Object.entries(data.byRegion).map(
+    ([regionId, events]) => {
+      const eventLines = Object.entries(events).map(
+        ([eventId, item]) =>
+          `      ${JSON.stringify(eventId)}: ${formatEstimateConstants(item)},`,
+      );
+      return `    ${JSON.stringify(regionId)}: {\n${eventLines.join("\n")}\n    },`;
+    },
+  );
 
   return `/**
- * Empirical horario planning coefficients from public WCA WCIFs.
- * Regenerated by: pnpm --filter @workspace/db analyze:horario -- --write-estimates
- * Durations are scheduled slots, not measured floor time.
+ * AUTO-GENERATED by \`pnpm --filter @workspace/db analyze:horario -- --write-estimates\`.
+ * Do not edit by hand.
  */
 
-export type HorarioEventEstimateConstants = {
-  sampleSize: number;
-  medianMinutesPerGroup: number;
-  medianMinutesPerCompetitor: number;
-  medianCompetitorsPerGroup: number;
+import type { HorarioEstimatesData } from "./horario-estimates";
+
+export const HORARIO_ESTIMATES_DATA: HorarioEstimatesData = {
+  national: {
+${nationalLines.join("\n")}
+  },
+  byRegion: {
+${regionBlocks.join("\n")}
+  },
+  meta: {
+    generatedAt: ${JSON.stringify(data.meta.generatedAt)},
+    competitionCount: ${data.meta.competitionCount},
+    roundCount: ${data.meta.roundCount},
+  },
 };
-
-export const HORARIO_EVENT_ESTIMATES = {
-${lines.join("\n")}
-} as const satisfies Record<string, HorarioEventEstimateConstants>;
-
-export type HorarioEventId = keyof typeof HORARIO_EVENT_ESTIMATES;
-
-export function getHorarioEventEstimate(
-  eventId: string,
-): HorarioEventEstimateConstants | null {
-  const row =
-    HORARIO_EVENT_ESTIMATES[eventId as HorarioEventId] ?? null;
-  return row;
-}
-
-/** Round estimated minutes up to the next 5-minute block (min 5). */
-export function roundUpScheduleMinutes(minutes: number): number {
-  if (!Number.isFinite(minutes) || minutes <= 0) return 5;
-  return Math.max(5, Math.ceil(minutes / 5) * 5);
-}
-
-export function estimateRoundDurationMinutes(input: {
-  eventId: string;
-  competitors: number;
-  groups: number | null;
-}): number | null {
-  const estimate = getHorarioEventEstimate(input.eventId);
-  if (!estimate) return null;
-  if (input.groups != null && input.groups > 0) {
-    return roundUpScheduleMinutes(
-      input.groups * estimate.medianMinutesPerGroup,
-    );
-  }
-  if (input.competitors > 0) {
-    return roundUpScheduleMinutes(
-      input.competitors * estimate.medianMinutesPerCompetitor,
-    );
-  }
-  return null;
-}
 `;
 }
 
@@ -373,17 +441,19 @@ async function listCachedCompetitionIds(): Promise<string[]> {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const competitionIds = new Set(args.comps);
+  await loadCitiesCache();
 
   if (args.fromCache) {
     for (const id of await listCachedCompetitionIds()) {
+      if (id === "cities") continue;
       competitionIds.add(id);
     }
   }
 
   if (args.mxYears != null) {
     console.log(`🇲🇽 Listing MX competitions (last ${args.mxYears} years)…`);
-    for (const id of await listMexicoCompetitionIds(args.mxYears)) {
-      competitionIds.add(id);
+    for (const row of await listMexicoCompetitions(args.mxYears)) {
+      competitionIds.add(row.id);
     }
   }
 
@@ -396,16 +466,19 @@ async function main() {
             throw new Error(`No cache for ${id}`);
           })())
         : await fetchWcif(id);
-      const rows = flattenWcifRounds(wcif);
+      const location = await resolveLocationForCompetition(id);
+      const rows = flattenWcifRounds(wcif, location);
       if (rows.length > 0) {
+        const loc =
+          location.regionId != null
+            ? ` [${location.stateId ?? "?"}/${location.regionId}]`
+            : "";
         console.log(
-          `\n=== ${wcif.id} (${wcif.name ?? ""}) — ${rows.length} rounds ===`,
+          `\n=== ${wcif.id} (${wcif.name ?? ""})${loc} — ${rows.length} rounds ===`,
         );
         console.log(formatRoundTable(rows));
-      } else {
-        console.log(`\n=== ${wcif.id}: no rounds with results ===`);
+        allRows.push(...rows);
       }
-      allRows.push(...rows);
 
       if (args.seedBoard) {
         await seedBoardFromWcif(wcif);
@@ -419,17 +492,41 @@ async function main() {
     }
   }
 
-  const estimates = aggregateHorarioEstimates(allRows);
-  console.log("\n=== Aggregated medians ===");
-  for (const row of estimates) {
+  const aggregate = aggregateHorarioEstimates(allRows);
+  console.log(
+    `\n=== National medians (${aggregate.meta.competitionCount} comps, ${aggregate.meta.roundCount} rounds) ===`,
+  );
+  for (const row of aggregate.national) {
     console.log(
       `${row.eventId}\tn=${row.sampleSize}\tmin/group=${row.medianMinutesPerGroup.toFixed(1)}\tmin/comp=${row.medianMinutesPerCompetitor.toFixed(2)}\tcomp/group=${row.medianCompetitorsPerGroup.toFixed(1)}`,
     );
   }
+  for (const [regionId, estimates] of Object.entries(aggregate.byRegion)) {
+    console.log(`\n=== Region ${regionId} ===`);
+    for (const row of estimates) {
+      console.log(
+        `${row.eventId}\tn=${row.sampleSize}\tmin/group=${row.medianMinutesPerGroup.toFixed(1)}`,
+      );
+    }
+  }
 
   if (args.writeEstimates) {
-    const outPath = path.resolve(HERE, "horario-estimates.ts");
-    await writeFile(outPath, estimatesSource(estimates), "utf8");
+    const data: HorarioEstimatesData = {
+      national: estimateRecord(aggregate.national),
+      byRegion: Object.fromEntries(
+        Object.entries(aggregate.byRegion).map(([regionId, estimates]) => [
+          regionId,
+          estimateRecord(estimates),
+        ]),
+      ),
+      meta: {
+        generatedAt: new Date().toISOString(),
+        competitionCount: aggregate.meta.competitionCount,
+        roundCount: aggregate.meta.roundCount,
+      },
+    };
+    const outPath = path.resolve(HERE, "horario-estimates-data.ts");
+    await writeFile(outPath, estimatesDataSource(data), "utf8");
     console.log(`\n✅ Wrote ${outPath}`);
   }
 }
