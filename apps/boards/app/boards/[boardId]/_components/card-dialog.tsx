@@ -82,7 +82,10 @@ import {
 import { CardCategoriesSection } from "./card-dialog/card-categories-schedule-section";
 import { CardCompetitionDetailsSection } from "./card-dialog/card-competition-details-section";
 import { CardScheduleSection } from "./card-dialog/card-schedule-section";
+import { CardBudgetSection } from "./card-dialog/card-budget-section";
+import { CardSponsorsSection } from "./card-dialog/card-sponsors-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { budgetCardMode } from "../_lib/budget-cards";
 import {
   isCategoriesCard,
   isScheduleCard,
@@ -159,6 +162,7 @@ export function CardDialog({
   const labelIds = new Set(card.cardLabels.map((cl) => cl.labelId));
   const memberIds = new Set(card.members.map((m) => m.userId));
   const staffMode = staffCardMode(card.title);
+  const budgetMode = budgetCardMode(card.title);
   const currentList = board.lists.find((list) => list.id === card.listId);
   const isResourcesCard = isListTitle(
     currentList?.title ?? "",
@@ -638,6 +642,23 @@ export function CardDialog({
                 board={board}
                 cardId={card.id}
                 mode={staffMode}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {budgetMode && budgetMode !== "sponsors" ? (
+              <CardBudgetSection
+                board={board}
+                cardId={card.id}
+                mode={budgetMode}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {budgetMode === "sponsors" ? (
+              <CardSponsorsSection
+                board={board}
+                cardId={card.id}
                 readOnly={readOnly}
               />
             ) : null}

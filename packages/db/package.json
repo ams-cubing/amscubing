@@ -17,6 +17,8 @@
     "./uploads": "./src/uploads.ts",
     "./equipment": "./src/equipment.ts",
     "./equipment-labels": "./src/equipment-labels.ts",
+    "./budget": "./src/budget.ts",
+    "./budget-labels": "./src/budget-labels.ts",
     "./competition-staff": "./src/competition-staff.ts",
     "./competition-format": "./src/competition-format.ts",
     "./competition-format-rules": "./src/competition-format-rules.ts",

@@ -77,11 +77,34 @@ export const CATEGORIES_SCHEDULE_RENAMED_TITLES = {
   "Categorías y Horario": CATEGORIES_CARD_TITLE,
 } as const;
 
-/** Spreadsheet links removed from Categorías / Horario; sync deletes leftovers. */
-export const CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS = [
-  "https://docs.google.com/spreadsheets/d/192O8wqPQooYoXJBC9iF2-Q0EJ7k40Y_0m6iawqL7UY4/edit?usp=sharing",
-  "https://docs.google.com/spreadsheets/d/1cUFXbyrLA1NhRZTpia9g-U6KC-BKv44b/edit?usp=sharing&ouid=115645000405842078592&rtpof=true&sd=true",
-] as const;
+/** Optional Google Sheets kept on Categorías / Horario as offline fallbacks. */
+export const CATEGORIES_FALLBACK_SHEET = {
+  name: "Categorías",
+  url: "https://docs.google.com/spreadsheets/d/1cUFXbyrLA1NhRZTpia9g-U6KC-BKv44b/edit?usp=sharing&ouid=115645000405842078592&rtpof=true&sd=true",
+} as const;
+
+export const SCHEDULE_FALLBACK_SHEET = {
+  name: "Cálculo de horarios",
+  url: "https://docs.google.com/spreadsheets/d/192O8wqPQooYoXJBC9iF2-Q0EJ7k40Y_0m6iawqL7UY4/edit?usp=sharing",
+} as const;
+
+/** In-app budget cards (titles no longer say Excel). */
+export const BUDGET_PLAN_CARD_TITLE = "Presupuesto de la competencia";
+export const BUDGET_MID_CARD_TITLE = "Primer avance de costos";
+export const BUDGET_FINAL_CARD_TITLE = "Informe final de costos";
+export const BUDGET_SPONSORS_CARD_TITLE = "Patrocinios y convenios";
+
+/** Tutorial kept on the presupuesto card as Excel/Drive fallback guidance. */
+export const BUDGET_FALLBACK_TUTORIAL = {
+  name: "Gastos de una Competencia (Tutorial)",
+  url: "https://docs.google.com/document/d/19NBKkdSqdBNgfgV6oRhWcGv4Sh-uKFEW/edit?usp=sharing&ouid=102609333583581616395&rtpof=true&sd=true",
+} as const;
+
+export const BUDGET_RENAMED_CARD_TITLES = {
+  "Excel de Costos": BUDGET_PLAN_CARD_TITLE,
+  "Entregar del primer avance de Costos": BUDGET_MID_CARD_TITLE,
+  "Entregar informe de costos final": BUDGET_FINAL_CARD_TITLE,
+} as const;
 
 /** Card that collects custom copy / tags / flyer for Torneo de Rubik posts. */
 export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
@@ -235,14 +258,16 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
-      "**Objetivo:** Elegir las categorías y definir el formato técnico antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas, categorías oficiales, competidores esperados, rondas, cortes y límites.\n2. Revisa las recomendaciones de staff y el aviso si te pasas del máximo de categorías del tabulador AMS (cupo/estaciones también se editan en **Detalles de competencia**).\n3. Consulta [“Categorías y Formatos”](https://docs.google.com/document/d/1HtJbibZnOWJdK3x6Lr25WutW38AtlIYs). Categorías no oficiales (Team-Blind, etc.): coméntalas con nombre, formato y tiempo.\n\n**Nota:** El número de rondas debe cumplir la regulación WCA 9m según los competidores esperados. El mínimo de staff aparece aquí y en **Planeación de Staff**.",
+      "**Objetivo:** Elegir las categorías y definir el formato técnico antes del anuncio.\n\n**Pasos:**\n\n1. Completa la sección **Formato técnico**: estaciones, zonas, categorías oficiales, competidores esperados, rondas, cortes y límites.\n2. Revisa las recomendaciones de staff y el aviso si te pasas del máximo de categorías del tabulador AMS (cupo/estaciones también se editan en **Detalles de competencia**).\n3. Consulta [“Categorías y Formatos”](https://docs.google.com/document/d/1HtJbibZnOWJdK3x6Lr25WutW38AtlIYs). Categorías no oficiales (Team-Blind, etc.): coméntalas con nombre, formato y tiempo.\n\n**Nota:** El número de rondas debe cumplir la regulación WCA 9m según los competidores esperados. El mínimo de staff aparece aquí y en **Planeación de Staff**. La hoja de **Categorías** adjunta queda como respaldo si prefieres planear fuera del tablero.",
+    attachments: [CATEGORIES_FALLBACK_SHEET],
   },
   {
     title: SCHEDULE_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
-      "**Objetivo:** Organizar el horario de la competencia.\n\n**Pasos:**\n\n1. Completa primero **Categorías** (estaciones, esperados y rondas). Esta tarjeta muestra el cálculo de grupos y el tope de rondas (9m) por categoría.\n2. Elabora el horario (máximo 9 horas por día; incluye registro, tutorial, instalación, Multi-Blind si aplica, comida y premiación). Estima competidores (3x3 y 2x2 = 100% de registros).\n3. Súbelo a esta tarjeta y pásala a hecho cuando el delegado lo apruebe.\n\n**Nota:** Puedes solapar instalación y registro. El desmontaje no va en el horario, pero debe planearse.",
+      "**Objetivo:** Organizar el horario de la competencia.\n\n**Pasos:**\n\n1. Completa primero **Categorías** (estaciones, esperados y rondas). Esta tarjeta muestra el cálculo de grupos y el tope de rondas (9m) por categoría.\n2. Elabora el horario (máximo 9 horas por día; incluye registro, tutorial, instalación, Multi-Blind si aplica, comida y premiación). Estima competidores (3x3 y 2x2 = 100% de registros). Puedes usar la hoja **Cálculo de horarios** adjunta como respaldo.\n3. Súbelo a esta tarjeta y pásala a hecho cuando el delegado lo apruebe.\n\n**Nota:** Puedes solapar instalación y registro. El desmontaje no va en el horario, pero debe planearse.",
+    attachments: [SCHEDULE_FALLBACK_SHEET],
   },
   {
     title: "Mapeo de sede",
@@ -258,11 +283,12 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     description: `**Objetivo:** Definir y corroborar el compromiso del staff.\n\n**Pasos:**\n\n1. Revisa el mínimo recomendado en la sección **Staff** de esta tarjeta (se calcula con estaciones y zonas de **Detalles de competencia** / **Categorías**: estaciones + 4, +4 por zona extra). Mezcladores: 2 si hay menos de 80 competidores, 4 si hay 80 o más.\n2. Registra al staff en esa misma sección (nombre, WCA ID o correo y actividades: jueces, mezcladores, corredores, registro, capturistas). Si aún no tienes nombres, comenta cuántas personas necesitas.\n3. Para **5x5, SQ-1, Megaminx, Clock y Skewb**, adjunta o comenta videos que demuestren mezclado eficiente. En competencias silenciosas o con menos de 35 competidores puedes omitir base de staff, pero garantizando mezcladores para **5x5, SQ1, Megaminx y Clock**.\n4. Comenta el plan de capacitación, control de actividades y beneficios (comida, hidratación, lunch, registro gratuito, transporte, regalo, sorteo, etc.).\n\n**Nota:** Comparte el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}) certificado por la AMS. En **${STAFF_TRAINING_CARD_TITLE}** verás quién ya lo completó.`,
   },
   {
-    title: "Excel de Costos",
+    title: BUDGET_PLAN_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce"],
     description:
-      "**Objetivo:** Analizar los costos de la competencia para definir el costo de inscripción. **NO SE PUEDE REALIZAR NINGÚN GASTO SIN LA APROBACIÓN DE UN DELEGADO.**\n\n**Paso 1:** Solicita al delegado la creación de tu drive de costos y tu carpeta de comprobantes. Todos los cambios deberán hacerse en este documento; no se puede usar otra plantilla.\n\n**Paso 2:** Dentro del documento encontrarás los posibles costos o ingresos. Llena la primera versión, considerando insumos gratuitos, patrocinadores y gastos imprescindibles.\n\n**Paso 3:** Puedes añadir cualquier costo no enlistado, previo acuerdo con tu delegado.\n\n**Paso 4:** No añadas ni elimines secciones del documento. Para gastos especiales, consulta a tu delegado para agregarlos.\n\n**Paso 5:** Cuando el documento esté listo, mueve esta tarjeta a “Hecho”.\n\n**Equipo de competencia:** Gracias a las aportaciones voluntarias y a la Asociación Mexicana de Speedcubing, podrás contar sin costo con el equipo necesario, siempre que sea parte del equipo de cada delegado. Incluye estaciones completas con displays y timers, extensiones para la zona de competencia, impresoras para viajes cortos, cronómetros de mano y material de oficina como bolígrafos, marcadores, tijeras, cutters y baterías. **Para más información revisa la tarjeta de Confirmar equipo de competencia.**\n\n**Viáticos a considerar:**\n\n- **Llegada y salida:** Los delegados deberían llegar un día antes y salir un día después de la competencia.\n- **Alimentos:** Incluye los días de llegada, competencia y salida.\n- **Hospedaje:** Si es posible, quedarse en casa de alguien; si no, optar por un hotel sencillo cercano.\n- **Transporte:** Considera transporte desde la ciudad del delegado, equipaje documentado, transporte local durante todos los días y Uber o similar según necesidad.\n\n**Cuota WCA:** Donativo obligatorio del 5% del registro, asignado por el delegado según número de competidores.  \n**Cuota AMS:** Donativo obligatorio del 5% para la gestión de la Asociación Mexicana de Speedcubing.\n\n**Nota:** Todos los gastos deben comprobarse mediante ticket, factura o nota. En caso de no contar con alguno, consulta con tu delegado.",
+      "**Objetivo:** Analizar los costos de la competencia para definir el costo de inscripción. **NO SE PUEDE REALIZAR NINGÚN GASTO SIN LA APROBACIÓN DE UN DELEGADO.**\n\n**Paso 1:** Completa la sección **Presupuesto** de esta tarjeta (ingresos/egresos esperados, cuota propuesta y competidores estimados) y envíala al delegado.\n\n**Paso 2:** Pide a tu delegado la **carpeta de Drive de comprobantes** (y, si lo necesitan, el Excel de costos como respaldo). Los tickets, facturas o notas van en esa carpeta; las capturas de transferencias NO son comprobantes válidos.\n\n**Paso 3:** Puedes añadir renglones no enlistados previo acuerdo con tu delegado.\n\n**Paso 4:** Cuando el presupuesto esté listo, envíalo desde la sección y mueve esta tarjeta a “Hecho”.\n\n**Respaldo Excel:** Si no puedes usar la sección del tablero, usa el Excel/Drive que te asigne el delegado (enlace en la sección cuando exista) y el tutorial adjunto. Prefiere el presupuesto en la tarjeta cuando sea posible.\n\n**Equipo de competencia:** Gracias a las aportaciones voluntarias y a la AMS, el equipo de competencia no tiene costo (timers, displays, etc.). Revisa la tarjeta **Confirmación de equipo de competencia**.\n\n**Viáticos a considerar:** llegada un día antes / salida un día después; alimentos; hospedaje; transporte (ciudad del delegado, equipaje, local, Uber).\n\n**Cuota WCA y AMS:** donativo obligatorio del 5% del registro cada una (se calculan en el presupuesto).",
+    attachments: [BUDGET_FALLBACK_TUTORIAL],
   },
   WCA_WEBSITE_CARD,
   SOCIAL_PUBLISH_CARD,
@@ -281,11 +307,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "**Objetivo:** Asegurar que todos los competidores estén correctamente registrados antes de aceptar su participación.\n\nPara aceptar a alguien en la competencia, además de verificar su pago, se debe realizar lo siguiente:\n\n1. **Verificar el WCA ID del competidor**\n\n**A) Si no tiene un WCA ID vinculado:**\n\n- **Paso 1:** Copia y pega su nombre en el buscador de la WCA. Si no existe ninguna coincidencia, puedes aceptar el registro.\n- **Paso 2:** Si existe alguna coincidencia, solicita al competidor por correo que realice su registro usando la cuenta que ya tiene WCA ID.\n- **Paso 3:** Si el competidor no recuerda su cuenta o desea usar una nueva, solicita que contacte al delegado principal por medio de su correo electrónico para realizar el cambio de WCA ID.\n\n**B) Si el competidor tiene WCA ID vinculado:**\n\n- Puedes aceptarlo sin inconveniente una vez que haya realizado el pago.\n\n**Nota:** Es obligatorio aceptar competidores únicamente dentro de las fechas establecidas en la página de la WCA. Si tienes alguna duda con algún registro, contacta a tu delegado.",
   },
   {
-    title: "Patrocinios y convenios",
+    title: BUDGET_SPONSORS_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce"],
     description:
-      "**Objetivo:** Reducir los costos de la competencia para hacerla más accesible.\n\n**TODOS LOS PATROCINIOS Y ACUERDOS DEBEN SER DECLARADOS EN ESTA SECCIÓN**\n\n- Todo patrocinio o acuerdo debe buscar un beneficio mutuo. Lo ideal es que los patrocinadores cubran los costos más importantes de la competencia, ya sea en efectivo o en especie.\n- Si un patrocinador no está dispuesto a aportar un beneficio al evento, no regales el trabajo del equipo, de los voluntarios ni de los miembros de la WCA.\n- No te limites a buscar patrocinadores solo en tiendas de cubos. Explora también opciones locales como restaurantes, hoteles, cafeterías y otros negocios cercanos. Esto puede abrir más oportunidades y fortalecer el apoyo de la comunidad local.\n\n**Pasos:**\n\n1. Comenta la siguiente información de todos y cada uno de los patrocinadores:\n  - Nombre del patrocinador\n  - Logo (para incluir en los tabs del sitio y/o en diseños)\n  - Tipo de patrocinio (efectivo o en especie)\n  - Condiciones del patrocinio\n2. Mantén actualizado el Drive de costos con esta información\n\n**Nota:** Para patrocinadores extranjeros considera una cuota de importación; si tienes dudas sobre esto, consulta a tu delegado.",
+      "**Objetivo:** Reducir los costos de la competencia para hacerla más accesible.\n\n**TODOS LOS PATROCINIOS Y ACUERDOS DEBEN SER DECLARADOS EN LA SECCIÓN PATROCINIOS DE ESTA TARJETA**\n\n- Todo patrocinio o acuerdo debe buscar un beneficio mutuo (efectivo o en especie).\n- Si un patrocinador no aporta un beneficio al evento, no regales el trabajo del equipo, de los voluntarios ni de los miembros de la WCA.\n- Explora también opciones locales (restaurantes, hoteles, cafeterías), no solo tiendas de cubos.\n\n**Pasos:**\n\n1. Registra cada patrocinador en la sección **Patrocinios** (nombre, logo, tipo efectivo/especie, monto si aplica y condiciones).\n2. Mantén actualizado el presupuesto (y el Excel de respaldo si lo usan).\n\n**Nota:** Para patrocinadores extranjeros considera una cuota de importación; si tienes dudas, consulta a tu delegado.",
   },
   {
     title: STAFF_TRAINING_CARD_TITLE,
@@ -314,11 +340,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
     ],
   },
   {
-    title: "Entregar del primer avance de Costos",
+    title: BUDGET_MID_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce"],
     description:
-      "**Objetivo:**  \nComparar de manera precisa los costos aproximados con los costos reales de la competencia.\n\n**Pasos:**\n\n1. Solicita a tu delegado que desbloquee la sección de **Primera Entrega de Costos** en el Drive compartido previamente.\n2. Completa todos los campos correspondientes a los **costos reales** (**no modifiques los costos esperados**).\n3. Sube los comprobantes de los costos a la carpeta compartida proporcionada previamente. Recuerda que todos los gastos deberán comprobarse mediante un comprobante válido: **ticket, factura o nota**. Las capturas de transferencias NO son comprobantes válidos.\n4. Adjunta los comprobantes directamente desde la carpeta en el documento de Excel.\n\n**Nota:**\n\n- El archivo de costos completo, incluyendo las inscripciones recaudadas, debe entregarse a más tardar cinco días antes de la competencia.\n- Cualquier costo adicional registrado durante la competencia deberá agregarse al finalizar el evento.\n- TODOS los costos realizados deberán tener comprobante o ticket. En caso de no contar con él, consulta con tu delegado antes de realizar la compra.",
+      "**Objetivo:** Comparar los costos esperados con los costos reales de la competencia.\n\n**Pasos:**\n\n1. En la sección **Presupuesto**, captura los **costos reales** y los ingresos de inscripción (no modifiques los montos esperados del plan).\n2. Sube los comprobantes a la **carpeta de Drive** enlazada en esa sección. Comprobante válido: **ticket, factura o nota**. Las capturas de transferencias NO son válidas.\n3. Marca cada gasto con «comprobante en Drive» o indica el motivo si falta.\n4. Envía el primer avance desde la sección.\n\n**Respaldo:** Si usan el Excel, actualicen ahí también y mantengan los mismos comprobantes en Drive.\n\n**Nota:** El avance completo (incluidas inscripciones) debe entregarse a más tardar **cinco días antes** de la competencia. Gastos durante el evento se agregan en el informe final.",
   },
   EQUIPMENT_CARD,
   {
@@ -329,11 +355,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       "**Objetivo:**  \nEnviar un correo para dar claridad al uso de recursos durante la competencia, agradecer a los patrocinadores y a los competidores asistentes.\n\n**IMPORTANTE:**  \nTodo correo debe incluir a los destinatarios en **copia oculta (CCO)**. Consulta con tu delegado antes de enviarlo.\n\n**Pasos:**\n\n1. Redacta un correo dirigido a todos los competidores (previa autorización y revisión de tu delegado).\n2. Sube el borrador de tu correo aquí para recibir autorización del delegado.\n3. Incluye en el correo un resumen de ingresos y egresos de la competencia.\n4. Adjunta o comparte los reconocimientos de participación digitales (Opcional).\n5. Solicita a tu delegado el link de la encuesta de calidad e inclúyelo en el correo.\n6. Asegúrate de agradecer tanto a los patrocinadores como a los competidores asistentes.\n\n**Nota:**  \nEste correo debe enviarse únicamente después de la revisión y autorización de tu delegado.  \nSi tienes dudas revisa la [**Plantilla de Correo Final**.](https://docs.google.com/document/d/1hGkNz_hwaXkArgqhUFEiR0AZ10Qt1Yxk/edit?usp=sharing&ouid=102609333583581616395&rtpof=true&sd=true)",
   },
   {
-    title: "Entregar informe de costos final",
+    title: BUDGET_FINAL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_celebrate"],
     description:
-      "**Objetivo:**  \nRegistrar y actualizar los costos de la competencia de manera completa y transparente dentro de los **tres días posteriores al evento**.\n\n**Pasos:**\n\n1. Solicita a tu delegado que desbloquee la sección final de la plantilla de costos asignada al inicio del evento.\n2. **No modifiques ninguna de las entradas anteriores**, únicamente la sección de costos finales.\n3. Actualiza la sección final de costos con las modificaciones necesarias.\n4. Anexa **todos los comprobantes en la carpeta compartida previamente**.\n5. En caso de existir un remanente, comenta en esta tarjeta el uso que te gustaría darle. Si tienes dudas, consúltalo con tu delegado.\n\n**Nota:**  \n**Todos los gastos deben contar con comprobante o ticket**. En caso de no tenerlo, escribe en la sección de “ticket” el motivo correspondiente.",
+      "**Objetivo:** Cerrar los costos de la competencia de forma completa y transparente dentro de los **tres días posteriores al evento**.\n\n**Pasos:**\n\n1. Actualiza en la sección **Presupuesto** solo lo que cambió tras el evento (no reescribas el plan ni el primer avance).\n2. Anexa **todos los comprobantes** en la carpeta de Drive enlazada.\n3. Si hay remanente, anótalo en la sección (uso deseado) o consúltalo con tu delegado.\n4. Envía el informe final desde la sección.\n\n**Respaldo:** El Excel/Drive sigue disponible si lo necesitan; el resumen oficial vive en el presupuesto de la tarjeta.\n\n**Nota:** Todo gasto debe tener comprobante o el motivo registrado en el renglón.",
   },
   {
     title: "Captura de Resultados",
@@ -359,5 +385,8 @@ export const COMPETITION_BOARD_TEMPLATE: BoardTemplateDefinition = {
   lists: TEMPLATE_LISTS,
   cards: TEMPLATE_CARDS,
   retiredCardTitles: REMOVED_TEMPLATE_CARD_TITLES,
-  renamedCardTitles: CATEGORIES_SCHEDULE_RENAMED_TITLES,
+  renamedCardTitles: {
+    ...CATEGORIES_SCHEDULE_RENAMED_TITLES,
+    ...BUDGET_RENAMED_CARD_TITLES,
+  },
 };

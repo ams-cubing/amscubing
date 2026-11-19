@@ -20,6 +20,30 @@ import {
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 
+/**
+ * Cookie-cached sessions can keep a stale `user.id` after a WCA stub merge
+ * (e.g. id still equal to the WCA ID). Resolve to the live `user.id` before
+ * writing foreign keys.
+ */
+export async function resolveSessionUserId(actor: {
+  id: string;
+  wcaId: string | null;
+}): Promise<string> {
+  const byId = await db.query.user.findFirst({
+    where: eq(user.id, actor.id),
+    columns: { id: true },
+  });
+  if (byId) return byId.id;
+  if (actor.wcaId) {
+    const byWca = await db.query.user.findFirst({
+      where: eq(user.wcaId, actor.wcaId),
+      columns: { id: true },
+    });
+    if (byWca) return byWca.id;
+  }
+  throw new Error("Sesión desactualizada; cierra sesión y vuelve a entrar");
+}
+
 export async function requireBoardAccess(boardId: number) {
   const session = await requireSessionOrUnauthorized();
   const currentUser = session.user;
@@ -30,7 +54,8 @@ export async function requireBoardAccess(boardId: number) {
   if (await isBoardArchived(boardId)) {
     throw new Error("Este tablero está archivado y no se puede editar");
   }
-  return currentUser;
+  const id = await resolveSessionUserId(currentUser);
+  return id === currentUser.id ? currentUser : { ...currentUser, id };
 }
 
 export async function assertListOnBoard(boardId: number, listId: number) {

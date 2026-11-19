@@ -12,8 +12,9 @@ import {
 
 import {
   CATEGORIES_CARD_TITLE,
-  CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS,
+  CATEGORIES_FALLBACK_SHEET,
   SCHEDULE_CARD_TITLE,
+  SCHEDULE_FALLBACK_SHEET,
   COMPETITION_BOARD_TEMPLATE,
 } from "./data/ams-board-template";
 import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
@@ -50,7 +51,7 @@ type SyncBoardResult = {
   inserted: number;
   listsReordered: number;
   descriptionsUpdated: number;
-  attachmentsRemoved: number;
+  attachmentsEnsured: number;
   skipped?: string;
 };
 
@@ -295,40 +296,51 @@ async function syncSeedDescriptionsOntoBoard(
   return updated;
 }
 
-/** Drops retired spreadsheet links from Categorías / Horario cards. */
-async function removeRetiredCategoriesScheduleAttachments(listIds: number[]) {
+/** Fallback sheets by card title (Categorías / Horario). */
+const CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS: Record<
+  string,
+  { name: string; url: string }[]
+> = {
+  [CATEGORIES_CARD_TITLE]: [CATEGORIES_FALLBACK_SHEET],
+  [SCHEDULE_CARD_TITLE]: [SCHEDULE_FALLBACK_SHEET],
+  /** Pre-split merged card kept both sheets. */
+  "Categorías y Horario": [CATEGORIES_FALLBACK_SHEET, SCHEDULE_FALLBACK_SHEET],
+};
+
+/** Ensures Categorías / Horario still have their spreadsheet fallbacks. */
+async function ensureCategoriesScheduleFallbackAttachments(listIds: number[]) {
   if (listIds.length === 0) return 0;
-  if (CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS.length === 0) return 0;
 
   const scheduleCards = await db.query.cards.findMany({
     where: and(
       inArray(cards.listId, listIds),
-      inArray(cards.title, [
-        CATEGORIES_CARD_TITLE,
-        SCHEDULE_CARD_TITLE,
-        "Categorías y Horario",
-      ]),
+      inArray(cards.title, Object.keys(CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS)),
     ),
-    columns: { id: true },
+    columns: { id: true, title: true },
+    with: {
+      attachments: { columns: { url: true } },
+    },
   });
   if (scheduleCards.length === 0) return 0;
 
-  const removed = await db
-    .delete(cardAttachments)
-    .where(
-      and(
-        inArray(
-          cardAttachments.cardId,
-          scheduleCards.map((card) => card.id),
-        ),
-        inArray(cardAttachments.url, [
-          ...CATEGORIES_SCHEDULE_RETIRED_ATTACHMENT_URLS,
-        ]),
-      ),
-    )
-    .returning({ id: cardAttachments.id });
+  const toInsert: { cardId: number; name: string; url: string }[] = [];
+  for (const card of scheduleCards) {
+    const fallbacks = CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS[card.title];
+    if (!fallbacks) continue;
+    const urls = new Set(card.attachments.map((attachment) => attachment.url));
+    for (const fallback of fallbacks) {
+      if (urls.has(fallback.url)) continue;
+      toInsert.push({
+        cardId: card.id,
+        name: fallback.name,
+        url: fallback.url,
+      });
+    }
+  }
 
-  return removed.length;
+  if (toInsert.length === 0) return 0;
+  await db.insert(cardAttachments).values(toInsert);
+  return toInsert.length;
 }
 
 /**
@@ -355,7 +367,7 @@ async function syncMissingCardsOntoBoard(
       inserted: 0,
       listsReordered: 0,
       descriptionsUpdated: 0,
-      attachmentsRemoved: 0,
+      attachmentsEnsured: 0,
       skipped: `missing lists (${missingLists.join(", ")})`,
     };
   }
@@ -408,8 +420,8 @@ async function syncMissingCardsOntoBoard(
     template,
     listIds,
   );
-  const attachmentsRemoved =
-    await removeRetiredCategoriesScheduleAttachments(listIds);
+  const attachmentsEnsured =
+    await ensureCategoriesScheduleFallbackAttachments(listIds);
 
   const listsReordered = options.reorderToSeedOrder
     ? await reorderTemplateCardsToSeedOrder(template, listByTitle)
@@ -419,15 +431,15 @@ async function syncMissingCardsOntoBoard(
     inserted > 0 ||
     listsReordered > 0 ||
     descriptionsUpdated > 0 ||
-    attachmentsRemoved > 0
+    attachmentsEnsured > 0
   ) {
     const parts: string[] = [];
     if (inserted > 0) parts.push(`${inserted} missing card(s)`);
     if (descriptionsUpdated > 0) {
       parts.push(`${descriptionsUpdated} description(s)`);
     }
-    if (attachmentsRemoved > 0) {
-      parts.push(`${attachmentsRemoved} retired attachment(s)`);
+    if (attachmentsEnsured > 0) {
+      parts.push(`${attachmentsEnsured} fallback attachment(s)`);
     }
     if (listsReordered > 0) {
       parts.push(`reordered ${listsReordered} list(s)`);
@@ -439,7 +451,7 @@ async function syncMissingCardsOntoBoard(
     inserted,
     listsReordered,
     descriptionsUpdated,
-    attachmentsRemoved,
+    attachmentsEnsured,
   };
 }
 
@@ -472,7 +484,7 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
   let boardsUpdated = 0;
   let cardsInserted = 0;
   let descriptionsUpdated = 0;
-  let attachmentsRemoved = 0;
+  let attachmentsEnsured = 0;
   let boardsSkipped = 0;
 
   for (const board of targets) {
@@ -490,12 +502,12 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
     if (
       result.inserted > 0 ||
       result.descriptionsUpdated > 0 ||
-      result.attachmentsRemoved > 0
+      result.attachmentsEnsured > 0
     ) {
       boardsUpdated += 1;
       cardsInserted += result.inserted;
       descriptionsUpdated += result.descriptionsUpdated;
-      attachmentsRemoved += result.attachmentsRemoved;
+      attachmentsEnsured += result.attachmentsEnsured;
     }
   }
 
@@ -504,8 +516,8 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
     if (descriptionsUpdated > 0) {
       parts.push(`${descriptionsUpdated} description(s)`);
     }
-    if (attachmentsRemoved > 0) {
-      parts.push(`${attachmentsRemoved} retired attachment(s)`);
+    if (attachmentsEnsured > 0) {
+      parts.push(`${attachmentsEnsured} fallback attachment(s)`);
     }
     console.log(
       `✅ Backfilled ${parts.join(" + ")} across ${boardsUpdated} ${template.key} board(s)`,

@@ -15,6 +15,7 @@ vi.mock("./index", () => ({
 }));
 
 import {
+  budgetSubmittedNotificationRow,
   countUnreadNotificationsByCard,
   equipmentConfirmedNotificationRow,
   equipmentNotificationRow,
@@ -129,6 +130,29 @@ describe("equipmentRequestNotificationRow", () => {
       title: "Solicitud de equipo para Querétaro",
       href: "https://calendario.example/panel/competencias/9",
       payload: { competitionId: 9, requestId: 2, city: "Querétaro" },
+    });
+  });
+});
+
+describe("budgetSubmittedNotificationRow", () => {
+  it("sends delegates to the costos panel", () => {
+    expect(
+      budgetSubmittedNotificationRow({
+        recipient: { id: "d1", role: "delegate", wcaId: "2016ROVI01" },
+        actorId: "organizer-1",
+        calendarUrl: "https://calendario.example/",
+        competitionId: 9,
+        budgetId: 3,
+        city: "Querétaro",
+        type: "budget_plan_submitted",
+      }),
+    ).toEqual({
+      recipientId: "d1",
+      actorId: "organizer-1",
+      type: "budget_plan_submitted",
+      title: "Presupuesto enviado para Querétaro",
+      href: "https://calendario.example/panel/competencias/9/costos",
+      payload: { competitionId: 9, budgetId: 3, city: "Querétaro" },
     });
   });
 });
