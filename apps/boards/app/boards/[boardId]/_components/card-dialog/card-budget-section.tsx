@@ -38,6 +38,7 @@ type PlanLineDraft = {
   expected: string;
   notes: string;
   isSystem: boolean;
+  fromSponsor: boolean;
   spendStatus?: string;
 };
 
@@ -98,6 +99,7 @@ export function CardBudgetSection({
         expected: pesosInput(line.expectedCents),
         notes: line.notes ?? "",
         isSystem: line.isSystem,
+        fromSponsor: line.sponsorId != null,
         spendStatus: line.spendStatus,
       })),
     );
@@ -179,6 +181,24 @@ export function CardBudgetSection({
     !readOnly &&
     (data.budget.status === "plan_approved" ||
       data.budget.status === "mid_approved");
+
+  const planDirty =
+    data.budget.status === "plan_submitted" &&
+    (fee !== pesosInput(data.budget.proposedRegistrationFeeCents) ||
+      competitors !== String(data.budget.expectedCompetitorCount) ||
+      planLines.length !== data.lines.length ||
+      planLines.some((line, index) => {
+        const saved = data.lines[index];
+        if (!saved) return true;
+        return (
+          line.id !== saved.id ||
+          line.kind !== saved.kind ||
+          line.category !== saved.category ||
+          line.label !== saved.label ||
+          line.expected !== pesosInput(saved.expectedCents) ||
+          line.notes !== (saved.notes ?? "")
+        );
+      }));
 
   function runPlan(submit: boolean) {
     const feeCents = parseMxnToCents(fee);
@@ -284,6 +304,25 @@ export function CardBudgetSection({
         </Badge>
       </div>
 
+      {data.budget.status === "plan_submitted" ||
+      data.budget.status === "mid_submitted" ||
+      data.budget.status === "final_submitted" ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          Enviado al delegado. Si también eres delegado de esta competencia,
+          revísalo en el panel → Competencias → Costos (no te llega
+          notificación a ti mismo).
+        </p>
+      ) : null}
+
+      {data.budget.reviewNote ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950">
+          <p className="font-medium">Devuelto por el delegado</p>
+          <p className="mt-1 whitespace-pre-wrap text-xs">
+            {data.budget.reviewNote}
+          </p>
+        </div>
+      ) : null}
+
       <div className="text-muted-foreground grid gap-1 text-xs sm:grid-cols-2">
         <p>
           Esperado: {formatMxnCents(data.summary.expectedIncomeCents)} −{" "}
@@ -375,13 +414,15 @@ export function CardBudgetSection({
                   <p className="text-sm font-medium">
                     {line.label ||
                       BUDGET_LINE_CATEGORY_LABELS[line.category]}
-                    {line.isSystem ? (
+                    {line.isSystem || line.fromSponsor ? (
                       <span className="text-muted-foreground ml-2 text-xs">
-                        (automático)
+                        {line.fromSponsor
+                          ? "(patrocinio)"
+                          : "(automático)"}
                       </span>
                     ) : null}
                   </p>
-                  {!line.isSystem && canEditPlan ? (
+                  {!line.isSystem && !line.fromSponsor && canEditPlan ? (
                     <Button
                       type="button"
                       size="icon"
@@ -409,11 +450,16 @@ export function CardBudgetSection({
                         ),
                       )
                     }
-                    disabled={!canEditPlan || pending || line.isSystem}
+                    disabled={
+                      !canEditPlan ||
+                      pending ||
+                      line.isSystem ||
+                      line.fromSponsor
+                    }
                     inputMode="decimal"
                     aria-label="Monto esperado"
                   />
-                  {!line.isSystem ? (
+                  {!line.isSystem && !line.fromSponsor ? (
                     <Input
                       value={line.label}
                       onChange={(e) =>
@@ -430,7 +476,9 @@ export function CardBudgetSection({
                     />
                   ) : (
                     <p className="text-muted-foreground self-center text-xs">
-                      {BUDGET_LINE_CATEGORY_LABELS[line.category]}
+                      {line.fromSponsor
+                        ? "Desde Patrocinios"
+                        : BUDGET_LINE_CATEGORY_LABELS[line.category]}
                     </p>
                   )}
                 </div>
@@ -455,6 +503,7 @@ export function CardBudgetSection({
                       expected: "0",
                       notes: "",
                       isSystem: false,
+                      fromSponsor: false,
                     },
                   ])
                 }
@@ -477,6 +526,7 @@ export function CardBudgetSection({
                       expected: "0",
                       notes: "",
                       isSystem: false,
+                      fromSponsor: false,
                     },
                   ])
                 }
@@ -496,10 +546,12 @@ export function CardBudgetSection({
                 type="button"
                 size="sm"
                 variant="brand"
-                disabled={pending}
+                disabled={pending || (data.budget.status === "plan_submitted" && !planDirty)}
                 onClick={() => runPlan(true)}
               >
-                Enviar al delegado
+                {data.budget.status === "plan_submitted"
+                  ? "Reenviar al delegado"
+                  : "Enviar al delegado"}
               </Button>
             </div>
           ) : null}

@@ -264,7 +264,7 @@ export default async function CompetitionBudgetPage({
           <h2 className="font-semibold">Decisiones de etapa</h2>
 
           {sheet.budget.status === "plan_submitted" ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-4">
               <ActionForm action={decideBudgetStageAction}>
                 <input
                   type="hidden"
@@ -277,7 +277,10 @@ export default async function CompetitionBudgetPage({
                   Aprobar presupuesto
                 </Button>
               </ActionForm>
-              <ActionForm action={decideBudgetStageAction}>
+              <ActionForm
+                action={decideBudgetStageAction}
+                className="space-y-3 rounded-md border border-dashed p-3"
+              >
                 <input
                   type="hidden"
                   name="competitionId"
@@ -285,6 +288,18 @@ export default async function CompetitionBudgetPage({
                 />
                 <input type="hidden" name="stage" value="plan" />
                 <input type="hidden" name="decision" value="rejected" />
+                <div className="space-y-1">
+                  <Label htmlFor="reviewNote-plan">
+                    Motivo al devolver (obligatorio)
+                  </Label>
+                  <Textarea
+                    id="reviewNote-plan"
+                    name="reviewNote"
+                    required
+                    rows={3}
+                    placeholder="Qué debe corregir el organizador…"
+                  />
+                </div>
                 <Button type="submit" size="sm" variant="outline">
                   Devolver
                 </Button>
@@ -293,7 +308,7 @@ export default async function CompetitionBudgetPage({
           ) : null}
 
           {sheet.budget.status === "mid_submitted" ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-4">
               <ActionForm action={decideBudgetStageAction}>
                 <input
                   type="hidden"
@@ -306,7 +321,10 @@ export default async function CompetitionBudgetPage({
                   Aprobar primer avance
                 </Button>
               </ActionForm>
-              <ActionForm action={decideBudgetStageAction}>
+              <ActionForm
+                action={decideBudgetStageAction}
+                className="space-y-3 rounded-md border border-dashed p-3"
+              >
                 <input
                   type="hidden"
                   name="competitionId"
@@ -314,6 +332,18 @@ export default async function CompetitionBudgetPage({
                 />
                 <input type="hidden" name="stage" value="mid" />
                 <input type="hidden" name="decision" value="rejected" />
+                <div className="space-y-1">
+                  <Label htmlFor="reviewNote-mid">
+                    Motivo al devolver (obligatorio)
+                  </Label>
+                  <Textarea
+                    id="reviewNote-mid"
+                    name="reviewNote"
+                    required
+                    rows={3}
+                    placeholder="Qué debe corregir el organizador…"
+                  />
+                </div>
                 <Button type="submit" size="sm" variant="outline">
                   Devolver
                 </Button>
@@ -322,43 +352,61 @@ export default async function CompetitionBudgetPage({
           ) : null}
 
           {sheet.budget.status === "final_submitted" ? (
-            <ActionForm
-              action={decideBudgetStageAction}
-              className="space-y-3"
-            >
-              <input type="hidden" name="competitionId" value={competitionId} />
-              <input type="hidden" name="stage" value="final" />
-              <div className="space-y-1">
-                <Label htmlFor="remanenteDecision">
-                  Decisión sobre el remanente (opcional)
-                </Label>
-                <Textarea
-                  id="remanenteDecision"
-                  name="remanenteDecision"
-                  defaultValue={sheet.budget.remanenteDecision ?? ""}
-                  rows={3}
+            <div className="space-y-4">
+              <ActionForm
+                action={decideBudgetStageAction}
+                className="space-y-3"
+              >
+                <input
+                  type="hidden"
+                  name="competitionId"
+                  value={competitionId}
                 />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="submit"
-                  name="decision"
-                  value="approved"
-                  size="sm"
-                >
+                <input type="hidden" name="stage" value="final" />
+                <input type="hidden" name="decision" value="approved" />
+                <div className="space-y-1">
+                  <Label htmlFor="remanenteDecision">
+                    Decisión sobre el remanente (opcional)
+                  </Label>
+                  <Textarea
+                    id="remanenteDecision"
+                    name="remanenteDecision"
+                    defaultValue={sheet.budget.remanenteDecision ?? ""}
+                    rows={3}
+                  />
+                </div>
+                <Button type="submit" size="sm">
                   Cerrar informe final
                 </Button>
-                <Button
-                  type="submit"
-                  name="decision"
-                  value="rejected"
-                  size="sm"
-                  variant="outline"
-                >
+              </ActionForm>
+              <ActionForm
+                action={decideBudgetStageAction}
+                className="space-y-3 rounded-md border border-dashed p-3"
+              >
+                <input
+                  type="hidden"
+                  name="competitionId"
+                  value={competitionId}
+                />
+                <input type="hidden" name="stage" value="final" />
+                <input type="hidden" name="decision" value="rejected" />
+                <div className="space-y-1">
+                  <Label htmlFor="reviewNote-final">
+                    Motivo al devolver (obligatorio)
+                  </Label>
+                  <Textarea
+                    id="reviewNote-final"
+                    name="reviewNote"
+                    required
+                    rows={3}
+                    placeholder="Qué debe corregir el organizador…"
+                  />
+                </div>
+                <Button type="submit" size="sm" variant="outline">
                   Devolver
                 </Button>
-              </div>
-            </ActionForm>
+              </ActionForm>
+            </div>
           ) : null}
 
           {sheet.budget.status !== "plan_submitted" &&

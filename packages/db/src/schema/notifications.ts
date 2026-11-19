@@ -72,6 +72,7 @@ export type NotificationPayload = {
   requestId?: number;
   budgetId?: number;
   budgetStage?: string;
+  reviewNote?: string;
 };
 
 export const notifications = pgTable(

@@ -81,6 +81,8 @@ export const competitionBudgets = pgTable("competition_budget", {
   spreadsheetUrl: text("spreadsheet_url"),
   remanenteNote: text("remanente_note"),
   remanenteDecision: text("remanente_decision"),
+  /** Set when a delegate returns a stage; cleared on the next organizer submit. */
+  reviewNote: text("review_note"),
   planSubmittedByUserId: text("plan_submitted_by_user_id").references(
     () => user.id,
     { onDelete: "set null" },
@@ -116,45 +118,6 @@ export const competitionBudgets = pgTable("competition_budget", {
 
 export type CompetitionBudget = InferSelectModel<typeof competitionBudgets>;
 
-export const competitionBudgetLines = pgTable(
-  "competition_budget_line",
-  {
-    id: serial("id").primaryKey(),
-    budgetId: integer("budget_id")
-      .notNull()
-      .references(() => competitionBudgets.id, { onDelete: "cascade" }),
-    kind: budgetLineKindEnum("kind").notNull(),
-    category: budgetLineCategoryEnum("category").notNull(),
-    label: text("label").notNull(),
-    expectedCents: integer("expected_cents").notNull().default(0),
-    actualCents: integer("actual_cents"),
-    spendStatus: budgetSpendStatusEnum("spend_status")
-      .notNull()
-      .default("none"),
-    receiptStatus: budgetReceiptStatusEnum("receipt_status")
-      .notNull()
-      .default("pending"),
-    receiptMissingReason: text("receipt_missing_reason"),
-    isSystem: boolean("is_system").notNull().default(false),
-    sortOrder: integer("sort_order").notNull().default(0),
-    notes: text("notes"),
-    spendApprovedByUserId: text("spend_approved_by_user_id").references(
-      () => user.id,
-      { onDelete: "set null" },
-    ),
-    spendApprovedAt: timestamp("spend_approved_at"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("competition_budget_line_budget_idx").on(table.budgetId),
-  ],
-);
-
-export type CompetitionBudgetLine = InferSelectModel<
-  typeof competitionBudgetLines
->;
-
 export const competitionSponsors = pgTable(
   "competition_sponsor",
   {
@@ -183,3 +146,47 @@ export const competitionSponsors = pgTable(
 );
 
 export type CompetitionSponsor = InferSelectModel<typeof competitionSponsors>;
+
+export const competitionBudgetLines = pgTable(
+  "competition_budget_line",
+  {
+    id: serial("id").primaryKey(),
+    budgetId: integer("budget_id")
+      .notNull()
+      .references(() => competitionBudgets.id, { onDelete: "cascade" }),
+    kind: budgetLineKindEnum("kind").notNull(),
+    category: budgetLineCategoryEnum("category").notNull(),
+    label: text("label").notNull(),
+    expectedCents: integer("expected_cents").notNull().default(0),
+    actualCents: integer("actual_cents"),
+    spendStatus: budgetSpendStatusEnum("spend_status")
+      .notNull()
+      .default("none"),
+    receiptStatus: budgetReceiptStatusEnum("receipt_status")
+      .notNull()
+      .default("pending"),
+    receiptMissingReason: text("receipt_missing_reason"),
+    isSystem: boolean("is_system").notNull().default(false),
+    /** When set, this income line is owned by a cash sponsor and synced from it. */
+    sponsorId: integer("sponsor_id").references(() => competitionSponsors.id, {
+      onDelete: "cascade",
+    }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    notes: text("notes"),
+    spendApprovedByUserId: text("spend_approved_by_user_id").references(
+      () => user.id,
+      { onDelete: "set null" },
+    ),
+    spendApprovedAt: timestamp("spend_approved_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("competition_budget_line_budget_idx").on(table.budgetId),
+    unique("competition_budget_line_sponsor_unique").on(table.sponsorId),
+  ],
+);
+
+export type CompetitionBudgetLine = InferSelectModel<
+  typeof competitionBudgetLines
+>;

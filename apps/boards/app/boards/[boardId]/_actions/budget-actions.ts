@@ -155,7 +155,11 @@ export async function saveBudgetPlanFromCard(
   }
 
   try {
+    let resubmitting = false;
     const data = await db.transaction(async (tx) => {
+      const before = await ensureCompetitionBudget(tx, competitionId);
+      resubmitting =
+        input.submit && before.budget.status === "plan_submitted";
       let sheet = await updateBudgetPlan(tx, {
         competitionId,
         proposedRegistrationFeeCents: input.proposedRegistrationFeeCents,
@@ -189,7 +193,9 @@ export async function saveBudgetPlanFromCard(
     return {
       ok: true,
       message: input.submit
-        ? "Presupuesto enviado al delegado"
+        ? resubmitting
+          ? "Presupuesto reenviado al delegado"
+          : "Presupuesto enviado al delegado"
         : "Presupuesto guardado",
       data,
     };

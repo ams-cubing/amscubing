@@ -331,7 +331,7 @@ export async function updateBudgetPlan(
     if (line.id) {
       const existing = existingById.get(line.id);
       if (!existing) throw new BudgetError("Renglón no encontrado");
-      if (existing.isSystem) {
+      if (existing.isSystem || existing.sponsorId != null) {
         keptIds.add(line.id);
         continue;
       }
@@ -367,7 +367,8 @@ export async function updateBudgetPlan(
   }
 
   const toDelete = sheet.lines.filter(
-    (line) => !line.isSystem && !keptIds.has(line.id),
+    (line) =>
+      !line.isSystem && line.sponsorId == null && !keptIds.has(line.id),
   );
   if (toDelete.length > 0) {
     await dbx.delete(competitionBudgetLines).where(
@@ -626,6 +627,7 @@ export async function submitBudgetStage(
         status: "plan_submitted",
         planSubmittedByUserId: input.actorUserId,
         planSubmittedAt: now,
+        reviewNote: null,
         updatedAt: now,
       })
       .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -645,6 +647,7 @@ export async function submitBudgetStage(
         status: "mid_submitted",
         midSubmittedByUserId: input.actorUserId,
         midSubmittedAt: now,
+        reviewNote: null,
         updatedAt: now,
       })
       .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -661,6 +664,7 @@ export async function submitBudgetStage(
         status: "final_submitted",
         finalSubmittedByUserId: input.actorUserId,
         finalSubmittedAt: now,
+        reviewNote: null,
         updatedAt: now,
       })
       .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -677,10 +681,18 @@ export async function decideBudgetStage(
     decision: "approved" | "rejected";
     actorUserId: string;
     remanenteDecision?: string | null;
+    reviewNote?: string | null;
   },
 ) {
   const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
   const now = new Date();
+  const reviewNote = input.reviewNote?.trim() || null;
+
+  if (input.decision === "rejected" && !reviewNote) {
+    throw new BudgetError(
+      "Escribe el motivo al devolver el presupuesto a los organizadores",
+    );
+  }
 
   if (input.stage === "plan") {
     if (sheet.budget.status !== "plan_submitted") {
@@ -693,6 +705,7 @@ export async function decideBudgetStage(
           status: "draft",
           planSubmittedByUserId: null,
           planSubmittedAt: null,
+          reviewNote,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -708,6 +721,7 @@ export async function decideBudgetStage(
           status: "plan_approved",
           planApprovedByUserId: input.actorUserId,
           planApprovedAt: now,
+          reviewNote: null,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -723,6 +737,7 @@ export async function decideBudgetStage(
           status: "plan_approved",
           midSubmittedByUserId: null,
           midSubmittedAt: null,
+          reviewNote,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -733,6 +748,7 @@ export async function decideBudgetStage(
           status: "mid_approved",
           midApprovedByUserId: input.actorUserId,
           midApprovedAt: now,
+          reviewNote: null,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -748,6 +764,7 @@ export async function decideBudgetStage(
           status: "mid_approved",
           finalSubmittedByUserId: null,
           finalSubmittedAt: null,
+          reviewNote,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -760,6 +777,7 @@ export async function decideBudgetStage(
           closedAt: now,
           remanenteDecision:
             input.remanenteDecision?.trim() || sheet.budget.remanenteDecision,
+          reviewNote: null,
           updatedAt: now,
         })
         .where(eq(competitionBudgets.id, sheet.budget.id));
@@ -767,6 +785,62 @@ export async function decideBudgetStage(
   }
 
   return ensureCompetitionBudget(dbx, input.competitionId);
+}
+
+async function syncCashSponsorBudgetLine(
+  dbx: DbOrTx,
+  input: {
+    competitionId: number;
+    sponsorId: number;
+    name: string;
+    type: SponsorType;
+    amountCents: number | null;
+  },
+) {
+  const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
+  const existing = sheet.lines.find((line) => line.sponsorId === input.sponsorId);
+  const shouldHaveLine =
+    input.type === "cash" &&
+    input.amountCents != null &&
+    input.amountCents > 0;
+
+  if (!shouldHaveLine) {
+    if (existing) {
+      await dbx
+        .delete(competitionBudgetLines)
+        .where(eq(competitionBudgetLines.id, existing.id));
+    }
+    return;
+  }
+
+  requirePlanEditable(sheet.budget.status);
+
+  if (existing) {
+    await dbx
+      .update(competitionBudgetLines)
+      .set({
+        label: input.name,
+        expectedCents: input.amountCents!,
+        kind: "income",
+        category: "patrocinio_efectivo",
+        updatedAt: new Date(),
+      })
+      .where(eq(competitionBudgetLines.id, existing.id));
+    return;
+  }
+
+  const maxSort = Math.max(0, ...sheet.lines.map((line) => line.sortOrder));
+  await dbx.insert(competitionBudgetLines).values({
+    budgetId: sheet.budget.id,
+    kind: "income",
+    category: "patrocinio_efectivo",
+    label: input.name,
+    expectedCents: input.amountCents!,
+    isSystem: false,
+    sponsorId: input.sponsorId,
+    spendStatus: "none",
+    sortOrder: maxSort + 1,
+  });
 }
 
 export async function upsertCompetitionSponsor(
@@ -787,8 +861,16 @@ export async function upsertCompetitionSponsor(
   if (name.length > 160) {
     throw new BudgetError("El nombre del patrocinador es demasiado largo");
   }
-  if (input.amountCents != null) {
-    assertNonNegativeCents(input.amountCents, "Monto del patrocinio");
+  const amountCents = input.amountCents ?? null;
+  if (input.type === "cash") {
+    if (amountCents == null || amountCents <= 0) {
+      throw new BudgetError(
+        "Indica el monto en efectivo; se suma al presupuesto como ingreso",
+      );
+    }
+    assertNonNegativeCents(amountCents, "Monto del patrocinio");
+  } else if (amountCents != null) {
+    assertNonNegativeCents(amountCents, "Monto del patrocinio");
   }
   if (input.logoUrl && !/^https?:\/\//i.test(input.logoUrl)) {
     throw new BudgetError("La URL del logo no es válida");
@@ -796,34 +878,51 @@ export async function upsertCompetitionSponsor(
 
   await ensureCompetitionBudget(dbx, input.competitionId);
 
-  if (input.sponsorId) {
-    await dbx
+  let sponsorId = input.sponsorId;
+  if (sponsorId) {
+    const updated = await dbx
       .update(competitionSponsors)
       .set({
         name,
         type: input.type,
-        amountCents: input.amountCents ?? null,
+        amountCents,
         conditions: input.conditions?.trim() || null,
         logoUrl: input.logoUrl?.trim() || null,
         updatedAt: new Date(),
       })
       .where(
         and(
-          eq(competitionSponsors.id, input.sponsorId),
+          eq(competitionSponsors.id, sponsorId),
           eq(competitionSponsors.competitionId, input.competitionId),
         ),
-      );
+      )
+      .returning({ id: competitionSponsors.id });
+    if (updated.length === 0) {
+      throw new BudgetError("Patrocinador no encontrado");
+    }
   } else {
-    await dbx.insert(competitionSponsors).values({
-      competitionId: input.competitionId,
-      name,
-      type: input.type,
-      amountCents: input.amountCents ?? null,
-      conditions: input.conditions?.trim() || null,
-      logoUrl: input.logoUrl?.trim() || null,
-      createdByUserId: input.actorUserId,
-    });
+    const [created] = await dbx
+      .insert(competitionSponsors)
+      .values({
+        competitionId: input.competitionId,
+        name,
+        type: input.type,
+        amountCents,
+        conditions: input.conditions?.trim() || null,
+        logoUrl: input.logoUrl?.trim() || null,
+        createdByUserId: input.actorUserId,
+      })
+      .returning({ id: competitionSponsors.id });
+    sponsorId = created!.id;
   }
+
+  await syncCashSponsorBudgetLine(dbx, {
+    competitionId: input.competitionId,
+    sponsorId,
+    name,
+    type: input.type,
+    amountCents,
+  });
 
   return ensureCompetitionBudget(dbx, input.competitionId);
 }
@@ -832,6 +931,12 @@ export async function removeCompetitionSponsor(
   dbx: DbOrTx,
   input: { competitionId: number; sponsorId: number },
 ) {
+  const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
+  const linked = sheet.lines.find((line) => line.sponsorId === input.sponsorId);
+  if (linked) {
+    requirePlanEditable(sheet.budget.status);
+  }
+
   await dbx
     .delete(competitionSponsors)
     .where(

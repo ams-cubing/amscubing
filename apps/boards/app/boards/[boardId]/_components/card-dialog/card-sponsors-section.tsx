@@ -115,6 +115,12 @@ export function CardSponsorsSection({
       toast.error("Monto inválido");
       return;
     }
+    if (draft.type === "cash" && (amountCents == null || amountCents <= 0)) {
+      toast.error(
+        "El patrocinio en efectivo necesita un monto; se suma al presupuesto",
+      );
+      return;
+    }
     startTransition(async () => {
       const result = await saveSponsorFromCard({
         boardId: board.id,
@@ -132,7 +138,11 @@ export function CardSponsorsSection({
       }
       setData(result.data);
       setDraft(EMPTY);
-      toast.success(result.message);
+      toast.success(
+        draft.type === "cash"
+          ? result.message + " · Ingreso agregado al presupuesto"
+          : result.message,
+      );
     });
   }
 
@@ -258,7 +268,11 @@ export function CardSponsorsSection({
               </select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="sponsor-amount">Monto (MXN, opcional)</Label>
+              <Label htmlFor="sponsor-amount">
+                {draft.type === "cash"
+                  ? "Monto (MXN, va al presupuesto)"
+                  : "Monto estimado (MXN, opcional)"}
+              </Label>
               <Input
                 id="sponsor-amount"
                 value={draft.amount}
@@ -267,6 +281,7 @@ export function CardSponsorsSection({
                 }
                 disabled={pending}
                 inputMode="decimal"
+                required={draft.type === "cash"}
               />
             </div>
             <div className="space-y-1">

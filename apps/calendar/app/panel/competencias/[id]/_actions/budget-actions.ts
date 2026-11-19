@@ -53,7 +53,7 @@ async function findBudgetCard(
   return { boardId: board.id, cardId: match?.id };
 }
 
-async function notifyOrganizersApproved(input: {
+async function notifyOrganizersOfStage(input: {
   actorId: string;
   competitionId: number;
   budgetId: number;
@@ -61,6 +61,7 @@ async function notifyOrganizersApproved(input: {
   statusLabel: string;
   budgetStage: string;
   cardTitles: string[];
+  reviewNote?: string | null;
 }) {
   const [organizers, cardLink] = await Promise.all([
     competitionOrganizersOnly(db, input.competitionId),
@@ -68,8 +69,8 @@ async function notifyOrganizersApproved(input: {
   ]);
   await insertNotifications(
     db,
-    organizers.map((organizer) =>
-      budgetStageApprovedNotificationRow({
+    organizers.map((organizer) => {
+      const row = budgetStageApprovedNotificationRow({
         recipient: organizer,
         actorId: input.actorId,
         urls: {
@@ -83,8 +84,15 @@ async function notifyOrganizersApproved(input: {
         budgetStage: input.budgetStage,
         boardId: cardLink.boardId,
         cardId: cardLink.cardId,
-      }),
-    ),
+      });
+      if (input.reviewNote) {
+        row.payload = {
+          ...row.payload,
+          reviewNote: input.reviewNote,
+        };
+      }
+      return row;
+    }),
   );
 }
 
@@ -128,18 +136,21 @@ export async function decideBudgetStageAction(
     const stage = String(data.get("stage") ?? "");
     const decision = String(data.get("decision") ?? "");
     const remanenteDecision = String(data.get("remanenteDecision") ?? "");
+    const reviewNote = String(data.get("reviewNote") ?? "");
     const parsed = z
       .object({
         competitionId: z.number().int().positive(),
         stage: z.enum(["plan", "mid", "final"]),
         decision: z.enum(["approved", "rejected"]),
         remanenteDecision: z.string().max(2000).optional(),
+        reviewNote: z.string().max(2000).optional(),
       })
       .safeParse({
         competitionId,
         stage,
         decision,
         remanenteDecision: remanenteDecision || undefined,
+        reviewNote: reviewNote || undefined,
       });
     if (!parsed.success) throw new ActionError("Solicitud inválida");
 
@@ -150,32 +161,41 @@ export async function decideBudgetStageAction(
         decision: parsed.data.decision,
         actorUserId: actor.id,
         remanenteDecision: parsed.data.remanenteDecision,
+        reviewNote: parsed.data.reviewNote,
       });
-      if (parsed.data.decision === "approved") {
-        const labels = {
-          plan: {
-            statusLabel: "presupuesto aprobado",
-            titles: [BUDGET_PLAN_CARD_TITLE],
-          },
-          mid: {
-            statusLabel: "primer avance aprobado",
-            titles: [BUDGET_MID_CARD_TITLE, "Manejo de fondos del evento"],
-          },
-          final: {
-            statusLabel: "informe final cerrado",
-            titles: [BUDGET_FINAL_CARD_TITLE],
-          },
-        }[parsed.data.stage];
-        await notifyOrganizersApproved({
-          actorId: actor.id,
-          competitionId: parsed.data.competitionId,
-          budgetId: sheet.budget.id,
-          city: sheet.competition.name?.trim() || sheet.competition.city,
-          statusLabel: labels.statusLabel,
-          budgetStage: parsed.data.stage,
-          cardTitles: labels.titles,
-        });
-      }
+      const labels = {
+        plan: {
+          approved: "presupuesto aprobado",
+          rejected: "presupuesto devuelto",
+          titles: [BUDGET_PLAN_CARD_TITLE],
+        },
+        mid: {
+          approved: "primer avance aprobado",
+          rejected: "primer avance devuelto",
+          titles: [BUDGET_MID_CARD_TITLE, "Manejo de fondos del evento"],
+        },
+        final: {
+          approved: "informe final cerrado",
+          rejected: "informe final devuelto",
+          titles: [BUDGET_FINAL_CARD_TITLE],
+        },
+      }[parsed.data.stage];
+      await notifyOrganizersOfStage({
+        actorId: actor.id,
+        competitionId: parsed.data.competitionId,
+        budgetId: sheet.budget.id,
+        city: sheet.competition.name?.trim() || sheet.competition.city,
+        statusLabel:
+          parsed.data.decision === "approved"
+            ? labels.approved
+            : labels.rejected,
+        budgetStage: parsed.data.stage,
+        cardTitles: labels.titles,
+        reviewNote:
+          parsed.data.decision === "rejected"
+            ? parsed.data.reviewNote
+            : null,
+      });
       log.info("calendar.budget.stage_decided", {
         competitionId: parsed.data.competitionId,
         stage: parsed.data.stage,
