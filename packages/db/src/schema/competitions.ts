@@ -122,6 +122,19 @@ export const competitions = pgTable("competition", {
   socialTags: text("social_tags"),
   socialFlyerUrl: text("social_flyer_url"),
 
+  finalEmailSubject: text("final_email_subject"),
+  finalEmailBody: text("final_email_body"),
+  finalEmailSurveyUrl: text("final_email_survey_url"),
+  finalEmailCertificatesUrl: text("final_email_certificates_url"),
+  finalEmailPhotosUrl: text("final_email_photos_url"),
+  finalEmailExpenseUrl: text("final_email_expense_url"),
+  finalEmailSentAt: timestamp("final_email_sent_at"),
+  finalEmailSentByUserId: text("final_email_sent_by_user_id").references(
+    () => user.id,
+    { onDelete: "set null" },
+  ),
+  finalEmailRecipientCount: integer("final_email_recipient_count"),
+
   boardId: integer("board_id").references((): AnyPgColumn => boards.id, {
     onDelete: "set null",
   }),

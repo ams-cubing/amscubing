@@ -4,12 +4,15 @@ import {
   AMS_EMAIL,
   boardNotificationEmail,
   competitionStatusChangedEmail,
+  competitionThankYouEmail,
+  competitionThankYouSubject,
   dateRequestDeclinedOrganizerEmail,
   delegateAssignedEmail,
   delegateRemovedEmail,
   isDeliverableEmail,
   organizerAssignedEmail,
   organizerRemovedEmail,
+  plainTextEmailBodyToHtml,
   sendEmail,
   ultimatumEmail,
 } from "./index";
@@ -174,5 +177,37 @@ describe("sendEmail", () => {
     if (original) {
       process.env.RESEND_API_KEY = original;
     }
+  });
+});
+
+describe("competitionThankYouEmail", () => {
+  it("builds subject and omits empty optional sections", () => {
+    expect(
+      competitionThankYouSubject({ competitionName: "UPEN Open 2026" }),
+    ).toBe("UPEN Open 2026 – Agradecimiento y resultados del evento");
+
+    const html = competitionThankYouEmail({
+      competitionName: "UPEN Open 2026",
+      dateLabel: "20 de noviembre de 2026",
+      placeLabel: "Pachuca, Hidalgo",
+      wcaCompetitionUrl:
+        "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
+      wcaLiveUrl:
+        "https://live.worldcubeassociation.org/link/competitions/UPENOpen2026",
+      sponsorNames: ["Patrocinador <X>"],
+    });
+
+    expect(html).toContain("UPEN Open 2026");
+    expect(html).toContain("Patrocinador &lt;X&gt;");
+    expect(html).not.toContain("Encuesta de calidad");
+    expect(html).not.toContain("Reconocimientos digitales");
+  });
+
+  it("linkifies URLs in plain compose bodies", () => {
+    const html = plainTextEmailBodyToHtml(
+      "Hola\n\nVer https://example.com/a\n\nGracias",
+    );
+    expect(html).toContain('href="https://example.com/a"');
+    expect(html).toContain("Hola");
   });
 });

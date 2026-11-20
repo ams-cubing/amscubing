@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 
-import { emailParagraph, escapeHtml, renderEmailLayout } from "./layout";
+import {
+  AMS_EMAIL,
+  emailParagraph,
+  escapeHtml,
+  renderEmailLayout,
+} from "./layout";
 import { log } from "@workspace/server/log";
 
 export { AMS_EMAIL, escapeHtml, renderEmailLayout } from "./layout";
@@ -25,11 +30,16 @@ export function isDeliverableEmail(
   return !email.includes("@ams.placeholder");
 }
 
-export async function sendEmail(input: {
+const RESEND_BATCH_SIZE = 100;
+
+export type SendEmailInput = {
   to: string;
   subject: string;
   html: string;
-}) {
+  replyTo?: string | string[];
+};
+
+export async function sendEmail(input: SendEmailInput) {
   const resend = getResend();
   if (!resend) {
     log.warn("email.skipped_missing_api_key");
@@ -42,6 +52,7 @@ export async function sendEmail(input: {
       to: input.to,
       subject: input.subject,
       html: input.html,
+      ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     });
     if (result.error)
       return { ok: false as const, reason: "send_failed" as const };
@@ -49,6 +60,46 @@ export async function sendEmail(input: {
   } catch (err) {
     log.error("email.send_failed", { error: err });
     return { ok: false as const, reason: "send_failed" as const };
+  }
+}
+
+/** Sends many emails via Resend batch API (chunks of 100). */
+export async function sendEmails(inputs: SendEmailInput[]) {
+  if (inputs.length === 0) {
+    return { ok: true as const, sent: 0 };
+  }
+
+  const resend = getResend();
+  if (!resend) {
+    log.warn("email.skipped_missing_api_key");
+    return { ok: false as const, reason: "missing_api_key" as const, sent: 0 };
+  }
+
+  let sent = 0;
+  try {
+    for (let i = 0; i < inputs.length; i += RESEND_BATCH_SIZE) {
+      const chunk = inputs.slice(i, i + RESEND_BATCH_SIZE).map((email) => ({
+        from: FROM,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        ...(email.replyTo ? { replyTo: email.replyTo } : {}),
+      }));
+      const result = await resend.batch.send(chunk);
+      if (result.error) {
+        log.error("email.batch_send_failed", {
+          error: result.error,
+          offset: i,
+          chunkSize: chunk.length,
+        });
+        return { ok: false as const, reason: "send_failed" as const, sent };
+      }
+      sent += chunk.length;
+    }
+    return { ok: true as const, sent };
+  } catch (err) {
+    log.error("email.batch_send_failed", { error: err, sent });
+    return { ok: false as const, reason: "send_failed" as const, sent };
   }
 }
 
@@ -378,4 +429,193 @@ export function competitionStatusChangedSubject(input: {
   statusLabel: string;
 }) {
   return `Estatus: ${input.statusLabel} — ${input.city}`;
+}
+
+export type CompetitionThankYouEmailInput = {
+  competitionName: string;
+  dateLabel: string;
+  placeLabel: string;
+  wcaCompetitionUrl: string;
+  wcaLiveUrl: string;
+  sponsorNames: string[];
+  surveyUrl?: string | null;
+  certificatesUrl?: string | null;
+  photosUrl?: string | null;
+  expenseSummaryUrl?: string | null;
+};
+
+function optionalLinkParagraph(label: string, href: string | null | undefined) {
+  const trimmed = href?.trim();
+  if (!trimmed) return "";
+  return emailParagraph(
+    `${escapeHtml(label)}: <a href="${escapeHtml(trimmed)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(trimmed)}</a>`,
+  );
+}
+
+export function competitionThankYouSubject(input: {
+  competitionName: string;
+}) {
+  return `${input.competitionName} – Agradecimiento y resultados del evento`;
+}
+
+export function competitionThankYouEmail(input: CompetitionThankYouEmailInput) {
+  const sponsorsBlock =
+    input.sponsorNames.length > 0
+      ? emailParagraph(
+          input.sponsorNames.map((name) => escapeHtml(name)).join(", "),
+        )
+      : "";
+
+  const surveyBlock = optionalLinkParagraph(
+    "Encuesta de calidad",
+    input.surveyUrl,
+  );
+  const certificatesBlock = optionalLinkParagraph(
+    "Reconocimientos digitales",
+    input.certificatesUrl,
+  );
+  const photosBlock = optionalLinkParagraph(
+    "Fotografías del evento",
+    input.photosUrl,
+  );
+  const expenseBlock = optionalLinkParagraph(
+    "Resumen de gastos",
+    input.expenseSummaryUrl,
+  );
+
+  return renderEmailLayout({
+    previewText: `Agradecimiento — ${input.competitionName}`,
+    title: "Agradecimiento post-competencia",
+    bodyHtml: [
+      emailParagraph("Hola competidores:"),
+      emailParagraph(
+        `Queremos agradecerles por haber formado parte de <strong>${escapeHtml(input.competitionName)}</strong>, realizada el ${escapeHtml(input.dateLabel)} en ${escapeHtml(input.placeLabel)}. Gracias a su participación, apoyo y colaboración durante el evento, fue posible llevar a cabo una competencia organizada, divertida y llena de grandes momentos para la comunidad.`,
+      ),
+      emailParagraph(
+        "Esperamos que hayan disfrutado la experiencia y que continúen participando en futuras competencias oficiales de la World Cube Association.",
+      ),
+      emailParagraph("<strong>Resultados de la competencia</strong>"),
+      emailParagraph(
+        `Puedes consultar los resultados oficiales en la página del evento en la WCA: <a href="${escapeHtml(input.wcaCompetitionUrl)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(input.wcaCompetitionUrl)}</a>`,
+      ),
+      emailParagraph(
+        `También puedes revisar los resultados detallados en WCA Live: <a href="${escapeHtml(input.wcaLiveUrl)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(input.wcaLiveUrl)}</a>`,
+      ),
+      emailParagraph("<strong>Agradecimiento a patrocinadores</strong>"),
+      emailParagraph(
+        "Queremos expresar un agradecimiento especial a nuestros patrocinadores y colaboradores, quienes hicieron posible la realización del evento.",
+      ),
+      sponsorsBlock,
+      emailParagraph(
+        "Su apoyo es fundamental para continuar desarrollando competencias de speedcubing en nuestra región.",
+      ),
+      expenseBlock
+        ? `${emailParagraph("<strong>Resumen de gastos</strong>")}${emailParagraph("Como parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:")}${expenseBlock}`
+        : "",
+      certificatesBlock
+        ? `${emailParagraph("<strong>Reconocimientos digitales</strong>")}${emailParagraph("Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio en cada evento. Puedes descargarlos aquí:")}${certificatesBlock}`
+        : "",
+      photosBlock
+        ? `${emailParagraph("<strong>Fotografías del evento</strong>")}${emailParagraph("Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí:")}${photosBlock}`
+        : "",
+      surveyBlock
+        ? `${emailParagraph("<strong>Encuesta de calidad</strong>")}${emailParagraph("Nos ayuda mucho conocer tu experiencia. Puedes responder la encuesta aquí:")}${surveyBlock}`
+        : "",
+      emailParagraph(
+        "Nuevamente, muchas gracias por formar parte de esta competencia y contribuir al crecimiento de la comunidad.",
+      ),
+      emailParagraph(
+        `Atentamente,<br/>Equipo Organizador de ${escapeHtml(input.competitionName)}`,
+      ),
+    ].join(""),
+  });
+}
+
+/** Plain-text draft body for the compose form (Markdown-ish links as URLs). */
+export function competitionThankYouPlainBody(
+  input: CompetitionThankYouEmailInput,
+) {
+  const lines = [
+    "Hola competidores:",
+    "",
+    `Queremos agradecerles por haber formado parte de ${input.competitionName}, realizada el ${input.dateLabel} en ${input.placeLabel}.`,
+    "Gracias a su participación, apoyo y colaboración durante el evento, fue posible llevar a cabo una competencia organizada, divertida y llena de grandes momentos para la comunidad.",
+    "",
+    "Esperamos que hayan disfrutado la experiencia y que continúen participando en futuras competencias oficiales de la World Cube Association.",
+    "",
+    "Resultados de la competencia",
+    "",
+    `Puedes consultar los resultados oficiales en la página del evento en la WCA: ${input.wcaCompetitionUrl}`,
+    "",
+    `También puedes revisar los resultados detallados en WCA Live: ${input.wcaLiveUrl}`,
+    "",
+    "Agradecimiento a patrocinadores",
+    "Queremos expresar un agradecimiento especial a nuestros patrocinadores y colaboradores, quienes hicieron posible la realización del evento.",
+  ];
+
+  if (input.sponsorNames.length > 0) {
+    lines.push(input.sponsorNames.join(", "));
+  }
+  lines.push(
+    "Su apoyo es fundamental para continuar desarrollando competencias de speedcubing en nuestra región.",
+  );
+
+  if (input.expenseSummaryUrl?.trim()) {
+    lines.push(
+      "",
+      "Resumen de Gastos",
+      "Como parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:",
+      input.expenseSummaryUrl.trim(),
+    );
+  }
+  if (input.certificatesUrl?.trim()) {
+    lines.push(
+      "",
+      "Reconocimientos Digitales",
+      "Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio en cada evento.",
+      `Puedes descargarlos en: ${input.certificatesUrl.trim()}`,
+    );
+  }
+  if (input.photosUrl?.trim()) {
+    lines.push(
+      "",
+      "Fotografías del Evento",
+      `Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí: ${input.photosUrl.trim()}`,
+    );
+  }
+  if (input.surveyUrl?.trim()) {
+    lines.push(
+      "",
+      "Encuesta de Calidad",
+      `Nos ayuda mucho conocer tu experiencia: ${input.surveyUrl.trim()}`,
+    );
+  }
+
+  lines.push(
+    "",
+    "Nuevamente, muchas gracias por formar parte de esta competencia y contribuir al crecimiento de la comunidad.",
+    "",
+    "Atentamente,",
+    "",
+    `Equipo Organizador de ${input.competitionName}`,
+  );
+
+  return lines.join("\n");
+}
+
+/** Convert the plain compose body into simple HTML paragraphs for sending. */
+export function plainTextEmailBodyToHtml(body: string) {
+  const escaped = escapeHtml(body.trim());
+  if (!escaped) return "";
+  const withLinks = escaped.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    (url) =>
+      `<a href="${url}" style="color:${AMS_EMAIL.orange};word-break:break-all;">${url}</a>`,
+  );
+  return withLinks
+    .split(/\n{2,}/)
+    .map((paragraph) =>
+      emailParagraph(paragraph.replaceAll("\n", "<br />")),
+    )
+    .join("");
 }

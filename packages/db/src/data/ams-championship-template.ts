@@ -24,6 +24,10 @@ import {
 export const CHAMPIONSHIP_BUDGET_MID_CARD_TITLE = "Manejo de fondos del evento";
 /** Championship sponsors card title. */
 export const CHAMPIONSHIP_BUDGET_SPONSORS_CARD_TITLE = "Contactar patrocinadores";
+
+/** Championship post-competition thank-you / quality survey card. */
+export const CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE =
+  "Correo informativo y agradecimiento a competidores y staff";
 import type {
   BoardTemplateCard,
   BoardTemplateDefinition,
@@ -387,11 +391,11 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     description: "Desarmar estaciones y dejar la sede como estaba.",
   },
   {
-    title: "Correo informativo y agradecimiento a competidores y staff",
+    title: CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_celebrate", "registration", "communication", "finance"],
     description:
-      "Enviar un correo o publicación para agradecer la participación. Incluir el resumen de gastos.",
+      "Enviar un correo para agradecer la participación e incluir el resumen de gastos. Usa la sección **Correo de agradecimiento** de esta tarjeta (solo delegados u organizadores; destinatarios desde el WCIF autenticado).",
     attachments: [
       {
         name: "Plantilla de Correo de Agradecimiento Post-Competencia",

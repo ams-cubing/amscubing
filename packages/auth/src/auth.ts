@@ -219,7 +219,7 @@ export function createAuth() {
             userInfoUrl: "https://www.worldcubeassociation.org/api/v0/me",
             // PKCE defaults to on in 1.7; keep it explicit for WCA Doorkeeper.
             pkce: true,
-            scopes: ["public", "email"],
+            scopes: ["public", "email", "manage_competitions"],
             getUserInfo: async ({ accessToken }) => {
               const response = await fetch(
                 "https://www.worldcubeassociation.org/api/v0/me",

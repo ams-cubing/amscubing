@@ -113,6 +113,9 @@ export const SOCIAL_PUBLISH_CARD_TITLE = "Publicación redes Torneo de Rubik";
 export const WCA_WEBSITE_CARD_TITLE = "Sitio web (WCA)";
 export const EQUIPMENT_CARD_TITLE = "Confirmación de equipo de competencia";
 
+/** Post-competition thank-you email + quality survey. */
+export const FINAL_EMAIL_CARD_TITLE = "Correo Final y Encuesta de Calidad";
+
 /** Approving this card confirms the venue (status → confirmed / venue_found). */
 export const VENUE_PERMISSION_CARD_TITLE = "Permiso de sede";
 
@@ -348,11 +351,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   },
   EQUIPMENT_CARD,
   {
-    title: "Correo Final y Encuesta de Calidad",
+    title: FINAL_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_celebrate"],
     description:
-      "**Objetivo:**  \nEnviar un correo para dar claridad al uso de recursos durante la competencia, agradecer a los patrocinadores y a los competidores asistentes.\n\n**IMPORTANTE:**  \nTodo correo debe incluir a los destinatarios en **copia oculta (CCO)**. Consulta con tu delegado antes de enviarlo.\n\n**Pasos:**\n\n1. Redacta un correo dirigido a todos los competidores (previa autorización y revisión de tu delegado).\n2. Sube el borrador de tu correo aquí para recibir autorización del delegado.\n3. Incluye en el correo un resumen de ingresos y egresos de la competencia.\n4. Adjunta o comparte los reconocimientos de participación digitales (Opcional).\n5. Solicita a tu delegado el link de la encuesta de calidad e inclúyelo en el correo.\n6. Asegúrate de agradecer tanto a los patrocinadores como a los competidores asistentes.\n\n**Nota:**  \nEste correo debe enviarse únicamente después de la revisión y autorización de tu delegado.  \nSi tienes dudas revisa la [**Plantilla de Correo Final**.](https://docs.google.com/document/d/1hGkNz_hwaXkArgqhUFEiR0AZ10Qt1Yxk/edit?usp=sharing&ouid=102609333583581616395&rtpof=true&sd=true)",
+      "**Objetivo:**  \nEnviar un correo para dar claridad al uso de recursos durante la competencia, agradecer a los patrocinadores y a los competidores asistentes.\n\n**Envío en la app:**  \nUsa la sección **Correo de agradecimiento** de esta tarjeta. Los destinatarios se toman del WCIF autenticado (competidores aceptados). Solo **delegados u organizadores** de la competencia pueden enviar. Cada destinatario recibe su propio correo (equivalente a CCO).\n\n**Pasos:**\n\n1. Completa o revisa el borrador (asunto, cuerpo y enlaces opcionales: encuesta, reconocimientos, fotos, resumen de gastos).\n2. Actualiza el conteo de destinatarios (requiere cuenta WCA con permiso `manage_competitions` sobre la competencia).\n3. Envía el correo desde la sección tras revisar el contenido.\n4. Opcional: sube capturas o archivos de respaldo como adjuntos de la tarjeta.\n\n**Nota:**  \nSi tienes dudas revisa la [**Plantilla de Correo Final**.](https://docs.google.com/document/d/1hGkNz_hwaXkArgqhUFEiR0AZ10Qt1Yxk/edit?usp=sharing&ouid=102609333583581616395&rtpof=true&sd=true)",
   },
   {
     title: BUDGET_FINAL_CARD_TITLE,

@@ -285,6 +285,15 @@ function findBoardDetail(boardId: number) {
           facebookPostId: true,
           instagramMediaId: true,
           socialPublishedManually: true,
+          finalEmailSubject: true,
+          finalEmailBody: true,
+          finalEmailSurveyUrl: true,
+          finalEmailCertificatesUrl: true,
+          finalEmailPhotosUrl: true,
+          finalEmailExpenseUrl: true,
+          finalEmailSentAt: true,
+          finalEmailSentByUserId: true,
+          finalEmailRecipientCount: true,
         },
         with: {
           state: {
