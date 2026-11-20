@@ -9,7 +9,7 @@ import {
   courseStaff,
   permissionAudit,
 } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { getBlogUrl, getCoursesUrl } from "@workspace/auth/urls";
 import {
@@ -83,22 +83,24 @@ export async function unlinkWca(): Promise<ProfileResult> {
     .from(account)
     .where(eq(account.userId, member.id));
   const credential = accounts.find((row) => row.providerId === "credential");
-  const wcaAccount = accounts.find((row) => row.providerId === "wca");
+  const wcaAccounts = accounts.filter((row) => row.providerId === "wca");
   if (!credential)
     return {
       ok: false,
       message: "Necesitas una contraseña AMS para conservar el acceso.",
     };
-  if (!wcaAccount)
+  if (wcaAccounts.length === 0)
     return {
       ok: false,
       message: "No hay una cuenta WCA vinculada.",
     };
   try {
-    await auth.api.unlinkAccount({
-      headers: await headers(),
-      body: { accountId: wcaAccount.id },
-    });
+    for (const wcaAccount of wcaAccounts) {
+      await auth.api.unlinkAccount({
+        headers: await headers(),
+        body: { accountId: wcaAccount.id },
+      });
+    }
     revalidatePath("/cuenta");
     return {
       ok: true,
@@ -111,6 +113,41 @@ export async function unlinkWca(): Promise<ProfileResult> {
       message: "No se pudo desvincular WCA. Inténtalo de nuevo.",
     };
   }
+}
+
+/**
+ * Drops local WCA OAuth rows (incl. duplicates) so the next WCA login is a
+ * fresh authorize. Keeps the AMS session; call signIn.social right after.
+ */
+export async function resetWcaLinkForReconnect(): Promise<ProfileResult> {
+  const member = await currentUser();
+  if (!member)
+    return { ok: false, message: "Inicia sesión para reconectar WCA." };
+
+  const { account } = await import("@workspace/db/schema");
+  const deleted = await db
+    .delete(account)
+    .where(
+      and(eq(account.userId, member.id), eq(account.providerId, "wca")),
+    )
+    .returning({ id: account.id });
+
+  if (deleted.length === 0) {
+    return {
+      ok: false,
+      message: "No hay una cuenta WCA vinculada para reconectar.",
+    };
+  }
+
+  log.info("auth.wca_link_reset_for_reconnect", {
+    userId: member.id,
+    deleted: deleted.length,
+  });
+  revalidatePath("/cuenta");
+  return {
+    ok: true,
+    message: "Listo. Continúa en la WCA para volver a conectar.",
+  };
 }
 export async function setPermission(
   _: ProfileResult,

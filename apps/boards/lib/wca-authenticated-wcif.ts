@@ -186,7 +186,7 @@ export async function fetchAuthenticatedWcif(
       ok: false,
       reason: "unauthorized",
       message:
-        "Tu sesión WCA no es válida. Vuelve a vincular WCA desde Cuenta (incluye manage_competitions).",
+        "No pudimos leer el WCIF con tu sesión WCA. En Cuenta usa «Volver a conectar WCA» y acepta todos los permisos.",
     };
   }
   if (response.status === 403) {
@@ -194,7 +194,7 @@ export async function fetchAuthenticatedWcif(
       ok: false,
       reason: "forbidden",
       message:
-        "Tu cuenta WCA no puede administrar esta competencia. Debe ser organizador o delegado en la WCA.",
+        "La WCA rechazó el acceso al WCIF. Confirma que eres organizador o delegado de esa competencia en la WCA, o vuelve a conectar WCA desde Cuenta.",
     };
   }
   if (response.status === 404) {

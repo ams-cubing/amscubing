@@ -14,6 +14,7 @@ import {
 import { getAuthBaseUrl, getAuthCookieDomain, getTrustedOrigins } from "./urls";
 import { resolveWcaRole } from "./wca-role";
 import { sendAuthEmail } from "./mail";
+import { WCA_OAUTH_SCOPES } from "./wca-scopes";
 
 interface WCAProfile {
   me: {
@@ -219,7 +220,7 @@ export function createAuth() {
             userInfoUrl: "https://www.worldcubeassociation.org/api/v0/me",
             // PKCE defaults to on in 1.7; keep it explicit for WCA Doorkeeper.
             pkce: true,
-            scopes: ["public", "email", "manage_competitions"],
+            scopes: [...WCA_OAUTH_SCOPES],
             getUserInfo: async ({ accessToken }) => {
               const response = await fetch(
                 "https://www.worldcubeassociation.org/api/v0/me",

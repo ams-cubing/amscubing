@@ -25,8 +25,26 @@ export function hasManageCompetitionsScope(scope: string | null | undefined) {
   return scope.split(/[\s,]+/).includes("manage_competitions");
 }
 
-const MISSING_SCOPE_MESSAGE =
-  "Tu sesión WCA no incluye el permiso manage_competitions. En la app OAuth de la WCA agrega ese scope, cierra sesión aquí y vuelve a iniciar con WCA desde Cuenta.";
+type WcaAccountRow = {
+  id: string;
+  accountId: string;
+  accessToken: string | null;
+  refreshToken: string | null;
+  accessTokenExpiresAt: Date | null;
+  scope: string | null;
+  updatedAt: Date;
+};
+
+/** Prefer the real WCA OAuth subject (numeric user id) over legacy stub rows. */
+export function pickWcaAccountRow(rows: WcaAccountRow[]): WcaAccountRow | null {
+  if (rows.length === 0) return null;
+  return [...rows].sort((a, b) => {
+    const aNumeric = /^\d+$/.test(a.accountId) ? 1 : 0;
+    const bNumeric = /^\d+$/.test(b.accountId) ? 1 : 0;
+    if (aNumeric !== bNumeric) return bNumeric - aNumeric;
+    return b.updatedAt.getTime() - a.updatedAt.getTime();
+  })[0]!;
+}
 
 async function refreshWcaAccessToken(row: {
   id: string;
@@ -58,7 +76,7 @@ async function refreshWcaAccessToken(row: {
       ok: false,
       reason: "refresh_failed",
       message:
-        "Tu enlace con la WCA expiró. Vuelve a iniciar sesión con WCA desde tu cuenta.",
+        "Tu enlace con la WCA expiró. Vuelve a conectar WCA desde Cuenta.",
     };
   }
 
@@ -95,7 +113,7 @@ async function refreshWcaAccessToken(row: {
       ok: false,
       reason: "refresh_failed",
       message:
-        "Tu enlace con la WCA expiró. Vuelve a iniciar sesión con WCA desde tu cuenta.",
+        "Tu enlace con la WCA expiró. Vuelve a conectar WCA desde Cuenta.",
     };
   }
 
@@ -140,28 +158,45 @@ async function refreshWcaAccessToken(row: {
   };
 }
 
-/** Returns a usable WCA access token for the AMS user, refreshing when needed. */
+/**
+ * Returns a usable WCA access token for the AMS user.
+ *
+ * Do not gate on stored `account.scope`: Better Auth leaves it stale on re-login,
+ * and force-refreshing just to "sync scope" can replace a freshly authorized
+ * access token. WCIF 401/403 is the source of truth for permission failures.
+ */
 export async function getWcaAccessTokenForUser(
   userId: string,
 ): Promise<WcaAccessTokenResult> {
-  const row = await db.query.account.findFirst({
+  const rows = await db.query.account.findMany({
     where: and(eq(account.userId, userId), eq(account.providerId, "wca")),
     columns: {
       id: true,
+      accountId: true,
       accessToken: true,
       refreshToken: true,
       accessTokenExpiresAt: true,
       scope: true,
+      updatedAt: true,
     },
   });
 
+  const row = pickWcaAccountRow(rows);
   if (!row) {
     return {
       ok: false,
       reason: "not_linked",
       message:
-        "Vincula tu cuenta WCA desde Cuenta para poder leer correos de competidores.",
+        "Conecta tu cuenta WCA desde Cuenta para poder leer correos de competidores.",
     };
+  }
+
+  if (rows.length > 1) {
+    log.warn("wca.duplicate_accounts", {
+      userId,
+      count: rows.length,
+      chosenAccountId: row.accountId,
+    });
   }
 
   let accessToken = row.accessToken;
@@ -172,22 +207,11 @@ export async function getWcaAccessTokenForUser(
     (row.accessTokenExpiresAt != null &&
       row.accessTokenExpiresAt.getTime() <= Date.now() + REFRESH_SKEW_MS);
 
-  // Better Auth updates tokens on re-login but intentionally leaves `account.scope`
-  // stale. Refresh against WCA to resync granted scopes (incl. manage_competitions).
-  const needsScopeSync = !hasManageCompetitionsScope(scope);
-
-  if (expired || needsScopeSync) {
+  if (expired) {
     const refreshed = await refreshWcaAccessToken(row);
-    if (!refreshed.ok) {
-      if (expired || !accessToken) return refreshed;
-      log.warn("wca.scope_sync_refresh_failed", {
-        userId,
-        reason: refreshed.reason,
-      });
-    } else {
-      accessToken = refreshed.accessToken;
-      if (refreshed.scope) scope = refreshed.scope;
-    }
+    if (!refreshed.ok) return refreshed;
+    accessToken = refreshed.accessToken;
+    if (refreshed.scope) scope = refreshed.scope;
   }
 
   if (!accessToken) {
@@ -195,16 +219,17 @@ export async function getWcaAccessTokenForUser(
       ok: false,
       reason: "refresh_failed",
       message:
-        "Tu enlace con la WCA expiró. Vuelve a iniciar sesión con WCA desde tu cuenta.",
+        "Tu enlace con la WCA expiró. Vuelve a conectar WCA desde Cuenta.",
     };
   }
 
   if (!hasManageCompetitionsScope(scope)) {
-    return {
-      ok: false,
-      reason: "missing_scope",
-      message: MISSING_SCOPE_MESSAGE,
-    };
+    // Stale or incomplete scope column — still try the token. Log for ops.
+    log.warn("wca.scope_column_missing_manage_competitions", {
+      userId,
+      accountId: row.accountId,
+      scope,
+    });
   }
 
   return { ok: true, accessToken, scope };

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst, update, updateSet, updateWhere } = vi.hoisted(() => {
+const { findMany, update, updateSet, updateWhere } = vi.hoisted(() => {
   const updateWhere = vi.fn();
   const updateSet = vi.fn(() => ({ where: updateWhere }));
   const update = vi.fn(() => ({ set: updateSet }));
   return {
-    findFirst: vi.fn(),
+    findMany: vi.fn(),
     update,
     updateSet,
     updateWhere,
@@ -15,7 +15,7 @@ const { findFirst, update, updateSet, updateWhere } = vi.hoisted(() => {
 vi.mock("@workspace/db", () => ({
   db: {
     query: {
-      account: { findFirst },
+      account: { findMany },
     },
     update,
   },
@@ -36,6 +36,7 @@ vi.mock("@workspace/server/log", () => ({
 import {
   getWcaAccessTokenForUser,
   hasManageCompetitionsScope,
+  pickWcaAccountRow,
 } from "./wca-access-token";
 
 describe("hasManageCompetitionsScope", () => {
@@ -50,9 +51,35 @@ describe("hasManageCompetitionsScope", () => {
   });
 });
 
+describe("pickWcaAccountRow", () => {
+  it("prefers numeric WCA account ids over legacy stubs", () => {
+    const chosen = pickWcaAccountRow([
+      {
+        id: "stub",
+        accountId: "2016TORO03",
+        accessToken: "a",
+        refreshToken: "r",
+        accessTokenExpiresAt: new Date("2026-01-01"),
+        scope: "public email",
+        updatedAt: new Date("2026-11-21"),
+      },
+      {
+        id: "real",
+        accountId: "22106",
+        accessToken: "b",
+        refreshToken: "s",
+        accessTokenExpiresAt: new Date("2026-01-01"),
+        scope: "public,email",
+        updatedAt: new Date("2026-11-20"),
+      },
+    ]);
+    expect(chosen?.id).toBe("real");
+  });
+});
+
 describe("getWcaAccessTokenForUser", () => {
   beforeEach(() => {
-    findFirst.mockReset();
+    findMany.mockReset();
     update.mockClear();
     updateSet.mockClear();
     updateWhere.mockReset();
@@ -62,50 +89,44 @@ describe("getWcaAccessTokenForUser", () => {
     process.env.WCA_CLIENT_SECRET = "secret";
   });
 
-  it("refreshes to resync scope when manage_competitions is missing from stored scope", async () => {
-    findFirst.mockResolvedValue({
-      id: "acc_1",
-      accessToken: "old-token",
-      refreshToken: "refresh-1",
-      accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
-      scope: "public,email",
-    });
+  it("uses a non-expired token even when stored scope lacks manage_competitions", async () => {
+    findMany.mockResolvedValue([
+      {
+        id: "real",
+        accountId: "22106",
+        accessToken: "fresh-token",
+        refreshToken: "refresh-1",
+        accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        scope: "public,email",
+        updatedAt: new Date(),
+      },
+    ]);
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        access_token: "new-token",
-        refresh_token: "refresh-2",
-        expires_in: 7200,
-        scope: "public email manage_competitions",
-      }),
-    });
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await getWcaAccessTokenForUser("user_1");
 
     expect(result).toEqual({
       ok: true,
-      accessToken: "new-token",
-      scope: "public email manage_competitions",
-    });
-    expect(fetchMock).toHaveBeenCalledOnce();
-    expect(updateSet).toHaveBeenCalledWith(
-      expect.objectContaining({
-        accessToken: "new-token",
-        scope: "public email manage_competitions",
-      }),
-    );
-  });
-
-  it("returns missing_scope when refresh still lacks manage_competitions", async () => {
-    findFirst.mockResolvedValue({
-      id: "acc_1",
-      accessToken: "old-token",
-      refreshToken: "refresh-1",
-      accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      accessToken: "fresh-token",
       scope: "public,email",
     });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refreshes only when the access token is expired", async () => {
+    findMany.mockResolvedValue([
+      {
+        id: "real",
+        accountId: "22106",
+        accessToken: "old-token",
+        refreshToken: "refresh-1",
+        accessTokenExpiresAt: new Date(Date.now() - 60_000),
+        scope: "public,email",
+        updatedAt: new Date(),
+      },
+    ]);
 
     vi.stubGlobal(
       "fetch",
@@ -114,16 +135,16 @@ describe("getWcaAccessTokenForUser", () => {
         json: async () => ({
           access_token: "new-token",
           expires_in: 7200,
-          scope: "public email",
+          scope: "public email manage_competitions",
         }),
       }),
     );
 
     const result = await getWcaAccessTokenForUser("user_1");
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe("missing_scope");
-      expect(result.message).toContain("manage_competitions");
-    }
+    expect(result).toEqual({
+      ok: true,
+      accessToken: "new-token",
+      scope: "public email manage_competitions",
+    });
   });
 });
