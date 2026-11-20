@@ -26,8 +26,12 @@ import {
 } from "../../_actions/final-email-actions";
 import { isFinalEmailCard } from "../../_lib/final-email-card";
 import type { BoardDetail } from "../../_lib/types";
+import { MarkdownContent } from "./markdown-content";
 
 export { isFinalEmailCard };
+
+/** Must match `BUDGET_SUMMARY_PLACEHOLDER` in `@workspace/email`. */
+const BUDGET_SUMMARY_PLACEHOLDER = "{{resumen_gastos}}";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -48,8 +52,8 @@ export function CardFinalEmailSection({
   const [surveyUrl, setSurveyUrl] = React.useState("");
   const [certificatesUrl, setCertificatesUrl] = React.useState("");
   const [photosUrl, setPhotosUrl] = React.useState("");
-  const [expenseUrl, setExpenseUrl] = React.useState("");
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("idle");
+  const [showPreview, setShowPreview] = React.useState(true);
   const [recipientCount, setRecipientCount] = React.useState<number | null>(
     null,
   );
@@ -77,7 +81,6 @@ export function CardFinalEmailSection({
       setSurveyUrl(result.data.surveyUrl);
       setCertificatesUrl(result.data.certificatesUrl);
       setPhotosUrl(result.data.photosUrl);
-      setExpenseUrl(result.data.expenseUrl);
       setRecipientCount(null);
       setSampleNames([]);
       setSaveStatus("idle");
@@ -94,7 +97,6 @@ export function CardFinalEmailSection({
       surveyUrl: string;
       certificatesUrl: string;
       photosUrl: string;
-      expenseUrl: string;
     }) => {
       if (!data?.canSend || readOnly) return;
       const generation = ++saveGenerationRef.current;
@@ -128,7 +130,6 @@ export function CardFinalEmailSection({
         surveyUrl,
         certificatesUrl,
         photosUrl,
-        expenseUrl,
       });
     }, 800);
     return () => window.clearTimeout(handle);
@@ -138,11 +139,18 @@ export function CardFinalEmailSection({
     surveyUrl,
     certificatesUrl,
     photosUrl,
-    expenseUrl,
     data?.canSend,
     readOnly,
     persistDraft,
   ]);
+
+  const previewMarkdown = React.useMemo(() => {
+    if (!body.includes(BUDGET_SUMMARY_PLACEHOLDER)) return body;
+    const budgetNote = data?.hasBudgetSummary
+      ? "_Aquí se insertará la tabla de ingresos y egresos del presupuesto._"
+      : "_Aquí se insertará la tabla de gastos (aún no hay presupuesto cargado)._";
+    return body.replaceAll(BUDGET_SUMMARY_PLACEHOLDER, budgetNote);
+  }, [body, data?.hasBudgetSummary]);
 
   if (!competition) {
     return (
@@ -202,7 +210,6 @@ export function CardFinalEmailSection({
         surveyUrl,
         certificatesUrl,
         photosUrl,
-        expenseUrl,
         confirmResend,
       });
       if (!result.ok) {
@@ -230,9 +237,8 @@ export function CardFinalEmailSection({
         <h3 className="text-sm font-semibold">Correo de agradecimiento</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
           Se envía a competidores aceptados del WCIF autenticado (un correo por
-          persona). Requiere cuenta WCA con{" "}
-          <code className="text-[11px]">manage_competitions</code> sobre esta
-          competencia.
+          persona). El cuerpo admite Markdown; al enviar se inserta la tabla del
+          resumen de gastos.
         </p>
       </div>
 
@@ -282,7 +288,17 @@ export function CardFinalEmailSection({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`final-email-body-${cardId}`}>Cuerpo</Label>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label htmlFor={`final-email-body-${cardId}`}>Cuerpo (Markdown)</Label>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowPreview((value) => !value)}
+          >
+            {showPreview ? "Ocultar vista previa" : "Ver vista previa"}
+          </Button>
+        </div>
         <Textarea
           id={`final-email-body-${cardId}`}
           value={body}
@@ -291,7 +307,21 @@ export function CardFinalEmailSection({
           rows={16}
           className="font-mono text-xs leading-5"
         />
+        <p className="text-muted-foreground text-xs">
+          Usa{" "}
+          <code className="text-[11px]">{BUDGET_SUMMARY_PLACEHOLDER}</code> donde
+          quieras la tabla de gastos.
+        </p>
       </div>
+
+      {showPreview ? (
+        <div className="rounded-md border bg-muted/20 p-3">
+          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+            Vista previa
+          </p>
+          <MarkdownContent content={previewMarkdown} />
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
@@ -320,7 +350,7 @@ export function CardFinalEmailSection({
             placeholder="https://"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor={`final-email-photos-${cardId}`}>
             Fotos (opcional)
           </Label>
@@ -331,18 +361,6 @@ export function CardFinalEmailSection({
             onChange={(event) => setPhotosUrl(event.target.value)}
             disabled={!editable || sendPending}
             placeholder="https://"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`final-email-expense-${cardId}`}>
-            Resumen de gastos (opcional)
-          </Label>
-          <Input
-            id={`final-email-expense-${cardId}`}
-            value={expenseUrl}
-            onChange={(event) => setExpenseUrl(event.target.value)}
-            disabled={!editable || sendPending}
-            placeholder={`/boards/${board.id}/costos/resumen`}
           />
         </div>
       </div>

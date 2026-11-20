@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { marked } from "marked";
+
 import {
   AMS_EMAIL,
   emailParagraph,
@@ -9,6 +11,9 @@ import {
 import { log } from "@workspace/server/log";
 
 export { AMS_EMAIL, escapeHtml, renderEmailLayout } from "./layout";
+
+/** Placeholder in the Markdown draft replaced by the budget HTML table on send. */
+export const BUDGET_SUMMARY_PLACEHOLDER = "{{resumen_gastos}}";
 
 const FROM = "Asociación Mexicana de Speedcubing <no-reply@amscubing.org>";
 
@@ -436,20 +441,18 @@ export type CompetitionThankYouEmailInput = {
   dateLabel: string;
   placeLabel: string;
   wcaCompetitionUrl: string;
-  wcaLiveUrl: string;
+  /** Instant Live Results on the WCA website (`/competitions/{id}/live`). */
+  ilrUrl: string;
   sponsorNames: string[];
   surveyUrl?: string | null;
   certificatesUrl?: string | null;
   photosUrl?: string | null;
-  expenseSummaryUrl?: string | null;
+  /** When true, seed includes `{{resumen_gastos}}` for the budget table. */
+  includeBudgetSummaryPlaceholder?: boolean;
 };
 
-function optionalLinkParagraph(label: string, href: string | null | undefined) {
-  const trimmed = href?.trim();
-  if (!trimmed) return "";
-  return emailParagraph(
-    `${escapeHtml(label)}: <a href="${escapeHtml(trimmed)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(trimmed)}</a>`,
-  );
+export function competitionIlrUrl(wcaCompetitionId: string) {
+  return `https://www.worldcubeassociation.org/competitions/${encodeURIComponent(wcaCompetitionId)}/live`;
 }
 
 export function competitionThankYouSubject(input: {
@@ -458,136 +461,82 @@ export function competitionThankYouSubject(input: {
   return `${input.competitionName} – Agradecimiento y resultados del evento`;
 }
 
-export function competitionThankYouEmail(input: CompetitionThankYouEmailInput) {
-  const sponsorsBlock =
-    input.sponsorNames.length > 0
-      ? emailParagraph(
-          input.sponsorNames.map((name) => escapeHtml(name)).join(", "),
-        )
-      : "";
-
-  const surveyBlock = optionalLinkParagraph(
-    "Encuesta de calidad",
-    input.surveyUrl,
-  );
-  const certificatesBlock = optionalLinkParagraph(
-    "Reconocimientos digitales",
-    input.certificatesUrl,
-  );
-  const photosBlock = optionalLinkParagraph(
-    "Fotografías del evento",
-    input.photosUrl,
-  );
-  const expenseBlock = optionalLinkParagraph(
-    "Resumen de gastos",
-    input.expenseSummaryUrl,
-  );
-
-  return renderEmailLayout({
-    previewText: `Agradecimiento — ${input.competitionName}`,
-    title: "Agradecimiento post-competencia",
-    bodyHtml: [
-      emailParagraph("Hola competidores:"),
-      emailParagraph(
-        `Queremos agradecerles por haber formado parte de <strong>${escapeHtml(input.competitionName)}</strong>, realizada el ${escapeHtml(input.dateLabel)} en ${escapeHtml(input.placeLabel)}. Gracias a su participación, apoyo y colaboración durante el evento, fue posible llevar a cabo una competencia organizada, divertida y llena de grandes momentos para la comunidad.`,
-      ),
-      emailParagraph(
-        "Esperamos que hayan disfrutado la experiencia y que continúen participando en futuras competencias oficiales de la World Cube Association.",
-      ),
-      emailParagraph("<strong>Resultados de la competencia</strong>"),
-      emailParagraph(
-        `Puedes consultar los resultados oficiales en la página del evento en la WCA: <a href="${escapeHtml(input.wcaCompetitionUrl)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(input.wcaCompetitionUrl)}</a>`,
-      ),
-      emailParagraph(
-        `También puedes revisar los resultados detallados en WCA Live: <a href="${escapeHtml(input.wcaLiveUrl)}" style="color:${AMS_EMAIL.orange};">${escapeHtml(input.wcaLiveUrl)}</a>`,
-      ),
-      emailParagraph("<strong>Agradecimiento a patrocinadores</strong>"),
-      emailParagraph(
-        "Queremos expresar un agradecimiento especial a nuestros patrocinadores y colaboradores, quienes hicieron posible la realización del evento.",
-      ),
-      sponsorsBlock,
-      emailParagraph(
-        "Su apoyo es fundamental para continuar desarrollando competencias de speedcubing en nuestra región.",
-      ),
-      expenseBlock
-        ? `${emailParagraph("<strong>Resumen de gastos</strong>")}${emailParagraph("Como parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:")}${expenseBlock}`
-        : "",
-      certificatesBlock
-        ? `${emailParagraph("<strong>Reconocimientos digitales</strong>")}${emailParagraph("Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio en cada evento. Puedes descargarlos aquí:")}${certificatesBlock}`
-        : "",
-      photosBlock
-        ? `${emailParagraph("<strong>Fotografías del evento</strong>")}${emailParagraph("Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí:")}${photosBlock}`
-        : "",
-      surveyBlock
-        ? `${emailParagraph("<strong>Encuesta de calidad</strong>")}${emailParagraph("Nos ayuda mucho conocer tu experiencia. Puedes responder la encuesta aquí:")}${surveyBlock}`
-        : "",
-      emailParagraph(
-        "Nuevamente, muchas gracias por formar parte de esta competencia y contribuir al crecimiento de la comunidad.",
-      ),
-      emailParagraph(
-        `Atentamente,<br/>Equipo Organizador de ${escapeHtml(input.competitionName)}`,
-      ),
-    ].join(""),
-  });
+function mdLink(label: string, href: string) {
+  return `[${label}](${href})`;
 }
 
-/** Plain-text draft body for the compose form (Markdown-ish links as URLs). */
-export function competitionThankYouPlainBody(
+/** Markdown draft body for the compose form. */
+export function competitionThankYouMarkdownBody(
   input: CompetitionThankYouEmailInput,
 ) {
   const lines = [
     "Hola competidores:",
     "",
-    `Queremos agradecerles por haber formado parte de ${input.competitionName}, realizada el ${input.dateLabel} en ${input.placeLabel}.`,
+    `Queremos agradecerles por haber formado parte de **${input.competitionName}**, realizada el ${input.dateLabel} en ${input.placeLabel}.`,
+    "",
     "Gracias a su participación, apoyo y colaboración durante el evento, fue posible llevar a cabo una competencia organizada, divertida y llena de grandes momentos para la comunidad.",
     "",
     "Esperamos que hayan disfrutado la experiencia y que continúen participando en futuras competencias oficiales de la World Cube Association.",
     "",
-    "Resultados de la competencia",
+    "## Resultados de la competencia",
     "",
-    `Puedes consultar los resultados oficiales en la página del evento en la WCA: ${input.wcaCompetitionUrl}`,
+    `Puedes consultar los resultados oficiales en la página del evento en la WCA: ${mdLink(input.wcaCompetitionUrl, input.wcaCompetitionUrl)}`,
     "",
-    `También puedes revisar los resultados detallados en WCA Live: ${input.wcaLiveUrl}`,
+    `También puedes revisar los resultados en vivo (ILR): ${mdLink(input.ilrUrl, input.ilrUrl)}`,
     "",
-    "Agradecimiento a patrocinadores",
+    "## Agradecimiento a patrocinadores",
+    "",
     "Queremos expresar un agradecimiento especial a nuestros patrocinadores y colaboradores, quienes hicieron posible la realización del evento.",
   ];
 
   if (input.sponsorNames.length > 0) {
-    lines.push(input.sponsorNames.join(", "));
+    lines.push(
+      "",
+      input.sponsorNames
+        .map((name) => `- ${escapeHtml(name).replaceAll("|", "\\|")}`)
+        .join("\n"),
+    );
   }
   lines.push(
+    "",
     "Su apoyo es fundamental para continuar desarrollando competencias de speedcubing en nuestra región.",
   );
 
-  if (input.expenseSummaryUrl?.trim()) {
+  if (input.includeBudgetSummaryPlaceholder !== false) {
     lines.push(
       "",
-      "Resumen de Gastos",
+      "## Resumen de gastos",
+      "",
       "Como parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:",
-      input.expenseSummaryUrl.trim(),
+      "",
+      BUDGET_SUMMARY_PLACEHOLDER,
     );
   }
+
   if (input.certificatesUrl?.trim()) {
     lines.push(
       "",
-      "Reconocimientos Digitales",
+      "## Reconocimientos digitales",
+      "",
       "Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio en cada evento.",
-      `Puedes descargarlos en: ${input.certificatesUrl.trim()}`,
+      "",
+      mdLink("Descargar reconocimientos", input.certificatesUrl.trim()),
     );
   }
   if (input.photosUrl?.trim()) {
     lines.push(
       "",
-      "Fotografías del Evento",
-      `Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí: ${input.photosUrl.trim()}`,
+      "## Fotografías del evento",
+      "",
+      `Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí: ${mdLink("Ver fotografías", input.photosUrl.trim())}`,
     );
   }
   if (input.surveyUrl?.trim()) {
     lines.push(
       "",
-      "Encuesta de Calidad",
-      `Nos ayuda mucho conocer tu experiencia: ${input.surveyUrl.trim()}`,
+      "## Encuesta de calidad",
+      "",
+      `Nos ayuda mucho conocer tu experiencia: ${mdLink("Responder encuesta", input.surveyUrl.trim())}`,
     );
   }
 
@@ -597,25 +546,181 @@ export function competitionThankYouPlainBody(
     "",
     "Atentamente,",
     "",
-    `Equipo Organizador de ${input.competitionName}`,
+    `**Equipo Organizador de ${input.competitionName}**`,
   );
 
   return lines.join("\n");
 }
 
-/** Convert the plain compose body into simple HTML paragraphs for sending. */
-export function plainTextEmailBodyToHtml(body: string) {
-  const escaped = escapeHtml(body.trim());
-  if (!escaped) return "";
-  const withLinks = escaped.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    (url) =>
-      `<a href="${url}" style="color:${AMS_EMAIL.orange};word-break:break-all;">${url}</a>`,
-  );
-  return withLinks
-    .split(/\n{2,}/)
-    .map((paragraph) =>
-      emailParagraph(paragraph.replaceAll("\n", "<br />")),
-    )
+/** @deprecated Use competitionThankYouMarkdownBody */
+export const competitionThankYouPlainBody = competitionThankYouMarkdownBody;
+
+function formatMxn(cents: number) {
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+  }).format(cents / 100);
+}
+
+export type BudgetSummaryEmailLine = {
+  kind: "expense" | "income";
+  label: string;
+  expectedCents: number;
+  actualCents: number | null;
+};
+
+export type BudgetSummaryEmailInput = {
+  lines: BudgetSummaryEmailLine[];
+  summary: {
+    actualIncomeCents: number;
+    actualExpenseCents: number;
+    actualNetCents: number;
+  };
+};
+
+/** Email-safe HTML table of competition budget actuals (fallback to expected). */
+export function competitionBudgetSummaryTableHtml(
+  input: BudgetSummaryEmailInput | null,
+) {
+  if (!input || input.lines.length === 0) {
+    return emailParagraph(
+      "<em>El resumen de gastos aún no está disponible.</em>",
+    );
+  }
+
+  const { navy, soft, fontStack } = AMS_EMAIL;
+  const rowHtml = input.lines
+    .map((line) => {
+      const amountLabel =
+        line.actualCents != null
+          ? formatMxn(line.actualCents)
+          : `${formatMxn(line.expectedCents)} (esperado)`;
+      return `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #e8e8e8;font-family:${fontStack};font-size:13px;color:${navy};">${escapeHtml(line.kind === "expense" ? "Gasto" : "Ingreso")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e8e8e8;font-family:${fontStack};font-size:13px;color:${navy};">${escapeHtml(line.label)}</td>
+        <td align="right" style="padding:8px 10px;border-bottom:1px solid #e8e8e8;font-family:${fontStack};font-size:13px;color:${navy};white-space:nowrap;">${escapeHtml(amountLabel)}</td>
+      </tr>`;
+    })
     .join("");
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 18px;border-collapse:collapse;background-color:${soft};border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;">
+  <thead>
+    <tr>
+      <th align="left" style="padding:10px;background-color:${navy};color:#ffffff;font-family:${fontStack};font-size:12px;font-weight:700;">Tipo</th>
+      <th align="left" style="padding:10px;background-color:${navy};color:#ffffff;font-family:${fontStack};font-size:12px;font-weight:700;">Concepto</th>
+      <th align="right" style="padding:10px;background-color:${navy};color:#ffffff;font-family:${fontStack};font-size:12px;font-weight:700;">Monto</th>
+    </tr>
+  </thead>
+  <tbody>${rowHtml}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2" style="padding:10px;font-family:${fontStack};font-size:13px;font-weight:700;color:${navy};">Ingresos</td>
+      <td align="right" style="padding:10px;font-family:${fontStack};font-size:13px;font-weight:700;color:${navy};">${escapeHtml(formatMxn(input.summary.actualIncomeCents))}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding:10px;font-family:${fontStack};font-size:13px;font-weight:700;color:${navy};">Egresos</td>
+      <td align="right" style="padding:10px;font-family:${fontStack};font-size:13px;font-weight:700;color:${navy};">${escapeHtml(formatMxn(input.summary.actualExpenseCents))}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding:10px;font-family:${fontStack};font-size:14px;font-weight:700;color:${navy};">Remanente</td>
+      <td align="right" style="padding:10px;font-family:${fontStack};font-size:14px;font-weight:700;color:${navy};">${escapeHtml(formatMxn(input.summary.actualNetCents))}</td>
+    </tr>
+  </tfoot>
+</table>`;
+}
+
+function styleMarkdownEmailHtml(html: string) {
+  const { navy, orange, fontStack } = AMS_EMAIL;
+  return html
+    .replace(
+      /<h2>/g,
+      `<h2 style="margin:20px 0 10px;font-family:${fontStack};font-size:17px;font-weight:700;line-height:1.3;color:${navy};">`,
+    )
+    .replace(
+      /<h3>/g,
+      `<h3 style="margin:16px 0 8px;font-family:${fontStack};font-size:15px;font-weight:700;line-height:1.3;color:${navy};">`,
+    )
+    .replace(
+      /<p>/g,
+      `<p style="margin:0 0 14px;font-family:${fontStack};font-size:15px;line-height:1.55;color:${navy};">`,
+    )
+    .replace(
+      /<ul>/g,
+      `<ul style="margin:0 0 14px;padding-left:22px;font-family:${fontStack};font-size:15px;line-height:1.55;color:${navy};">`,
+    )
+    .replace(
+      /<ol>/g,
+      `<ol style="margin:0 0 14px;padding-left:22px;font-family:${fontStack};font-size:15px;line-height:1.55;color:${navy};">`,
+    )
+    .replace(
+      /<li>/g,
+      `<li style="margin:0 0 4px;font-family:${fontStack};font-size:15px;line-height:1.55;color:${navy};">`,
+    )
+    .replace(
+      /<a /g,
+      `<a style="color:${orange};word-break:break-word;" `,
+    )
+    .replace(
+      /<strong>/g,
+      `<strong style="font-weight:700;color:${navy};">`,
+    )
+    .replace(
+      /<em>/g,
+      `<em style="font-style:italic;color:${navy};">`,
+    );
+}
+
+/**
+ * Convert Markdown compose body to email HTML.
+ * Replaces `{{resumen_gastos}}` with the budget table HTML when provided.
+ */
+export function markdownEmailBodyToHtml(
+  body: string,
+  options?: { budgetSummaryHtml?: string | null },
+) {
+  let source = body.trim();
+  if (!source) return "";
+
+  const budgetHtml =
+    options?.budgetSummaryHtml?.trim() ||
+    competitionBudgetSummaryTableHtml(null);
+
+  if (source.includes(BUDGET_SUMMARY_PLACEHOLDER)) {
+    // Keep a stable token through Markdown parsing, then swap for the table.
+    source = source.replaceAll(
+      BUDGET_SUMMARY_PLACEHOLDER,
+      "@@BUDGET_SUMMARY_TABLE@@",
+    );
+  }
+
+  const parsed = marked.parse(source, {
+    async: false,
+    gfm: true,
+    breaks: true,
+  }) as string;
+
+  const withBudget = parsed.includes("@@BUDGET_SUMMARY_TABLE@@")
+    ? parsed.replaceAll(
+        /<p>\s*@@BUDGET_SUMMARY_TABLE@@\s*<\/p>|@@BUDGET_SUMMARY_TABLE@@/g,
+        budgetHtml,
+      )
+    : parsed;
+
+  return styleMarkdownEmailHtml(withBudget);
+}
+
+/** @deprecated Use markdownEmailBodyToHtml */
+export const plainTextEmailBodyToHtml = markdownEmailBodyToHtml;
+
+export function competitionThankYouEmail(input: CompetitionThankYouEmailInput) {
+  return renderEmailLayout({
+    previewText: `Agradecimiento — ${input.competitionName}`,
+    title: "Agradecimiento post-competencia",
+    bodyHtml: markdownEmailBodyToHtml(
+      competitionThankYouMarkdownBody(input),
+      {
+        budgetSummaryHtml: competitionBudgetSummaryTableHtml(null),
+      },
+    ),
+  });
 }

@@ -16,11 +16,15 @@ import {
   competitions,
   user,
 } from "@workspace/db/schema";
+import { getCompetitionBudgetSheet } from "@workspace/db/budget";
 import {
-  competitionThankYouPlainBody,
+  BUDGET_SUMMARY_PLACEHOLDER,
+  competitionBudgetSummaryTableHtml,
+  competitionIlrUrl,
+  competitionThankYouMarkdownBody,
   competitionThankYouSubject,
   isDeliverableEmail,
-  plainTextEmailBodyToHtml,
+  markdownEmailBodyToHtml,
   renderEmailLayout,
   sendEmails,
 } from "@workspace/email";
@@ -93,7 +97,6 @@ async function loadCompetitionForBoard(boardId: number) {
       finalEmailSurveyUrl: true,
       finalEmailCertificatesUrl: true,
       finalEmailPhotosUrl: true,
-      finalEmailExpenseUrl: true,
       finalEmailSentAt: true,
       finalEmailSentByUserId: true,
       finalEmailRecipientCount: true,
@@ -154,21 +157,7 @@ function placeLabel(city: string, stateName: string | null | undefined) {
   return state ? `${city}, ${state}` : city;
 }
 
-function defaultExpenseUrl(boardId: number) {
-  return `/boards/${boardId}/costos/resumen`;
-}
-
-function absoluteExpenseUrl(boardId: number, expenseUrl: string | null) {
-  const raw = expenseUrl?.trim() || defaultExpenseUrl(boardId);
-  if (/^https?:\/\//i.test(raw)) return raw;
-  const boardsBase =
-    process.env.NEXT_PUBLIC_BOARDS_URL?.replace(/\/$/, "") ||
-    "http://localhost:3002";
-  return `${boardsBase}${raw.startsWith("/") ? raw : `/${raw}`}`;
-}
-
 function buildSeedDraft(input: {
-  boardId: number;
   competition: NonNullable<Awaited<ReturnType<typeof loadCompetitionForBoard>>>;
   sponsorNames: string[];
 }) {
@@ -178,11 +167,6 @@ function buildSeedDraft(input: {
   const wcaCompetitionUrl =
     input.competition.wcaCompetitionUrl?.trim() ||
     `https://www.worldcubeassociation.org/competitions/${wcaId}`;
-  const wcaLiveUrl = `https://live.worldcubeassociation.org/link/competitions/${wcaId}`;
-  const expenseSummaryUrl = absoluteExpenseUrl(
-    input.boardId,
-    input.competition.finalEmailExpenseUrl,
-  );
 
   const competitionName =
     input.competition.name?.trim() || "la competencia";
@@ -197,12 +181,12 @@ function buildSeedDraft(input: {
       input.competition.state?.name,
     ),
     wcaCompetitionUrl,
-    wcaLiveUrl,
+    ilrUrl: competitionIlrUrl(wcaId),
     sponsorNames: input.sponsorNames,
     surveyUrl: input.competition.finalEmailSurveyUrl,
     certificatesUrl: input.competition.finalEmailCertificatesUrl,
     photosUrl: input.competition.finalEmailPhotosUrl,
-    expenseSummaryUrl,
+    includeBudgetSummaryPlaceholder: true,
   };
 
   return {
@@ -211,13 +195,10 @@ function buildSeedDraft(input: {
       competitionThankYouSubject({ competitionName }),
     body:
       input.competition.finalEmailBody?.trim() ||
-      competitionThankYouPlainBody(templateInput),
+      competitionThankYouMarkdownBody(templateInput),
     surveyUrl: input.competition.finalEmailSurveyUrl ?? "",
     certificatesUrl: input.competition.finalEmailCertificatesUrl ?? "",
     photosUrl: input.competition.finalEmailPhotosUrl ?? "",
-    expenseUrl:
-      input.competition.finalEmailExpenseUrl?.trim() ||
-      defaultExpenseUrl(input.boardId),
   };
 }
 
@@ -236,40 +217,65 @@ function appendOptionalLinksToBody(
     surveyUrl: string | null;
     certificatesUrl: string | null;
     photosUrl: string | null;
-    expenseUrl: string | null;
   },
 ) {
   const sections: string[] = [];
-  const pushIfMissing = (url: string | null, title: string, blurb: string) => {
+  const pushIfMissing = (
+    url: string | null,
+    title: string,
+    blurb: string,
+    linkLabel: string,
+  ) => {
     const trimmed = url?.trim();
     if (!trimmed) return;
     if (body.includes(trimmed)) return;
-    sections.push("", title, blurb, trimmed);
+    sections.push("", `## ${title}`, "", blurb, "", `[${linkLabel}](${trimmed})`);
   };
 
   pushIfMissing(
-    links.expenseUrl,
-    "Resumen de Gastos",
-    "Como parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:",
-  );
-  pushIfMissing(
     links.certificatesUrl,
-    "Reconocimientos Digitales",
-    "Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio. Puedes descargarlos aquí:",
+    "Reconocimientos digitales",
+    "Hemos preparado reconocimientos digitales para los competidores que obtuvieron podio.",
+    "Descargar reconocimientos",
   );
   pushIfMissing(
     links.photosUrl,
-    "Fotografías del Evento",
+    "Fotografías del evento",
     "Si deseas revivir algunos momentos de la competencia, puedes consultar la galería aquí:",
+    "Ver fotografías",
   );
   pushIfMissing(
     links.surveyUrl,
-    "Encuesta de Calidad",
-    "Nos ayuda mucho conocer tu experiencia. Puedes responder la encuesta aquí:",
+    "Encuesta de calidad",
+    "Nos ayuda mucho conocer tu experiencia:",
+    "Responder encuesta",
   );
 
-  if (sections.length === 0) return body;
-  return `${body.trimEnd()}\n${sections.join("\n")}`;
+  let next = body;
+  if (!next.includes(BUDGET_SUMMARY_PLACEHOLDER)) {
+    next = `${next.trimEnd()}\n\n## Resumen de gastos\n\nComo parte de nuestro compromiso con la transparencia, compartimos un resumen general del uso de la cuota de registro del evento:\n\n${BUDGET_SUMMARY_PLACEHOLDER}`;
+  }
+
+  if (sections.length === 0) return next;
+  return `${next.trimEnd()}\n${sections.join("\n")}`;
+}
+
+async function loadBudgetSummaryForEmail(competitionId: number) {
+  const sheet = await getCompetitionBudgetSheet(db, competitionId);
+  if (!sheet) return null;
+  return {
+    lines: sheet.lines.map((line) => ({
+      kind: line.kind,
+      label: line.label,
+      expectedCents: line.expectedCents,
+      actualCents: line.actualCents,
+    })),
+    summary: {
+      actualIncomeCents: sheet.summary.actualIncomeCents,
+      actualExpenseCents: sheet.summary.actualExpenseCents,
+      actualNetCents: sheet.summary.actualNetCents,
+    },
+  };
 }
 
 async function loadRecipientsForCompetition(input: {
@@ -305,12 +311,12 @@ export type FinalEmailDraftData = {
   surveyUrl: string;
   certificatesUrl: string;
   photosUrl: string;
-  expenseUrl: string;
   sponsorNames: string[];
   sentAt: string | null;
   sentRecipientCount: number | null;
   canSend: boolean;
   wcaCompetitionUrl: string | null;
+  hasBudgetSummary: boolean;
 };
 
 export async function loadFinalEmailCard(input: {
@@ -338,9 +344,11 @@ export async function loadFinalEmailCard(input: {
     wcaId: session.user.wcaId,
   });
   const canSend = role.ok;
-  const sponsorNames = await loadSponsorNames(competition.id);
+  const [sponsorNames, budgetSummary] = await Promise.all([
+    loadSponsorNames(competition.id),
+    loadBudgetSummaryForEmail(competition.id),
+  ]);
   const draft = buildSeedDraft({
-    boardId: input.boardId,
     competition,
     sponsorNames,
   });
@@ -355,6 +363,7 @@ export async function loadFinalEmailCard(input: {
       sentRecipientCount: competition.finalEmailRecipientCount,
       canSend,
       wcaCompetitionUrl: competition.wcaCompetitionUrl,
+      hasBudgetSummary: Boolean(budgetSummary && budgetSummary.lines.length > 0),
     },
   };
 }
@@ -367,7 +376,6 @@ const draftSchema = z.object({
   surveyUrl: optionalUrl,
   certificatesUrl: optionalUrl,
   photosUrl: optionalUrl,
-  expenseUrl: optionalUrl,
 });
 
 export async function saveFinalEmailDraft(
@@ -416,7 +424,6 @@ export async function saveFinalEmailDraft(
       finalEmailSurveyUrl: input.surveyUrl,
       finalEmailCertificatesUrl: input.certificatesUrl,
       finalEmailPhotosUrl: input.photosUrl,
-      finalEmailExpenseUrl: input.expenseUrl,
       updatedAt: new Date(),
     })
     .where(eq(competitions.id, competition.id));
@@ -483,7 +490,6 @@ const sendSchema = z.object({
   surveyUrl: optionalUrl,
   certificatesUrl: optionalUrl,
   photosUrl: optionalUrl,
-  expenseUrl: optionalUrl,
   confirmResend: z.boolean().optional(),
 });
 
@@ -564,8 +570,9 @@ export async function sendFinalEmail(
     surveyUrl: input.surveyUrl,
     certificatesUrl: input.certificatesUrl,
     photosUrl: input.photosUrl,
-    expenseUrl: absoluteExpenseUrl(input.boardId, input.expenseUrl),
   });
+
+  const budgetSummary = await loadBudgetSummaryForEmail(competition.id);
 
   // Persist the draft used for this send before mailing.
   await db
@@ -576,7 +583,6 @@ export async function sendFinalEmail(
       finalEmailSurveyUrl: input.surveyUrl,
       finalEmailCertificatesUrl: input.certificatesUrl,
       finalEmailPhotosUrl: input.photosUrl,
-      finalEmailExpenseUrl: input.expenseUrl,
       updatedAt: new Date(),
     })
     .where(eq(competitions.id, competition.id));
@@ -584,7 +590,9 @@ export async function sendFinalEmail(
   const html = renderEmailLayout({
     previewText: input.subject,
     title: input.subject,
-    bodyHtml: plainTextEmailBodyToHtml(bodyWithOptionalLinks),
+    bodyHtml: markdownEmailBodyToHtml(bodyWithOptionalLinks, {
+      budgetSummaryHtml: competitionBudgetSummaryTableHtml(budgetSummary),
+    }),
   });
   const batch = loaded.recipients.map((recipient) => ({
     to: recipient.email,

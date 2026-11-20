@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   AMS_EMAIL,
   boardNotificationEmail,
+  competitionBudgetSummaryTableHtml,
+  competitionIlrUrl,
   competitionStatusChangedEmail,
   competitionThankYouEmail,
   competitionThankYouSubject,
@@ -10,9 +12,9 @@ import {
   delegateAssignedEmail,
   delegateRemovedEmail,
   isDeliverableEmail,
+  markdownEmailBodyToHtml,
   organizerAssignedEmail,
   organizerRemovedEmail,
-  plainTextEmailBodyToHtml,
   sendEmail,
   ultimatumEmail,
 } from "./index";
@@ -181,10 +183,13 @@ describe("sendEmail", () => {
 });
 
 describe("competitionThankYouEmail", () => {
-  it("builds subject and omits empty optional sections", () => {
+  it("builds subject, ILR link, and omits empty optional sections", () => {
     expect(
       competitionThankYouSubject({ competitionName: "UPEN Open 2026" }),
     ).toBe("UPEN Open 2026 – Agradecimiento y resultados del evento");
+    expect(competitionIlrUrl("UPENOpen2026")).toBe(
+      "https://www.worldcubeassociation.org/competitions/UPENOpen2026/live",
+    );
 
     const html = competitionThankYouEmail({
       competitionName: "UPEN Open 2026",
@@ -192,22 +197,48 @@ describe("competitionThankYouEmail", () => {
       placeLabel: "Pachuca, Hidalgo",
       wcaCompetitionUrl:
         "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
-      wcaLiveUrl:
-        "https://live.worldcubeassociation.org/link/competitions/UPENOpen2026",
+      ilrUrl: competitionIlrUrl("UPENOpen2026"),
       sponsorNames: ["Patrocinador <X>"],
     });
 
     expect(html).toContain("UPEN Open 2026");
     expect(html).toContain("Patrocinador &lt;X&gt;");
+    expect(html).toContain("/competitions/UPENOpen2026/live");
+    expect(html).toContain("ILR");
+    expect(html).not.toContain("live.worldcubeassociation.org");
     expect(html).not.toContain("Encuesta de calidad");
     expect(html).not.toContain("Reconocimientos digitales");
   });
 
-  it("linkifies URLs in plain compose bodies", () => {
-    const html = plainTextEmailBodyToHtml(
-      "Hola\n\nVer https://example.com/a\n\nGracias",
+  it("renders markdown and injects the budget table", () => {
+    const table = competitionBudgetSummaryTableHtml({
+      lines: [
+        {
+          kind: "income",
+          label: "Inscripciones",
+          expectedCents: 10000,
+          actualCents: 12000,
+        },
+        {
+          kind: "expense",
+          label: "Sede",
+          expectedCents: 5000,
+          actualCents: 5000,
+        },
+      ],
+      summary: {
+        actualIncomeCents: 12000,
+        actualExpenseCents: 5000,
+        actualNetCents: 7000,
+      },
+    });
+    const html = markdownEmailBodyToHtml(
+      "## Hola\n\nVer [sitio](https://example.com/a)\n\n{{resumen_gastos}}",
+      { budgetSummaryHtml: table },
     );
     expect(html).toContain('href="https://example.com/a"');
-    expect(html).toContain("Hola");
+    expect(html).toContain("Inscripciones");
+    expect(html).toContain("Remanente");
+    expect(html).not.toContain("{{resumen_gastos}}");
   });
 });
