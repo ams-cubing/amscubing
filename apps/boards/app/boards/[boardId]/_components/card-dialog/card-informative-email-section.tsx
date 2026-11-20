@@ -56,7 +56,6 @@ export function CardInformativeEmailSection({
   const [mapsUrl, setMapsUrl] = React.useState("");
   const [parking, setParking] = React.useState("");
   const [unofficialEvents, setUnofficialEvents] = React.useState("");
-  const [groupsUrl, setGroupsUrl] = React.useState("");
   const [thanks, setThanks] = React.useState("");
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("idle");
   const [showPreview, setShowPreview] = React.useState(true);
@@ -93,7 +92,6 @@ export function CardInformativeEmailSection({
         setMapsUrl(result.data.mapsUrl);
         setParking(result.data.parking);
         setUnofficialEvents(result.data.unofficialEvents);
-        setGroupsUrl(result.data.groupsUrl);
         setThanks(result.data.thanks);
         setRecipientCount(null);
         setSampleNames([]);
@@ -117,7 +115,6 @@ export function CardInformativeEmailSection({
       mapsUrl,
       parking,
       unofficialEvents,
-      groupsUrl,
       thanks,
     }),
     [
@@ -131,7 +128,6 @@ export function CardInformativeEmailSection({
       mapsUrl,
       parking,
       unofficialEvents,
-      groupsUrl,
       thanks,
     ],
   );
@@ -404,18 +400,6 @@ export function CardInformativeEmailSection({
             id={`info-email-parking-${cardId}`}
             value={parking}
             onChange={(event) => setParking(event.target.value)}
-            disabled={!editable || sendPending}
-          />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor={`info-email-groups-${cardId}`}>
-            Competition Groups
-          </Label>
-          <Input
-            id={`info-email-groups-${cardId}`}
-            type="url"
-            value={groupsUrl}
-            onChange={(event) => setGroupsUrl(event.target.value)}
             disabled={!editable || sendPending}
           />
         </div>

@@ -127,6 +127,11 @@ async function loadCompetitionForBoard(boardId: number) {
   });
 }
 
+function resolvedGroupsUrl(wcaCompetitionUrl: string | null | undefined) {
+  const wcaId = wcaCompetitionIdFromUrl(wcaCompetitionUrl);
+  return wcaId ? competitionGroupsUrl(wcaId) : "";
+}
+
 function buildSeedDraft(competition: NonNullable<
   Awaited<ReturnType<typeof loadCompetitionForBoard>>
 >) {
@@ -147,9 +152,8 @@ function buildSeedDraft(competition: NonNullable<
     mapsUrl: competition.informativeEmailMapsUrl ?? "",
     parking: competition.informativeEmailParking ?? "",
     unofficialEvents: competition.informativeEmailUnofficialEvents ?? "",
-    groupsUrl:
-      competition.informativeEmailGroupsUrl?.trim() ||
-      competitionGroupsUrl(wcaId),
+    // Always from WCA id — not editable in the compose form.
+    groupsUrl: competitionGroupsUrl(wcaId),
     thanks: competition.informativeEmailThanks ?? "",
   };
 
@@ -342,7 +346,6 @@ const draftSchema = z.object({
   mapsUrl: optionalUrl,
   parking: optionalText,
   unofficialEvents: optionalText,
-  groupsUrl: optionalUrl,
   thanks: optionalText,
 });
 
@@ -397,7 +400,9 @@ export async function saveInformativeEmailDraft(
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,
       informativeEmailUnofficialEvents: input.unofficialEvents,
-      informativeEmailGroupsUrl: input.groupsUrl,
+      informativeEmailGroupsUrl: resolvedGroupsUrl(
+        competition.wcaCompetitionUrl,
+      ) || null,
       informativeEmailThanks: input.thanks,
       updatedAt: new Date(),
     })
@@ -534,6 +539,8 @@ export async function sendInformativeEmail(
   const replyTo =
     sender && isDeliverableEmail(sender.email) ? sender.email : undefined;
 
+  const groupsUrl =
+    resolvedGroupsUrl(competition.wcaCompetitionUrl) || null;
   const bodyWithOptionals = appendOptionalFieldsToBody(input.body, {
     updateNote: input.updateNote,
     checkIn: input.checkIn,
@@ -543,7 +550,7 @@ export async function sendInformativeEmail(
     mapsUrl: input.mapsUrl,
     parking: input.parking,
     unofficialEvents: input.unofficialEvents,
-    groupsUrl: input.groupsUrl,
+    groupsUrl,
     thanks: input.thanks,
   });
 
@@ -560,7 +567,7 @@ export async function sendInformativeEmail(
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,
       informativeEmailUnofficialEvents: input.unofficialEvents,
-      informativeEmailGroupsUrl: input.groupsUrl,
+      informativeEmailGroupsUrl: groupsUrl,
       informativeEmailThanks: input.thanks,
       updatedAt: new Date(),
     })
