@@ -248,8 +248,8 @@ export function CardInformativeEmailSection({
         <h3 className="text-sm font-semibold">Correo informativo</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
           Se envía a competidores aceptados del WCIF autenticado (un correo por
-          persona). El cuerpo admite Markdown; el pie con logo AMS y el equipo
-          se agrega al enviar.
+          persona). El cuerpo admite Markdown; el pie con el logo de la
+          competencia y el equipo se agrega al enviar.
         </p>
       </div>
 

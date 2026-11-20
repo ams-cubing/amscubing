@@ -20,17 +20,29 @@ export type WcaAccessTokenResult =
       message: string;
     };
 
-function hasManageCompetitionsScope(scope: string | null | undefined) {
+export function hasManageCompetitionsScope(scope: string | null | undefined) {
   if (!scope) return false;
   return scope.split(/[\s,]+/).includes("manage_competitions");
 }
+
+const MISSING_SCOPE_MESSAGE =
+  "Tu sesión WCA no incluye el permiso manage_competitions. En la app OAuth de la WCA agrega ese scope, cierra sesión aquí y vuelve a iniciar con WCA desde Cuenta.";
 
 async function refreshWcaAccessToken(row: {
   id: string;
   refreshToken: string | null;
 }): Promise<
-  | { ok: true; accessToken: string; scope: string | null; expiresAt: Date | null }
-  | { ok: false; reason: "refresh_failed" | "missing_credentials"; message: string }
+  | {
+      ok: true;
+      accessToken: string;
+      scope: string | null;
+      expiresAt: Date | null;
+    }
+  | {
+      ok: false;
+      reason: "refresh_failed" | "missing_credentials";
+      message: string;
+    }
 > {
   const clientId = process.env.WCA_CLIENT_ID?.trim();
   const clientSecret = process.env.WCA_CLIENT_SECRET?.trim();
@@ -114,7 +126,8 @@ async function refreshWcaAccessToken(row: {
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? row.refreshToken,
       accessTokenExpiresAt: expiresAt,
-      scope: scope ?? undefined,
+      // Persist scope when WCA returns it (Better Auth omits scope on re-login).
+      ...(scope ? { scope } : {}),
       updatedAt: new Date(),
     })
     .where(eq(account.id, row.id));
@@ -159,11 +172,22 @@ export async function getWcaAccessTokenForUser(
     (row.accessTokenExpiresAt != null &&
       row.accessTokenExpiresAt.getTime() <= Date.now() + REFRESH_SKEW_MS);
 
-  if (expired) {
+  // Better Auth updates tokens on re-login but intentionally leaves `account.scope`
+  // stale. Refresh against WCA to resync granted scopes (incl. manage_competitions).
+  const needsScopeSync = !hasManageCompetitionsScope(scope);
+
+  if (expired || needsScopeSync) {
     const refreshed = await refreshWcaAccessToken(row);
-    if (!refreshed.ok) return refreshed;
-    accessToken = refreshed.accessToken;
-    scope = refreshed.scope ?? scope;
+    if (!refreshed.ok) {
+      if (expired || !accessToken) return refreshed;
+      log.warn("wca.scope_sync_refresh_failed", {
+        userId,
+        reason: refreshed.reason,
+      });
+    } else {
+      accessToken = refreshed.accessToken;
+      if (refreshed.scope) scope = refreshed.scope;
+    }
   }
 
   if (!accessToken) {
@@ -179,8 +203,7 @@ export async function getWcaAccessTokenForUser(
     return {
       ok: false,
       reason: "missing_scope",
-      message:
-        "Tu sesión WCA no incluye el permiso manage_competitions. Cierra sesión WCA y vuelve a vincularla desde Cuenta.",
+      message: MISSING_SCOPE_MESSAGE,
     };
   }
 

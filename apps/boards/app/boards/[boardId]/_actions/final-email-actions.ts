@@ -41,6 +41,7 @@ import {
 import {
   assertCompetitionDelegateOrOrganizer,
   formatCompetitionDateLabel,
+  loadCompetitionLogoUrl,
   loadRecipientsForCompetition,
   placeLabel,
   teamFooterPeopleFromCompetition,
@@ -525,8 +526,13 @@ export async function sendFinalEmail(
     })
     .where(eq(competitions.id, competition.id));
 
+  const competitionLogoUrl = await loadCompetitionLogoUrl(
+    competition.wcaCompetitionUrl,
+  );
   const teamFooter = competitionTeamEmailFooterHtml({
     people: teamFooterPeopleFromCompetition(competition),
+    logoUrl: competitionLogoUrl,
+    competitionName: competition.name,
   });
   const html = renderEmailLayout({
     previewText: input.subject,

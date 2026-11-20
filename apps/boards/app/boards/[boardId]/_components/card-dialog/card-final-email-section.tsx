@@ -237,7 +237,8 @@ export function CardFinalEmailSection({
         <h3 className="text-sm font-semibold">Correo de agradecimiento</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-5">
           Se envía a competidores aceptados del WCIF autenticado (un correo por
-          persona). El cuerpo admite Markdown; al enviar se inserta la tabla del
+          persona). El cuerpo admite Markdown; al enviar se insertan el logo de
+          la competencia, el equipo y la tabla del
           resumen de gastos.
         </p>
       </div>

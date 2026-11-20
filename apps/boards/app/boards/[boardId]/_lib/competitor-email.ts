@@ -8,6 +8,8 @@ import {
   competitions,
 } from "@workspace/db/schema";
 
+import { fetchWcaCompetition } from "@workspace/social";
+
 import { getWcaAccessTokenForUser } from "@/lib/wca-access-token";
 import {
   competitorRecipientsFromWcif,
@@ -204,4 +206,14 @@ export async function loadRecipientsForCompetition(input: {
 
   const recipients = competitorRecipientsFromWcif(loaded.wcif.persons);
   return { ok: true as const, recipients, wcaId: loaded.wcaId };
+}
+
+/** Competition logo from the WCA page information (first image), if any. */
+export async function loadCompetitionLogoUrl(
+  wcaCompetitionUrl: string | null | undefined,
+): Promise<string | null> {
+  if (!wcaCompetitionUrl?.trim()) return null;
+  const wca = await fetchWcaCompetition(wcaCompetitionUrl);
+  if (!wca.ok) return null;
+  return wca.competition.logoUrl?.trim() || null;
 }

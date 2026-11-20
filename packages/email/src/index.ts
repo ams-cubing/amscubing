@@ -889,16 +889,25 @@ function footerInitials(name: string) {
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
 }
 
-/** Email-safe footer: AMS logo + organizers/delegates (avatar or initials). */
+/** Email-safe footer: competition logo + organizers/delegates (avatar or initials). */
 export function competitionTeamEmailFooterHtml(input: {
   people: CompetitionTeamFooterPerson[];
+  /** Competition logo URL (e.g. from WCA information). Omit when unavailable. */
+  logoUrl?: string | null;
+  competitionName?: string | null;
 }) {
-  const { navy, soft, white, logoUrl, fontStack } = AMS_EMAIL;
+  const { navy, soft, white, fontStack } = AMS_EMAIL;
   const people = input.people.filter((person) => person.name.trim());
+  const logoUrl = input.logoUrl?.trim() || null;
+  const logoAlt = escapeHtml(
+    input.competitionName?.trim() || "Logo de la competencia",
+  );
 
-  const logoCell = `<td valign="middle" style="padding:8px 16px 8px 0;">
-  <img src="${logoUrl}" alt="AMS" width="56" height="32" style="display:block;width:56px;height:32px;border:0;"/>
-</td>`;
+  const logoCell = logoUrl
+    ? `<td valign="middle" style="padding:8px 16px 8px 0;">
+  <img src="${escapeHtml(logoUrl)}" alt="${logoAlt}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;object-fit:contain;"/>
+</td>`
+    : "";
 
   const personCells = people
     .map((person) => {
@@ -917,6 +926,8 @@ export function competitionTeamEmailFooterHtml(input: {
 </td>`;
     })
     .join("");
+
+  if (!personCells && !logoCell) return "";
 
   if (!personCells) {
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;padding-top:16px;border-top:1px solid #e8e8e8;">

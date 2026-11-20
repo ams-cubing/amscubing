@@ -277,6 +277,8 @@ describe("competitionInformativeEmail", () => {
 
   it("renders team footer with roles and escaped names", () => {
     const html = competitionTeamEmailFooterHtml({
+      logoUrl: "https://example.com/comp-logo.png",
+      competitionName: "UPEN Open 2026",
       people: [
         { name: "Ana <Org>", image: null, role: "organizador" },
         {
@@ -287,10 +289,21 @@ describe("competitionInformativeEmail", () => {
       ],
     });
 
-    expect(html).toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain("https://example.com/comp-logo.png");
+    expect(html).not.toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain('alt="UPEN Open 2026"');
     expect(html).toContain("ORGANIZADOR");
     expect(html).toContain("DELEGADO");
     expect(html).toContain("Ana &lt;Org&gt;");
     expect(html).toContain("https://example.com/a.png");
+  });
+
+  it("omits footer logo when competition logo is missing", () => {
+    const html = competitionTeamEmailFooterHtml({
+      people: [{ name: "Ana", image: null, role: "organizador" }],
+    });
+    expect(html).not.toContain(AMS_EMAIL.logoUrl);
+    expect(html).not.toContain("<img src=");
+    expect(html).toContain("ORGANIZADOR");
   });
 });
