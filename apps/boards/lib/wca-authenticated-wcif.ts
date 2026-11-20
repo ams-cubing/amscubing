@@ -8,11 +8,105 @@ export type AuthenticatedWcifPerson = {
   name?: string | null;
   email?: string | null;
   wcaId?: string | null;
+  registrantId?: number | null;
+  birthdate?: string | null;
+  gender?: string | null;
+  countryIso2?: string | null;
   registration?: {
     status?: string | null;
     isCompeting?: boolean | null;
+    eventIds?: string[] | null;
   } | null;
 };
+
+export type CheckInCompetitorRow = {
+  registrantId: number | null;
+  name: string;
+  wcaId: string | null;
+  isNew: boolean;
+  birthdate: string | null;
+  gender: string | null;
+  countryIso2: string | null;
+  eventIds: string[];
+};
+
+/** Accepted competing people for check-in worksheets (no email required). */
+export function checkInRowsFromWcif(
+  persons: AuthenticatedWcifPerson[] | null | undefined,
+): CheckInCompetitorRow[] {
+  const rows: CheckInCompetitorRow[] = [];
+
+  for (const person of persons ?? []) {
+    const registration = person.registration;
+    if (!registration || registration.status !== "accepted") continue;
+    if (registration.isCompeting === false) continue;
+
+    const wcaId = person.wcaId?.trim() || null;
+    rows.push({
+      registrantId:
+        typeof person.registrantId === "number" ? person.registrantId : null,
+      name: person.name?.trim() || "Competidor",
+      wcaId,
+      isNew: !wcaId,
+      birthdate: person.birthdate?.trim() || null,
+      gender: person.gender?.trim() || null,
+      countryIso2: person.countryIso2?.trim().toUpperCase() || null,
+      eventIds: [...(registration.eventIds ?? [])],
+    });
+  }
+
+  rows.sort((a, b) =>
+    a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+  );
+  return rows;
+}
+
+export function checkInRowsToCsv(rows: CheckInCompetitorRow[]) {
+  const header = [
+    "asistio",
+    "kit_gafete",
+    "datos_verificados",
+    "registrant_id",
+    "nombre",
+    "wca_id",
+    "es_nuevo",
+    "fecha_nacimiento",
+    "genero",
+    "pais",
+    "eventos",
+  ];
+
+  const escapeCell = (value: string) => {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replaceAll('"', '""')}"`;
+    }
+    return value;
+  };
+
+  const lines = [header.join(",")];
+  for (const row of rows) {
+    lines.push(
+      [
+        "",
+        "",
+        "",
+        row.registrantId != null ? String(row.registrantId) : "",
+        row.name,
+        row.wcaId ?? "",
+        row.isNew ? "si" : "no",
+        row.birthdate ?? "",
+        row.gender ?? "",
+        row.countryIso2 ?? "",
+        row.eventIds.join(","),
+      ]
+        .map(escapeCell)
+        .join(","),
+    );
+  }
+
+  // UTF-8 BOM helps Excel open accented names correctly.
+  return `\uFEFF${lines.join("\n")}\n`;
+}
 
 export type AuthenticatedWcif = {
   id: string;

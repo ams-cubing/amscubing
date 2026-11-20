@@ -116,6 +116,10 @@ export const EQUIPMENT_CARD_TITLE = "Confirmación de equipo de competencia";
 /** Post-competition thank-you email + quality survey. */
 export const FINAL_EMAIL_CARD_TITLE = "Correo Final y Encuesta de Calidad";
 
+/** Pre-competition informative email + registration check-in prep. */
+export const INFORMATIVE_EMAIL_CARD_TITLE =
+  "Preparación registro y Correo Informativo";
+
 /** Approving this card confirms the venue (status → confirmed / venue_found). */
 export const VENUE_PERMISSION_CARD_TITLE = "Permiso de sede";
 
@@ -330,11 +334,11 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
       '**Objetivo:**  \nOrganizar los grupos de competidores y asignar el apoyo de staff y voluntarios durante el evento.\n\n**Pasos:**\n\n1. **Organización de grupos:**\n  - Define los grupos de competidores.\n  - Asigna qué personas ayudarán como staff y cuáles como apoyo externo.\n  - Se recomienda utilizar [Groupifier](http://groupifier.jonatanklosko.com/).\n  - **Configuración Obligatoria (Double Check):** Al configurar la exportación, es obligatorio habilitar la opción:\n    - *“Print out scramble checker sign box for top ranked competitors (WR100 in single or WR50/NR15 in average)”*. Esto permitirá realizar el proceso de verificación doble a los competidores que cumplan con estos rangos de ranking.\n  - Si tienes dudas sobre el uso de esta aplicación, revisa el material de [**Introducción a Groupifier**](https://drive.google.com/file/d/1g-c-FKlteNpMq2WqefNmItSEgJ1iUwr3/view?usp=sharing) o solicita apoyo de tu delegado principal.\n  - Antes de imprimir, consulta con tu delegado para verificar que los grupos estén correctamente creados.\n2. **Impresión y preparación de papeletas:**\n  - Imprime y separa las papeletas por grupos, preferiblemente siguiendo la cronología del evento.\n  - Al finalizar el evento, deberás entregar las papeletas completas, revisadas y ordenadas para su respectivo resguardo, incluyendo aquellas de competidores que no asistieron. Consulta la tarjeta de **"Captura de Resultados"** para más información.\n\n**Nota:**  \nAlgunos delegados cuentan con impresora; puedes solicitar su apoyo para imprimir las papeletas si lo necesitas.',
   },
   {
-    title: "Preparación registro y Correo Informativo",
+    title: INFORMATIVE_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce"],
     description:
-      "**Objetivo:** Preparar los archivos necesarios para entregar a cada competidor su gafete y/o kit y confirmar que los datos de los competidores nuevos son correctos. *Es conveniente hacer una fila especial para nuevos competidores.*\n\n**Paso 1.-** Correo Informativo: Mandar un correo **en copia oculta** **CCO** a todos los competidores con los detalles importantes\n\n- Información sobre horario de registro check/in\n- Requisitos para el acceso\n- Pedir a todos los nuevos competidores llevar alguna identificación con fotografía\n- Tareas de staff/apoyo\n- Información sobre patrocinadores\n- Cambios importantes\n\n**Paso 2.-** Subir el archivo de Excel/Drive que se usará para el registro y entrega de kits (en caso de tenerlos). Este debe de cumplir con las siguientes funciones:\n\n- Check de asistencia de los competidores que han llegado.\n- Registro de los kits/gafetes que se han entregado.\n- Confirmar con nuevos competidores fecha de nacimiento, nombre completo y género.\n\n**Nota:** En caso de enviar por error el correo en **CC** en lugar de **CCO** contacta a tu delegado cuanto antes.",
+      "**Objetivo:** Preparar el registro (gafetes/kits) y enviar el correo informativo a competidores aceptados.\n\n**Correo informativo:** Usa la sección **Correo informativo** de esta tarjeta. Solo **delegados u organizadores** pueden editar y enviar. Cada destinatario recibe su propio correo (equivalente a CCO), con datos del WCIF autenticado.\n\n**Lista de registro:** Descarga el CSV de check-in desde la misma sección (asistencia, kit/gafete y verificación de datos de nuevos).\n\n**Paso extra.-** Si usan Drive/Excel propio, súbelo como adjunto de la tarjeta.\n\n**Nota:** Si enviaste por error un correo en CC en lugar de CCO, contacta a tu delegado cuanto antes.",
     attachments: [
       {
         name: "Plantilla de Correo Informativo",

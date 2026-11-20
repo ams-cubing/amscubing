@@ -28,6 +28,10 @@ export const CHAMPIONSHIP_BUDGET_SPONSORS_CARD_TITLE = "Contactar patrocinadores
 /** Championship post-competition thank-you / quality survey card. */
 export const CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE =
   "Correo informativo y agradecimiento a competidores y staff";
+
+/** Championship pre-competition informative email card. */
+export const CHAMPIONSHIP_INFORMATIVE_EMAIL_CARD_TITLE =
+  "Mantener interés y claridad con los competidores";
 import type {
   BoardTemplateCard,
   BoardTemplateDefinition,
@@ -267,11 +271,11 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "Responder dudas, correos y mensajes de los competidores y sus acompañantes.",
   },
   {
-    title: "Mantener interés y claridad con los competidores",
+    title: CHAMPIONSHIP_INFORMATIVE_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "registration", "communication"],
     description:
-      "Continuar la promoción y enviar los correos informativos importantes (horario de registro, requisitos de acceso, identificación para nuevos competidores, cambios importantes). Todo correo debe ir en **copia oculta (CCO)**.",
+      "Enviar el correo informativo (check-in, acceso, identificación para nuevos, cambios). Usa la sección **Correo informativo** de esta tarjeta (delegados/organizadores; destinatarios desde el WCIF autenticado) y descarga la lista de registro CSV.",
     attachments: [
       {
         name: "Plantilla de Correo Informativo",

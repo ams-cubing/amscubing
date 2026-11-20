@@ -724,3 +724,214 @@ export function competitionThankYouEmail(input: CompetitionThankYouEmailInput) {
     ),
   });
 }
+
+export function competitionGroupsUrl(wcaCompetitionId: string) {
+  return `https://www.competitiongroups.com/competitions/${encodeURIComponent(wcaCompetitionId)}`;
+}
+
+export type CompetitionInformativeEmailInput = {
+  competitionName: string;
+  dateLabel: string;
+  placeLabel: string;
+  wcaCompetitionUrl: string;
+  ilrUrl: string;
+  scheduleUrl?: string | null;
+  groupsUrl?: string | null;
+  updateNote?: string | null;
+  checkIn?: string | null;
+  tutorialTime?: string | null;
+  address?: string | null;
+  mapsUrl?: string | null;
+  parking?: string | null;
+  unofficialEvents?: string | null;
+  thanks?: string | null;
+};
+
+export function competitionInformativeSubject(input: {
+  competitionName: string;
+}) {
+  return `${input.competitionName} - Información previa a la competencia`;
+}
+
+export function competitionInformativeMarkdownBody(
+  input: CompetitionInformativeEmailInput,
+) {
+  const scheduleUrl =
+    input.scheduleUrl?.trim() || input.wcaCompetitionUrl.trim();
+  const groupsUrl = input.groupsUrl?.trim() || "";
+
+  const lines = [
+    "Hola competidores:",
+    "",
+    `Si estás recibiendo este correo es porque estás registrado para participar en **${input.competitionName}**, una competencia oficial reconocida por la World Cube Association (WCA), que se celebrará este ${input.dateLabel} en ${input.placeLabel}.`,
+    "",
+    "Para consultar la información más actualizada sobre la competencia, te invitamos a revisar la página oficial del evento en la WCA:",
+    "",
+    mdLink(input.wcaCompetitionUrl, input.wcaCompetitionUrl),
+  ];
+
+  if (input.updateNote?.trim()) {
+    lines.push(
+      "",
+      "## Actualización importante",
+      "",
+      input.updateNote.trim(),
+    );
+  }
+
+  lines.push("", "## Check-in y horario");
+  if (input.checkIn?.trim()) {
+    lines.push("", `**Check-in:** ${input.checkIn.trim()}`);
+  }
+  if (input.tutorialTime?.trim()) {
+    lines.push(
+      "",
+      `**Tutorial para nuevos competidores:** ${input.tutorialTime.trim()}`,
+    );
+  }
+  lines.push(
+    "",
+    "Les pedimos ser puntuales para recoger su gafete de competidor en la mesa de registro, el cual será necesario durante el evento.",
+    "",
+    "Consulta el horario completo y actualizado en la página oficial:",
+    "",
+    mdLink(scheduleUrl, scheduleUrl),
+  );
+
+  if (
+    input.address?.trim() ||
+    input.mapsUrl?.trim() ||
+    input.parking?.trim()
+  ) {
+    lines.push("", "## Ubicación");
+    if (input.address?.trim()) {
+      lines.push("", `**Lugar:** ${input.address.trim()}`);
+    }
+    if (input.mapsUrl?.trim()) {
+      lines.push(
+        "",
+        `**Ubicación en Google Maps:** ${mdLink(input.mapsUrl.trim(), input.mapsUrl.trim())}`,
+      );
+    }
+    if (input.parking?.trim()) {
+      lines.push("", `**Estacionamiento:** ${input.parking.trim()}`);
+    }
+  }
+
+  if (input.unofficialEvents?.trim()) {
+    lines.push(
+      "",
+      "## Eventos no oficiales",
+      "",
+      input.unofficialEvents.trim(),
+    );
+  }
+
+  lines.push(
+    "",
+    "## Importante para competidores nuevos",
+    "",
+    "Si esta es tu primera competencia oficial, debes llevar un documento oficial para verificar tu nombre y nacionalidad. Puede ser:",
+    "",
+    "- Pasaporte",
+    "- INE",
+    "- CURP o acta de nacimiento (para menores de edad)",
+    "",
+    "## Grupos y asignaciones de tareas",
+    "",
+    "Tus asignaciones estarán impresas en la parte posterior de tu gafete.",
+  );
+  if (groupsUrl) {
+    lines.push(
+      "",
+      "También puedes consultarlas en el siguiente enlace:",
+      "",
+      mdLink(groupsUrl, groupsUrl),
+    );
+  }
+  lines.push(
+    "",
+    "Les recordamos que es muy importante que todos los competidores cumplan con sus tareas asignadas (como jueces, mezcladores o corredores) para asegurar que la competencia se desarrolle de manera fluida y sin retrasos.",
+    "",
+    "## Resultados en vivo",
+    "",
+    "Sigue los resultados en tiempo real en ILR:",
+    "",
+    mdLink(input.ilrUrl, input.ilrUrl),
+  );
+
+  if (input.thanks?.trim()) {
+    lines.push("", "## Agradecimientos", "", input.thanks.trim());
+  }
+
+  lines.push(
+    "",
+    `¡Nos vemos el ${input.dateLabel} para disfrutar de un gran día de diversión y competencia!`,
+    "",
+    "Atentamente,",
+    "",
+    `**Equipo Organizador de ${input.competitionName}**`,
+  );
+
+  return lines.join("\n");
+}
+
+export type CompetitionTeamFooterPerson = {
+  name: string;
+  image?: string | null;
+  role: "organizador" | "delegado";
+};
+
+function footerInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
+}
+
+/** Email-safe footer: AMS logo + organizers/delegates (avatar or initials). */
+export function competitionTeamEmailFooterHtml(input: {
+  people: CompetitionTeamFooterPerson[];
+}) {
+  const { navy, soft, white, logoUrl, fontStack } = AMS_EMAIL;
+  const people = input.people.filter((person) => person.name.trim());
+
+  const logoCell = `<td valign="middle" style="padding:8px 16px 8px 0;">
+  <img src="${logoUrl}" alt="AMS" width="56" height="32" style="display:block;width:56px;height:32px;border:0;"/>
+</td>`;
+
+  const personCells = people
+    .map((person) => {
+      const roleLabel =
+        person.role === "delegado" ? "DELEGADO" : "ORGANIZADOR";
+      const avatar = person.image?.trim()
+        ? `<img src="${escapeHtml(person.image.trim())}" alt="" width="48" height="48" style="display:block;width:48px;height:48px;border-radius:50%;border:0;object-fit:cover;"/>`
+        : `<div style="width:48px;height:48px;border-radius:50%;background-color:${navy};color:${white};font-family:${fontStack};font-size:14px;font-weight:700;line-height:48px;text-align:center;">${escapeHtml(footerInitials(person.name))}</div>`;
+
+      return `<td valign="top" align="center" style="padding:8px 12px;min-width:96px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+    <tr><td align="center">${avatar}</td></tr>
+    <tr><td align="center" style="padding-top:8px;font-family:${fontStack};font-size:12px;font-weight:700;line-height:1.3;color:${navy};">${escapeHtml(person.name.trim())}</td></tr>
+    <tr><td align="center" style="padding-top:4px;border-top:1px solid ${navy};font-family:${fontStack};font-size:10px;letter-spacing:0.04em;color:${navy};">${roleLabel}</td></tr>
+  </table>
+</td>`;
+    })
+    .join("");
+
+  if (!personCells) {
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;padding-top:16px;border-top:1px solid #e8e8e8;">
+  <tr>${logoCell}</tr>
+</table>`;
+  }
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;padding-top:16px;border-top:1px solid #e8e8e8;background-color:${soft};">
+  <tr>
+    ${logoCell}
+    <td valign="middle">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>${personCells}</tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}

@@ -80,6 +80,10 @@ import {
   isFinalEmailCard,
 } from "./card-dialog/card-final-email-section";
 import {
+  CardInformativeEmailSection,
+  isInformativeEmailCard,
+} from "./card-dialog/card-informative-email-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
@@ -615,6 +619,14 @@ export function CardDialog({
                 cardId={card.id}
                 readOnly={readOnly}
                 isDelegate={canApproveCards}
+              />
+            ) : null}
+
+            {isInformativeEmailCard(card.title) ? (
+              <CardInformativeEmailSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
               />
             ) : null}
 

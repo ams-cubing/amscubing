@@ -4,8 +4,12 @@ import {
   AMS_EMAIL,
   boardNotificationEmail,
   competitionBudgetSummaryTableHtml,
+  competitionGroupsUrl,
   competitionIlrUrl,
+  competitionInformativeMarkdownBody,
+  competitionInformativeSubject,
   competitionStatusChangedEmail,
+  competitionTeamEmailFooterHtml,
   competitionThankYouEmail,
   competitionThankYouSubject,
   dateRequestDeclinedOrganizerEmail,
@@ -240,5 +244,53 @@ describe("competitionThankYouEmail", () => {
     expect(html).toContain("Inscripciones");
     expect(html).toContain("Remanente");
     expect(html).not.toContain("{{resumen_gastos}}");
+  });
+});
+
+describe("competitionInformativeEmail", () => {
+  it("seeds markdown with ILR and omits empty optionals", () => {
+    expect(
+      competitionInformativeSubject({ competitionName: "UPEN Open 2026" }),
+    ).toBe("UPEN Open 2026 - Información previa a la competencia");
+    expect(competitionGroupsUrl("UPENOpen2026")).toContain(
+      "competitiongroups.com/competitions/UPENOpen2026",
+    );
+
+    const markdown = competitionInformativeMarkdownBody({
+      competitionName: "UPEN Open 2026",
+      dateLabel: "20 de noviembre de 2026",
+      placeLabel: "Pachuca, Hidalgo",
+      wcaCompetitionUrl:
+        "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
+      ilrUrl: competitionIlrUrl("UPENOpen2026"),
+      groupsUrl: competitionGroupsUrl("UPENOpen2026"),
+      checkIn: "Sábado 8:00",
+    });
+
+    expect(markdown).toContain("ILR");
+    expect(markdown).toContain("/competitions/UPENOpen2026/live");
+    expect(markdown).not.toContain("live.worldcubeassociation.org");
+    expect(markdown).toContain("**Check-in:** Sábado 8:00");
+    expect(markdown).not.toContain("Actualización importante");
+    expect(markdown).not.toContain("Eventos no oficiales");
+  });
+
+  it("renders team footer with roles and escaped names", () => {
+    const html = competitionTeamEmailFooterHtml({
+      people: [
+        { name: "Ana <Org>", image: null, role: "organizador" },
+        {
+          name: "Leo",
+          image: "https://example.com/a.png",
+          role: "delegado",
+        },
+      ],
+    });
+
+    expect(html).toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain("ORGANIZADOR");
+    expect(html).toContain("DELEGADO");
+    expect(html).toContain("Ana &lt;Org&gt;");
+    expect(html).toContain("https://example.com/a.png");
   });
 });

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -10,8 +10,6 @@ import { CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE } from "@workspace/db/data/ams-cham
 import { consumeRateLimit } from "@workspace/db/rate-limit";
 import {
   boards,
-  competitionDelegates,
-  competitionOrganizers,
   competitionSponsors,
   competitions,
   user,
@@ -21,6 +19,7 @@ import {
   BUDGET_SUMMARY_PLACEHOLDER,
   competitionBudgetSummaryTableHtml,
   competitionIlrUrl,
+  competitionTeamEmailFooterHtml,
   competitionThankYouMarkdownBody,
   competitionThankYouSubject,
   isDeliverableEmail,
@@ -32,18 +31,20 @@ import { log } from "@workspace/server/log";
 
 import { canAccessBoard } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
-import { getWcaAccessTokenForUser } from "@/lib/wca-access-token";
-import {
-  competitorRecipientsFromWcif,
-  fetchAuthenticatedWcif,
-  wcaCompetitionIdFromUrl,
-} from "@/lib/wca-authenticated-wcif";
+import { wcaCompetitionIdFromUrl } from "@/lib/wca-authenticated-wcif";
 
 import {
   assertCardOnBoard,
   requireBoardAccess,
   resolveSessionUserId,
 } from "../_lib/board-access";
+import {
+  assertCompetitionDelegateOrOrganizer,
+  formatCompetitionDateLabel,
+  loadRecipientsForCompetition,
+  placeLabel,
+  teamFooterPeopleFromCompetition,
+} from "../_lib/competitor-email";
 
 const FINAL_EMAIL_TITLES = new Set([
   FINAL_EMAIL_CARD_TITLE,
@@ -103,58 +104,22 @@ async function loadCompetitionForBoard(boardId: number) {
     },
     with: {
       state: { columns: { name: true } },
+      delegates: {
+        with: {
+          delegate: {
+            columns: { id: true, name: true, image: true, wcaId: true },
+          },
+        },
+      },
+      organizers: {
+        with: {
+          organizer: {
+            columns: { id: true, name: true, image: true, wcaId: true },
+          },
+        },
+      },
     },
   });
-}
-
-async function assertCompetitionDelegateOrOrganizer(input: {
-  competitionId: number;
-  userId: string;
-  wcaId: string | null;
-}): Promise<ActionFail | { ok: true }> {
-  const [asOrganizer, asDelegate] = await Promise.all([
-    db.query.competitionOrganizers.findFirst({
-      where: and(
-        eq(competitionOrganizers.competitionId, input.competitionId),
-        eq(competitionOrganizers.organizerUserId, input.userId),
-      ),
-      columns: { organizerUserId: true },
-    }),
-    input.wcaId
-      ? db.query.competitionDelegates.findFirst({
-          where: and(
-            eq(competitionDelegates.competitionId, input.competitionId),
-            eq(competitionDelegates.delegateWcaId, input.wcaId),
-          ),
-          columns: { delegateWcaId: true },
-        })
-      : Promise.resolve(undefined),
-  ]);
-
-  if (!asOrganizer && !asDelegate) {
-    return {
-      ok: false,
-      message:
-        "Solo delegados u organizadores de la competencia pueden enviar este correo.",
-    };
-  }
-  return { ok: true };
-}
-
-function formatCompetitionDateLabel(startDate: string, endDate: string) {
-  const format = new Intl.DateTimeFormat("es-MX", {
-    dateStyle: "long",
-    timeZone: "America/Mexico_City",
-  });
-  const start = format.format(new Date(`${startDate}T12:00:00`));
-  if (startDate === endDate) return start;
-  const end = format.format(new Date(`${endDate}T12:00:00`));
-  return `${start} – ${end}`;
-}
-
-function placeLabel(city: string, stateName: string | null | undefined) {
-  const state = stateName?.trim();
-  return state ? `${city}, ${state}` : city;
 }
 
 function buildSeedDraft(input: {
@@ -276,33 +241,6 @@ async function loadBudgetSummaryForEmail(competitionId: number) {
       actualNetCents: sheet.summary.actualNetCents,
     },
   };
-}
-
-async function loadRecipientsForCompetition(input: {
-  userId: string;
-  wcaCompetitionUrl: string | null;
-}) {
-  const wcaId = wcaCompetitionIdFromUrl(input.wcaCompetitionUrl);
-  if (!wcaId) {
-    return {
-      ok: false as const,
-      message:
-        "Guarda la URL de la WCA en la tarjeta Sitio web (WCA) antes de enviar el correo.",
-    };
-  }
-
-  const token = await getWcaAccessTokenForUser(input.userId);
-  if (!token.ok) {
-    return { ok: false as const, message: token.message };
-  }
-
-  const wcif = await fetchAuthenticatedWcif(wcaId, token.accessToken);
-  if (!wcif.ok) {
-    return { ok: false as const, message: wcif.message };
-  }
-
-  const recipients = competitorRecipientsFromWcif(wcif.wcif.persons);
-  return { ok: true as const, recipients, wcaId };
 }
 
 export type FinalEmailDraftData = {
@@ -587,12 +525,15 @@ export async function sendFinalEmail(
     })
     .where(eq(competitions.id, competition.id));
 
+  const teamFooter = competitionTeamEmailFooterHtml({
+    people: teamFooterPeopleFromCompetition(competition),
+  });
   const html = renderEmailLayout({
     previewText: input.subject,
     title: input.subject,
-    bodyHtml: markdownEmailBodyToHtml(bodyWithOptionalLinks, {
+    bodyHtml: `${markdownEmailBodyToHtml(bodyWithOptionalLinks, {
       budgetSummaryHtml: competitionBudgetSummaryTableHtml(budgetSummary),
-    }),
+    })}${teamFooter}`,
   });
   const batch = loaded.recipients.map((recipient) => ({
     to: recipient.email,

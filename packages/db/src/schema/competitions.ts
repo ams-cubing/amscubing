@@ -135,6 +135,24 @@ export const competitions = pgTable("competition", {
   ),
   finalEmailRecipientCount: integer("final_email_recipient_count"),
 
+  informativeEmailSubject: text("informative_email_subject"),
+  informativeEmailBody: text("informative_email_body"),
+  informativeEmailUpdateNote: text("informative_email_update_note"),
+  informativeEmailCheckIn: text("informative_email_check_in"),
+  informativeEmailTutorialTime: text("informative_email_tutorial_time"),
+  informativeEmailScheduleUrl: text("informative_email_schedule_url"),
+  informativeEmailAddress: text("informative_email_address"),
+  informativeEmailMapsUrl: text("informative_email_maps_url"),
+  informativeEmailParking: text("informative_email_parking"),
+  informativeEmailUnofficialEvents: text("informative_email_unofficial_events"),
+  informativeEmailGroupsUrl: text("informative_email_groups_url"),
+  informativeEmailThanks: text("informative_email_thanks"),
+  informativeEmailSentAt: timestamp("informative_email_sent_at"),
+  informativeEmailSentByUserId: text(
+    "informative_email_sent_by_user_id",
+  ).references(() => user.id, { onDelete: "set null" }),
+  informativeEmailRecipientCount: integer("informative_email_recipient_count"),
+
   boardId: integer("board_id").references((): AnyPgColumn => boards.id, {
     onDelete: "set null",
   }),
