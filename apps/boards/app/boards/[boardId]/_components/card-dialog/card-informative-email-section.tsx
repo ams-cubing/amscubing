@@ -49,10 +49,6 @@ export function CardInformativeEmailSection({
   const [subject, setSubject] = React.useState("");
   const [body, setBody] = React.useState("");
   const [updateNote, setUpdateNote] = React.useState("");
-  const [checkIn, setCheckIn] = React.useState("");
-  const [tutorialTime, setTutorialTime] = React.useState("");
-  const [scheduleUrl, setScheduleUrl] = React.useState("");
-  const [address, setAddress] = React.useState("");
   const [mapsUrl, setMapsUrl] = React.useState("");
   const [parking, setParking] = React.useState("");
   const [unofficialEvents, setUnofficialEvents] = React.useState("");
@@ -85,10 +81,6 @@ export function CardInformativeEmailSection({
         setSubject(result.data.subject);
         setBody(result.data.body);
         setUpdateNote(result.data.updateNote);
-        setCheckIn(result.data.checkIn);
-        setTutorialTime(result.data.tutorialTime);
-        setScheduleUrl(result.data.scheduleUrl);
-        setAddress(result.data.address);
         setMapsUrl(result.data.mapsUrl);
         setParking(result.data.parking);
         setUnofficialEvents(result.data.unofficialEvents);
@@ -108,28 +100,12 @@ export function CardInformativeEmailSection({
       subject,
       body,
       updateNote,
-      checkIn,
-      tutorialTime,
-      scheduleUrl,
-      address,
       mapsUrl,
       parking,
       unofficialEvents,
       thanks,
     }),
-    [
-      subject,
-      body,
-      updateNote,
-      checkIn,
-      tutorialTime,
-      scheduleUrl,
-      address,
-      mapsUrl,
-      parking,
-      unofficialEvents,
-      thanks,
-    ],
+    [subject, body, updateNote, mapsUrl, parking, unofficialEvents, thanks],
   );
 
   const persistDraft = React.useCallback(async () => {
@@ -194,6 +170,11 @@ export function CardInformativeEmailSection({
   const editable = data.canSend && !readOnly;
   const alreadySent = Boolean(data.sentAt);
   const checkInHref = `/boards/${board.id}/registro/check-in`;
+  const hasWcaAuto =
+    Boolean(data.address?.trim()) ||
+    Boolean(data.checkIn?.trim()) ||
+    Boolean(data.tutorialTime?.trim()) ||
+    Boolean(data.scheduleOverview?.trim());
 
   const runPreview = () => {
     startPreview(async () => {
@@ -245,7 +226,8 @@ export function CardInformativeEmailSection({
         <p className="text-muted-foreground mt-1 text-xs leading-5">
           Se envía a competidores aceptados del WCIF autenticado (un correo por
           persona). El cuerpo admite Markdown; el pie con el logo de la
-          competencia y el equipo se agrega al enviar.
+          competencia y el equipo se agrega al enviar. Dirección, check-in,
+          tutorial y resumen de horario salen de la WCA / WCIF público.
         </p>
       </div>
 
@@ -324,6 +306,51 @@ export function CardInformativeEmailSection({
         </div>
       ) : null}
 
+      {hasWcaAuto ? (
+        <div className="space-y-2 rounded-md border border-dashed bg-muted/10 p-3 text-xs leading-5">
+          <p className="font-medium">Datos tomados de la WCA / WCIF</p>
+          {data.address?.trim() ? (
+            <p>
+              <span className="text-muted-foreground">Dirección: </span>
+              {data.address.trim()}
+            </p>
+          ) : null}
+          {data.checkIn?.trim() ? (
+            <p>
+              <span className="text-muted-foreground">Check-in: </span>
+              {data.checkIn.trim()}
+            </p>
+          ) : null}
+          {data.tutorialTime?.trim() ? (
+            <p>
+              <span className="text-muted-foreground">Tutorial: </span>
+              {data.tutorialTime.trim()}
+            </p>
+          ) : null}
+          {data.scheduleUrl?.trim() ? (
+            <p>
+              <span className="text-muted-foreground">Horario: </span>
+              <a
+                href={data.scheduleUrl.trim()}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                {data.scheduleUrl.trim()}
+              </a>
+            </p>
+          ) : null}
+          {data.scheduleOverview?.trim() ? (
+            <div className="space-y-1">
+              <p className="text-muted-foreground">Resumen del horario:</p>
+              <pre className="whitespace-pre-wrap font-sans">
+                {data.scheduleOverview.trim()}
+              </pre>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor={`info-email-update-${cardId}`}>
@@ -335,50 +362,6 @@ export function CardInformativeEmailSection({
             onChange={(event) => setUpdateNote(event.target.value)}
             disabled={!editable || sendPending}
             rows={2}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`info-email-checkin-${cardId}`}>
-            Check-in (día – hora)
-          </Label>
-          <Input
-            id={`info-email-checkin-${cardId}`}
-            value={checkIn}
-            onChange={(event) => setCheckIn(event.target.value)}
-            disabled={!editable || sendPending}
-            placeholder="Sábado – 8:00"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`info-email-tutorial-${cardId}`}>
-            Tutorial nuevos (hora)
-          </Label>
-          <Input
-            id={`info-email-tutorial-${cardId}`}
-            value={tutorialTime}
-            onChange={(event) => setTutorialTime(event.target.value)}
-            disabled={!editable || sendPending}
-            placeholder="8:30"
-          />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor={`info-email-schedule-${cardId}`}>
-            Enlace al horario
-          </Label>
-          <Input
-            id={`info-email-schedule-${cardId}`}
-            value={scheduleUrl}
-            onChange={(event) => setScheduleUrl(event.target.value)}
-            disabled={!editable || sendPending}
-          />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor={`info-email-address-${cardId}`}>Dirección</Label>
-          <Input
-            id={`info-email-address-${cardId}`}
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
-            disabled={!editable || sendPending}
           />
         </div>
         <div className="space-y-2">

@@ -740,6 +740,8 @@ export type CompetitionInformativeEmailInput = {
   updateNote?: string | null;
   checkIn?: string | null;
   tutorialTime?: string | null;
+  /** Markdown bullet list of top-level WCIF activities. */
+  scheduleOverview?: string | null;
   address?: string | null;
   mapsUrl?: string | null;
   parking?: string | null;
@@ -792,6 +794,16 @@ export function competitionInformativeMarkdownBody(
   lines.push(
     "",
     "Les pedimos ser puntuales para recoger su gafete de competidor en la mesa de registro, el cual será necesario durante el evento.",
+  );
+  if (input.scheduleOverview?.trim()) {
+    lines.push(
+      "",
+      "Resumen del horario (según el WCIF de la competencia):",
+      "",
+      input.scheduleOverview.trim(),
+    );
+  }
+  lines.push(
     "",
     "Consulta el horario completo y actualizado en la página oficial:",
     "",

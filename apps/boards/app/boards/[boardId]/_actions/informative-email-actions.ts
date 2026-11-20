@@ -24,6 +24,7 @@ import { log } from "@workspace/server/log";
 
 import { canAccessBoard } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
+import { loadInformativeEmailWcaDefaults } from "@/lib/wca-informative-defaults";
 import { wcaCompetitionIdFromUrl } from "@/lib/wca-authenticated-wcif";
 
 import {
@@ -132,7 +133,7 @@ function resolvedGroupsUrl(wcaCompetitionUrl: string | null | undefined) {
   return wcaId ? competitionGroupsUrl(wcaId) : "";
 }
 
-function buildSeedDraft(competition: NonNullable<
+async function buildSeedDraft(competition: NonNullable<
   Awaited<ReturnType<typeof loadCompetitionForBoard>>
 >) {
   const wcaId =
@@ -141,18 +142,24 @@ function buildSeedDraft(competition: NonNullable<
     competition.wcaCompetitionUrl?.trim() ||
     `https://www.worldcubeassociation.org/competitions/${wcaId}`;
   const competitionName = competition.name?.trim() || "la competencia";
+  const wcaDefaults = await loadInformativeEmailWcaDefaults(
+    competition.wcaCompetitionUrl,
+  );
 
   const fields = {
     updateNote: competition.informativeEmailUpdateNote ?? "",
-    checkIn: competition.informativeEmailCheckIn ?? "",
-    tutorialTime: competition.informativeEmailTutorialTime ?? "",
-    scheduleUrl:
-      competition.informativeEmailScheduleUrl?.trim() || wcaCompetitionUrl,
-    address: competition.informativeEmailAddress ?? "",
+    // Auto from public WCIF / WCA (not editable in the form).
+    checkIn: wcaDefaults.checkIn || competition.informativeEmailCheckIn || "",
+    tutorialTime:
+      wcaDefaults.tutorialTime ||
+      competition.informativeEmailTutorialTime ||
+      "",
+    scheduleUrl: wcaCompetitionUrl,
+    address: wcaDefaults.address || competition.informativeEmailAddress || "",
+    scheduleOverview: wcaDefaults.scheduleOverview || "",
     mapsUrl: competition.informativeEmailMapsUrl ?? "",
     parking: competition.informativeEmailParking ?? "",
     unofficialEvents: competition.informativeEmailUnofficialEvents ?? "",
-    // Always from WCA id — not editable in the compose form.
     groupsUrl: competitionGroupsUrl(wcaId),
     thanks: competition.informativeEmailThanks ?? "",
   };
@@ -171,6 +178,7 @@ function buildSeedDraft(competition: NonNullable<
     updateNote: fields.updateNote || null,
     checkIn: fields.checkIn || null,
     tutorialTime: fields.tutorialTime || null,
+    scheduleOverview: wcaDefaults.scheduleOverview || null,
     address: fields.address || null,
     mapsUrl: fields.mapsUrl || null,
     parking: fields.parking || null,
@@ -195,6 +203,7 @@ function appendOptionalFieldsToBody(
     updateNote: string | null;
     checkIn: string | null;
     tutorialTime: string | null;
+    scheduleOverview: string | null;
     scheduleUrl: string | null;
     address: string | null;
     mapsUrl: string | null;
@@ -215,14 +224,26 @@ function appendOptionalFieldsToBody(
   pushSection("Actualización importante", fields.updateNote);
   if (
     (fields.checkIn?.trim() && !body.includes(fields.checkIn.trim())) ||
-    (fields.tutorialTime?.trim() && !body.includes(fields.tutorialTime.trim()))
+    (fields.tutorialTime?.trim() &&
+      !body.includes(fields.tutorialTime.trim())) ||
+    (fields.scheduleOverview?.trim() &&
+      !body.includes(fields.scheduleOverview.trim()))
   ) {
     const bits = [
-      fields.checkIn?.trim()
+      fields.checkIn?.trim() && !body.includes(fields.checkIn.trim())
         ? `**Check-in:** ${fields.checkIn.trim()}`
         : null,
-      fields.tutorialTime?.trim()
+      fields.tutorialTime?.trim() &&
+      !body.includes(fields.tutorialTime.trim())
         ? `**Tutorial para nuevos competidores:** ${fields.tutorialTime.trim()}`
+        : null,
+      fields.scheduleOverview?.trim() &&
+      !body.includes(fields.scheduleOverview.trim())
+        ? [
+            "Resumen del horario (según el WCIF de la competencia):",
+            "",
+            fields.scheduleOverview.trim(),
+          ].join("\n")
         : null,
     ].filter((bit): bit is string => Boolean(bit));
     if (bits.length > 0 && !body.includes("## Check-in")) {
@@ -279,10 +300,16 @@ export type InformativeEmailDraftData = {
   subject: string;
   body: string;
   updateNote: string;
+  /** Auto from public WCIF (`other-checkin` / `other-registration`). */
   checkIn: string;
+  /** Auto from public WCIF (`other-tutorial`). */
   tutorialTime: string;
+  /** WCA competition page (schedule lives there). */
   scheduleUrl: string;
+  /** Auto from public WCA venue fields. */
   address: string;
+  /** Markdown bullet list of top-level WCIF activities. */
+  scheduleOverview: string;
   mapsUrl: string;
   parking: string;
   unofficialEvents: string;
@@ -318,7 +345,7 @@ export async function loadInformativeEmailCard(input: {
     userId,
     wcaId: session.user.wcaId,
   });
-  const draft = buildSeedDraft(competition);
+  const draft = await buildSeedDraft(competition);
 
   return {
     ok: true,
@@ -339,10 +366,6 @@ const draftSchema = z.object({
   subject: z.string().trim().min(1).max(300),
   body: z.string().trim().min(1).max(20000),
   updateNote: optionalText,
-  checkIn: optionalText,
-  tutorialTime: optionalText,
-  scheduleUrl: optionalUrl,
-  address: optionalText,
   mapsUrl: optionalUrl,
   parking: optionalText,
   unofficialEvents: optionalText,
@@ -387,16 +410,21 @@ export async function saveInformativeEmailDraft(
     };
   }
 
+  const wcaDefaults = await loadInformativeEmailWcaDefaults(
+    competition.wcaCompetitionUrl,
+  );
+  const wcaCompetitionUrl = competition.wcaCompetitionUrl?.trim() || null;
+
   await db
     .update(competitions)
     .set({
       informativeEmailSubject: input.subject,
       informativeEmailBody: input.body,
       informativeEmailUpdateNote: input.updateNote,
-      informativeEmailCheckIn: input.checkIn,
-      informativeEmailTutorialTime: input.tutorialTime,
-      informativeEmailScheduleUrl: input.scheduleUrl,
-      informativeEmailAddress: input.address,
+      informativeEmailCheckIn: wcaDefaults.checkIn || null,
+      informativeEmailTutorialTime: wcaDefaults.tutorialTime || null,
+      informativeEmailScheduleUrl: wcaCompetitionUrl,
+      informativeEmailAddress: wcaDefaults.address || null,
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,
       informativeEmailUnofficialEvents: input.unofficialEvents,
@@ -539,14 +567,19 @@ export async function sendInformativeEmail(
   const replyTo =
     sender && isDeliverableEmail(sender.email) ? sender.email : undefined;
 
+  const wcaDefaults = await loadInformativeEmailWcaDefaults(
+    competition.wcaCompetitionUrl,
+  );
+  const wcaCompetitionUrl = competition.wcaCompetitionUrl?.trim() || null;
   const groupsUrl =
     resolvedGroupsUrl(competition.wcaCompetitionUrl) || null;
   const bodyWithOptionals = appendOptionalFieldsToBody(input.body, {
     updateNote: input.updateNote,
-    checkIn: input.checkIn,
-    tutorialTime: input.tutorialTime,
-    scheduleUrl: input.scheduleUrl,
-    address: input.address,
+    checkIn: wcaDefaults.checkIn || null,
+    tutorialTime: wcaDefaults.tutorialTime || null,
+    scheduleOverview: wcaDefaults.scheduleOverview || null,
+    scheduleUrl: wcaCompetitionUrl,
+    address: wcaDefaults.address || null,
     mapsUrl: input.mapsUrl,
     parking: input.parking,
     unofficialEvents: input.unofficialEvents,
@@ -560,10 +593,10 @@ export async function sendInformativeEmail(
       informativeEmailSubject: input.subject,
       informativeEmailBody: input.body,
       informativeEmailUpdateNote: input.updateNote,
-      informativeEmailCheckIn: input.checkIn,
-      informativeEmailTutorialTime: input.tutorialTime,
-      informativeEmailScheduleUrl: input.scheduleUrl,
-      informativeEmailAddress: input.address,
+      informativeEmailCheckIn: wcaDefaults.checkIn || null,
+      informativeEmailTutorialTime: wcaDefaults.tutorialTime || null,
+      informativeEmailScheduleUrl: wcaCompetitionUrl,
+      informativeEmailAddress: wcaDefaults.address || null,
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,
       informativeEmailUnofficialEvents: input.unofficialEvents,

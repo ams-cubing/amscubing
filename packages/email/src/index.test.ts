@@ -265,12 +265,16 @@ describe("competitionInformativeEmail", () => {
       ilrUrl: competitionIlrUrl("UPENOpen2026"),
       groupsUrl: competitionGroupsUrl("UPENOpen2026"),
       checkIn: "Sábado 8:00",
+      scheduleOverview: "- sábado 16 de mayo – 8:00–9:00 — Check-in",
+      address: "Auditorio UPEN — Av. Ejemplo 1",
     });
 
     expect(markdown).toContain("ILR");
     expect(markdown).toContain("/competitions/UPENOpen2026/live");
     expect(markdown).not.toContain("live.worldcubeassociation.org");
     expect(markdown).toContain("**Check-in:** Sábado 8:00");
+    expect(markdown).toContain("Resumen del horario");
+    expect(markdown).toContain("**Lugar:** Auditorio UPEN — Av. Ejemplo 1");
     expect(markdown).not.toContain("Actualización importante");
     expect(markdown).not.toContain("Eventos no oficiales");
   });
