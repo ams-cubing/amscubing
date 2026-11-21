@@ -169,20 +169,35 @@ describe("email templates escape HTML", () => {
 });
 
 describe("sendEmail", () => {
-  it("skips send when RESEND_API_KEY is unset", async () => {
-    const original = process.env.RESEND_API_KEY;
-    delete process.env.RESEND_API_KEY;
-
+  it("simulates send outside production", async () => {
     const result = await sendEmail({
       to: "user@example.com",
       subject: "Test",
       html: "<p>Hi</p>",
     });
 
-    expect(result).toEqual({ ok: false, reason: "missing_api_key" });
+    expect(result).toEqual({ ok: true, reason: "simulated" });
+  });
 
-    if (original) {
-      process.env.RESEND_API_KEY = original;
+  it("skips send when live and RESEND_API_KEY is unset", async () => {
+    const originalKey = process.env.RESEND_API_KEY;
+    const originalLive = process.env.AMS_LIVE_EXTERNAL;
+    delete process.env.RESEND_API_KEY;
+    process.env.AMS_LIVE_EXTERNAL = "1";
+
+    try {
+      const result = await sendEmail({
+        to: "user@example.com",
+        subject: "Test",
+        html: "<p>Hi</p>",
+      });
+
+      expect(result).toEqual({ ok: false, reason: "missing_api_key" });
+    } finally {
+      if (originalKey) process.env.RESEND_API_KEY = originalKey;
+      else delete process.env.RESEND_API_KEY;
+      if (originalLive) process.env.AMS_LIVE_EXTERNAL = originalLive;
+      else delete process.env.AMS_LIVE_EXTERNAL;
     }
   });
 });

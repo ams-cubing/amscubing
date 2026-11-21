@@ -6,7 +6,10 @@ import Image from "next/image";
 import { toast } from "sonner";
 
 import { SOCIAL_PUBLISH_CARD_TITLE } from "@workspace/db/data/ams-board-template";
-import { classifyCompetitionSocialStatus } from "@workspace/social/status";
+import {
+  classifyCompetitionSocialStatus,
+  facebookPostHref,
+} from "@workspace/social/status";
 import { Button } from "@workspace/ui/components/button";
 import { CompetitionSocialStatusPanel } from "@workspace/ui/components/competition-social-status-panel";
 import { Input } from "@workspace/ui/components/input";
@@ -35,9 +38,6 @@ type PreviewState =
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-function facebookUrl(facebookPostId: string) {
-  return `https://www.facebook.com/${facebookPostId}`;
-}
 
 function checklistItem(ok: boolean, okLabel: string, missingLabel: string) {
   return {
@@ -282,11 +282,7 @@ export function CardSocialPublishSection({
         className="border-0 bg-muted/20 p-3 shadow-none"
         status={socialStatus}
         facebookPostId={competition.facebookPostId}
-        facebookUrl={
-          competition.facebookPostId
-            ? facebookUrl(competition.facebookPostId)
-            : null
-        }
+        facebookUrl={facebookPostHref(competition.facebookPostId)}
         instagramMediaId={competition.instagramMediaId}
         announcedPostedAt={competition.announcedPostedAt}
         canRetry={canManageSocialPublish}

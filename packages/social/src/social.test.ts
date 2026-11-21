@@ -434,6 +434,10 @@ describe("facebookPostUrl", () => {
   it("builds a facebook.com URL from a post id", () => {
     expect(facebookPostUrl("123_456")).toBe("https://www.facebook.com/123_456");
   });
+
+  it("returns null for simulated staging ids", () => {
+    expect(facebookPostUrl("sim:fb:abc")).toBeNull();
+  });
 });
 
 describe("coverInputsFingerprint", () => {

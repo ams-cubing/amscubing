@@ -21,6 +21,7 @@ import { notificationAppUrls } from "@/lib/notification-urls";
 import { getErrorMessage } from "@/lib/handle-error";
 import { requireDelegate } from "@/lib/session";
 import { syncAnnouncedCompetitionFromWcaBestEffort } from "@/lib/sync-competition-from-wca";
+import { isLiveExternalSideEffectsEnabled } from "@workspace/server/external-side-effects";
 import { log } from "@workspace/server/log";
 
 export async function markAsAnnounced(
@@ -204,12 +205,16 @@ export async function markAsAnnounced(
     const baseMessage = social.instagramMediaId
       ? "Competencia anunciada y publicada en Facebook e Instagram"
       : "Competencia anunciada y publicada en Facebook (sin imagen: Instagram omitido)";
+    const simulatedSuffix = isLiveExternalSideEffectsEnabled()
+      ? ""
+      : " (simulado: sin publicar en redes)";
+    const withSim = `${baseMessage}${simulatedSuffix}`;
 
     return {
       success: true,
       message: sync.ok
-        ? baseMessage
-        : `${baseMessage}. Aviso: no se sincronizaron los datos desde la WCA.`,
+        ? withSim
+        : `${withSim}. Aviso: no se sincronizaron los datos desde la WCA.`,
     };
   } catch (error) {
     log.error("calendar.mark_announced_failed", { error });

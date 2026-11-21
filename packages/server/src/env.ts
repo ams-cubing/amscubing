@@ -113,6 +113,11 @@ export const emailEnv = {
   optional: ["RESEND_API_KEY"],
 } as const satisfies EnvSpec;
 
+/** Optional overrides for Meta/Resend dry-run vs live (see external-side-effects). */
+export const externalSideEffectsEnv = {
+  optional: ["AMS_EXTERNAL_DRY_RUN", "AMS_LIVE_EXTERNAL"],
+} as const satisfies EnvSpec;
+
 export const uploadthingEnv = {
   optional: ["UPLOADTHING_TOKEN"],
 } as const satisfies EnvSpec;

@@ -5,6 +5,22 @@ export type CompetitionSocialStatus =
   | "manual"
   | "missing";
 
+/** Matches `@workspace/server/external-side-effects` simulated Meta ids. */
+const SIMULATED_EXTERNAL_ID_PREFIX = "sim:";
+
+/** Public Facebook post URL, or null for simulated staging ids. */
+export function facebookPostHref(
+  facebookPostId: string | null | undefined,
+): string | null {
+  if (
+    !facebookPostId ||
+    facebookPostId.startsWith(SIMULATED_EXTERNAL_ID_PREFIX)
+  ) {
+    return null;
+  }
+  return `https://www.facebook.com/${facebookPostId}`;
+}
+
 export type ClassifyCompetitionSocialStatusInput = {
   statusPublic: string;
   facebookPostId: string | null | undefined;

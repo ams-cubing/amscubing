@@ -423,7 +423,8 @@ describe("markAsAnnounced", () => {
 
     expect(result).toEqual({
       success: true,
-      message: "Competencia anunciada y publicada en Facebook e Instagram",
+      message:
+        "Competencia anunciada y publicada en Facebook e Instagram (simulado: sin publicar en redes)",
     });
     expect(publishCompetitionSocialAnnouncement).toHaveBeenCalledOnce();
     expect(transaction).toHaveBeenCalledOnce();

@@ -8,6 +8,7 @@ import {
   escapeHtml,
   renderEmailLayout,
 } from "./layout";
+import { isLiveExternalSideEffectsEnabled } from "@workspace/server/external-side-effects";
 import { log } from "@workspace/server/log";
 
 export { AMS_EMAIL, escapeHtml, renderEmailLayout } from "./layout";
@@ -45,6 +46,14 @@ export type SendEmailInput = {
 };
 
 export async function sendEmail(input: SendEmailInput) {
+  if (!isLiveExternalSideEffectsEnabled()) {
+    log.info("email.send_simulated", {
+      to: input.to,
+      subject: input.subject,
+    });
+    return { ok: true as const, reason: "simulated" as const };
+  }
+
   const resend = getResend();
   if (!resend) {
     log.warn("email.skipped_missing_api_key");
@@ -72,6 +81,14 @@ export async function sendEmail(input: SendEmailInput) {
 export async function sendEmails(inputs: SendEmailInput[]) {
   if (inputs.length === 0) {
     return { ok: true as const, sent: 0 };
+  }
+
+  if (!isLiveExternalSideEffectsEnabled()) {
+    log.info("email.batch_send_simulated", {
+      count: inputs.length,
+      subjects: [...new Set(inputs.map((email) => email.subject))],
+    });
+    return { ok: true as const, sent: inputs.length, reason: "simulated" as const };
   }
 
   const resend = getResend();

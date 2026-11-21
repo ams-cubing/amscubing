@@ -10,9 +10,16 @@ export async function register() {
     emailEnv,
     uploadthingEnv,
     wcaOAuthEnv,
+    externalSideEffectsEnv,
   } = await import("@workspace/server/env");
   assertEnv(
     "boards",
-    mergeEnvSpecs(coreEnv, emailEnv, uploadthingEnv, wcaOAuthEnv),
+    mergeEnvSpecs(
+      coreEnv,
+      emailEnv,
+      uploadthingEnv,
+      wcaOAuthEnv,
+      externalSideEffectsEnv,
+    ),
   );
 }

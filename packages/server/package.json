@@ -12,6 +12,7 @@
   },
   "exports": {
     "./env": "./src/env.ts",
+    "./external-side-effects": "./src/external-side-effects.ts",
     "./log": "./src/log.ts",
     "./security-headers": {
       "types": "./src/security-headers.d.mts",
