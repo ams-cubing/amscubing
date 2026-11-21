@@ -183,6 +183,9 @@ describe("saveCompetitionWcaUrl", () => {
         competitorLimit: null,
         registrationOpen: null,
         registrationClose: null,
+        startDate: null,
+        endDate: null,
+        mainEventId: null,
       },
     });
 

@@ -7,9 +7,17 @@ import { getDelegatePanelBadges } from "@/lib/delegate-panel-badges";
 import { auth } from "@/lib/auth";
 import {
   badgeCountForLink,
+  CREATE_COMPETITION_LINK,
   DELEGATE_PANEL_LINKS,
+  type DelegatePanelLink,
 } from "@/lib/delegate-panel-nav";
 import { headers } from "next/headers";
+
+const HUB_LINKS: readonly DelegatePanelLink[] = [
+  ...DELEGATE_PANEL_LINKS.slice(0, 2),
+  CREATE_COMPETITION_LINK,
+  ...DELEGATE_PANEL_LINKS.slice(2),
+];
 
 export default async function PanelHubPage() {
   const session = await auth.api.getSession({
@@ -25,12 +33,12 @@ export default async function PanelHubPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Panel de delegado</h1>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
-          Accede a competencias, solicitudes y herramientas del calendario.
+          Accede a competencias, solicitudes de fecha y disponibilidad.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {DELEGATE_PANEL_LINKS.map((item) => {
+        {HUB_LINKS.map((item) => {
           const count = badgeCountForLink(badges, item.badgeKey);
           const Icon = item.icon;
 

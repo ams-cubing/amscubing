@@ -35,6 +35,7 @@ import {
 import { DateRequestResponseControls } from "./date-request-response-controls";
 import { CompetitionSocialStatusSection } from "./competition-social-status-section";
 import { MultiCompetitionToggle } from "./multi-competition-toggle";
+import { SyncFromWcaButton } from "./sync-from-wca-button";
 
 type CompetitionDetail = NonNullable<
   Awaited<ReturnType<typeof getCompetitionWithRelations>>
@@ -337,6 +338,10 @@ export function CompetitionDetailView({
               </a>
             </Button>
           )}
+          {competition.statusPublic === "announced" &&
+            competition.wcaCompetitionUrl && (
+              <SyncFromWcaButton competitionId={competition.id} />
+            )}
         </div>
       </section>
     </div>

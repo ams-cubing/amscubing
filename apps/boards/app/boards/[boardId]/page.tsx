@@ -200,6 +200,7 @@ export default async function BoardPage({
         board={board}
         readOnly={isArchived}
         initialCardId={initialCardId}
+        canApproveCards={isDelegate}
         canManageSocialPublish={isDelegate}
         unreadByCard={unreadByCard}
       />

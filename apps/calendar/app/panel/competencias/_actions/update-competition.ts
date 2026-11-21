@@ -38,6 +38,7 @@ import {
   releaseCompetitionSocialPublish,
   SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
 } from "@workspace/social";
+import { syncAnnouncedCompetitionFromWcaBestEffort } from "@/lib/sync-competition-from-wca";
 import {
   holdAvailability,
   restoreAvailability,
@@ -580,13 +581,29 @@ export async function updateCompetition(
     revalidatePath("/panel");
     revalidatePath("/");
 
+    let message = "Competencia actualizada exitosamente";
+
+    if (transitioningToAnnounced) {
+      const sync = await syncAnnouncedCompetitionFromWcaBestEffort({
+        competitionId,
+        actorId: session.user.id,
+        wcaCompetitionUrl:
+          announcedSocial?.wcaCompetitionUrl ||
+          validatedData.wcaCompetitionUrl ||
+          null,
+      });
+      if (!sync.ok) {
+        message = `${message}. Aviso: no se sincronizaron los datos desde la WCA.`;
+      }
+    }
+
     if (announcedSocial) {
       await refreshTorneoDeRubikCoverBestEffort();
     }
 
     return {
       success: true,
-      message: "Competencia actualizada exitosamente",
+      message,
     };
   } catch (error) {
     log.error("calendar.update_competition_failed", { error });

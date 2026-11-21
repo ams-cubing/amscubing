@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { Suspense } from "react";
 import { forbidden } from "next/navigation";
 
@@ -30,7 +31,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-white/75">
             {access.isDelegate
-              ? "Gestiona perfiles públicos de delegados, las publicaciones en redes y los permisos del equipo."
+              ? "Gestiona perfiles públicos, redes, inventario, organizadores y permisos del equipo AMS."
               : "Gestiona los permisos del equipo AMS."}
           </p>
           <nav className="mt-6 flex flex-wrap gap-3">
@@ -41,6 +42,21 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <Link href="/admin/redes" className={TAB_CLASS}>
                   Redes
+                </Link>
+                <Link
+                  href={"/admin/tabuladores" as Route}
+                  className={TAB_CLASS}
+                >
+                  Tabuladores
+                </Link>
+                <Link href={"/admin/equipo" as Route} className={TAB_CLASS}>
+                  Equipo
+                </Link>
+                <Link
+                  href={"/admin/varias-competencias" as Route}
+                  className={TAB_CLASS}
+                >
+                  Varias competencias
                 </Link>
               </>
             )}

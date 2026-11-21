@@ -279,6 +279,143 @@ describe("moveCardAction", () => {
     expect(dbUpdate).toHaveBeenCalled();
     expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
   });
+
+  it("rejects moving cards that are in the Recursos list", async () => {
+    const { findFirstCard, findFirstBoardList, dbUpdate } = getBoardMocks();
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(cardId, { listTitle: "Recursos" }),
+    );
+    findFirstBoardList.mockResolvedValue({
+      id: toListId,
+      boardId,
+      title: "Hecho",
+    });
+
+    await expect(
+      moveCardAction({
+        boardId,
+        cardId,
+        toListId,
+        toPosition: 0,
+        orderedCardIdsInTargetList: [cardId],
+      }),
+    ).rejects.toThrow("Las tarjetas de Recursos no se pueden mover");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-delegates moving cards to Aprobado", async () => {
+    const { findFirstCard, findFirstBoardList, dbUpdate } = getBoardMocks();
+    mockAuthenticatedUser({ role: "user" });
+    findFirstCard.mockResolvedValue(cardOnBoard(cardId));
+    findFirstBoardList.mockResolvedValue({
+      id: toListId,
+      boardId,
+      title: "Aprobado",
+    });
+
+    await expect(
+      moveCardAction({
+        boardId,
+        cardId,
+        toListId,
+        toPosition: 0,
+        orderedCardIdsInTargetList: [cardId],
+      }),
+    ).rejects.toThrow("Solo un delegado puede mover tarjetas a Aprobado");
+
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("allows delegates to move cards to Aprobado", async () => {
+    const {
+      findFirstCard,
+      findFirstBoardList,
+      findFirstBoard,
+      dbUpdate,
+      maybeConfirmVenueFromApprovedCard,
+    } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstCard.mockResolvedValue(cardOnBoard(cardId));
+    findFirstBoardList.mockResolvedValue({
+      id: toListId,
+      boardId,
+      title: "Aprobado",
+    });
+    findFirstBoard.mockResolvedValue({
+      competitionId: null,
+      name: "Tablero",
+      competition: null,
+    });
+    dbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+
+    await moveCardAction({
+      boardId,
+      cardId,
+      toListId,
+      toPosition: 0,
+      orderedCardIdsInTargetList: [cardId],
+    });
+
+    expect(dbUpdate).toHaveBeenCalled();
+    expect(maybeConfirmVenueFromApprovedCard).not.toHaveBeenCalled();
+  });
+
+  it("confirms venue when a delegate approves Permiso de sede", async () => {
+    const {
+      findFirstCard,
+      findFirstBoardList,
+      findFirstBoard,
+      dbUpdate,
+      maybeConfirmVenueFromApprovedCard,
+      maybeNotifyReadinessSuggestion,
+    } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(cardId, { title: "Permiso de sede" }),
+    );
+    findFirstBoardList.mockResolvedValue({
+      id: toListId,
+      boardId,
+      title: "Aprobado",
+    });
+    findFirstBoard.mockResolvedValue({
+      competitionId: 42,
+      name: "Tablero",
+      competition: { id: 42, city: "Puebla" },
+    });
+    dbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+    maybeConfirmVenueFromApprovedCard.mockResolvedValue(true);
+
+    await moveCardAction({
+      boardId,
+      cardId,
+      toListId,
+      toPosition: 0,
+      orderedCardIdsInTargetList: [cardId],
+    });
+
+    expect(maybeConfirmVenueFromApprovedCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        boardId,
+        cardTitle: "Permiso de sede",
+        actorId: "user-1",
+      }),
+    );
+    expect(maybeNotifyReadinessSuggestion).toHaveBeenCalledWith(
+      boardId,
+      "user-1",
+      expect.any(Object),
+    );
+  });
 });
 
 describe("updateCardAction", () => {

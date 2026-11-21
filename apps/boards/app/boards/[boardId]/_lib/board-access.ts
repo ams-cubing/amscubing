@@ -20,6 +20,32 @@ import {
 import { canAccessBoard, isBoardArchived } from "@/lib/boards";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 
+/** Stale cookie-cache sessions sometimes keep `user.id === wcaId` after a stub merge. */
+const WCA_ID_AS_USER_ID_RE = /^\d{4}[A-Z]{4}\d{2}$/i;
+
+/**
+ * Cookie-cached sessions can keep a stale `user.id` after a WCA stub merge
+ * (e.g. id still equal to the WCA ID). Resolve to the live `user.id` before
+ * writing foreign keys. Normal Better Auth ids skip the DB round-trip.
+ */
+export async function resolveSessionUserId(actor: {
+  id: string;
+  wcaId: string | null;
+}): Promise<string> {
+  if (!WCA_ID_AS_USER_ID_RE.test(actor.id)) {
+    return actor.id;
+  }
+
+  const wcaId = actor.wcaId?.trim().toUpperCase() || actor.id.toUpperCase();
+  const byWca = await db.query.user.findFirst({
+    where: eq(user.wcaId, wcaId),
+    columns: { id: true },
+  });
+  if (byWca) return byWca.id;
+
+  throw new Error("Sesión desactualizada; cierra sesión y vuelve a entrar");
+}
+
 export async function requireBoardAccess(boardId: number) {
   const session = await requireSessionOrUnauthorized();
   const currentUser = session.user;
@@ -30,7 +56,8 @@ export async function requireBoardAccess(boardId: number) {
   if (await isBoardArchived(boardId)) {
     throw new Error("Este tablero está archivado y no se puede editar");
   }
-  return currentUser;
+  const id = await resolveSessionUserId(currentUser);
+  return id === currentUser.id ? currentUser : { ...currentUser, id };
 }
 
 export async function assertListOnBoard(boardId: number, listId: number) {

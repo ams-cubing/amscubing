@@ -43,4 +43,9 @@ export type BoardTemplateDefinition = {
   cards: readonly BoardTemplateCard[];
   /** Seed deletes leftover cards with these titles. */
   retiredCardTitles: readonly string[];
+  /**
+   * Before insert/retire, rename these titles onto the new title (board-scoped).
+   * Multiple old titles may map to the same new title (merge).
+   */
+  renamedCardTitles?: Readonly<Record<string, string>>;
 };

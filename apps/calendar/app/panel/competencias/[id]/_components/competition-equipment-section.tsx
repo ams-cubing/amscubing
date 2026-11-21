@@ -1,20 +1,19 @@
-import type { Route } from "next";
-import Link from "next/link";
 import { FileDown, PackageCheck, Wrench } from "lucide-react";
 
 import { todayInMexico } from "@workspace/db/equipment";
 import {
   EQUIPMENT_REQUEST_STATUS_LABELS,
+  formatEquipmentDateTime,
   type EquipmentRequestStatus,
 } from "@workspace/db/equipment-labels";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 
-import { formatEquipmentDateTime } from "@/lib/equipment-format";
+import { getWebUrl } from "@/lib/urls";
 
-import { CancelRequestForm } from "../../../equipo/_components/cancel-request-form";
-import { getCompetitionEquipment } from "../../../equipo/_lib/queries";
+import { getCompetitionEquipment } from "../_lib/equipment-queries";
+import { CancelRequestForm } from "./cancel-request-form";
 
 const REQUEST_BADGE_CLASSES: Record<EquipmentRequestStatus, string> = {
   draft: "bg-zinc-100 text-zinc-700 border-zinc-200",
@@ -36,6 +35,7 @@ export async function CompetitionEquipmentSection({
     !ended &&
     request &&
     (request.status === "submitted" || request.status === "fulfilled");
+  const webUrl = getWebUrl();
 
   return (
     <section className="bg-card space-y-4 rounded-lg border p-4 shadow-sm md:p-5">
@@ -110,15 +110,12 @@ export async function CompetitionEquipmentSection({
                 <span>
                   {line.typeName}{" "}
                   {line.sku ? (
-                    <Link
-                      prefetch={false}
-                      href={
-                        `/panel/equipo/${encodeURIComponent(line.sku)}` as Route
-                      }
+                    <a
+                      href={`${webUrl}/admin/equipo/${encodeURIComponent(line.sku)}`}
                       className="font-mono text-xs hover:underline"
                     >
                       {line.sku}
-                    </Link>
+                    </a>
                   ) : (
                     <span className="text-muted-foreground font-mono text-xs">
                       × {line.quantity}
@@ -137,13 +134,10 @@ export async function CompetitionEquipmentSection({
       <div className="flex flex-wrap items-center gap-2">
         {canConfirm ? (
           <Button asChild size="sm">
-            <Link
-              prefetch={false}
-              href={`/panel/equipo/solicitudes/${request.id}` as Route}
-            >
+            <a href={`${webUrl}/admin/equipo/solicitudes/${request.id}`}>
               <PackageCheck className="size-4" />
               {confirmation ? "Editar confirmación" : "Confirmar equipo"}
-            </Link>
+            </a>
           </Button>
         ) : null}
         {confirmation ? (

@@ -123,6 +123,12 @@ vi.mock("@workspace/social", () => ({
     "Esta competencia ya se está publicando o ya fue publicada",
 }));
 
+vi.mock("@/lib/sync-competition-from-wca", () => ({
+  syncAnnouncedCompetitionFromWcaBestEffort: vi
+    .fn()
+    .mockResolvedValue({ ok: true, message: "synced" }),
+}));
+
 vi.mock("@/lib/availability-dates", async () => {
   const actual = await vi.importActual<
     typeof import("@/lib/availability-dates")

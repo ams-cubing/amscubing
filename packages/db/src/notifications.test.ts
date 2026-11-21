@@ -15,6 +15,7 @@ vi.mock("./index", () => ({
 }));
 
 import {
+  budgetSubmittedNotificationRow,
   countUnreadNotificationsByCard,
   equipmentConfirmedNotificationRow,
   equipmentNotificationRow,
@@ -67,6 +68,7 @@ describe("equipmentNotificationRow", () => {
   const base = {
     actorId: "lender",
     calendarUrl: "https://calendario.example/",
+    webUrl: "https://www.example/",
     equipmentLabel: "8 Timer SpeedStack G4",
   };
 
@@ -82,7 +84,7 @@ describe("equipmentNotificationRow", () => {
     expect(row.payload).toEqual({ loanId: 4, sku: undefined });
   });
 
-  it("sends delegates to the loan or unit in the panel", () => {
+  it("sends delegates to the loan or unit in web admin", () => {
     const delegate = {
       id: "d1",
       role: "delegate" as const,
@@ -95,7 +97,7 @@ describe("equipmentNotificationRow", () => {
         type: "equipment_returned",
         loanId: 4,
       }).href,
-    ).toBe("https://calendario.example/panel/equipo/prestamos/4");
+    ).toBe("https://www.example/admin/equipo/prestamos/4");
     expect(
       equipmentNotificationRow({
         ...base,
@@ -106,7 +108,7 @@ describe("equipmentNotificationRow", () => {
       }),
     ).toMatchObject({
       title: "Ahora eres guardián de: DS3-2318",
-      href: "https://calendario.example/panel/equipo/DS3-2318",
+      href: "https://www.example/admin/equipo/DS3-2318",
     });
   });
 });
@@ -129,6 +131,29 @@ describe("equipmentRequestNotificationRow", () => {
       title: "Solicitud de equipo para Querétaro",
       href: "https://calendario.example/panel/competencias/9",
       payload: { competitionId: 9, requestId: 2, city: "Querétaro" },
+    });
+  });
+});
+
+describe("budgetSubmittedNotificationRow", () => {
+  it("sends delegates to the costos panel", () => {
+    expect(
+      budgetSubmittedNotificationRow({
+        recipient: { id: "d1", role: "delegate", wcaId: "2016ROVI01" },
+        actorId: "organizer-1",
+        calendarUrl: "https://calendario.example/",
+        competitionId: 9,
+        budgetId: 3,
+        city: "Querétaro",
+        type: "budget_plan_submitted",
+      }),
+    ).toEqual({
+      recipientId: "d1",
+      actorId: "organizer-1",
+      type: "budget_plan_submitted",
+      title: "Presupuesto enviado para Querétaro",
+      href: "https://calendario.example/panel/competencias/9/costos",
+      payload: { competitionId: 9, budgetId: 3, city: "Querétaro" },
     });
   });
 });

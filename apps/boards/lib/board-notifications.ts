@@ -1,18 +1,110 @@
+import { eq } from "drizzle-orm";
+
 import { db } from "@workspace/db";
 import {
   evaluateBoardReadiness,
+  isListTitle,
   isSuggestionApplicable,
+  VENUE_PERMISSION_CARD_TITLE,
 } from "@workspace/db/board-readiness";
 import {
+  applyStatusTransition,
+  getTransition,
+} from "@workspace/db/competition-transitions";
+import {
   competitionDelegatesOnly,
+  competitionOrganizersOnly,
   formatNotificationTitle,
   hasRecentNotificationForKind,
   hrefForNotification,
   insertNotifications,
   type AppUrls,
 } from "@workspace/db/notifications";
+import { boards } from "@workspace/db/schema";
+import { log } from "@workspace/server/log";
 
-import { sendBoardNotificationEmail } from "@/lib/board-emails";
+import {
+  sendBoardNotificationEmail,
+  sendCompetitionStatusChangedEmail,
+} from "@/lib/board-emails";
+
+/**
+ * When a delegate approves «Permiso de sede», confirm the venue status
+ * (confirmed / venue_found) without waiting for the readiness banner.
+ */
+export async function maybeConfirmVenueFromApprovedCard(input: {
+  boardId: number;
+  cardTitle: string;
+  actorId: string;
+  urls: AppUrls;
+}): Promise<boolean> {
+  if (!isListTitle(input.cardTitle, VENUE_PERMISSION_CARD_TITLE)) {
+    return false;
+  }
+
+  const board = await db.query.boards.findFirst({
+    where: eq(boards.id, input.boardId),
+    columns: { competitionId: true },
+    with: {
+      competition: {
+        columns: {
+          id: true,
+          city: true,
+          statusPublic: true,
+          statusInternal: true,
+        },
+      },
+    },
+  });
+
+  const competition = board?.competition;
+  if (!board?.competitionId || !competition) return false;
+
+  const from = {
+    statusPublic: competition.statusPublic,
+    statusInternal: competition.statusInternal,
+  };
+  if (!getTransition("confirm_venue").canApply(from)) {
+    return false;
+  }
+
+  const applied = await db.transaction(async (tx) =>
+    applyStatusTransition(tx, {
+      competitionId: board.competitionId!,
+      actorId: input.actorId,
+      transitionId: "confirm_venue",
+      source: "board_readiness",
+      suggestionKind: "confirm_venue",
+      urls: input.urls,
+      extraLogDetails: { trigger: "venue_permission_approved" },
+    }),
+  );
+
+  try {
+    const organizers = await competitionOrganizersOnly(
+      db,
+      board.competitionId,
+    );
+    for (const organizer of organizers) {
+      if (!organizer.email || !organizer.name) continue;
+      if (organizer.id === input.actorId) continue;
+      try {
+        await sendCompetitionStatusChangedEmail({
+          to: organizer.email,
+          recipientName: organizer.name,
+          city: applied.city,
+          statusLabel: applied.statusLabel,
+        });
+      } catch (err) {
+        log.error("boards.organizer_status_email_failed", { error: err });
+      }
+    }
+  } catch (err) {
+    log.error("boards.notify_organizers_failed", { error: err });
+  }
+
+  return true;
+}
 
 export async function maybeNotifyReadinessSuggestion(
   boardId: number,

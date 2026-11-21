@@ -86,7 +86,6 @@ async function CalendarAppNavWrapper() {
 
   return (
     <CalendarAppNav
-      isSignedIn={normalizedUser != null}
       isDelegate={isDelegate}
       delegateBadgeCount={delegateBadgeCount}
     />
@@ -161,11 +160,7 @@ export default function RootLayout({
             <CalendarAmsNavWrapper />
           </Suspense>
           <div className="sticky top-0 z-40">
-            <Suspense
-              fallback={
-                <CalendarAppNav isSignedIn={false} isDelegate={false} />
-              }
-            >
+            <Suspense fallback={<CalendarAppNav />}>
               <CalendarAppNavWrapper />
             </Suspense>
           </div>

@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@workspace/db";
 import { competitions } from "@workspace/db/schema";
+import { isLiveExternalSideEffectsEnabled } from "@workspace/server/external-side-effects";
 
 import {
   completeInstagramAnnouncement,
@@ -13,6 +14,11 @@ import {
   releaseCompetitionSocialPublish,
   SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
 } from "./social-publish-claim";
+
+function withSimulatedSuffix(message: string): string {
+  if (isLiveExternalSideEffectsEnabled()) return message;
+  return `${message} (simulado: sin publicar en redes)`;
+}
 
 export type CompetitionSocialMutationResult =
   | { ok: true; message: string }
@@ -123,9 +129,11 @@ export async function retryCompetitionSocialPublish(
   await refreshTorneoDeRubikCoverBestEffort();
   return {
     ok: true,
-    message: published.instagramMediaId
-      ? "Publicado en Facebook e Instagram"
-      : "Publicado en Facebook (sin imagen: Instagram omitido)",
+    message: withSimulatedSuffix(
+      published.instagramMediaId
+        ? "Publicado en Facebook e Instagram"
+        : "Publicado en Facebook (sin imagen: Instagram omitido)",
+    ),
   };
 }
 
@@ -184,7 +192,10 @@ export async function completeCompetitionInstagramPublish(
     })
     .where(eq(competitions.id, competitionId));
 
-  return { ok: true, message: "Instagram publicado" };
+  return {
+    ok: true,
+    message: withSimulatedSuffix("Instagram publicado"),
+  };
 }
 
 export async function markCompetitionSocialPublishedManually(

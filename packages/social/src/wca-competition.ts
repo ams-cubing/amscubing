@@ -17,6 +17,11 @@ export type WcaCompetitionDetails = {
   competitorLimit: number | null;
   registrationOpen: string | null;
   registrationClose: string | null;
+  /** ISO date `YYYY-MM-DD` from WCA `start_date`. */
+  startDate: string | null;
+  /** ISO date `YYYY-MM-DD` from WCA `end_date`. */
+  endDate: string | null;
+  mainEventId: string | null;
 };
 
 export function extractWcaCompetitionId(
@@ -99,6 +104,9 @@ export async function fetchWcaCompetition(
       competitor_limit?: number | null;
       registration_open?: string | null;
       registration_close?: string | null;
+      start_date?: string | null;
+      end_date?: string | null;
+      main_event_id?: string | null;
     };
 
     const venueName = plainTextFromWcaMarkup(data.venue);
@@ -134,6 +142,12 @@ export async function fetchWcaCompetition(
           data.registration_close.trim()
             ? data.registration_close.trim()
             : null,
+        startDate: parseWcaIsoDate(data.start_date),
+        endDate: parseWcaIsoDate(data.end_date),
+        mainEventId:
+          typeof data.main_event_id === "string" && data.main_event_id.trim()
+            ? data.main_event_id.trim()
+            : null,
       },
     };
   } catch (error) {
@@ -162,4 +176,10 @@ export function plainTextFromWcaMarkup(
     .replace(/\s+/g, " ")
     .trim();
   return text.length > 0 ? text : null;
+}
+
+function parseWcaIsoDate(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : null;
 }

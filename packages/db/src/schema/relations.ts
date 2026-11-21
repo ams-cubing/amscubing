@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 
+import { amsCompetitionScaleConfig } from "./ams-scale";
 import { account, session, user } from "./auth";
 import {
   boardInvites,
@@ -440,6 +441,16 @@ export const equipmentEventsRelations = relations(
     loan: one(equipmentLoans, {
       fields: [equipmentEvents.loanId],
       references: [equipmentLoans.id],
+    }),
+  }),
+);
+
+export const amsCompetitionScaleConfigRelations = relations(
+  amsCompetitionScaleConfig,
+  ({ one }) => ({
+    updatedBy: one(user, {
+      fields: [amsCompetitionScaleConfig.updatedByUserId],
+      references: [user.id],
     }),
   }),
 );

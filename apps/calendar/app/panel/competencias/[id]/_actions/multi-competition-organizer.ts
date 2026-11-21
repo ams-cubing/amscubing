@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@workspace/db";
@@ -53,6 +53,7 @@ export async function setMultiCompetitionOrganizerAction(
         .where(eq(multiCompetitionOrganizers.userId, organizer.id));
     }
 
+    updateTag("multi-competition-organizers");
     log.info("calendar.multi_competition_organizer_changed", {
       userId: organizer.id,
       allow: input.allow === "1",

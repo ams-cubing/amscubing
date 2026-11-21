@@ -3,11 +3,21 @@ import { describe, expect, it } from "vitest";
 import {
   AMS_EMAIL,
   boardNotificationEmail,
+  competitionBudgetSummaryTableHtml,
+  competitionGroupsUrl,
+  competitionIlrUrl,
+  competitionInformativeMarkdownBody,
+  competitionInformativeSubject,
+  competitionScheduleUrl,
   competitionStatusChangedEmail,
+  competitionTeamEmailFooterHtml,
+  competitionThankYouEmail,
+  competitionThankYouSubject,
   dateRequestDeclinedOrganizerEmail,
   delegateAssignedEmail,
   delegateRemovedEmail,
   isDeliverableEmail,
+  markdownEmailBodyToHtml,
   organizerAssignedEmail,
   organizerRemovedEmail,
   sendEmail,
@@ -159,20 +169,165 @@ describe("email templates escape HTML", () => {
 });
 
 describe("sendEmail", () => {
-  it("skips send when RESEND_API_KEY is unset", async () => {
-    const original = process.env.RESEND_API_KEY;
-    delete process.env.RESEND_API_KEY;
-
+  it("simulates send outside production", async () => {
     const result = await sendEmail({
       to: "user@example.com",
       subject: "Test",
       html: "<p>Hi</p>",
     });
 
-    expect(result).toEqual({ ok: false, reason: "missing_api_key" });
+    expect(result).toEqual({ ok: true, reason: "simulated" });
+  });
 
-    if (original) {
-      process.env.RESEND_API_KEY = original;
+  it("skips send when live and RESEND_API_KEY is unset", async () => {
+    const originalKey = process.env.RESEND_API_KEY;
+    const originalLive = process.env.AMS_LIVE_EXTERNAL;
+    delete process.env.RESEND_API_KEY;
+    process.env.AMS_LIVE_EXTERNAL = "1";
+
+    try {
+      const result = await sendEmail({
+        to: "user@example.com",
+        subject: "Test",
+        html: "<p>Hi</p>",
+      });
+
+      expect(result).toEqual({ ok: false, reason: "missing_api_key" });
+    } finally {
+      if (originalKey) process.env.RESEND_API_KEY = originalKey;
+      else delete process.env.RESEND_API_KEY;
+      if (originalLive) process.env.AMS_LIVE_EXTERNAL = originalLive;
+      else delete process.env.AMS_LIVE_EXTERNAL;
     }
+  });
+});
+
+describe("competitionThankYouEmail", () => {
+  it("builds subject, ILR link, and omits empty optional sections", () => {
+    expect(
+      competitionThankYouSubject({ competitionName: "UPEN Open 2026" }),
+    ).toBe("UPEN Open 2026 – Agradecimiento y resultados del evento");
+    expect(competitionIlrUrl("UPENOpen2026")).toBe(
+      "https://www.worldcubeassociation.org/competitions/UPENOpen2026/live",
+    );
+
+    const html = competitionThankYouEmail({
+      competitionName: "UPEN Open 2026",
+      dateLabel: "20 de noviembre de 2026",
+      placeLabel: "Pachuca, Hidalgo",
+      wcaCompetitionUrl:
+        "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
+      ilrUrl: competitionIlrUrl("UPENOpen2026"),
+      sponsorNames: ["Patrocinador <X>"],
+    });
+
+    expect(html).toContain("UPEN Open 2026");
+    expect(html).toContain("Patrocinador &lt;X&gt;");
+    expect(html).toContain("/competitions/UPENOpen2026/live");
+    expect(html).toContain("ILR");
+    expect(html).not.toContain("live.worldcubeassociation.org");
+    expect(html).not.toContain("Encuesta de calidad");
+    expect(html).not.toContain("Reconocimientos digitales");
+  });
+
+  it("renders markdown and injects the budget table", () => {
+    const table = competitionBudgetSummaryTableHtml({
+      lines: [
+        {
+          kind: "income",
+          label: "Inscripciones",
+          expectedCents: 10000,
+          actualCents: 12000,
+        },
+        {
+          kind: "expense",
+          label: "Sede",
+          expectedCents: 5000,
+          actualCents: 5000,
+        },
+      ],
+      summary: {
+        actualIncomeCents: 12000,
+        actualExpenseCents: 5000,
+        actualNetCents: 7000,
+      },
+    });
+    const html = markdownEmailBodyToHtml(
+      "## Hola\n\nVer [sitio](https://example.com/a)\n\n{{resumen_gastos}}",
+      { budgetSummaryHtml: table },
+    );
+    expect(html).toContain('href="https://example.com/a"');
+    expect(html).toContain("Inscripciones");
+    expect(html).toContain("Remanente");
+    expect(html).not.toContain("{{resumen_gastos}}");
+  });
+});
+
+describe("competitionInformativeEmail", () => {
+  it("seeds markdown with ILR and omits empty optionals", () => {
+    expect(
+      competitionInformativeSubject({ competitionName: "UPEN Open 2026" }),
+    ).toBe("UPEN Open 2026 - Información previa a la competencia");
+    expect(competitionGroupsUrl("UPENOpen2026")).toContain(
+      "competitiongroups.com/competitions/UPENOpen2026",
+    );
+
+    const markdown = competitionInformativeMarkdownBody({
+      competitionName: "UPEN Open 2026",
+      dateLabel: "20 de noviembre de 2026",
+      placeLabel: "Pachuca, Hidalgo",
+      wcaCompetitionUrl:
+        "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
+      ilrUrl: competitionIlrUrl("UPENOpen2026"),
+      scheduleUrl: competitionScheduleUrl("UPENOpen2026"),
+      groupsUrl: competitionGroupsUrl("UPENOpen2026"),
+      checkIn: "Sábado 8:00",
+      scheduleOverview: "- sábado 16 de mayo – 8:00–9:00 — Check-in",
+      address: "Auditorio UPEN — Av. Ejemplo 1",
+    });
+
+    expect(markdown).toContain("ILR");
+    expect(markdown).toContain("/competitions/UPENOpen2026/live");
+    expect(markdown).not.toContain("live.worldcubeassociation.org");
+    expect(markdown).toContain(
+      "/competitions/UPENOpen2026#competition-schedule",
+    );
+    expect(markdown).toContain("**Check-in:** Sábado 8:00");
+    expect(markdown).toContain("Resumen del horario");
+    expect(markdown).toContain("**Lugar:** Auditorio UPEN — Av. Ejemplo 1");
+    expect(markdown).not.toContain("Actualización importante");
+    expect(markdown).not.toContain("Eventos no oficiales");
+  });
+
+  it("renders team footer with roles and escaped names", () => {
+    const html = competitionTeamEmailFooterHtml({
+      logoUrl: "https://example.com/comp-logo.png",
+      competitionName: "UPEN Open 2026",
+      people: [
+        { name: "Ana <Org>", image: null, role: "organizador" },
+        {
+          name: "Leo",
+          image: "https://example.com/a.png",
+          role: "delegado",
+        },
+      ],
+    });
+
+    expect(html).toContain("https://example.com/comp-logo.png");
+    expect(html).not.toContain(AMS_EMAIL.logoUrl);
+    expect(html).toContain('alt="UPEN Open 2026"');
+    expect(html).toContain("ORGANIZADOR");
+    expect(html).toContain("DELEGADO");
+    expect(html).toContain("Ana &lt;Org&gt;");
+    expect(html).toContain("https://example.com/a.png");
+  });
+
+  it("omits footer logo when competition logo is missing", () => {
+    const html = competitionTeamEmailFooterHtml({
+      people: [{ name: "Ana", image: null, role: "organizador" }],
+    });
+    expect(html).not.toContain(AMS_EMAIL.logoUrl);
+    expect(html).not.toContain("<img src=");
+    expect(html).toContain("ORGANIZADOR");
   });
 });

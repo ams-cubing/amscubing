@@ -14,6 +14,7 @@ const boardMocks = vi.hoisted(() => {
     canAccessBoard: vi.fn(),
     isBoardArchived: vi.fn(),
     maybeNotifyReadinessSuggestion: vi.fn(),
+    maybeConfirmVenueFromApprovedCard: vi.fn(),
     notifyHechoReview: vi.fn(),
     sendBoardNotificationEmail: vi.fn(),
     findFirstCard: vi.fn(),
@@ -60,6 +61,8 @@ vi.mock("@/lib/boards", () => ({
 
 vi.mock("@/lib/board-notifications", () => ({
   maybeNotifyReadinessSuggestion: boardMocks.maybeNotifyReadinessSuggestion,
+  maybeConfirmVenueFromApprovedCard:
+    boardMocks.maybeConfirmVenueFromApprovedCard,
   notifyHechoReview: boardMocks.notifyHechoReview,
 }));
 
@@ -164,6 +167,7 @@ export function resetBoardMocks() {
   boardMocks.canAccessBoard.mockReset();
   boardMocks.isBoardArchived.mockReset();
   boardMocks.maybeNotifyReadinessSuggestion.mockReset();
+  boardMocks.maybeConfirmVenueFromApprovedCard.mockReset();
   boardMocks.notifyHechoReview.mockReset();
   boardMocks.sendBoardNotificationEmail.mockReset();
   boardMocks.findFirstCard.mockReset();

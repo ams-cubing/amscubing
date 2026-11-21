@@ -27,6 +27,12 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
+import {
+  APPROVED_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  isListTitle,
+} from "@workspace/db/board-readiness-labels";
+
 import { runBoardAction } from "@/lib/run-board-action";
 
 import {
@@ -70,10 +76,29 @@ import {
   isEquipmentCard,
 } from "./card-dialog/card-equipment-section";
 import {
+  CardFinalEmailSection,
+  isFinalEmailCard,
+} from "./card-dialog/card-final-email-section";
+import {
+  CardInformativeEmailSection,
+  isInformativeEmailCard,
+} from "./card-dialog/card-informative-email-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
+import { CardCategoriesSection } from "./card-dialog/card-categories-schedule-section";
+import { CardCompetitionDetailsSection } from "./card-dialog/card-competition-details-section";
+import { CardScheduleSection } from "./card-dialog/card-schedule-section";
+import { CardBudgetSection } from "./card-dialog/card-budget-section";
+import { CardSponsorsSection } from "./card-dialog/card-sponsors-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { budgetCardMode } from "../_lib/budget-cards";
+import {
+  isCategoriesCard,
+  isScheduleCard,
+} from "../_lib/categories-schedule-card";
+import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 import { staffCardMode } from "../_lib/staff-cards";
 import { getCompetitionTeam } from "../_lib/team";
 
@@ -83,6 +108,7 @@ export function CardDialog({
   open,
   onOpenChange,
   readOnly = false,
+  canApproveCards = false,
   canManageSocialPublish = false,
 }: {
   board: BoardDetail;
@@ -90,6 +116,7 @@ export function CardDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
+  canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
@@ -143,7 +170,13 @@ export function CardDialog({
   const labelIds = new Set(card.cardLabels.map((cl) => cl.labelId));
   const memberIds = new Set(card.members.map((m) => m.userId));
   const staffMode = staffCardMode(card.title);
+  const budgetMode = budgetCardMode(card.title);
   const currentList = board.lists.find((list) => list.id === card.listId);
+  const isResourcesCard = isListTitle(
+    currentList?.title ?? "",
+    RESOURCES_LIST_TITLE,
+  );
+  const canMoveCard = !readOnly && !isResourcesCard;
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
   const displayDescription = description || card.description || "";
@@ -216,10 +249,16 @@ export function CardDialog({
   }
 
   function moveToList(toListId: number) {
-    if (readOnly) return;
+    if (!canMoveCard) return;
     if (toListId === card!.listId) return;
     const targetList = board.lists.find((list) => list.id === toListId);
     if (!targetList) return;
+    if (
+      isListTitle(targetList.title, APPROVED_LIST_TITLE) &&
+      !canApproveCards
+    ) {
+      return;
+    }
     const ordered = [...targetList.cards.map((c) => c.id), card!.id];
     run("No se pudo mover la tarjeta", () =>
       moveCardAction({
@@ -255,7 +294,7 @@ export function CardDialog({
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
-            {readOnly ? (
+            {!canMoveCard ? (
               <Badge
                 variant="secondary"
                 className="max-w-[min(100%,14rem)] min-w-0 truncate"
@@ -280,20 +319,37 @@ export function CardDialog({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {board.lists.map((list) => (
-                    <DropdownMenuItem
-                      key={list.id}
-                      onClick={() => moveToList(list.id)}
-                      disabled={list.id === card.listId || pending}
-                    >
-                      <span
-                        className="block max-w-64 truncate"
-                        title={list.title}
+                  {board.lists.map((list) => {
+                    const isApprovedTarget = isListTitle(
+                      list.title,
+                      APPROVED_LIST_TITLE,
+                    );
+                    const blockedForOrganizer =
+                      isApprovedTarget && !canApproveCards;
+                    return (
+                      <DropdownMenuItem
+                        key={list.id}
+                        onClick={() => moveToList(list.id)}
+                        disabled={
+                          list.id === card.listId ||
+                          pending ||
+                          blockedForOrganizer
+                        }
+                        title={
+                          blockedForOrganizer
+                            ? "Solo un delegado puede mover tarjetas a Aprobado"
+                            : undefined
+                        }
                       >
-                        {list.title}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                        <span
+                          className="block max-w-64 truncate"
+                          title={list.title}
+                        >
+                          {list.title}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -562,6 +618,47 @@ export function CardDialog({
                 board={board}
                 cardId={card.id}
                 readOnly={readOnly}
+                isDelegate={canApproveCards}
+              />
+            ) : null}
+
+            {isInformativeEmailCard(card.title) ? (
+              <CardInformativeEmailSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isFinalEmailCard(card.title) ? (
+              <CardFinalEmailSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isCategoriesCard(card.title) ? (
+              <CardCategoriesSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isScheduleCard(card.title) ? (
+              <CardScheduleSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {isCompetitionDetailsCard(card.title) ? (
+              <CardCompetitionDetailsSection
+                board={board}
+                cardId={card.id}
+                readOnly={readOnly}
               />
             ) : null}
 
@@ -570,6 +667,24 @@ export function CardDialog({
                 board={board}
                 cardId={card.id}
                 mode={staffMode}
+                readOnly={readOnly}
+              />
+            ) : null}
+
+            {budgetMode && budgetMode !== "sponsors" ? (
+              <CardBudgetSection
+                board={board}
+                cardId={card.id}
+                mode={budgetMode}
+                readOnly={readOnly}
+                isDelegate={canApproveCards}
+              />
+            ) : null}
+
+            {budgetMode === "sponsors" ? (
+              <CardSponsorsSection
+                board={board}
+                cardId={card.id}
                 readOnly={readOnly}
               />
             ) : null}

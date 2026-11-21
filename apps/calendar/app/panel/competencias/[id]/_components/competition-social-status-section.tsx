@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { classifyCompetitionSocialStatus } from "@workspace/social/status";
+import {
+  classifyCompetitionSocialStatus,
+  facebookPostHref,
+} from "@workspace/social/status";
 import { Button } from "@workspace/ui/components/button";
 import { CompetitionSocialStatusPanel } from "@workspace/ui/components/competition-social-status-panel";
 
@@ -13,10 +16,6 @@ import {
   markCompetitionSocialManual,
   retryCompetitionSocial,
 } from "../_actions/social-publish-recovery";
-
-function facebookUrl(facebookPostId: string) {
-  return `https://www.facebook.com/${facebookPostId}`;
-}
 
 export function CompetitionSocialStatusSection({
   competitionId,
@@ -57,7 +56,7 @@ export function CompetitionSocialStatusSection({
       <CompetitionSocialStatusPanel
         status={status}
         facebookPostId={facebookPostId}
-        facebookUrl={facebookPostId ? facebookUrl(facebookPostId) : null}
+        facebookUrl={facebookPostHref(facebookPostId)}
         instagramMediaId={instagramMediaId}
         announcedPostedAt={announcedPostedAt}
         canRetry

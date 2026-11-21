@@ -1,20 +1,24 @@
 import { eq } from "drizzle-orm";
 
+import {
+  APPROVED_LIST_TITLE,
+  VENUE_PERMISSION_CARD_TITLE,
+  cardPhase,
+  isListTitle,
+} from "./board-readiness-labels";
 import { getTransition, type TransitionId } from "./competition-transitions";
 import { db } from "./index";
-import { TEMPLATE_LISTS } from "./data/ams-board-template";
 import { boardLists, boards, competitions } from "./schema";
 
-export const APPROVED_LIST_TITLE = TEMPLATE_LISTS[3]; // Aprobado
-export const HECHO_LIST_TITLE = TEMPLATE_LISTS[2]; // Hecho
-
-export function normalizeListTitle(title: string) {
-  return title.trim().toLowerCase();
-}
-
-export function isListTitle(title: string, expected: string) {
-  return normalizeListTitle(title) === normalizeListTitle(expected);
-}
+export {
+  APPROVED_LIST_TITLE,
+  HECHO_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  VENUE_PERMISSION_CARD_TITLE,
+  cardPhase,
+  isListTitle,
+  normalizeListTitle,
+} from "./board-readiness-labels";
 
 type PhaseKey =
   | "pre_announce"
@@ -28,43 +32,6 @@ type BoardCardRow = {
   listTitle: string;
   labelColors: string[];
 };
-
-export function cardPhase(labelColors: string[]): PhaseKey | null {
-  if (labelColors.length === 0) return "pre_announce";
-
-  const isPink = labelColors.some(
-    (c) => c.includes("ec4899") || c === "#ec4899",
-  );
-  if (isPink) return "resources";
-
-  const isBlue = labelColors.some(
-    (c) => c.includes("3b82f6") || c === "#3b82f6",
-  );
-  if (isBlue) return "post_celebrate";
-
-  // During-competition cards only get approved once the event happened.
-  const isPurple = labelColors.some(
-    (c) => c.includes("5e4db2") || c === "#5e4db2",
-  );
-  if (isPurple) return "post_celebrate";
-
-  const isRed = labelColors.some(
-    (c) => c.includes("ef4444") || c === "#ef4444",
-  );
-  if (isRed) return "post_announce";
-
-  const isGreen = labelColors.some(
-    (c) => c.includes("22c55e") || c === "#22c55e",
-  );
-  if (isGreen) return "pre_announce";
-
-  const isYellow = labelColors.some(
-    (c) => c.includes("eab308") || c === "#eab308",
-  );
-  if (isYellow) return "pre_announce";
-
-  return "pre_announce";
-}
 
 function cardsForPhase(rows: BoardCardRow[], phase: PhaseKey) {
   return rows.filter((row) => cardPhase(row.labelColors) === phase);
@@ -228,32 +195,44 @@ export async function evaluateBoardReadiness(
   const postAnnounceReady = allInApprovedList(postAnnounce);
   const postCelebrateReady = allInApprovedList(postCelebrate);
 
-  if (
-    (statusPublic === "open" || statusPublic === "reserved") &&
-    preAnnounceReady &&
-    preAnnounce.length > 0
-  ) {
-    suggestion = buildSuggestion(
-      "confirm_venue",
-      preAnnounce,
-      "Sede confirmada",
-      "Todas las tarjetas de pre-anuncio están aprobadas. Puedes marcar la sede como confirmada.",
-      "apply_status",
-      true,
-      "confirm_venue",
-    );
-  } else if (
-    statusPublic === "confirmed" &&
-    preAnnounceReady &&
-    preAnnounce.length > 0
-  ) {
+  // Venue confirmation keys off Permiso de sede only (semáforo «Sede confirmada»).
+  const venueCards = cardRows.filter((row) =>
+    isListTitle(row.title, VENUE_PERMISSION_CARD_TITLE),
+  );
+  const venueReady = venueCards.length > 0 && allInApprovedList(venueCards);
+
+  if (statusPublic === "open" || statusPublic === "reserved") {
+    if (venueReady) {
+      suggestion = buildSuggestion(
+        "confirm_venue",
+        venueCards,
+        "Sede confirmada",
+        "La tarjeta Permiso de sede está aprobada. Puedes marcar la sede como confirmada.",
+        "apply_status",
+        true,
+        "confirm_venue",
+      );
+    } else if (venueCards.length > 0) {
+      suggestion = buildSuggestion(
+        "confirm_venue",
+        venueCards,
+        "Permiso de sede pendiente",
+        "Aprueba la tarjeta Permiso de sede para confirmar la sede.",
+        "apply_status",
+        false,
+        "confirm_venue",
+      );
+    }
+  } else if (statusPublic === "confirmed" && preAnnounce.length > 0) {
     suggestion = buildSuggestion(
       "announce_ready",
       preAnnounce,
-      "Lista para anunciar",
-      "Todas las tarjetas de pre-anuncio están aprobadas. La competencia está lista para anunciarse en el calendario.",
+      preAnnounceReady ? "Lista para anunciar" : "Pre-anuncio en progreso",
+      preAnnounceReady
+        ? "Todas las tarjetas de pre-anuncio están aprobadas. La competencia está lista para anunciarse en el calendario."
+        : "Completa y aprueba las tarjetas de pre-anuncio para anunciar la competencia.",
       "announce_ready",
-      true,
+      preAnnounceReady,
     );
   } else if (
     statusPublic === "announced" &&
@@ -286,16 +265,6 @@ export async function evaluateBoardReadiness(
       "apply_status",
       true,
       "celebrate",
-    );
-  } else if (preAnnounce.length > 0 && !preAnnounceReady) {
-    suggestion = buildSuggestion(
-      "confirm_venue",
-      preAnnounce,
-      "Pre-anuncio en progreso",
-      "Completa y aprueba las tarjetas de pre-anuncio para confirmar la sede.",
-      "apply_status",
-      false,
-      "confirm_venue",
     );
   } else if (
     postAnnounce.length > 0 &&

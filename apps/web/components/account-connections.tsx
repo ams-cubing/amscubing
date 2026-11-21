@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { WCA_OAUTH_SCOPES } from "@workspace/auth/wca-scopes";
 import { authClient } from "@/lib/auth-client";
 export function AccountConnections({
   verified,
@@ -46,6 +47,7 @@ export function AccountConnections({
         provider: "wca",
         callbackURL: `${window.location.origin}/cuenta`,
         errorCallbackURL: `${window.location.origin}/iniciar-sesion?returnTo=${encodeURIComponent("/cuenta")}`,
+        scopes: [...WCA_OAUTH_SCOPES],
       });
       if (result.error) throw new Error();
     } catch {
