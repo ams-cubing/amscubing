@@ -14,6 +14,7 @@ import {
   competitionIlrUrl,
   competitionInformativeMarkdownBody,
   competitionInformativeSubject,
+  competitionScheduleUrl,
   competitionTeamEmailFooterHtml,
   isDeliverableEmail,
   markdownEmailBodyToHtml,
@@ -133,6 +134,11 @@ function resolvedGroupsUrl(wcaCompetitionUrl: string | null | undefined) {
   return wcaId ? competitionGroupsUrl(wcaId) : "";
 }
 
+function resolvedScheduleUrl(wcaCompetitionUrl: string | null | undefined) {
+  const wcaId = wcaCompetitionIdFromUrl(wcaCompetitionUrl);
+  return wcaId ? competitionScheduleUrl(wcaId) : "";
+}
+
 async function buildSeedDraft(competition: NonNullable<
   Awaited<ReturnType<typeof loadCompetitionForBoard>>
 >) {
@@ -154,7 +160,7 @@ async function buildSeedDraft(competition: NonNullable<
       wcaDefaults.tutorialTime ||
       competition.informativeEmailTutorialTime ||
       "",
-    scheduleUrl: wcaCompetitionUrl,
+    scheduleUrl: competitionScheduleUrl(wcaId),
     address: wcaDefaults.address || competition.informativeEmailAddress || "",
     scheduleOverview: wcaDefaults.scheduleOverview || "",
     mapsUrl: competition.informativeEmailMapsUrl ?? "",
@@ -413,7 +419,8 @@ export async function saveInformativeEmailDraft(
   const wcaDefaults = await loadInformativeEmailWcaDefaults(
     competition.wcaCompetitionUrl,
   );
-  const wcaCompetitionUrl = competition.wcaCompetitionUrl?.trim() || null;
+  const scheduleUrl =
+    resolvedScheduleUrl(competition.wcaCompetitionUrl) || null;
 
   await db
     .update(competitions)
@@ -423,7 +430,7 @@ export async function saveInformativeEmailDraft(
       informativeEmailUpdateNote: input.updateNote,
       informativeEmailCheckIn: wcaDefaults.checkIn || null,
       informativeEmailTutorialTime: wcaDefaults.tutorialTime || null,
-      informativeEmailScheduleUrl: wcaCompetitionUrl,
+      informativeEmailScheduleUrl: scheduleUrl,
       informativeEmailAddress: wcaDefaults.address || null,
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,
@@ -570,7 +577,8 @@ export async function sendInformativeEmail(
   const wcaDefaults = await loadInformativeEmailWcaDefaults(
     competition.wcaCompetitionUrl,
   );
-  const wcaCompetitionUrl = competition.wcaCompetitionUrl?.trim() || null;
+  const scheduleUrl =
+    resolvedScheduleUrl(competition.wcaCompetitionUrl) || null;
   const groupsUrl =
     resolvedGroupsUrl(competition.wcaCompetitionUrl) || null;
   const bodyWithOptionals = appendOptionalFieldsToBody(input.body, {
@@ -578,7 +586,7 @@ export async function sendInformativeEmail(
     checkIn: wcaDefaults.checkIn || null,
     tutorialTime: wcaDefaults.tutorialTime || null,
     scheduleOverview: wcaDefaults.scheduleOverview || null,
-    scheduleUrl: wcaCompetitionUrl,
+    scheduleUrl,
     address: wcaDefaults.address || null,
     mapsUrl: input.mapsUrl,
     parking: input.parking,
@@ -595,7 +603,7 @@ export async function sendInformativeEmail(
       informativeEmailUpdateNote: input.updateNote,
       informativeEmailCheckIn: wcaDefaults.checkIn || null,
       informativeEmailTutorialTime: wcaDefaults.tutorialTime || null,
-      informativeEmailScheduleUrl: wcaCompetitionUrl,
+      informativeEmailScheduleUrl: scheduleUrl,
       informativeEmailAddress: wcaDefaults.address || null,
       informativeEmailMapsUrl: input.mapsUrl,
       informativeEmailParking: input.parking,

@@ -455,6 +455,11 @@ export function competitionIlrUrl(wcaCompetitionId: string) {
   return `https://www.worldcubeassociation.org/competitions/${encodeURIComponent(wcaCompetitionId)}/live`;
 }
 
+/** Official WCA competition page anchored on the schedule tab. */
+export function competitionScheduleUrl(wcaCompetitionId: string) {
+  return `https://www.worldcubeassociation.org/competitions/${encodeURIComponent(wcaCompetitionId)}#competition-schedule`;
+}
+
 export function competitionThankYouSubject(input: {
   competitionName: string;
 }) {
@@ -759,7 +764,8 @@ export function competitionInformativeMarkdownBody(
   input: CompetitionInformativeEmailInput,
 ) {
   const scheduleUrl =
-    input.scheduleUrl?.trim() || input.wcaCompetitionUrl.trim();
+    input.scheduleUrl?.trim() ||
+    `${input.wcaCompetitionUrl.trim().replace(/#.*$/, "")}#competition-schedule`;
   const groupsUrl = input.groupsUrl?.trim() || "";
 
   const lines = [

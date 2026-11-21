@@ -8,6 +8,7 @@ import {
   competitionIlrUrl,
   competitionInformativeMarkdownBody,
   competitionInformativeSubject,
+  competitionScheduleUrl,
   competitionStatusChangedEmail,
   competitionTeamEmailFooterHtml,
   competitionThankYouEmail,
@@ -263,6 +264,7 @@ describe("competitionInformativeEmail", () => {
       wcaCompetitionUrl:
         "https://www.worldcubeassociation.org/competitions/UPENOpen2026",
       ilrUrl: competitionIlrUrl("UPENOpen2026"),
+      scheduleUrl: competitionScheduleUrl("UPENOpen2026"),
       groupsUrl: competitionGroupsUrl("UPENOpen2026"),
       checkIn: "Sábado 8:00",
       scheduleOverview: "- sábado 16 de mayo – 8:00–9:00 — Check-in",
@@ -272,6 +274,9 @@ describe("competitionInformativeEmail", () => {
     expect(markdown).toContain("ILR");
     expect(markdown).toContain("/competitions/UPENOpen2026/live");
     expect(markdown).not.toContain("live.worldcubeassociation.org");
+    expect(markdown).toContain(
+      "/competitions/UPENOpen2026#competition-schedule",
+    );
     expect(markdown).toContain("**Check-in:** Sábado 8:00");
     expect(markdown).toContain("Resumen del horario");
     expect(markdown).toContain("**Lugar:** Auditorio UPEN — Av. Ejemplo 1");
