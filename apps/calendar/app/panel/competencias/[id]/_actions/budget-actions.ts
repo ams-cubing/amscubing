@@ -166,7 +166,10 @@ export async function decideBudgetStageAction(
         plan: {
           approved: "presupuesto aprobado",
           rejected: "presupuesto devuelto",
-          titles: [BUDGET_PLAN_CARD_TITLE],
+          titles: [
+            BUDGET_PLAN_CARD_TITLE,
+            "Excel de costos y viabilidad",
+          ],
         },
         mid: {
           approved: "primer avance aprobado",
@@ -176,7 +179,10 @@ export async function decideBudgetStageAction(
         final: {
           approved: "informe final cerrado",
           rejected: "informe final devuelto",
-          titles: [BUDGET_FINAL_CARD_TITLE],
+          titles: [
+            BUDGET_FINAL_CARD_TITLE,
+            "Generar un resumen financiero del evento",
+          ],
         },
       }[parsed.data.stage];
       await notifyOrganizersOfStage({
