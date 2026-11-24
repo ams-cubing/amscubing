@@ -78,6 +78,7 @@ export const competitionSchema = z
       .string()
       .min(1, "Selecciona un organizador principal"),
     assignBoard: z.boolean().optional().default(false),
+    boardsToolsBeta: z.boolean().optional().default(false),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",

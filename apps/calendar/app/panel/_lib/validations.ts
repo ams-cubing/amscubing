@@ -84,6 +84,7 @@ export const createCompetitionSchema = z
     notes: z.string().optional().or(z.literal("")),
     isChampionship: z.boolean().optional().default(false),
     assignBoard: z.boolean().optional().default(false),
+    boardsToolsBeta: z.boolean().optional().default(false),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date must be after start date",

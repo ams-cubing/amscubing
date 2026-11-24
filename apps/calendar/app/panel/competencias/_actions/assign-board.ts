@@ -12,6 +12,7 @@ import {
   isBoardTemplateKey,
   type BoardTemplateKey,
 } from "@workspace/db/data/board-templates";
+import { setBoardBoardsToolsBeta } from "@workspace/db/beta-features";
 import { competitions } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -26,12 +27,14 @@ function revalidateCompetitionBoard(competitionId: number) {
   revalidatePath("/panel");
   revalidatePath(`/panel/competencias/${competitionId}`);
   revalidatePath(`/panel/competencias/${competitionId}/editar`);
+  revalidatePath(`/panel/competencias/${competitionId}/costos`);
   revalidatePath("/mis-competencias");
 }
 
 export async function assignBoardToCompetitionById(
   competitionId: number,
   templateKey: BoardTemplateKey = "competition",
+  boardsToolsBeta = false,
 ) {
   const competition = await db.query.competitions.findFirst({
     where: eq(competitions.id, competitionId),
@@ -57,6 +60,7 @@ export async function assignBoardToCompetitionById(
       competitionId: competition.id,
       boardName: competitionBoardName(competition),
       templateKey,
+      boardsToolsBeta,
     });
 
     revalidateCompetitionBoard(competitionId);
@@ -72,6 +76,7 @@ export async function assignBoardToCompetitionById(
 export async function assignBoardToCompetition(
   competitionId: number,
   templateKey: BoardTemplateKey,
+  boardsToolsBeta = false,
 ) {
   const authResult = await requireDelegate();
   if (!authResult.ok) {
@@ -81,7 +86,11 @@ export async function assignBoardToCompetition(
     return { error: "Plantilla no válida" };
   }
 
-  return assignBoardToCompetitionById(competitionId, templateKey);
+  return assignBoardToCompetitionById(
+    competitionId,
+    templateKey,
+    boardsToolsBeta,
+  );
 }
 
 export async function switchCompetitionBoardTemplate(
@@ -108,6 +117,44 @@ export async function switchCompetitionBoardTemplate(
     return { boardId: board.id };
   } catch (error) {
     log.error("calendar.switch_board_template_failed", { error });
+    return { error: getErrorMessage(error) };
+  }
+}
+
+export async function setCompetitionBoardsToolsBeta(
+  competitionId: number,
+  enabled: boolean,
+) {
+  const authResult = await requireDelegate();
+  if (!authResult.ok) {
+    return { error: authResult.message };
+  }
+
+  const competition = await db.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { id: true, boardId: true },
+  });
+  if (!competition?.boardId) {
+    return { error: "La competencia no tiene tablero" };
+  }
+
+  try {
+    const { changed } = await setBoardBoardsToolsBeta(db, {
+      boardId: competition.boardId,
+      enabled,
+      actorId: authResult.session.user.id,
+    });
+    log.info("calendar.boards_tools_beta_changed", {
+      competitionId,
+      boardId: competition.boardId,
+      enabled,
+      actorId: authResult.session.user.id,
+      changed,
+    });
+    revalidateCompetitionBoard(competitionId);
+    return { boardId: competition.boardId };
+  } catch (error) {
+    log.error("calendar.boards_tools_beta_failed", { error });
     return { error: getErrorMessage(error) };
   }
 }

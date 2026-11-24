@@ -6,7 +6,7 @@ import { ArrowLeft, ExternalLink, FileDown } from "lucide-react";
 import { db } from "@workspace/db";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
-  userHasBoardsToolsBeta,
+  competitionHasBoardsToolsBeta,
 } from "@workspace/db/beta-features";
 import { ensureCompetitionBudget } from "@workspace/db/budget";
 import {
@@ -41,7 +41,17 @@ export default async function CompetitionBudgetPage({
   if (!auth.ok) {
     notFound();
   }
-  if (!(await userHasBoardsToolsBeta(db, auth.session.user.id))) {
+
+  const { id } = await params;
+  const competitionId = Number(id);
+  if (!Number.isInteger(competitionId) || competitionId <= 0) {
+    notFound();
+  }
+
+  const competition = await getCompetitionWithRelations(competitionId);
+  if (!competition) notFound();
+
+  if (!(await competitionHasBoardsToolsBeta(db, competition.boardId))) {
     return (
       <main className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-2xl space-y-3">
@@ -58,15 +68,6 @@ export default async function CompetitionBudgetPage({
       </main>
     );
   }
-
-  const { id } = await params;
-  const competitionId = Number(id);
-  if (!Number.isInteger(competitionId) || competitionId <= 0) {
-    notFound();
-  }
-
-  const competition = await getCompetitionWithRelations(competitionId);
-  if (!competition) notFound();
 
   const sheet = await ensureCompetitionBudget(db, competitionId);
 

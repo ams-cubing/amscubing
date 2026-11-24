@@ -320,3 +320,35 @@ export async function createListAction(input: {
 
   revalidatePath(`/boards/${input.boardId}`);
 }
+
+export async function deleteCardAction(input: {
+  boardId: number;
+  cardId: number;
+}) {
+  const actor = await requireBoardAccess(input.boardId);
+  if (actor.role !== "delegate") {
+    throw new Error("Solo un delegado puede eliminar tarjetas");
+  }
+
+  await assertCardOnBoard(input.boardId, input.cardId);
+
+  await db.delete(cards).where(eq(cards.id, input.cardId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}
+
+export async function deleteListAction(input: {
+  boardId: number;
+  listId: number;
+}) {
+  const actor = await requireBoardAccess(input.boardId);
+  if (actor.role !== "delegate") {
+    throw new Error("Solo un delegado puede eliminar listas");
+  }
+
+  await assertListOnBoard(input.boardId, input.listId);
+
+  await db.delete(boardLists).where(eq(boardLists.id, input.listId));
+
+  revalidatePath(`/boards/${input.boardId}`);
+}

@@ -13,7 +13,7 @@ import {
 
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../../_lib/boards-tools-beta";
 import {
   assertCompetitionDelegateOrOrganizer,
@@ -36,7 +36,7 @@ export async function GET(
   if (!(await canAccessBoard(authResult.session.user, boardId))) {
     return new Response("No tienes acceso a este tablero", { status: 403 });
   }
-  if (!(await sessionHasBoardsToolsBeta(authResult.session.user))) {
+  if (!(await boardHasToolsBeta(boardId))) {
     return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
   }
 

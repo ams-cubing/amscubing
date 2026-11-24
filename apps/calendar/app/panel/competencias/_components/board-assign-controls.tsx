@@ -16,17 +16,21 @@ import {
   type BoardTemplateKey,
 } from "@workspace/db/data/board-templates";
 import { Button } from "@workspace/ui/components/button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import { Label } from "@workspace/ui/components/label";
 import { NativeSelect } from "@workspace/ui/components/native-select";
 
 import { getBoardsUrl } from "@/lib/urls";
 
 import {
   assignBoardToCompetition,
+  setCompetitionBoardsToolsBeta,
   switchCompetitionBoardTemplate,
 } from "../_actions/assign-board";
 
 export type BoardTemplateState = {
   templateKey: BoardTemplateKey | null;
+  boardsToolsBeta: boolean;
   hasActivity: boolean;
 };
 
@@ -49,12 +53,14 @@ export function BoardAssignControls({
   const [chosenTemplate, setTemplateKey] = useState<BoardTemplateKey | null>(
     null,
   );
+  const [createWithToolsBeta, setCreateWithToolsBeta] = useState(false);
   const templateKey = chosenTemplate ?? expectedTemplate;
   const boardsUrl = getBoardsUrl();
 
   const currentTemplate = boardState?.templateKey ?? null;
   const canSwitch = Boolean(boardId && boardState && !boardState.hasActivity);
   const mismatch = Boolean(boardId && currentTemplate !== expectedTemplate);
+  const toolsBetaEnabled = boardState?.boardsToolsBeta ?? false;
 
   const templateSelect = (
     <NativeSelect
@@ -146,7 +152,12 @@ export function BoardAssignControls({
               disabled={pending}
               onClick={() =>
                 run(
-                  () => assignBoardToCompetition(competitionId, templateKey),
+                  () =>
+                    assignBoardToCompetition(
+                      competitionId,
+                      templateKey,
+                      createWithToolsBeta,
+                    ),
                   "Tablero asignado",
                 )
               }
@@ -161,6 +172,57 @@ export function BoardAssignControls({
           </>
         )}
       </div>
+      {!boardId && (
+        <div className="flex items-start gap-3 pt-1">
+          <Checkbox
+            id={`boards-tools-beta-${competitionId}`}
+            checked={createWithToolsBeta}
+            disabled={pending}
+            onCheckedChange={(checked) =>
+              setCreateWithToolsBeta(checked === true)
+            }
+          />
+          <div className="space-y-1 leading-none">
+            <Label htmlFor={`boards-tools-beta-${competitionId}`}>
+              Activar herramientas nuevas del tablero (beta)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Presupuesto, categorías/horario, detalles, staff y correos en el
+              tablero.
+            </p>
+          </div>
+        </div>
+      )}
+      {boardId && (
+        <div className="flex items-start gap-3 pt-1">
+          <Checkbox
+            id={`boards-tools-beta-toggle-${competitionId}`}
+            checked={toolsBetaEnabled}
+            disabled={pending}
+            onCheckedChange={(checked) =>
+              run(
+                () =>
+                  setCompetitionBoardsToolsBeta(
+                    competitionId,
+                    checked === true,
+                  ),
+                checked === true
+                  ? "Herramientas nuevas del tablero activadas"
+                  : "Herramientas nuevas del tablero desactivadas",
+              )
+            }
+          />
+          <div className="space-y-1 leading-none">
+            <Label htmlFor={`boards-tools-beta-toggle-${competitionId}`}>
+              Herramientas nuevas del tablero (beta)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Presupuesto, categorías/horario, detalles, staff y correos en el
+              tablero y Costos del panel.
+            </p>
+          </div>
+        </div>
+      )}
       {boardId && boardState?.hasActivity && mismatch && (
         <p className="text-xs text-muted-foreground">
           El tablero ya tiene actividad, así que su plantilla no se puede

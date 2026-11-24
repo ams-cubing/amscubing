@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   CalendarDays,
   ExternalLink,
-  LayoutDashboard,
   MapPin,
   Pencil,
   Users,
@@ -23,8 +22,6 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-
-import { getBoardsUrl } from "@/lib/urls";
 
 import type { ReassignmentOption } from "@/lib/reassignment-option";
 
@@ -70,12 +67,6 @@ export function CompetitionDetailView({
   multiCompetitionOrganizerIds?: string[];
   boardState?: BoardTemplateState | null;
 }) {
-  const boardsUrl = getBoardsUrl();
-  const expectedTemplate = competition.isChampionship
-    ? "championship"
-    : "competition";
-  const showBoardControls =
-    !competition.boardId || boardState?.templateKey !== expectedTemplate;
   const location = [
     competition.city,
     competition.state?.name,
@@ -295,25 +286,12 @@ export function CompetitionDetailView({
         )}
 
         <div className="flex flex-wrap gap-2 pt-1">
-          {showBoardControls ? (
-            <BoardAssignControls
-              competitionId={competition.id}
-              boardId={competition.boardId}
-              isChampionship={competition.isChampionship}
-              boardState={boardState}
-            />
-          ) : (
-            <Button asChild variant="outline" size="sm">
-              <a
-                href={`${boardsUrl}/boards/${competition.boardId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <LayoutDashboard className="size-4" />
-                Tablero AMS
-              </a>
-            </Button>
-          )}
+          <BoardAssignControls
+            competitionId={competition.id}
+            boardId={competition.boardId}
+            isChampionship={competition.isChampionship}
+            boardState={boardState}
+          />
           {!competition.boardId && competition.trelloUrl && (
             <Button asChild variant="outline" size="sm">
               <a

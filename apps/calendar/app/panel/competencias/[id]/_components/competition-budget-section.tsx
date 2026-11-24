@@ -2,14 +2,17 @@ import type { Route } from "next";
 import Link from "next/link";
 import { ExternalLink, PiggyBank } from "lucide-react";
 
+import { eq } from "drizzle-orm";
+
 import { db } from "@workspace/db";
-import { userHasBoardsToolsBeta } from "@workspace/db/beta-features";
+import { competitionHasBoardsToolsBeta } from "@workspace/db/beta-features";
 import { getCompetitionBudgetSheet } from "@workspace/db/budget";
 import {
   BUDGET_STATUS_LABELS,
   formatMxnCents,
   type BudgetStatus,
 } from "@workspace/db/budget-labels";
+import { competitions } from "@workspace/db/schema";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -32,9 +35,16 @@ export async function CompetitionBudgetSection({
   competitionId: number;
 }) {
   const auth = await requireDelegate();
+  if (!auth.ok) {
+    return null;
+  }
+
+  const competition = await db.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { boardId: true },
+  });
   if (
-    !auth.ok ||
-    !(await userHasBoardsToolsBeta(db, auth.session.user.id))
+    !(await competitionHasBoardsToolsBeta(db, competition?.boardId ?? null))
   ) {
     return null;
   }
