@@ -16,7 +16,10 @@ import {
   recommendedScramblers,
   recommendedStaffMinimum,
 } from "@workspace/db/competition-format-rules";
-import { COMPETITION_DETAILS_CARD_TITLE } from "@workspace/db/data/ams-board-template";
+import {
+  CATEGORIES_FALLBACK_SHEET,
+  COMPETITION_DETAILS_CARD_TITLE,
+} from "@workspace/db/data/ams-board-template";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -34,6 +37,7 @@ import {
   type CategoriesScheduleData,
 } from "../../_actions/categories-schedule-actions";
 import type { BoardDetail } from "../../_lib/types";
+import { CardFallbackLinks } from "./card-fallback-links";
 import { DigitTimeInput } from "./digit-time-input";
 import { WcaEventIcon, WcaEventLabel } from "./wca-event-label";
 
@@ -204,11 +208,12 @@ export function CardCategoriesSection({
 
   if (!board.competition) {
     return (
-      <section className="space-y-2 rounded-lg border border-dashed p-4">
+      <section className="space-y-3 rounded-lg border border-dashed p-4">
         <h3 className="text-sm font-semibold">Categorías</h3>
         <p className="text-muted-foreground text-sm">
           Este tablero no está ligado a una competencia.
         </p>
+        <CardFallbackLinks links={[CATEGORIES_FALLBACK_SHEET]} />
       </section>
     );
   }
@@ -224,11 +229,13 @@ export function CardCategoriesSection({
 
   if (data === null) {
     return (
-      <section className="space-y-2 rounded-lg border border-dashed p-4">
+      <section className="space-y-3 rounded-lg border border-dashed p-4">
         <h3 className="text-sm font-semibold">Categorías</h3>
         <p className="text-muted-foreground text-sm">
-          No se pudo cargar el formato de la competencia.
+          No se pudo cargar el formato de la competencia. Puedes seguir con la
+          hoja de Excel adjunta o el enlace de respaldo.
         </p>
+        <CardFallbackLinks links={[CATEGORIES_FALLBACK_SHEET]} />
       </section>
     );
   }
@@ -554,6 +561,11 @@ export function CardCategoriesSection({
           {pending ? "Guardando…" : "Guardar formato"}
         </Button>
       ) : null}
+
+      <CardFallbackLinks
+        links={[CATEGORIES_FALLBACK_SHEET]}
+        note="Hoja de Excel de respaldo (misma que en main):"
+      />
     </section>
   );
 }

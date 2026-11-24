@@ -32,6 +32,11 @@ import {
 } from "@/lib/wca-organizer-counts";
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
+import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  boardsToolsBetaDenial,
+  sessionHasBoardsToolsBeta,
+} from "../_lib/boards-tools-beta";
 import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 
 export type CompetitionOrganizerExperience = {
@@ -239,6 +244,9 @@ export async function loadCompetitionDetailsCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
+  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+    return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
+  }
   const competitionId = await detailsCardCompetition(
     input.boardId,
     input.cardId,
@@ -273,6 +281,10 @@ export async function saveCompetitionDetailsFromCard(input: {
 
   try {
     const actor = await requireBoardAccess(parsed.data.boardId);
+    const betaDenied = await boardsToolsBetaDenial(actor);
+    if (betaDenied) {
+      return { ok: false, message: betaDenied };
+    }
     const competitionId = await detailsCardCompetition(
       parsed.data.boardId,
       parsed.data.cardId,

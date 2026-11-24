@@ -28,6 +28,8 @@ import {
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
+import { sessionHasBoardsToolsBeta } from "./_lib/boards-tools-beta";
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -67,9 +69,16 @@ export default async function BoardPage({
 
   const unreadByCard = await countUnreadNotificationsByCard(user.id, boardId);
 
-  const readiness = board.competition
-    ? await evaluateBoardReadiness(boardId)
-    : null;
+  // Readiness is advisory; never block opening the board if it fails.
+  let readiness: Awaited<ReturnType<typeof evaluateBoardReadiness>> | null =
+    null;
+  if (board.competition) {
+    try {
+      readiness = await evaluateBoardReadiness(boardId);
+    } catch (error) {
+      console.error("boards.readiness_failed", boardId, error);
+    }
+  }
 
   const isDelegate = user.role === "delegate";
   const isArchived = Boolean(board.archivedAt);
@@ -89,6 +98,7 @@ export default async function BoardPage({
       : null;
 
   const teamPeople = getCompetitionTeam(board);
+  const boardsToolsEnabled = await sessionHasBoardsToolsBeta(user);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -202,6 +212,7 @@ export default async function BoardPage({
         initialCardId={initialCardId}
         canApproveCards={isDelegate}
         canManageSocialPublish={isDelegate}
+        boardsToolsEnabled={boardsToolsEnabled}
         unreadByCard={unreadByCard}
       />
     </div>

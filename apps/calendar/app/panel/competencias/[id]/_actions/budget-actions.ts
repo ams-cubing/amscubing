@@ -5,6 +5,10 @@ import { z } from "zod";
 
 import { db } from "@workspace/db";
 import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  userHasBoardsToolsBeta,
+} from "@workspace/db/beta-features";
+import {
   BudgetError,
   decideBudgetStage,
   setBudgetDriveUrls,
@@ -30,6 +34,9 @@ async function requireBudgetDelegate() {
   const result = await requireDelegate();
   if (!result.ok) {
     throw new ActionError(result.message ?? "Solo delegados");
+  }
+  if (!(await userHasBoardsToolsBeta(db, result.session.user.id))) {
+    throw new ActionError(BOARDS_TOOLS_DENIED_MESSAGE);
   }
   return result.session.user;
 }

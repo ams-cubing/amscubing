@@ -11,13 +11,19 @@ import {
 } from "drizzle-orm";
 
 import {
+  BUDGET_FALLBACK_TUTORIAL,
+  BUDGET_PLAN_CARD_TITLE,
   CATEGORIES_CARD_TITLE,
   CATEGORIES_FALLBACK_SHEET,
   SCHEDULE_CARD_TITLE,
   SCHEDULE_FALLBACK_SHEET,
   COMPETITION_BOARD_TEMPLATE,
 } from "./data/ams-board-template";
-import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
+import {
+  CHAMPIONSHIP_BOARD_TEMPLATE,
+  CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE,
+  CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE,
+} from "./data/ams-championship-template";
 import {
   BOARD_TEMPLATE_KEYS,
   type BoardTemplateCard,
@@ -296,36 +302,44 @@ async function syncSeedDescriptionsOntoBoard(
   return updated;
 }
 
-/** Fallback sheets by card title (Categorías / Horario). */
-const CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS: Record<
+/**
+ * Offline Excel / Drive / tutorial links kept on cards that gained in-app tools.
+ * Same URLs as main so organizers are never blocked if the new UI fails.
+ */
+const CARD_FALLBACK_ATTACHMENTS: Record<
   string,
   { name: string; url: string }[]
 > = {
   [CATEGORIES_CARD_TITLE]: [CATEGORIES_FALLBACK_SHEET],
   [SCHEDULE_CARD_TITLE]: [SCHEDULE_FALLBACK_SHEET],
-  /** Pre-split merged card kept both sheets. */
-  "Categorías y Horario": [CATEGORIES_FALLBACK_SHEET, SCHEDULE_FALLBACK_SHEET],
+  /** Competition pre-split + championship merged title. */
+  [CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE]: [
+    CATEGORIES_FALLBACK_SHEET,
+    SCHEDULE_FALLBACK_SHEET,
+  ],
+  [BUDGET_PLAN_CARD_TITLE]: [BUDGET_FALLBACK_TUTORIAL],
+  [CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE]: [BUDGET_FALLBACK_TUTORIAL],
 };
 
-/** Ensures Categorías / Horario still have their spreadsheet fallbacks. */
-async function ensureCategoriesScheduleFallbackAttachments(listIds: number[]) {
+/** Ensures special cards still have their spreadsheet / tutorial fallbacks. */
+async function ensureCardFallbackAttachments(listIds: number[]) {
   if (listIds.length === 0) return 0;
 
-  const scheduleCards = await db.query.cards.findMany({
+  const targetCards = await db.query.cards.findMany({
     where: and(
       inArray(cards.listId, listIds),
-      inArray(cards.title, Object.keys(CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS)),
+      inArray(cards.title, Object.keys(CARD_FALLBACK_ATTACHMENTS)),
     ),
     columns: { id: true, title: true },
     with: {
       attachments: { columns: { url: true } },
     },
   });
-  if (scheduleCards.length === 0) return 0;
+  if (targetCards.length === 0) return 0;
 
   const toInsert: { cardId: number; name: string; url: string }[] = [];
-  for (const card of scheduleCards) {
-    const fallbacks = CATEGORIES_SCHEDULE_FALLBACK_ATTACHMENTS[card.title];
+  for (const card of targetCards) {
+    const fallbacks = CARD_FALLBACK_ATTACHMENTS[card.title];
     if (!fallbacks) continue;
     const urls = new Set(card.attachments.map((attachment) => attachment.url));
     for (const fallback of fallbacks) {
@@ -420,8 +434,7 @@ async function syncMissingCardsOntoBoard(
     template,
     listIds,
   );
-  const attachmentsEnsured =
-    await ensureCategoriesScheduleFallbackAttachments(listIds);
+  const attachmentsEnsured = await ensureCardFallbackAttachments(listIds);
 
   const listsReordered = options.reorderToSeedOrder
     ? await reorderTemplateCardsToSeedOrder(template, listByTitle)

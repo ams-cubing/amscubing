@@ -14,6 +14,7 @@ import {
   type BudgetLineCategory,
   type BudgetReceiptStatus,
 } from "@workspace/db/budget-labels";
+import { BUDGET_FALLBACK_TUTORIAL } from "@workspace/db/data/ams-board-template";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -31,6 +32,7 @@ import {
 } from "../../_actions/budget-actions";
 import type { BudgetCardMode } from "../../_lib/budget-cards";
 import type { BoardDetail } from "../../_lib/types";
+import { CardFallbackLinks } from "./card-fallback-links";
 import { MoneyInput } from "./money-input";
 
 type PlanLineDraft = {
@@ -144,11 +146,12 @@ export function CardBudgetSection({
 
   if (!board.competition) {
     return (
-      <section className="space-y-2 border-t pt-4">
+      <section className="space-y-3 border-t pt-4">
         <h3 className="text-sm font-semibold">Presupuesto</h3>
         <p className="text-muted-foreground text-sm">
           Este tablero no está ligado a una competencia.
         </p>
+        <CardFallbackLinks links={[BUDGET_FALLBACK_TUTORIAL]} />
       </section>
     );
   }
@@ -164,11 +167,13 @@ export function CardBudgetSection({
 
   if (!data) {
     return (
-      <section className="space-y-2 border-t pt-4">
+      <section className="space-y-3 border-t pt-4">
         <h3 className="text-sm font-semibold">Presupuesto</h3>
         <p className="text-muted-foreground text-sm">
-          No se pudo abrir el presupuesto.
+          No se pudo abrir el presupuesto. Usa el tutorial y el Excel/Drive que
+          te asigne el delegado (también en adjuntos si ya están).
         </p>
+        <CardFallbackLinks links={[BUDGET_FALLBACK_TUTORIAL]} />
       </section>
     );
   }
@@ -357,7 +362,7 @@ export function CardBudgetSection({
         ) : null}
       </div>
 
-      {(data.budget.spreadsheetUrl || data.budget.receiptsDriveUrl) && (
+      <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
           {data.budget.spreadsheetUrl ? (
             <Button asChild variant="outline" size="sm">
@@ -388,7 +393,13 @@ export function CardBudgetSection({
             </p>
           )}
         </div>
-      )}
+        {!data.budget.spreadsheetUrl ? (
+          <CardFallbackLinks
+            links={[BUDGET_FALLBACK_TUTORIAL]}
+            note="Sin Excel pegado aún: usa el tutorial (y el Drive que asigne el delegado) como respaldo:"
+          />
+        ) : null}
+      </div>
 
       {mode === "plan" ? (
         <div className="space-y-3">

@@ -12,6 +12,10 @@ import {
 } from "@/lib/wca-authenticated-wcif";
 
 import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  sessionHasBoardsToolsBeta,
+} from "../../_lib/boards-tools-beta";
+import {
   assertCompetitionDelegateOrOrganizer,
   loadAuthenticatedWcifForCompetition,
 } from "../../_lib/competitor-email";
@@ -31,6 +35,9 @@ export async function GET(
   }
   if (!(await canAccessBoard(authResult.session.user, boardId))) {
     return new Response("No tienes acceso a este tablero", { status: 403 });
+  }
+  if (!(await sessionHasBoardsToolsBeta(authResult.session.user))) {
+    return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
   }
 
   const board = await db.query.boards.findFirst({

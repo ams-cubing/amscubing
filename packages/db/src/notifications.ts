@@ -160,6 +160,10 @@ export function formatNotificationTitle(
       return `Informe final de costos enviado — ${city}`;
     case "budget_stage_approved":
       return `Costos actualizados: ${ctx.statusLabel ?? "aprobado"} — ${city}`;
+    case "beta_feature_changed":
+      return ctx.roleLabel
+        ? `Acceso beta: ${ctx.roleLabel}`
+        : "Se revocó un acceso beta de tu cuenta";
   }
 }
 
@@ -200,6 +204,10 @@ export function hrefForNotification(
       return `${boardPath}?card=${opts.cardId}`;
     }
     return boardPath;
+  }
+
+  if (type === "beta_feature_changed") {
+    return boards;
   }
 
   if (type === "date_requested" && opts.dateRequestId != null) {

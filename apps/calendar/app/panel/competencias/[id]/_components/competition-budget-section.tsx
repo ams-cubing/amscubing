@@ -2,16 +2,19 @@ import type { Route } from "next";
 import Link from "next/link";
 import { ExternalLink, PiggyBank } from "lucide-react";
 
+import { db } from "@workspace/db";
+import { userHasBoardsToolsBeta } from "@workspace/db/beta-features";
 import { getCompetitionBudgetSheet } from "@workspace/db/budget";
 import {
   BUDGET_STATUS_LABELS,
   formatMxnCents,
   type BudgetStatus,
 } from "@workspace/db/budget-labels";
-import { db } from "@workspace/db";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
+
+import { requireDelegate } from "@/lib/session";
 
 const STATUS_BADGE: Record<BudgetStatus, string> = {
   draft: "bg-zinc-100 text-zinc-700 border-zinc-200",
@@ -28,6 +31,14 @@ export async function CompetitionBudgetSection({
 }: {
   competitionId: number;
 }) {
+  const auth = await requireDelegate();
+  if (
+    !auth.ok ||
+    !(await userHasBoardsToolsBeta(db, auth.session.user.id))
+  ) {
+    return null;
+  }
+
   const sheet = await getCompetitionBudgetSheet(db, competitionId);
 
   return (

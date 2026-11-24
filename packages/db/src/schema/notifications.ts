@@ -44,6 +44,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "budget_mid_submitted",
   "budget_final_submitted",
   "budget_stage_approved",
+  "beta_feature_changed",
 ]);
 
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];

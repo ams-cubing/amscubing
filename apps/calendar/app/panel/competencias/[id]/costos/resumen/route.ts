@@ -1,4 +1,8 @@
 import { db } from "@workspace/db";
+import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  userHasBoardsToolsBeta,
+} from "@workspace/db/beta-features";
 import { getCompetitionBudgetSheet } from "@workspace/db/budget";
 import { log } from "@workspace/server/log";
 import {
@@ -15,6 +19,9 @@ export async function GET(
   const auth = await requireDelegate();
   if (!auth.ok) {
     return new Response("No autenticado", { status: 401 });
+  }
+  if (!(await userHasBoardsToolsBeta(db, auth.session.user.id))) {
+    return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
   }
 
   const competitionId = Number((await params).id);

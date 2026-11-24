@@ -10,6 +10,7 @@ import {
 import {
   CATEGORIES_CARD_TITLE,
   COMPETITION_DETAILS_CARD_TITLE,
+  SCHEDULE_FALLBACK_SHEET,
 } from "@workspace/db/data/ams-board-template";
 import {
   estimateRoundDurationMinutes,
@@ -23,6 +24,7 @@ import {
   type CategoriesScheduleData,
 } from "../../_actions/categories-schedule-actions";
 import type { BoardDetail } from "../../_lib/types";
+import { CardFallbackLinks } from "./card-fallback-links";
 import { WcaEventLabel } from "./wca-event-label";
 
 export function CardScheduleSection({
@@ -60,11 +62,12 @@ export function CardScheduleSection({
 
   if (!board.competition) {
     return (
-      <section className="space-y-2 rounded-lg border border-dashed p-4">
+      <section className="space-y-3 rounded-lg border border-dashed p-4">
         <h3 className="text-sm font-semibold">Cálculo de rondas</h3>
         <p className="text-muted-foreground text-sm">
           Este tablero no está ligado a una competencia.
         </p>
+        <CardFallbackLinks links={[SCHEDULE_FALLBACK_SHEET]} />
       </section>
     );
   }
@@ -80,11 +83,13 @@ export function CardScheduleSection({
 
   if (data === null) {
     return (
-      <section className="space-y-2 rounded-lg border border-dashed p-4">
+      <section className="space-y-3 rounded-lg border border-dashed p-4">
         <h3 className="text-sm font-semibold">Cálculo de rondas</h3>
         <p className="text-muted-foreground text-sm">
-          No se pudo cargar el formato de la competencia.
+          No se pudo cargar el formato de la competencia. Puedes seguir con la
+          hoja de cálculo adjunta o el enlace de respaldo.
         </p>
+        <CardFallbackLinks links={[SCHEDULE_FALLBACK_SHEET]} />
       </section>
     );
   }
@@ -233,6 +238,11 @@ export function CardScheduleSection({
           })}
         </ul>
       )}
+
+      <CardFallbackLinks
+        links={[SCHEDULE_FALLBACK_SHEET]}
+        note="Hoja de cálculo de respaldo (misma que en main):"
+      />
     </section>
   );
 }

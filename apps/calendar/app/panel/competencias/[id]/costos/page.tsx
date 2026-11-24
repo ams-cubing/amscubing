@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, FileDown } from "lucide-react";
 
 import { db } from "@workspace/db";
+import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  userHasBoardsToolsBeta,
+} from "@workspace/db/beta-features";
 import { ensureCompetitionBudget } from "@workspace/db/budget";
 import {
   BUDGET_LINE_KIND_LABELS,
@@ -36,6 +40,23 @@ export default async function CompetitionBudgetPage({
   const auth = await requireDelegate();
   if (!auth.ok) {
     notFound();
+  }
+  if (!(await userHasBoardsToolsBeta(db, auth.session.user.id))) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-2xl space-y-3">
+          <h1 className="text-xl font-bold">Costos (beta)</h1>
+          <p className="text-muted-foreground text-sm">
+            {BOARDS_TOOLS_DENIED_MESSAGE}
+          </p>
+          <Button asChild variant="outline" size="sm">
+            <Link prefetch={false} href={"/panel" as Route}>
+              Volver al panel
+            </Link>
+          </Button>
+        </div>
+      </main>
+    );
   }
 
   const { id } = await params;

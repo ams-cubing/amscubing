@@ -32,6 +32,7 @@ import {
   type ColumnsState,
 } from "../_lib/types";
 import { CardDialog } from "./card-dialog";
+import { CardSpecialSectionBoundary } from "./card-dialog/card-special-section-boundary";
 import { KanbanCardFace } from "./kanban-card-face";
 import { AddListForm, BoardKanbanColumn } from "./kanban-column";
 
@@ -62,6 +63,7 @@ export function BoardKanban({
   initialCardId = null,
   canApproveCards = false,
   canManageSocialPublish = false,
+  boardsToolsEnabled = false,
   unreadByCard = {},
 }: {
   board: BoardDetail;
@@ -69,6 +71,7 @@ export function BoardKanban({
   initialCardId?: number | null;
   canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
+  boardsToolsEnabled?: boolean;
   unreadByCard?: Record<number, number>;
 }) {
   const router = useRouter();
@@ -329,17 +332,23 @@ export function BoardKanban({
         </KanbanOverlay>
       </Kanban>
 
-      <CardDialog
-        board={board}
-        card={selectedCard}
-        open={Boolean(selectedCard)}
-        onOpenChange={(open) => {
-          if (!open) selectCard(null);
-        }}
-        readOnly={readOnly}
-        canApproveCards={canApproveCards}
-        canManageSocialPublish={canManageSocialPublish}
-      />
+      <CardSpecialSectionBoundary
+        title="Tarjeta"
+        fallbackMessage="No se pudo abrir esta tarjeta. El tablero sigue usable; cierra e inténtalo de nuevo, o usa los adjuntos/Excel de la tarjeta cuando vuelva a cargar."
+      >
+        <CardDialog
+          board={board}
+          card={selectedCard}
+          open={Boolean(selectedCard)}
+          onOpenChange={(open) => {
+            if (!open) selectCard(null);
+          }}
+          readOnly={readOnly}
+          canApproveCards={canApproveCards}
+          canManageSocialPublish={canManageSocialPublish}
+          boardsToolsEnabled={boardsToolsEnabled}
+        />
+      </CardSpecialSectionBoundary>
     </div>
   );
 }

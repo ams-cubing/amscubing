@@ -12,6 +12,11 @@ import {
 import { canAccessBoard } from "@/lib/boards";
 import { requireSession } from "@/lib/session";
 
+import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  sessionHasBoardsToolsBeta,
+} from "../../_lib/boards-tools-beta";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ boardId: string }> },
@@ -27,6 +32,9 @@ export async function GET(
   }
   if (!(await canAccessBoard(authResult.session.user, boardId))) {
     return new Response("No tienes acceso a este tablero", { status: 403 });
+  }
+  if (!(await sessionHasBoardsToolsBeta(authResult.session.user))) {
+    return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
   }
 
   const board = await db.query.boards.findFirst({

@@ -32,6 +32,11 @@ import {
   RESOURCES_LIST_TITLE,
   isListTitle,
 } from "@workspace/db/board-readiness-labels";
+import {
+  BUDGET_FALLBACK_TUTORIAL,
+  CATEGORIES_FALLBACK_SHEET,
+  SCHEDULE_FALLBACK_SHEET,
+} from "@workspace/db/data/ams-board-template";
 
 import { runBoardAction } from "@/lib/run-board-action";
 
@@ -93,6 +98,7 @@ import { CardScheduleSection } from "./card-dialog/card-schedule-section";
 import { CardBudgetSection } from "./card-dialog/card-budget-section";
 import { CardSponsorsSection } from "./card-dialog/card-sponsors-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { CardSpecialSectionBoundary } from "./card-dialog/card-special-section-boundary";
 import { budgetCardMode } from "../_lib/budget-cards";
 import {
   isCategoriesCard,
@@ -110,6 +116,7 @@ export function CardDialog({
   readOnly = false,
   canApproveCards = false,
   canManageSocialPublish = false,
+  boardsToolsEnabled = false,
 }: {
   board: BoardDetail;
   card: BoardCard | null;
@@ -118,6 +125,8 @@ export function CardDialog({
   readOnly?: boolean;
   canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
+  /** In-app budget/categorías/detalles/staff/emails (beta grant). */
+  boardsToolsEnabled?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
@@ -597,96 +606,131 @@ export function CardDialog({
             />
 
             {isWcaWebsiteCard(card.title) ? (
-              <CardWcaUrlSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+              <CardSpecialSectionBoundary title="URL WCA">
+                <CardWcaUrlSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             {isSocialPublishCard(card.title) ? (
-              <CardSocialPublishSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-                canManageSocialPublish={canManageSocialPublish}
-              />
+              <CardSpecialSectionBoundary title="Publicación redes">
+                <CardSocialPublishSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                  canManageSocialPublish={canManageSocialPublish}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             {isEquipmentCard(card.title) ? (
-              <CardEquipmentSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-                isDelegate={canApproveCards}
-              />
+              <CardSpecialSectionBoundary title="Equipo">
+                <CardEquipmentSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                  isDelegate={canApproveCards}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {isInformativeEmailCard(card.title) ? (
-              <CardInformativeEmailSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isInformativeEmailCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Correo informativo">
+                <CardInformativeEmailSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {isFinalEmailCard(card.title) ? (
-              <CardFinalEmailSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isFinalEmailCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Correo de agradecimiento">
+                <CardFinalEmailSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {isCategoriesCard(card.title) ? (
-              <CardCategoriesSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isCategoriesCard(card.title) ? (
+              <CardSpecialSectionBoundary
+                title="Categorías"
+                fallbackLinks={
+                  card.title.trim() === "Categorías y Horario"
+                    ? [CATEGORIES_FALLBACK_SHEET, SCHEDULE_FALLBACK_SHEET]
+                    : [CATEGORIES_FALLBACK_SHEET]
+                }
+              >
+                <CardCategoriesSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {isScheduleCard(card.title) ? (
-              <CardScheduleSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isScheduleCard(card.title) ? (
+              <CardSpecialSectionBoundary
+                title="Horario"
+                fallbackLinks={[SCHEDULE_FALLBACK_SHEET]}
+              >
+                <CardScheduleSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {isCompetitionDetailsCard(card.title) ? (
-              <CardCompetitionDetailsSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isCompetitionDetailsCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Detalles">
+                <CardCompetitionDetailsSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {staffMode ? (
-              <CardStaffRosterSection
-                board={board}
-                cardId={card.id}
-                mode={staffMode}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && staffMode ? (
+              <CardSpecialSectionBoundary title="Staff">
+                <CardStaffRosterSection
+                  board={board}
+                  cardId={card.id}
+                  mode={staffMode}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {budgetMode && budgetMode !== "sponsors" ? (
-              <CardBudgetSection
-                board={board}
-                cardId={card.id}
-                mode={budgetMode}
-                readOnly={readOnly}
-                isDelegate={canApproveCards}
-              />
+            {boardsToolsEnabled && budgetMode && budgetMode !== "sponsors" ? (
+              <CardSpecialSectionBoundary
+                title="Presupuesto"
+                fallbackLinks={[BUDGET_FALLBACK_TUTORIAL]}
+              >
+                <CardBudgetSection
+                  board={board}
+                  cardId={card.id}
+                  mode={budgetMode}
+                  readOnly={readOnly}
+                  isDelegate={canApproveCards}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {budgetMode === "sponsors" ? (
-              <CardSponsorsSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && budgetMode === "sponsors" ? (
+              <CardSpecialSectionBoundary title="Patrocinios">
+                <CardSponsorsSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             <CardAttachmentsSection

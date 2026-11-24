@@ -62,6 +62,17 @@ describe("formatNotificationTitle", () => {
       "Ya no tienes permisos en Cursos AMS",
     );
   });
+
+  it("describes beta feature grants and revocations", () => {
+    expect(
+      formatNotificationTitle("beta_feature_changed", {
+        roleLabel: "Herramientas nuevas de tableros",
+      }),
+    ).toBe("Acceso beta: Herramientas nuevas de tableros");
+    expect(formatNotificationTitle("beta_feature_changed", {})).toBe(
+      "Se revocó un acceso beta de tu cuenta",
+    );
+  });
 });
 
 describe("equipmentNotificationRow", () => {

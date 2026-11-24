@@ -20,6 +20,8 @@
     "./equipment-labels": "./src/equipment-labels.ts",
     "./budget": "./src/budget.ts",
     "./budget-labels": "./src/budget-labels.ts",
+    "./beta-features": "./src/beta-features.ts",
+    "./beta-feature-labels": "./src/beta-feature-labels.ts",
     "./competition-staff": "./src/competition-staff.ts",
     "./competition-format": "./src/competition-format.ts",
     "./competition-format-rules": "./src/competition-format-rules.ts",

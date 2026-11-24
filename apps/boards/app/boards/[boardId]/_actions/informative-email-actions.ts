@@ -34,6 +34,11 @@ import {
   resolveSessionUserId,
 } from "../_lib/board-access";
 import {
+  BOARDS_TOOLS_DENIED_MESSAGE,
+  boardsToolsBetaDenial,
+  sessionHasBoardsToolsBeta,
+} from "../_lib/boards-tools-beta";
+import {
   assertCompetitionDelegateOrOrganizer,
   formatCompetitionDateLabel,
   loadCompetitionLogoUrl,
@@ -335,6 +340,9 @@ export async function loadInformativeEmailCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
+  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+    return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
+  }
   const userId = await resolveSessionUserId(session.user);
   await assertInformativeEmailCard(input.boardId, input.cardId);
 
@@ -387,6 +395,10 @@ export async function saveInformativeEmailDraft(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
+  const betaDenied = await boardsToolsBetaDenial(actor);
+  if (betaDenied) {
+    return { ok: false, message: betaDenied };
+  }
   await assertInformativeEmailCard(input.boardId, input.cardId);
 
   const competition = await loadCompetitionForBoard(input.boardId);
@@ -454,6 +466,10 @@ export async function previewInformativeEmailRecipients(input: {
   ActionFail | ActionOk<{ count: number; sampleNames: string[] }>
 > {
   const actor = await requireBoardAccess(input.boardId);
+  const betaDenied = await boardsToolsBetaDenial(actor);
+  if (betaDenied) {
+    return { ok: false, message: betaDenied };
+  }
   await assertInformativeEmailCard(input.boardId, input.cardId);
 
   const competition = await loadCompetitionForBoard(input.boardId);
@@ -510,6 +526,10 @@ export async function sendInformativeEmail(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
+  const betaDenied = await boardsToolsBetaDenial(actor);
+  if (betaDenied) {
+    return { ok: false, message: betaDenied };
+  }
   await assertInformativeEmailCard(input.boardId, input.cardId);
 
   const competition = await loadCompetitionForBoard(input.boardId);
