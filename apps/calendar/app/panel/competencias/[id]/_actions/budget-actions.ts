@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@workspace/db";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
-  userHasBoardsToolsBeta,
+  competitionHasBoardsToolsBeta,
 } from "@workspace/db/beta-features";
 import {
   BudgetError,
@@ -23,19 +23,25 @@ import {
   competitionOrganizersOnly,
   insertNotifications,
 } from "@workspace/db/notifications";
-import { boardLists, boards, cards } from "@workspace/db/schema";
+import { boardLists, boards, cards, competitions } from "@workspace/db/schema";
 import { ActionError, runAction, type ActionResult } from "@workspace/server/action";
 import { log } from "@workspace/server/log";
 
 import { requireDelegate } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
-async function requireBudgetDelegate() {
+async function requireBudgetDelegate(competitionId: number) {
   const result = await requireDelegate();
   if (!result.ok) {
     throw new ActionError(result.message ?? "Solo delegados");
   }
-  if (!(await userHasBoardsToolsBeta(db, result.session.user.id))) {
+  const competition = await db.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { boardId: true },
+  });
+  if (
+    !(await competitionHasBoardsToolsBeta(db, competition?.boardId ?? null))
+  ) {
     throw new ActionError(BOARDS_TOOLS_DENIED_MESSAGE);
   }
   return result.session.user;
@@ -107,11 +113,11 @@ export async function setBudgetDriveUrlsAction(
   data: FormData,
 ): Promise<ActionResult> {
   return runAction(async () => {
-    const actor = await requireBudgetDelegate();
     const competitionId = Number(data.get("competitionId"));
     if (!Number.isInteger(competitionId) || competitionId <= 0) {
       throw new ActionError("Competencia inválida");
     }
+    const actor = await requireBudgetDelegate(competitionId);
     const receiptsDriveUrl = String(data.get("receiptsDriveUrl") ?? "");
     const spreadsheetUrl = String(data.get("spreadsheetUrl") ?? "");
     try {
@@ -137,7 +143,6 @@ export async function decideBudgetStageAction(
   data: FormData,
 ): Promise<ActionResult> {
   return runAction(async () => {
-    const actor = await requireBudgetDelegate();
     const competitionId = Number(data.get("competitionId"));
     const stage = String(data.get("stage") ?? "");
     const decision = String(data.get("decision") ?? "");
@@ -159,6 +164,7 @@ export async function decideBudgetStageAction(
         reviewNote: reviewNote || undefined,
       });
     if (!parsed.success) throw new ActionError("Solicitud inválida");
+    const actor = await requireBudgetDelegate(parsed.data.competitionId);
 
     try {
       const sheet = await decideBudgetStage(db, {

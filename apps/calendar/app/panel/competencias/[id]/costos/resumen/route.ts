@@ -1,9 +1,12 @@
+import { eq } from "drizzle-orm";
+
 import { db } from "@workspace/db";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
-  userHasBoardsToolsBeta,
+  competitionHasBoardsToolsBeta,
 } from "@workspace/db/beta-features";
 import { getCompetitionBudgetSheet } from "@workspace/db/budget";
+import { competitions } from "@workspace/db/schema";
 import { log } from "@workspace/server/log";
 import {
   budgetSummaryResponse,
@@ -20,13 +23,20 @@ export async function GET(
   if (!auth.ok) {
     return new Response("No autenticado", { status: 401 });
   }
-  if (!(await userHasBoardsToolsBeta(db, auth.session.user.id))) {
-    return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
-  }
 
   const competitionId = Number((await params).id);
   if (!Number.isInteger(competitionId) || competitionId <= 0) {
     return new Response("Competencia no encontrada", { status: 404 });
+  }
+
+  const competition = await db.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { boardId: true },
+  });
+  if (
+    !(await competitionHasBoardsToolsBeta(db, competition?.boardId ?? null))
+  ) {
+    return new Response(BOARDS_TOOLS_DENIED_MESSAGE, { status: 403 });
   }
 
   const sheet = await getCompetitionBudgetSheet(db, competitionId);

@@ -7,14 +7,17 @@ import {
   Paperclip,
   UserPlus,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
@@ -47,6 +50,7 @@ import {
   addChecklistItemAction,
   deleteChecklistAction,
   createLabelAction,
+  deleteCardAction,
   deleteCardCommentAction,
   deleteLabelAction,
   moveCardAction,
@@ -150,6 +154,8 @@ export function CardDialog({
   const [dueDate, setDueDate] = React.useState(
     dueDateInputValue(card?.dueDate),
   );
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const router = useRouter();
 
   const descriptionEditorRef = React.useRef<DescriptionEditorHandle>(null);
   const checklistInputRef = React.useRef<HTMLInputElement>(null);
@@ -172,6 +178,7 @@ export function CardDialog({
     setShowChecklistForm(false);
     setShowMembers((card?.members.length ?? 0) > 0);
     setShowAttachmentForm(false);
+    setDeleteOpen(false);
   }, [card]);
 
   if (!card) return null;
@@ -296,6 +303,7 @@ export function CardDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 md:top-[50%] md:left-[50%] md:h-auto md:max-h-[min(92vh,900px)] md:max-w-[calc(100%-2rem)] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg md:border lg:max-w-5xl"
@@ -366,6 +374,18 @@ export function CardDialog({
             <DialogDescription className="sr-only">
               Detalle de la tarjeta
             </DialogDescription>
+            {canApproveCards && !readOnly ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="ml-auto"
+                disabled={pending}
+                onClick={() => setDeleteOpen(true)}
+              >
+                Eliminar
+              </Button>
+            ) : null}
           </div>
         </DialogHeader>
 
@@ -837,6 +857,52 @@ export function CardDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Eliminar tarjeta</DialogTitle>
+          <DialogDescription>
+            Se eliminará permanentemente «{card.title}» y todo su contenido.
+            Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={pending}>
+              Cancelar
+            </Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            disabled={pending}
+            onClick={() => {
+              startTransition(async () => {
+                const result = await runBoardAction(
+                  () =>
+                    deleteCardAction({
+                      boardId: board.id,
+                      cardId: card.id,
+                    }),
+                  {
+                    errorMessage: "No se pudo eliminar la tarjeta",
+                    successMessage: "Tarjeta eliminada",
+                  },
+                );
+                if (result !== undefined) {
+                  setDeleteOpen(false);
+                  onOpenChange(false);
+                  router.refresh();
+                }
+              });
+            }}
+          >
+            {pending ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

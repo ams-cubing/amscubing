@@ -21,6 +21,11 @@ export const boards = pgTable("board", {
   isTemplate: boolean("is_template").default(false).notNull(),
   /** AMS template the board is (or was cloned from); null for custom boards. */
   templateKey: text("template_key").$type<BoardTemplateKey>(),
+  /**
+   * In-app boards tools pack (presupuesto, categorías/horario, detalles, staff,
+   * correos). Set when the board is created from the calendar; not a per-user beta.
+   */
+  boardsToolsBeta: boolean("boards_tools_beta").default(false).notNull(),
   competitionId: integer("competition_id")
     .unique()
     .references((): AnyPgColumn => competitions.id, { onDelete: "cascade" }),

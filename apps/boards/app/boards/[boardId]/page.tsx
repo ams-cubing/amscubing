@@ -28,7 +28,7 @@ import {
 import { requireSessionOrUnauthorized } from "@/lib/session";
 import { getBoardsUrl, getCalendarUrl } from "@/lib/urls";
 
-import { sessionHasBoardsToolsBeta } from "./_lib/boards-tools-beta";
+import { boardHasToolsBeta } from "./_lib/boards-tools-beta";
 
 function initials(name: string) {
   return name
@@ -98,7 +98,7 @@ export default async function BoardPage({
       : null;
 
   const teamPeople = getCompetitionTeam(board);
-  const boardsToolsEnabled = await sessionHasBoardsToolsBeta(user);
+  const boardsToolsEnabled = await boardHasToolsBeta(boardId);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

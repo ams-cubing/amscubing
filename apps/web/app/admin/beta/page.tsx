@@ -15,7 +15,7 @@ import { RevokeBetaFeatureForm } from "./revoke-form";
 export const metadata: Metadata = {
   title: "Beta | Admin AMS",
   description:
-    "Concede funciones experimentales a usuarios concretos (p. ej. herramientas nuevas de tableros).",
+    "Concede funciones experimentales a usuarios concretos cuando existan betas por cuenta.",
 };
 
 async function PageContent() {
@@ -30,9 +30,9 @@ async function PageContent() {
           Conceder acceso beta
         </h3>
         <p className="ams-copy mb-6 max-w-2xl text-sm leading-6 text-black/65">
-          Las funciones beta están apagadas para todos hasta que un delegado las
-          active aquí. Sin el permiso, los tableros siguen con Excel/Drive y
-          adjuntos de respaldo.
+          Las funciones beta por usuario quedan apagadas hasta que un delegado
+          las active aquí. Las herramientas nuevas del tablero se activan por
+          tablero en el panel del calendario.
         </p>
         <GrantBetaFeatureForm />
       </section>
@@ -43,7 +43,7 @@ async function PageContent() {
         </h3>
         {rows.length === 0 ? (
           <p className="ams-copy text-sm text-black/55">
-            Nadie tiene funciones beta todavía.
+            Nadie tiene funciones beta por usuario todavía.
           </p>
         ) : (
           <ul className="ams-copy divide-y divide-black/10 text-sm">
@@ -108,11 +108,8 @@ export default function AdminBetaPage() {
         </h2>
         <p className="ams-copy mt-3 max-w-2xl text-base leading-7 text-black/65">
           Activa herramientas nuevas para personas concretas mientras se
-          validan. Hoy:{" "}
-          <span className="font-medium text-ams-navy">
-            herramientas de tableros
-          </span>{" "}
-          (presupuesto, categorías, correos, etc.).
+          validan. Hoy no hay betas por usuario; las herramientas del tablero se
+          activan al crear o asignar el tablero en el calendario.
         </p>
       </header>
       <Suspense

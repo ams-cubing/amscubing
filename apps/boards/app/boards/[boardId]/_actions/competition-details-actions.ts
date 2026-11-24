@@ -35,7 +35,7 @@ import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
   boardsToolsBetaDenial,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../_lib/boards-tools-beta";
 import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 
@@ -244,7 +244,7 @@ export async function loadCompetitionDetailsCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   const competitionId = await detailsCardCompetition(
@@ -281,7 +281,7 @@ export async function saveCompetitionDetailsFromCard(input: {
 
   try {
     const actor = await requireBoardAccess(parsed.data.boardId);
-    const betaDenied = await boardsToolsBetaDenial(actor);
+    const betaDenied = await boardsToolsBetaDenial(parsed.data.boardId);
     if (betaDenied) {
       return { ok: false, message: betaDenied };
     }

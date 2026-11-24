@@ -107,6 +107,7 @@ export async function cloneBoardFromTemplate(input: {
   competitionId: number;
   boardName: string;
   templateKey?: BoardTemplateKey;
+  boardsToolsBeta?: boolean;
 }) {
   const existing = await db.query.boards.findFirst({
     where: eq(boards.competitionId, input.competitionId),
@@ -120,7 +121,11 @@ export async function cloneBoardFromTemplate(input: {
   const template = await requireTemplateBoard(templateKey);
 
   return db.transaction((tx) =>
-    insertBoardFromTemplate(tx, template, { ...input, templateKey }),
+    insertBoardFromTemplate(tx, template, {
+      ...input,
+      templateKey,
+      boardsToolsBeta: input.boardsToolsBeta ?? false,
+    }),
   );
 }
 
@@ -131,6 +136,7 @@ async function insertBoardFromTemplate(
     competitionId: number;
     boardName: string;
     templateKey: BoardTemplateKey;
+    boardsToolsBeta: boolean;
   },
 ) {
   const board = must(
@@ -141,6 +147,7 @@ async function insertBoardFromTemplate(
           name: input.boardName,
           isTemplate: false,
           templateKey: input.templateKey,
+          boardsToolsBeta: input.boardsToolsBeta,
           competitionId: input.competitionId,
         })
         .returning()
@@ -278,9 +285,11 @@ export async function getBoardTemplateState(
 ) {
   const rows = await executor.execute<{
     template_key: BoardTemplateKey | null;
+    boards_tools_beta: boolean;
     has_activity: boolean;
   }>(sql`
     select b.template_key,
+      b.boards_tools_beta,
       exists (select 1 from board_member m where m.board_id = b.id)
       or exists (
         select 1 from board_invite i
@@ -312,6 +321,7 @@ export async function getBoardTemplateState(
   if (!row) return null;
   return {
     templateKey: row.template_key,
+    boardsToolsBeta: row.boards_tools_beta,
     hasActivity: row.has_activity,
   };
 }
@@ -350,11 +360,18 @@ export async function switchBoardTemplate(input: {
       );
     }
 
+    const [previous] = await tx
+      .select({ boardsToolsBeta: boards.boardsToolsBeta })
+      .from(boards)
+      .where(eq(boards.id, boardId))
+      .limit(1);
+
     await tx.delete(boards).where(eq(boards.id, boardId));
     return insertBoardFromTemplate(tx, template, {
       competitionId: competition.id,
       boardName: competitionBoardName(competition),
       templateKey: input.templateKey,
+      boardsToolsBeta: previous?.boardsToolsBeta ?? false,
     });
   });
 }

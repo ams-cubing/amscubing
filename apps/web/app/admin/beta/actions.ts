@@ -27,15 +27,10 @@ import { log } from "@workspace/server/log";
 
 import { requireDelegate } from "@/lib/session";
 
-const featureKeys = Object.keys(BETA_FEATURES) as [
-  BetaFeatureKey,
-  ...BetaFeatureKey[],
-];
-
 const schema = z.object({
   userId: z.string().min(1).optional(),
   email: z.string().email().optional(),
-  featureKey: z.enum(featureKeys),
+  featureKey: z.string().min(1),
   enabled: z.enum(["1", "0"]),
 });
 
@@ -57,9 +52,13 @@ export async function setBetaFeatureAction(
       throw new ActionError("Datos de beta no válidos.");
     }
     const input = parsed.data;
-    if (!isBetaFeatureKey(input.featureKey)) {
+    if (
+      Object.keys(BETA_FEATURES).length === 0 ||
+      !isBetaFeatureKey(input.featureKey)
+    ) {
       throw new ActionError("Función beta no válida.");
     }
+    const featureKey = input.featureKey as BetaFeatureKey;
 
     let target =
       input.userId != null
@@ -104,12 +103,12 @@ export async function setBetaFeatureAction(
     const { changed } = await setBetaFeatureGrant(db, {
       actorId: auth.session.user.id,
       targetUserId: target.id,
-      featureKey: input.featureKey,
+      featureKey,
       enabled,
     });
 
     if (changed) {
-      const label = betaFeatureLabel(input.featureKey);
+      const label = betaFeatureLabel(featureKey);
       try {
         await insertNotifications(db, [
           {
@@ -120,7 +119,7 @@ export async function setBetaFeatureAction(
               roleLabel: enabled ? label : undefined,
             }),
             href: getBoardsUrl(),
-            payload: { role: enabled ? input.featureKey : "none" },
+            payload: { role: enabled ? featureKey : "none" },
           },
         ]);
       } catch (error) {
@@ -135,7 +134,7 @@ export async function setBetaFeatureAction(
     updateTag("beta-feature-grants");
     log.info("web.beta_feature_changed", {
       userId: target.id,
-      featureKey: input.featureKey,
+      featureKey,
       enabled,
       actorId: auth.session.user.id,
       changed,
@@ -145,8 +144,8 @@ export async function setBetaFeatureAction(
       ok: true,
       message: changed
         ? enabled
-          ? `${target.name} ya tiene «${betaFeatureLabel(input.featureKey)}».`
-          : `Se quitó «${betaFeatureLabel(input.featureKey)}» a ${target.name}.`
+          ? `${target.name} ya tiene «${betaFeatureLabel(featureKey)}».`
+          : `Se quitó «${betaFeatureLabel(featureKey)}» a ${target.name}.`
         : enabled
           ? `${target.name} ya tenía ese acceso beta.`
           : `${target.name} no tenía ese acceso beta.`,

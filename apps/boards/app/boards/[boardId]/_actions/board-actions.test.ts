@@ -11,9 +11,11 @@ import {
 import {
   addCardCommentAction,
   createLabelAction,
+  deleteCardAction,
   deleteCardCommentAction,
   deleteChecklistAction,
   deleteLabelAction,
+  deleteListAction,
   moveCardAction,
   removeAttachmentAction,
   setCardCoverAction,
@@ -196,6 +198,104 @@ describe("deleteLabelAction", () => {
     );
 
     expect(dbDelete).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteCardAction", () => {
+  const cardId = 20;
+
+  beforeEach(() => {
+    mockBoardAccessAllowed();
+  });
+
+  it("rejects non-delegates", async () => {
+    const { findFirstCard, dbDelete } = getBoardMocks();
+    mockAuthenticatedUser({ role: "user" });
+
+    await expect(deleteCardAction({ boardId, cardId })).rejects.toThrow(
+      "Solo un delegado puede eliminar tarjetas",
+    );
+
+    expect(findFirstCard).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects cards on another board", async () => {
+    const { findFirstCard, dbDelete } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstCard.mockResolvedValue(
+      cardOnBoard(cardId, { boardId: foreignBoardId }),
+    );
+
+    await expect(deleteCardAction({ boardId, cardId })).rejects.toThrow(
+      "Tarjeta no encontrada",
+    );
+
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("deletes a card for delegates", async () => {
+    const { findFirstCard, dbDelete, revalidatePath } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstCard.mockResolvedValue(cardOnBoard(cardId));
+    dbDelete.mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await deleteCardAction({ boardId, cardId });
+
+    expect(dbDelete).toHaveBeenCalled();
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
+  });
+});
+
+describe("deleteListAction", () => {
+  const listId = 30;
+
+  beforeEach(() => {
+    mockBoardAccessAllowed();
+  });
+
+  it("rejects non-delegates", async () => {
+    const { findFirstBoardList, dbDelete } = getBoardMocks();
+    mockAuthenticatedUser({ role: "user" });
+
+    await expect(deleteListAction({ boardId, listId })).rejects.toThrow(
+      "Solo un delegado puede eliminar listas",
+    );
+
+    expect(findFirstBoardList).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("rejects lists on another board", async () => {
+    const { findFirstBoardList, dbDelete } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstBoardList.mockResolvedValue(null);
+
+    await expect(deleteListAction({ boardId, listId })).rejects.toThrow(
+      "Lista no encontrada",
+    );
+
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it("deletes a list for delegates", async () => {
+    const { findFirstBoardList, dbDelete, revalidatePath } = getBoardMocks();
+    mockAuthenticatedUser({ role: "delegate" });
+    findFirstBoardList.mockResolvedValue({
+      id: listId,
+      boardId,
+      title: "Por hacer",
+    });
+    dbDelete.mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await deleteListAction({ boardId, listId });
+
+    expect(dbDelete).toHaveBeenCalled();
+    expect(revalidatePath).toHaveBeenCalledWith(`/boards/${boardId}`);
   });
 });
 

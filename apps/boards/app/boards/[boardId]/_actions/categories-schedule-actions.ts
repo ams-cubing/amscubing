@@ -31,7 +31,7 @@ import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
   boardsToolsBetaDenial,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../_lib/boards-tools-beta";
 import {
   isCategoriesCard,
@@ -149,7 +149,7 @@ export async function loadCategoriesScheduleCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   const competitionId = await formatCardCompetition(
@@ -191,7 +191,7 @@ export async function saveCategoriesScheduleFromCard(input: {
 
   try {
     const actor = await requireBoardAccess(parsed.data.boardId);
-    const betaDenied = await boardsToolsBetaDenial(actor);
+    const betaDenied = await boardsToolsBetaDenial(parsed.data.boardId);
     if (betaDenied) {
       return { ok: false, message: betaDenied };
     }

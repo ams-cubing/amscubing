@@ -1,10 +1,26 @@
 "use client";
 
-import { GripVertical, Plus } from "lucide-react";
+import { Ellipsis, GripVertical, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
 import { Input } from "@workspace/ui/components/input";
 import {
   KanbanColumn,
@@ -16,7 +32,11 @@ import { cn } from "@workspace/ui/lib/utils";
 
 import { runBoardAction } from "@/lib/run-board-action";
 
-import { createCardAction, createListAction } from "../_actions/board-actions";
+import {
+  createCardAction,
+  createListAction,
+  deleteListAction,
+} from "../_actions/board-actions";
 import {
   cardKey,
   isCardRelevantNow,
@@ -37,6 +57,7 @@ interface BoardColumnProps extends Omit<
   readOnly?: boolean;
   /** When true, cards in this column cannot be dragged. */
   lockCards?: boolean;
+  canDeleteLists?: boolean;
   unreadByCard?: Record<number, number>;
   onOpenCard: (cardId: string) => void;
 }
@@ -49,12 +70,14 @@ export function BoardKanbanColumn({
   board,
   readOnly = false,
   lockCards = false,
+  canDeleteLists = false,
   unreadByCard = {},
   onOpenCard,
   className,
   ...props
 }: BoardColumnProps) {
   const cardsLocked = readOnly || lockCards;
+  const listId = parseListKey(String(value));
   return (
     <KanbanColumn
       value={value}
@@ -78,16 +101,26 @@ export function BoardKanbanColumn({
           </Badge>
         </div>
         {!readOnly && (
-          <KanbanColumnHandle asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              aria-label={`Mover lista ${title}`}
-            >
-              <GripVertical className="size-4" />
-            </Button>
-          </KanbanColumnHandle>
+          <div className="flex shrink-0 items-center gap-0.5">
+            {canDeleteLists ? (
+              <DeleteListMenu
+                boardId={board.id}
+                listId={listId}
+                title={title}
+                cardCount={cardIds.length}
+              />
+            ) : null}
+            <KanbanColumnHandle asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0"
+                aria-label={`Mover lista ${title}`}
+              >
+                <GripVertical className="size-4" />
+              </Button>
+            </KanbanColumnHandle>
+          </div>
         )}
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-0.5 px-2">
@@ -137,6 +170,92 @@ export function BoardKanbanColumn({
         </div>
       )}
     </KanbanColumn>
+  );
+}
+
+function DeleteListMenu({
+  boardId,
+  listId,
+  title,
+  cardCount,
+}: {
+  boardId: number;
+  listId: number;
+  title: string;
+  cardCount: number;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [pending, startTransition] = React.useTransition();
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0"
+            aria-label={`Opciones de lista ${title}`}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Ellipsis className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setOpen(true)}
+          >
+            Eliminar lista
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar lista</DialogTitle>
+            <DialogDescription>
+              Se eliminará permanentemente «{title}»
+              {cardCount > 0
+                ? ` y sus ${cardCount} tarjeta${cardCount === 1 ? "" : "s"}`
+                : ""}
+              . Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={pending}>
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              disabled={pending}
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await runBoardAction(
+                    () => deleteListAction({ boardId, listId }),
+                    {
+                      errorMessage: "No se pudo eliminar la lista",
+                      successMessage: "Lista eliminada",
+                    },
+                  );
+                  if (result !== undefined) {
+                    setOpen(false);
+                    router.refresh();
+                  }
+                });
+              }}
+            >
+              {pending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

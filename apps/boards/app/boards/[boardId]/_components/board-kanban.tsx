@@ -262,6 +262,7 @@ export function BoardKanban({
                 board={board}
                 readOnly={readOnly}
                 lockCards={isListTitle(list.title, RESOURCES_LIST_TITLE)}
+                canDeleteLists={canApproveCards}
                 unreadByCard={unreadByCard}
                 onOpenCard={selectCard}
               />

@@ -260,6 +260,7 @@ export async function createCompetition(
       const assignResult = await assignBoardToCompetitionById(
         newCompetitionId,
         validatedData.isChampionship ? "championship" : "competition",
+        validatedData.boardsToolsBeta ?? false,
       );
       if (assignResult.error) {
         message = `Competencia creada, pero no se pudo asignar el tablero: ${assignResult.error}`;

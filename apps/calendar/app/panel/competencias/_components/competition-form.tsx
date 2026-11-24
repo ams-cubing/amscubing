@@ -112,6 +112,7 @@ export function CompetitionForm({
           organizerUserIds: [],
           primaryOrganizerUserId: "",
           assignBoard: true,
+          boardsToolsBeta: false,
           isChampionship: false,
         },
   });
@@ -149,11 +150,15 @@ export function CompetitionForm({
   async function onSubmit(data: CompetitionFormValues) {
     startTransition(async () => {
       try {
-        const { assignBoard, capacity, ...fields } = data;
+        const { assignBoard, boardsToolsBeta, capacity, ...fields } = data;
         const rest = { ...fields, capacity: capacity ?? undefined };
         const result = isEditing
           ? await updateCompetition(competition.id, rest)
-          : await createCompetition({ ...rest, assignBoard });
+          : await createCompetition({
+              ...rest,
+              assignBoard,
+              boardsToolsBeta,
+            });
 
         if (result.success) {
           if (
@@ -230,17 +235,17 @@ export function CompetitionForm({
         )}
 
         {!isEditing && (
-          <FormField
-            control={form.control}
-            name="assignBoard"
-            render={({ field }) => (
-              <div className="space-y-2 rounded-lg border p-4">
-                <div className="text-sm font-medium">Tablero AMS</div>
-                <p className="text-sm text-muted-foreground">
-                  Se clonará la plantilla AMS de{" "}
-                  {isChampionship ? "campeonato" : "competencia"} para los
-                  organizadores.
-                </p>
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="text-sm font-medium">Tablero AMS</div>
+            <p className="text-sm text-muted-foreground">
+              Se clonará la plantilla AMS de{" "}
+              {isChampionship ? "campeonato" : "competencia"} para los
+              organizadores.
+            </p>
+            <FormField
+              control={form.control}
+              name="assignBoard"
+              render={({ field }) => (
                 <FormItem className="flex flex-row items-start gap-3 space-y-0">
                   <FormControl>
                     <Checkbox
@@ -252,9 +257,37 @@ export function CompetitionForm({
                     <FormLabel>Crear tablero AMS automáticamente</FormLabel>
                   </div>
                 </FormItem>
-              </div>
+              )}
+            />
+            {shouldAssignBoard && (
+              <FormField
+                control={form.control}
+                name="boardsToolsBeta"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start gap-3 space-y-0 pl-1">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value ?? false}
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked === true)
+                        }
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Activar herramientas nuevas del tablero (beta)
+                      </FormLabel>
+                      <FormDescription>
+                        Presupuesto, categorías/horario, detalles, staff y
+                        correos informativo/final en el tablero y en Costos del
+                        panel.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
             )}
-          />
+          </div>
         )}
 
         {(isEditing || !shouldAssignBoard) && (

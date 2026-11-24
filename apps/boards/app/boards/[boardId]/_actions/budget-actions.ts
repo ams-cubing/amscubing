@@ -34,7 +34,7 @@ import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
   boardsToolsBetaDenial,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../_lib/boards-tools-beta";
 import {
   budgetCardMode,
@@ -86,7 +86,7 @@ export async function loadBudgetCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   const { competitionId } = await budgetCardCompetition(input.boardId, input.cardId, [
@@ -147,7 +147,7 @@ export async function saveBudgetPlanFromCard(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
@@ -253,7 +253,7 @@ export async function saveBudgetActualsFromCard(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
@@ -341,7 +341,7 @@ export async function estimateRegistrationRevenueFromWca(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   if (!(await rateLimit(session.user.id))) {
@@ -404,7 +404,7 @@ export async function saveSponsorFromCard(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
@@ -464,7 +464,7 @@ export async function removeSponsorFromCard(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }

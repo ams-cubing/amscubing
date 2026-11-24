@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 
-import {
-  BETA_FEATURES,
-  type BetaFeatureKey,
-} from "@workspace/db/beta-feature-labels";
+import { BETA_FEATURES } from "@workspace/db/beta-feature-labels";
 import { ActionForm } from "@workspace/ui/components/action-form";
 import { Label } from "@workspace/ui/components/label";
 
@@ -17,14 +14,28 @@ import {
 import { SubmitButton } from "../equipo/_components/submit-button";
 import { setBetaFeatureAction } from "./actions";
 
+type BetaFeatureDef = { label: string; description: string };
+
 const FEATURE_OPTIONS = Object.entries(BETA_FEATURES) as [
-  BetaFeatureKey,
-  (typeof BETA_FEATURES)[BetaFeatureKey],
+  string,
+  BetaFeatureDef,
 ][];
 
 export function GrantBetaFeatureForm() {
   const [selected, setSelected] = useState<OrganizerOption | null>(null);
-  const [featureKey, setFeatureKey] = useState<BetaFeatureKey>("boards_tools");
+  const [featureKey, setFeatureKey] = useState(FEATURE_OPTIONS[0]?.[0] ?? "");
+
+  if (FEATURE_OPTIONS.length === 0) {
+    return (
+      <p className="ams-copy text-sm text-black/55">
+        No hay funciones beta por usuario por ahora. Las herramientas nuevas del
+        tablero se activan al crear o asignar el tablero en el panel del
+        calendario.
+      </p>
+    );
+  }
+
+  const selectedFeature = FEATURE_OPTIONS.find(([key]) => key === featureKey);
 
   return (
     <ActionForm
@@ -42,9 +53,7 @@ export function GrantBetaFeatureForm() {
           id="beta-feature"
           className="flex h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm"
           value={featureKey}
-          onChange={(event) =>
-            setFeatureKey(event.target.value as BetaFeatureKey)
-          }
+          onChange={(event) => setFeatureKey(event.target.value)}
         >
           {FEATURE_OPTIONS.map(([key, meta]) => (
             <option key={key} value={key}>
@@ -52,9 +61,9 @@ export function GrantBetaFeatureForm() {
             </option>
           ))}
         </select>
-        <p className="text-xs text-black/55">
-          {BETA_FEATURES[featureKey].description}
-        </p>
+        {selectedFeature ? (
+          <p className="text-xs text-black/55">{selectedFeature[1].description}</p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -79,7 +88,9 @@ export function GrantBetaFeatureForm() {
         ) : null}
       </div>
 
-      <SubmitButton disabled={!selected}>Conceder acceso beta</SubmitButton>
+      <SubmitButton disabled={!selected || !featureKey}>
+        Conceder acceso beta
+      </SubmitButton>
     </ActionForm>
   );
 }

@@ -24,7 +24,7 @@ import { assertCardOnBoard, requireBoardAccess } from "../_lib/board-access";
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
   boardsToolsBetaDenial,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../_lib/boards-tools-beta";
 import { staffCardMode } from "../_lib/staff-cards";
 
@@ -75,7 +75,7 @@ export async function loadStaffRosterCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   const competitionId = await staffCardCompetition(input.boardId, input.cardId);
@@ -102,7 +102,7 @@ const removeSchema = cardSchema.extend({
 
 async function prepareMutation(boardId: number, cardId: number) {
   const actor = await requireBoardAccess(boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(boardId);
   if (betaDenied) {
     return { ok: false as const, message: betaDenied };
   }

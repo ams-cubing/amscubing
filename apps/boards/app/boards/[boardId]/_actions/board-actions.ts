@@ -4,6 +4,8 @@ export {
   toggleCardMemberAction,
   createCardAction,
   createListAction,
+  deleteCardAction,
+  deleteListAction,
 } from "./card-actions";
 
 export {

@@ -41,7 +41,7 @@ import {
 import {
   BOARDS_TOOLS_DENIED_MESSAGE,
   boardsToolsBetaDenial,
-  sessionHasBoardsToolsBeta,
+  boardHasToolsBeta,
 } from "../_lib/boards-tools-beta";
 import {
   assertCompetitionDelegateOrOrganizer,
@@ -271,7 +271,7 @@ export async function loadFinalEmailCard(input: {
   if (!(await canAccessBoard(session.user, input.boardId))) {
     return { ok: false, message: "No tienes acceso a este tablero" };
   }
-  if (!(await sessionHasBoardsToolsBeta(session.user))) {
+  if (!(await boardHasToolsBeta(input.boardId))) {
     return { ok: false, message: BOARDS_TOOLS_DENIED_MESSAGE };
   }
   const userId = await resolveSessionUserId(session.user);
@@ -334,7 +334,7 @@ export async function saveFinalEmailDraft(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
@@ -390,7 +390,7 @@ export async function previewFinalEmailRecipients(input: {
   ActionFail | ActionOk<{ count: number; sampleNames: string[] }>
 > {
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
@@ -457,7 +457,7 @@ export async function sendFinalEmail(
   }
   const input = parsed.data;
   const actor = await requireBoardAccess(input.boardId);
-  const betaDenied = await boardsToolsBetaDenial(actor);
+  const betaDenied = await boardsToolsBetaDenial(input.boardId);
   if (betaDenied) {
     return { ok: false, message: betaDenied };
   }
