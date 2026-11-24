@@ -24,11 +24,13 @@ export function CardMembersSection({
   card,
   team,
   memberIds,
+  readOnly = false,
   onToggle,
 }: {
   card: BoardCard;
   team: TeamPerson[];
   memberIds: Set<string>;
+  readOnly?: boolean;
   onToggle: (userId: string, checked: boolean) => void;
 }) {
   return (
@@ -54,13 +56,18 @@ export function CardMembersSection({
             <button
               key={person.userId}
               type="button"
+              disabled={readOnly}
               className={cn(
                 "inline-flex max-w-full min-w-0 items-center gap-2 rounded-md border px-2 py-1 text-xs transition",
                 checked
                   ? "border-foreground/40 bg-muted"
                   : "opacity-70 hover:opacity-100",
+                readOnly && "cursor-default",
               )}
-              onClick={() => onToggle(person.userId, !checked)}
+              onClick={() => {
+                if (readOnly) return;
+                onToggle(person.userId, !checked);
+              }}
               title={person.name}
             >
               <Avatar className="size-5 shrink-0">

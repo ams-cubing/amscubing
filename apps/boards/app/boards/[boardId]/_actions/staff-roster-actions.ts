@@ -104,7 +104,7 @@ async function prepareMutation(boardId: number, cardId: number) {
   const actor = await requireBoardAccess(boardId);
   const betaDenied = await boardsToolsBetaDenial(actor);
   if (betaDenied) {
-    return { ok: false, message: betaDenied };
+    return { ok: false as const, message: betaDenied };
   }
   const competitionId = await staffCardCompetition(boardId, cardId);
   if (!competitionId) {

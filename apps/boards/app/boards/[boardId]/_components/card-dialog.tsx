@@ -170,7 +170,7 @@ export function CardDialog({
     setLabelsOpen(false);
     setEditLabelId(null);
     setShowChecklistForm(false);
-    setShowMembers(false);
+    setShowMembers((card?.members.length ?? 0) > 0);
     setShowAttachmentForm(false);
   }, [card]);
 
@@ -381,56 +381,63 @@ export function CardDialog({
                 readOnly={readOnly}
               />
 
-              {!readOnly && (
+              {(team.length > 0 || !readOnly) && (
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setShowDates(true)}
-                  >
-                    <CalendarClock className="size-4" />
-                    Fechas
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowChecklistForm(true);
-                      requestAnimationFrame(() =>
-                        checklistInputRef.current?.focus(),
-                      );
-                    }}
-                  >
-                    <CheckSquare className="size-4" />
-                    Checklist
-                  </Button>
+                  {!readOnly ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowDates(true)}
+                      >
+                        <CalendarClock className="size-4" />
+                        Fechas
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setShowChecklistForm(true);
+                          requestAnimationFrame(() =>
+                            checklistInputRef.current?.focus(),
+                          );
+                        }}
+                      >
+                        <CheckSquare className="size-4" />
+                        Checklist
+                      </Button>
+                    </>
+                  ) : null}
                   {team.length > 0 && (
                     <Button
                       type="button"
                       size="sm"
-                      variant="secondary"
+                      variant={showMembers ? "default" : "secondary"}
+                      aria-pressed={showMembers}
                       onClick={() => setShowMembers((v) => !v)}
                     >
                       <UserPlus className="size-4" />
                       Miembros
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowAttachmentForm(true);
-                      requestAnimationFrame(() =>
-                        attachmentUrlRef.current?.focus(),
-                      );
-                    }}
-                  >
-                    <Paperclip className="size-4" />
-                    Adjunto
-                  </Button>
+                  {!readOnly ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setShowAttachmentForm(true);
+                        requestAnimationFrame(() =>
+                          attachmentUrlRef.current?.focus(),
+                        );
+                      }}
+                    >
+                      <Paperclip className="size-4" />
+                      Adjunto
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -517,11 +524,12 @@ export function CardDialog({
               </div>
             )}
 
-            {(showMembers || card.members.length > 0) && team.length > 0 && (
+            {showMembers && team.length > 0 && (
               <CardMembersSection
                 card={card}
                 team={team}
                 memberIds={memberIds}
+                readOnly={readOnly}
                 onToggle={(userId, checked) =>
                   run("No se pudo actualizar el miembro", () =>
                     toggleCardMemberAction({

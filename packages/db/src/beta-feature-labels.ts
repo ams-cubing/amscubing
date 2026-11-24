@@ -11,7 +11,7 @@ export type BetaFeatureKey = keyof typeof BETA_FEATURES;
 export const BOARDS_TOOLS_BETA_KEY = "boards_tools" satisfies BetaFeatureKey;
 
 export function isBetaFeatureKey(value: string): value is BetaFeatureKey {
-  return Object.hasOwn(BETA_FEATURES, value);
+  return Object.prototype.hasOwnProperty.call(BETA_FEATURES, value);
 }
 
 export function betaFeatureLabel(key: BetaFeatureKey) {
