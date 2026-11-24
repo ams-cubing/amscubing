@@ -19,6 +19,9 @@ coverage
 # Turbo
 .turbo
 
+# Local WCIF analysis cache
+packages/db/.cache/
+
 # Vercel
 .vercel
 

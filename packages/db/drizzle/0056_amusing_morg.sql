@@ -1,0 +1,1 @@
+ALTER TABLE "competition_budget" ADD COLUMN "review_note" text;

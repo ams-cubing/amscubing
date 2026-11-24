@@ -5,6 +5,7 @@ import {
   Bell,
   CalendarClock,
   CheckSquare,
+  MessageSquare,
   Paperclip,
 } from "lucide-react";
 import * as React from "react";
@@ -56,6 +57,7 @@ export function KanbanCardFace({
   );
   const hasDescription = Boolean(card.description?.trim());
   const attachmentCount = card.attachments.length;
+  const commentCount = card.comments.length;
   const hasDueDate = Boolean(card.dueDate);
   const hasMembers = card.members.length > 0;
   const hasUnread = unreadCount > 0;
@@ -63,6 +65,7 @@ export function KanbanCardFace({
     hasDescription ||
     checklistTotal > 0 ||
     attachmentCount > 0 ||
+    commentCount > 0 ||
     hasDueDate ||
     hasMembers ||
     hasUnread;
@@ -147,6 +150,12 @@ export function KanbanCardFace({
               <span className="inline-flex items-center gap-1">
                 <Paperclip className="size-3.5" />
                 {attachmentCount}
+              </span>
+            )}
+            {commentCount > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <MessageSquare className="size-3.5" />
+                {commentCount}
               </span>
             )}
             {hasMembers && (

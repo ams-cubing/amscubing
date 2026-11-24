@@ -96,6 +96,12 @@ vi.mock("@workspace/social", () => ({
     "Esta competencia ya se está publicando o ya fue publicada",
 }));
 
+vi.mock("@/lib/sync-competition-from-wca", () => ({
+  syncAnnouncedCompetitionFromWcaBestEffort: vi
+    .fn()
+    .mockResolvedValue({ ok: true, message: "synced" }),
+}));
+
 import { markAsAnnounced } from "@/app/panel/_actions/mark-as-announced";
 
 const confirmedCompetition = {
@@ -417,7 +423,8 @@ describe("markAsAnnounced", () => {
 
     expect(result).toEqual({
       success: true,
-      message: "Competencia anunciada y publicada en Facebook e Instagram",
+      message:
+        "Competencia anunciada y publicada en Facebook e Instagram (simulado: sin publicar en redes)",
     });
     expect(publishCompetitionSocialAnnouncement).toHaveBeenCalledOnce();
     expect(transaction).toHaveBeenCalledOnce();

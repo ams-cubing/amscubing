@@ -95,3 +95,4 @@ export {
   SOCIAL_PUBLISH_CLAIM_REJECT_MESSAGE,
   SOCIAL_PUBLISH_CLAIM_TTL_MINUTES,
 } from "./social-publish-claim";
+export { syncCompetitionFromWca } from "./sync-competition-from-wca";

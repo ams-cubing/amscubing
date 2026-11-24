@@ -57,9 +57,19 @@ export const delegateAssignmentStatusEnum = pgEnum(
   ["pending", "accepted", "declined"],
 );
 
+export type CompetitionEventPlanItem = {
+  eventId: string;
+  expectedCompetitors: number;
+  rounds: number;
+  cutoffCs: number | null;
+  timeLimitCs: number | null;
+};
+
 export const competitions = pgTable("competition", {
   id: serial("id").primaryKey(),
   name: text("name"),
+  /** WCA "name reason" / justificación del nombre (Detalles de competencia). */
+  nameReason: text("name_reason"),
   city: text("city").notNull(),
 
   stateId: text("state_id")
@@ -75,6 +85,18 @@ export const competitions = pgTable("competition", {
   endDate: date("end_date").notNull(),
 
   capacity: integer("capacity").notNull().default(50),
+
+  /** Competition stations; null until set on Categorías / Detalles. */
+  stationCount: integer("station_count"),
+  /** Competition zones (default one main area). */
+  zoneCount: integer("zone_count").notNull().default(1),
+  /** Planned events with expected counts, rounds, cutoffs and limits. */
+  eventsPlan: jsonb("events_plan")
+    .$type<CompetitionEventPlanItem[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** Featured event for Detalles de competencia (defaults to 333 when unset). */
+  mainEventId: text("main_event_id"),
 
   isChampionship: boolean("is_championship").default(false).notNull(),
 
@@ -99,6 +121,37 @@ export const competitions = pgTable("competition", {
   socialCustomText: text("social_custom_text"),
   socialTags: text("social_tags"),
   socialFlyerUrl: text("social_flyer_url"),
+
+  finalEmailSubject: text("final_email_subject"),
+  finalEmailBody: text("final_email_body"),
+  finalEmailSurveyUrl: text("final_email_survey_url"),
+  finalEmailCertificatesUrl: text("final_email_certificates_url"),
+  finalEmailPhotosUrl: text("final_email_photos_url"),
+  finalEmailExpenseUrl: text("final_email_expense_url"),
+  finalEmailSentAt: timestamp("final_email_sent_at"),
+  finalEmailSentByUserId: text("final_email_sent_by_user_id").references(
+    () => user.id,
+    { onDelete: "set null" },
+  ),
+  finalEmailRecipientCount: integer("final_email_recipient_count"),
+
+  informativeEmailSubject: text("informative_email_subject"),
+  informativeEmailBody: text("informative_email_body"),
+  informativeEmailUpdateNote: text("informative_email_update_note"),
+  informativeEmailCheckIn: text("informative_email_check_in"),
+  informativeEmailTutorialTime: text("informative_email_tutorial_time"),
+  informativeEmailScheduleUrl: text("informative_email_schedule_url"),
+  informativeEmailAddress: text("informative_email_address"),
+  informativeEmailMapsUrl: text("informative_email_maps_url"),
+  informativeEmailParking: text("informative_email_parking"),
+  informativeEmailUnofficialEvents: text("informative_email_unofficial_events"),
+  informativeEmailGroupsUrl: text("informative_email_groups_url"),
+  informativeEmailThanks: text("informative_email_thanks"),
+  informativeEmailSentAt: timestamp("informative_email_sent_at"),
+  informativeEmailSentByUserId: text(
+    "informative_email_sent_by_user_id",
+  ).references(() => user.id, { onDelete: "set null" }),
+  informativeEmailRecipientCount: integer("informative_email_recipient_count"),
 
   boardId: integer("board_id").references((): AnyPgColumn => boards.id, {
     onDelete: "set null",

@@ -1,23 +1,9 @@
-/** Friendly Spanish labels for WCA event ids. */
-const EVENT_LABELS: Record<string, string> = {
-  "333": "3x3",
-  "222": "2x2",
-  "444": "4x4",
-  "555": "5x5",
-  "666": "6x6",
-  "777": "7x7",
-  "333bf": "3BLD",
-  "333fm": "3FM",
-  "333oh": "3OH",
-  clock: "Clock",
-  minx: "Megaminx",
-  pyram: "Pyraminx",
-  skewb: "Skewb",
-  sq1: "Square-1",
-  "444bf": "4BLD",
-  "555bf": "5BLD",
-  "333mbf": "Multi-BLD",
-};
+import { WCA_EVENTS } from "@workspace/db/competition-format-rules";
+
+/** Display names for WCA event ids (aligned with Cubing México / AMS). */
+const EVENT_LABELS: Record<string, string> = Object.fromEntries(
+  WCA_EVENTS.map((event) => [event.id, event.name]),
+);
 
 /** Full Spanish month names (uppercase) for Canva-style cover dates. */
 const MONTHS_ES_COVER = [

@@ -1,4 +1,4 @@
-/** AMS championship org board template (based on the Mexican Championship 2025 Trello). */
+/** AMS championship org board template (based on Mexican Championship 2027). */
 
 import {
   EQUIPMENT_CARD,
@@ -7,6 +7,7 @@ import {
   SOCIAL_PUBLISH_CARD,
   STAFF_COURSE_URL,
   TEMPLATE_LISTS,
+  VENUE_PERMISSION_CARD_TITLE,
   WCA_WEBSITE_CARD,
   type TemplateListTitle,
 } from "./ams-board-template";
@@ -14,6 +15,29 @@ import type {
   BoardTemplateCard,
   BoardTemplateDefinition,
 } from "./board-templates";
+
+/** Championship mid-stage budget card (ledger + receipts Drive). */
+export const CHAMPIONSHIP_BUDGET_MID_CARD_TITLE = "Manejo de fondos del evento";
+/** Championship sponsors card title. */
+export const CHAMPIONSHIP_BUDGET_SPONSORS_CARD_TITLE = "Contactar patrocinadores";
+/** Championship plan budget card (MC2027 title). */
+export const CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE =
+  "Excel de costos y viabilidad";
+/** Championship final budget card (MC2027 title). */
+export const CHAMPIONSHIP_BUDGET_FINAL_CARD_TITLE =
+  "Generar un resumen financiero del evento";
+
+/** Championship post-competition thank-you / quality survey card. */
+export const CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE =
+  "Correo informativo y agradecimiento a competidores y staff";
+
+/** Championship pre-competition informative email card. */
+export const CHAMPIONSHIP_INFORMATIVE_EMAIL_CARD_TITLE =
+  "Mantener interés y claridad con los competidores";
+
+/** Merged categories + schedule card title used on championship boards. */
+export const CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE =
+  "Categorías y Horario";
 
 /** Area labels must not reuse phase colors: readiness and card dimming read phases by color. */
 const AREA_LABELS = [
@@ -53,9 +77,45 @@ export const CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE =
 export const CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE =
   "Preparación y capacitación de staff";
 
+/** Pre-announce staff training plan card (MC2027 title). */
+export const CHAMPIONSHIP_STAFF_PLAN_CARD_TITLE = "Capacitación de staff";
+
+/** Old / variant titles left on boards after sync; seed deletes them. */
+export const CHAMPIONSHIP_RETIRED_CARD_TITLES = [
+  "Establecer las bases técnicas del campeonato",
+  "Definir y asegurar la sede ideal para el campeonato",
+  "Elaborar un plano funcional de la sede",
+  "Estimar y planear necesidades financieras clave",
+  "Buscar alianzas que aporten recursos o visibilidad",
+  "Asegurar un manejo claro de los fondos del evento",
+  "Excel de costos y viabilidad de la competencia",
+  "Buscar patrocionos",
+  "Categorías y horario",
+  "Drive Documentación",
+] as const;
+
+export const CHAMPIONSHIP_BUDGET_RENAMED_CARD_TITLES = {
+  "Presupuesto de la competencia": CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE,
+  "Informe final de costos": CHAMPIONSHIP_BUDGET_FINAL_CARD_TITLE,
+} as const;
+
 export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
-    title: "Establecer las bases técnicas del campeonato",
+    title: "Responsabilidades del Organizador",
+    list: "Por Hacer",
+    labels: ["pre_organization"],
+    description:
+      "**Objetivo:** Que los organizadores conozcan a profundidad sus obligaciones y responsabilidades en las competencias.\n\nIngresa al formulario adjunto en esta tarjeta y lee detenidamente todos los apartados de las [**Responsabilidades del Organizador**](https://forms.gle/2uGNa6VS92zWZQ8L7). Deberás aceptar cada una de ellas y enviar la encuesta utilizando el mismo correo con el que ingresaste a este Trello.\n\nUna vez que **todos los organizadores envíen sus formularios firmados**, puedes mover esta tarjeta a **“Hecho”**.\n\n**Nota:** Si tienes alguna duda o no estás de acuerdo con alguna de las responsabilidades, comunícate directamente con tu delegado.\n\n**Nota:** Si eres **menor de edad**, deberás incluir en el formulario la[](https://docs.google.com/document/d/1yE3-VPiLGPYOZ9Nlee7ywYpMH4wat1dZu9cosWZUG8U/edit?usp=sharing) [**carta responsiva**](https://drive.google.com/file/d/17HTATkxobh5BxdxIV-V0w9Cux_L3TjxG/view?usp=drive_link)\\*\\* firmada por tu tutor legal\\*\\*.",
+  },
+  {
+    title: "Convocatoria organizadores",
+    list: "Por Hacer",
+    labels: ["pre_announce"],
+    description:
+      "Preparar convocatoria para personas que esten interesadas en organizar la competencia.\n\nIncluir:\n\n- Experiencia\n- Conocimientos\n- Equipo al que le gustaría pertenecer\n- Alguna idea u trabajo que te gustaría aportar",
+  },
+  {
+    title: CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "scoring"],
     description:
@@ -72,7 +132,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Definir y asegurar la sede ideal para el campeonato",
+    title: VENUE_PERMISSION_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "logistics"],
     description:
@@ -98,14 +158,14 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Elaborar un plano funcional de la sede",
+    title: "Mapeo de sede",
     list: "Por Hacer",
     labels: ["pre_announce", "logistics"],
     description:
       "**Objetivo:** Tener un mapeo de la sede con la disposición de todas las áreas.\n\nConsidera:\n\n- Zonas de competencia (principal y silenciosa)\n- Zona de entrega de cubos\n- Zona de mezcla (aislada visualmente)\n- Zona de espera de competidores\n- Zona de espectadores\n- Zona de registro\n- Zona de captura\n- Zona de staff\n- Zona de streaming\n- Zona de patrocinadores y convivencia\n\nSube el mapeo final en JPG o PNG (además del archivo editable) para que todos puedan consultarlo.",
   },
   {
-    title: "Estimar y planear necesidades financieras clave",
+    title: CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "finance"],
     description:
@@ -119,7 +179,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "**Objetivo:** Decidir qué categorías tendrán un costo de inscripción adicional.\n\nSi es necesario, levanta una encuesta con la comunidad y comparte aquí los resultados y la decisión final.",
   },
   {
-    title: "Buscar alianzas que aporten recursos o visibilidad",
+    title: CHAMPIONSHIP_BUDGET_SPONSORS_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "finance", "communication"],
     description:
@@ -137,7 +197,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "**Objetivo:** Acordar con la sede qué tipo de patrocinadores se aceptan.\n\nDocumenta aquí las restricciones (p. ej. que se alineen a una imagen inclusiva y familiar) y los espacios disponibles para patrocinadores en la sede.",
   },
   {
-    title: "Elaborar un plan de capacitación de staff",
+    title: CHAMPIONSHIP_STAFF_PLAN_CARD_TITLE,
     list: "Por Hacer",
     labels: ["pre_announce", "staff"],
     description:
@@ -189,10 +249,8 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
   {
     ...WCA_WEBSITE_CARD,
     labels: ["pre_announce", "communication", "scoring"],
-    description: WCA_WEBSITE_CARD.description?.replace(
-      "la tarjeta de Horario y Categorías",
-      "la tarjeta de bases técnicas del campeonato",
-    ),
+    description:
+      "Objetivo: Tener lista la competencia en el sitio web de la WCA para su anuncio:\n\n**Paso 1.-** Solicita a tu delegado la creación del sitio de la competencia. Entra a tu perfil de la WCA y en la sección **Competitions → My Competitions**, encontrarás la web de la competencia.\n\n**Paso 2.-** Coloca toda la información de la competencia. Puedes usar de referencia la siguiente competencia: *Competencia de ejemplo*, y rellenar todos los datos. Revisa que todo esté correcto.\n\n- El **ID**, **Name** y **Nickname** deben ser idénticos (excepto si son más de 30 caracteres).\n- Revisa que la dirección, mapa y coordenadas estén exactamente correctos.\n- Los campos **Razón de nombre** y **Comentarios finales** deben ser llenados en **inglés**.\n- Todas las secciones de texto deben estar en **Español e Inglés**.\n\n**Paso 3.-** Edita la información de eventos y horarios.  \nEn **Edit → Manage Events → Manage Schedule**, debes agregar las categorías, rondas y horarios según lo aceptado en la tarjeta de Categorías y Horario.\n\n**Paso 4.-** Añade pestañas con información adicional.  \nEn **Manage Tab** puedes agregar pestañas con información adicional (Cómo llegar, recomendaciones de hospedaje, patrocinadores). Recuerda que todo debe ir en **inglés y español**.\n\n**Paso 5.-** Guarda la URL pública de la competencia en la sección **URL WCA** de esta tarjeta (queda sincronizada con el calendario AMS).\n\n**Paso 6.-** Revisa a detalle que todo esté correcto y mueve esta tarjeta a **Hecho** cuando esté lista para su revisión.\n\n**Nota:** Si tu competencia tiene alguna condición especial como:\n\n- Registro por depósito\n- Donaciones activadas\n- Políticas de Check-In obligatorias (Regla 2k1)\n- Políticas de acompañantes\n\nDeberás colocarlas en la sección de **Extra Registration Requirements**; de lo contrario, puedes dejar esa sección vacía.",
   },
   {
     title: "Aviso de filmación",
@@ -209,13 +267,15 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     title: CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description: `**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\nPublica en las redes del evento un formulario para los competidores interesados en ser staff y adjúntalo aquí.\n\nRegistra en la sección **Staff** de esta tarjeta a las personas confirmadas (nombre, WCA ID o correo y sus actividades) y compárteles el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}).`,
+    description:
+      "**Objetivo:** Identificar y contactar organizadores y staff clave con experiencia o compromiso.\n\nPublica en las redes del evento un formulario para los competidores interesados en ser staff y adjúntalo aquí.",
   },
   {
     title: CHAMPIONSHIP_STAFF_TRAINING_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "staff", "staff_wellbeing"],
-    description: `**Objetivo:** Capacitar al staff nuevo y preparar los beneficios de staff.\n\nTodos los voluntarios deben estar capacitados y certificados por la AMS. En la sección **Staff** de esta tarjeta verás quién ya completó el curso de [**Capacitación de Staff**](${STAFF_COURSE_URL}); es la misma lista de **${CHAMPIONSHIP_STAFF_PLANNING_CARD_TITLE}**. Comparte aquí los beneficios acordados (comida, hidratación, registro gratuito, regalo, etc.).`,
+    description:
+      "**Objetivo:** Capacitar al staff nuevo y preparar los beneficios de staff.\n\nTodos los voluntarios deben estar capacitados y certificados por la AMS. Comparte aquí sus certificados y los beneficios acordados (comida, hidratación, registro gratuito, regalo, etc.).",
     attachments: [
       {
         name: "Instrucciones para jueces",
@@ -238,7 +298,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
       "Responder dudas, correos y mensajes de los competidores y sus acompañantes.",
   },
   {
-    title: "Mantener interés y claridad con los competidores",
+    title: CHAMPIONSHIP_INFORMATIVE_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "registration", "communication"],
     description:
@@ -307,7 +367,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Asegurar un manejo claro de los fondos del evento",
+    title: CHAMPIONSHIP_BUDGET_MID_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_announce", "finance"],
     description:
@@ -362,7 +422,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     description: "Desarmar estaciones y dejar la sede como estaba.",
   },
   {
-    title: "Correo informativo y agradecimiento a competidores y staff",
+    title: CHAMPIONSHIP_FINAL_EMAIL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_celebrate", "registration", "communication", "finance"],
     description:
@@ -375,7 +435,7 @@ export const CHAMPIONSHIP_TEMPLATE_CARDS: ChampionshipCard[] = [
     ],
   },
   {
-    title: "Generar un resumen financiero del evento",
+    title: CHAMPIONSHIP_BUDGET_FINAL_CARD_TITLE,
     list: "Por Hacer",
     labels: ["post_celebrate", "finance"],
     description: "Hacer un informe final con ingresos, egresos y saldos.",
@@ -389,5 +449,12 @@ export const CHAMPIONSHIP_BOARD_TEMPLATE: BoardTemplateDefinition = {
   labels: CHAMPIONSHIP_LABELS,
   lists: TEMPLATE_LISTS,
   cards: CHAMPIONSHIP_TEMPLATE_CARDS,
-  retiredCardTitles: [],
+  retiredCardTitles: CHAMPIONSHIP_RETIRED_CARD_TITLES,
+  renamedCardTitles: {
+    ...CHAMPIONSHIP_BUDGET_RENAMED_CARD_TITLES,
+    "Elaborar un plan de capacitación de staff":
+      CHAMPIONSHIP_STAFF_PLAN_CARD_TITLE,
+    Categorías: CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE,
+    Horario: CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE,
+  },
 };

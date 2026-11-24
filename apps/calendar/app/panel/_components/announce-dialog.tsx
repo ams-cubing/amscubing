@@ -21,6 +21,23 @@ import {
   type AnnouncementPreview,
 } from "../_actions/preview-announcement";
 
+function sourceSummary(preview: AnnouncementPreview) {
+  const body =
+    preview.sources.bodyText === "custom"
+      ? "Texto personalizado del tablero"
+      : "Introducción en español de la WCA";
+  const tags = preview.sources.hasTags
+    ? "Con etiquetas del tablero"
+    : "Sin etiquetas";
+  const image =
+    preview.sources.imageSource === "flyer"
+      ? "Imagen: flyer del tablero"
+      : preview.sources.imageSource === "logo"
+        ? "Imagen: logo de la WCA"
+        : "Sin imagen (Instagram se omitirá)";
+  return [body, tags, image];
+}
+
 export function AnnounceDialog({
   competitionId,
   city,
@@ -53,6 +70,8 @@ export function AnnounceDialog({
 
   const pending = previewPending || publishPending;
   const trimmedUrl = wcaCompetitionUrl.trim();
+  const hasBoardUrl = Boolean(initialWcaCompetitionUrl?.trim());
+  const noImage = Boolean(preview && !preview.imageUrl);
 
   const handlePreview = () => {
     if (!trimmedUrl) {
@@ -131,6 +150,19 @@ export function AnnounceDialog({
               <span className="font-semibold text-foreground">Anunciada</span>.
             </p>
 
+            <ul className="space-y-1 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+              {sourceSummary(preview).map((line) => (
+                <li key={line}>· {line}</li>
+              ))}
+            </ul>
+
+            {noImage ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                Sin flyer ni logo WCA: Instagram no se puede publicar. Confirma
+                solo Facebook, o vuelve al tablero para subir un flyer.
+              </p>
+            ) : null}
+
             <div className="space-y-3 rounded-md border bg-muted/20 p-3">
               <p className="font-semibold text-foreground">
                 {preview.displayName}
@@ -166,12 +198,14 @@ export function AnnounceDialog({
               <span className="font-semibold text-foreground">
                 Torneo de Rubik
               </span>
-              . Si la página WCA tiene logo, se usará en la publicación.
+              .
             </p>
             <p>
-              La publicación solo continúa si la URL apunta a una competencia
-              real en la WCA. El texto personalizado del tablero es opcional: si
-              no hay, se usa la introducción en español de la página WCA.
+              Texto, etiquetas y flyer salen de la tarjeta de redes del tablero.
+              La URL debe apuntar a una competencia real en la WCA
+              {hasBoardUrl
+                ? " (la misma de la tarjeta Sitio web, editable aquí si cambió)."
+                : "."}
             </p>
 
             <div className="space-y-2 pt-1">
@@ -211,13 +245,26 @@ export function AnnounceDialog({
               >
                 Cambiar URL
               </Button>
-              <Button
-                className="w-full sm:w-auto"
-                disabled={publishPending}
-                onClick={handleAnnounce}
-              >
-                {publishPending ? "Publicando..." : "Anunciar y publicar"}
-              </Button>
+              {noImage ? (
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  disabled={publishPending}
+                  onClick={handleAnnounce}
+                >
+                  {publishPending
+                    ? "Publicando..."
+                    : "Anunciar solo en Facebook"}
+                </Button>
+              ) : (
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={publishPending}
+                  onClick={handleAnnounce}
+                >
+                  {publishPending ? "Publicando..." : "Anunciar y publicar"}
+                </Button>
+              )}
             </>
           ) : (
             <>

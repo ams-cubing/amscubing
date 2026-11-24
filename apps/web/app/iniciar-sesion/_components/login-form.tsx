@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Eye, EyeOff, MailCheck } from "lucide-react";
+import { WCA_OAUTH_SCOPES } from "@workspace/auth/wca-scopes";
 import { authClient } from "@/lib/auth-client";
 import { ResendVerificationButton } from "@/components/resend-verification-button";
 
@@ -83,6 +84,7 @@ export function LoginForm({
         provider: "wca",
         callbackURL,
         errorCallbackURL: errorCallbackURL(),
+        scopes: [...WCA_OAUTH_SCOPES],
       });
       if (result.error) setError("No se pudo iniciar el acceso con WCA.");
     } catch {

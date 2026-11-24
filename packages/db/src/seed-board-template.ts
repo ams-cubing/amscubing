@@ -10,8 +10,20 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { COMPETITION_BOARD_TEMPLATE } from "./data/ams-board-template";
-import { CHAMPIONSHIP_BOARD_TEMPLATE } from "./data/ams-championship-template";
+import {
+  BUDGET_FALLBACK_TUTORIAL,
+  BUDGET_PLAN_CARD_TITLE,
+  CATEGORIES_CARD_TITLE,
+  CATEGORIES_FALLBACK_SHEET,
+  SCHEDULE_CARD_TITLE,
+  SCHEDULE_FALLBACK_SHEET,
+  COMPETITION_BOARD_TEMPLATE,
+} from "./data/ams-board-template";
+import {
+  CHAMPIONSHIP_BOARD_TEMPLATE,
+  CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE,
+  CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE,
+} from "./data/ams-championship-template";
 import {
   BOARD_TEMPLATE_KEYS,
   type BoardTemplateCard,
@@ -44,6 +56,8 @@ type ListRow = typeof boardLists.$inferSelect;
 type SyncBoardResult = {
   inserted: number;
   listsReordered: number;
+  descriptionsUpdated: number;
+  attachmentsEnsured: number;
   skipped?: string;
 };
 
@@ -258,6 +272,92 @@ async function shiftCardsFromPosition(listId: number, fromPosition: number) {
 }
 
 /**
+ * Rewrites descriptions of seed cards that already exist (by exact title).
+ * Keeps AMS process copy in sync; does not touch custom-titled cards.
+ */
+async function syncSeedDescriptionsOntoBoard(
+  template: BoardTemplateDefinition,
+  listIds: number[],
+) {
+  if (listIds.length === 0) return 0;
+
+  const existing = await db.query.cards.findMany({
+    where: inArray(cards.listId, listIds),
+    columns: { id: true, title: true, description: true },
+  });
+  const byTitle = new Map(existing.map((card) => [card.title, card]));
+
+  let updated = 0;
+  for (const cardDef of template.cards) {
+    const card = byTitle.get(cardDef.title);
+    if (!card) continue;
+    const nextDescription = cardDef.description ?? null;
+    if ((card.description ?? null) === nextDescription) continue;
+    await db
+      .update(cards)
+      .set({ description: nextDescription, updatedAt: new Date() })
+      .where(eq(cards.id, card.id));
+    updated += 1;
+  }
+  return updated;
+}
+
+/**
+ * Offline Excel / Drive / tutorial links kept on cards that gained in-app tools.
+ * Same URLs as main so organizers are never blocked if the new UI fails.
+ */
+const CARD_FALLBACK_ATTACHMENTS: Record<
+  string,
+  { name: string; url: string }[]
+> = {
+  [CATEGORIES_CARD_TITLE]: [CATEGORIES_FALLBACK_SHEET],
+  [SCHEDULE_CARD_TITLE]: [SCHEDULE_FALLBACK_SHEET],
+  /** Competition pre-split + championship merged title. */
+  [CHAMPIONSHIP_CATEGORIES_SCHEDULE_CARD_TITLE]: [
+    CATEGORIES_FALLBACK_SHEET,
+    SCHEDULE_FALLBACK_SHEET,
+  ],
+  [BUDGET_PLAN_CARD_TITLE]: [BUDGET_FALLBACK_TUTORIAL],
+  [CHAMPIONSHIP_BUDGET_PLAN_CARD_TITLE]: [BUDGET_FALLBACK_TUTORIAL],
+};
+
+/** Ensures special cards still have their spreadsheet / tutorial fallbacks. */
+async function ensureCardFallbackAttachments(listIds: number[]) {
+  if (listIds.length === 0) return 0;
+
+  const targetCards = await db.query.cards.findMany({
+    where: and(
+      inArray(cards.listId, listIds),
+      inArray(cards.title, Object.keys(CARD_FALLBACK_ATTACHMENTS)),
+    ),
+    columns: { id: true, title: true },
+    with: {
+      attachments: { columns: { url: true } },
+    },
+  });
+  if (targetCards.length === 0) return 0;
+
+  const toInsert: { cardId: number; name: string; url: string }[] = [];
+  for (const card of targetCards) {
+    const fallbacks = CARD_FALLBACK_ATTACHMENTS[card.title];
+    if (!fallbacks) continue;
+    const urls = new Set(card.attachments.map((attachment) => attachment.url));
+    for (const fallback of fallbacks) {
+      if (urls.has(fallback.url)) continue;
+      toInsert.push({
+        cardId: card.id,
+        name: fallback.name,
+        url: fallback.url,
+      });
+    }
+  }
+
+  if (toInsert.length === 0) return 0;
+  await db.insert(cardAttachments).values(toInsert);
+  return toInsert.length;
+}
+
+/**
  * Inserts any template cards missing from a board (by title across all lists).
  * When `reorderToSeedOrder` is true (template board), also rewrites positions.
  */
@@ -280,6 +380,8 @@ async function syncMissingCardsOntoBoard(
     return {
       inserted: 0,
       listsReordered: 0,
+      descriptionsUpdated: 0,
+      attachmentsEnsured: 0,
       skipped: `missing lists (${missingLists.join(", ")})`,
     };
   }
@@ -327,20 +429,43 @@ async function syncMissingCardsOntoBoard(
     inserted += 1;
   }
 
+  const listIds = listRows.map((list) => list.id);
+  const descriptionsUpdated = await syncSeedDescriptionsOntoBoard(
+    template,
+    listIds,
+  );
+  const attachmentsEnsured = await ensureCardFallbackAttachments(listIds);
+
   const listsReordered = options.reorderToSeedOrder
     ? await reorderTemplateCardsToSeedOrder(template, listByTitle)
     : 0;
 
-  if (inserted > 0 || listsReordered > 0) {
+  if (
+    inserted > 0 ||
+    listsReordered > 0 ||
+    descriptionsUpdated > 0 ||
+    attachmentsEnsured > 0
+  ) {
     const parts: string[] = [];
     if (inserted > 0) parts.push(`${inserted} missing card(s)`);
+    if (descriptionsUpdated > 0) {
+      parts.push(`${descriptionsUpdated} description(s)`);
+    }
+    if (attachmentsEnsured > 0) {
+      parts.push(`${attachmentsEnsured} fallback attachment(s)`);
+    }
     if (listsReordered > 0) {
       parts.push(`reordered ${listsReordered} list(s)`);
     }
     console.log(`✅ Synced ${label}: ${parts.join(", ")}`);
   }
 
-  return { inserted, listsReordered };
+  return {
+    inserted,
+    listsReordered,
+    descriptionsUpdated,
+    attachmentsEnsured,
+  };
 }
 
 async function syncMissingTemplateCards(
@@ -371,6 +496,8 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
 
   let boardsUpdated = 0;
   let cardsInserted = 0;
+  let descriptionsUpdated = 0;
+  let attachmentsEnsured = 0;
   let boardsSkipped = 0;
 
   for (const board of targets) {
@@ -385,15 +512,28 @@ export async function syncMissingTemplateCardsOntoCompetitionBoards(
       );
       continue;
     }
-    if (result.inserted > 0) {
+    if (
+      result.inserted > 0 ||
+      result.descriptionsUpdated > 0 ||
+      result.attachmentsEnsured > 0
+    ) {
       boardsUpdated += 1;
       cardsInserted += result.inserted;
+      descriptionsUpdated += result.descriptionsUpdated;
+      attachmentsEnsured += result.attachmentsEnsured;
     }
   }
 
   if (boardsUpdated > 0) {
+    const parts = [`${cardsInserted} card(s)`];
+    if (descriptionsUpdated > 0) {
+      parts.push(`${descriptionsUpdated} description(s)`);
+    }
+    if (attachmentsEnsured > 0) {
+      parts.push(`${attachmentsEnsured} fallback attachment(s)`);
+    }
     console.log(
-      `✅ Backfilled ${cardsInserted} card(s) across ${boardsUpdated} ${template.key} board(s)`,
+      `✅ Backfilled ${parts.join(" + ")} across ${boardsUpdated} ${template.key} board(s)`,
     );
   } else {
     console.log(`⏭️  ${template.key} boards already have all template cards`);
@@ -474,6 +614,137 @@ async function createFreshBoardTemplate(template: BoardTemplateDefinition) {
   return board.id;
 }
 
+/**
+ * Renames/merges old template card titles onto their replacements (board-scoped)
+ * before insert/retire. Preserves comments, attachments, members and list.
+ */
+async function renameTemplateCardsOnBoard(
+  template: BoardTemplateDefinition,
+  boardId: number,
+) {
+  const renames = template.renamedCardTitles;
+  if (!renames || Object.keys(renames).length === 0) return 0;
+
+  const listRows = await db.query.boardLists.findMany({
+    where: eq(boardLists.boardId, boardId),
+    columns: { id: true },
+  });
+  if (listRows.length === 0) return 0;
+  const listIds = listRows.map((list) => list.id);
+
+  const boardCards = await db.query.cards.findMany({
+    where: inArray(cards.listId, listIds),
+    columns: { id: true, title: true },
+    with: {
+      attachments: { columns: { id: true, name: true, url: true } },
+      comments: { columns: { id: true } },
+    },
+  });
+
+  const byTitle = new Map<string, typeof boardCards>();
+  for (const card of boardCards) {
+    const group = byTitle.get(card.title) ?? [];
+    group.push(card);
+    byTitle.set(card.title, group);
+  }
+
+  const groups = new Map<string, string[]>();
+  for (const [oldTitle, newTitle] of Object.entries(renames)) {
+    const list = groups.get(newTitle) ?? [];
+    list.push(oldTitle);
+    groups.set(newTitle, list);
+  }
+
+  let changed = 0;
+
+  for (const [newTitle, oldTitles] of groups) {
+    const existingNew = byTitle.get(newTitle) ?? [];
+    const oldCards = oldTitles.flatMap((title) => byTitle.get(title) ?? []);
+
+    if (oldCards.length === 0) continue;
+
+    let survivorId: number | null = existingNew[0]?.id ?? null;
+
+    if (!survivorId) {
+      const ranked = [...oldCards].sort((a, b) => {
+        const score = (card: (typeof oldCards)[number]) =>
+          card.comments.length * 10 + card.attachments.length;
+        return score(b) - score(a);
+      });
+      survivorId = ranked[0]!.id;
+      await db
+        .update(cards)
+        .set({ title: newTitle, updatedAt: new Date() })
+        .where(eq(cards.id, survivorId));
+      changed += 1;
+    }
+
+    const leftoverIds = oldCards
+      .map((card) => card.id)
+      .filter((id) => id !== survivorId);
+
+    if (leftoverIds.length === 0) continue;
+
+    const survivorUrls = new Set(
+      (byTitle.get(newTitle)?.[0]?.attachments ?? []).map((a) => a.url),
+    );
+    // After rename, survivor may be an old card — use its attachments too.
+    const survivorCard =
+      boardCards.find((card) => card.id === survivorId) ?? null;
+    for (const attachment of survivorCard?.attachments ?? []) {
+      survivorUrls.add(attachment.url);
+    }
+
+    for (const leftover of oldCards.filter((card) => card.id !== survivorId)) {
+      for (const attachment of leftover.attachments) {
+        if (survivorUrls.has(attachment.url)) continue;
+        await db.insert(cardAttachments).values({
+          cardId: survivorId,
+          name: attachment.name,
+          url: attachment.url,
+        });
+        survivorUrls.add(attachment.url);
+      }
+    }
+
+    await db.delete(cards).where(inArray(cards.id, leftoverIds));
+    changed += leftoverIds.length;
+  }
+
+  return changed;
+}
+
+async function renameTemplateCards(
+  template: BoardTemplateDefinition,
+): Promise<number> {
+  if (!template.renamedCardTitles) return 0;
+
+  const targets = await db.query.boards.findMany({
+    where: or(
+      templateBoardWhere(template),
+      and(
+        eq(boards.isTemplate, false),
+        isNotNull(boards.competitionId),
+        eq(boards.templateKey, template.key),
+      ),
+    ),
+    columns: { id: true, name: true },
+  });
+
+  let total = 0;
+  for (const board of targets) {
+    total += await renameTemplateCardsOnBoard(template, board.id);
+  }
+
+  if (total > 0) {
+    console.log(
+      `🔀 Renamed/merged ${total} card(s) for «${template.name}» across ${targets.length} board(s)`,
+    );
+  }
+
+  return total;
+}
+
 async function removeRetiredTemplateCards(template: BoardTemplateDefinition) {
   if (template.retiredCardTitles.length === 0) return;
 
@@ -490,6 +761,7 @@ async function removeRetiredTemplateCards(template: BoardTemplateDefinition) {
 }
 
 async function seedBoardTemplate(template: BoardTemplateDefinition) {
+  await renameTemplateCards(template);
   await removeRetiredTemplateCards(template);
 
   const existing = await db.query.boards.findFirst({
@@ -529,6 +801,7 @@ export async function seedAmsBoardTemplate(
 /** Deletes the given AMS template board (if any) and recreates it from seed data. */
 export async function reseedAmsBoardTemplate(key: BoardTemplateKey) {
   const template = BOARD_TEMPLATES[key];
+  await renameTemplateCards(template);
   await removeRetiredTemplateCards(template);
 
   const removed = await db

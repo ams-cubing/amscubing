@@ -34,6 +34,7 @@ export function AmsSiteFooter({
   const siteLinks = [
     { label: "Inicio", href: joinUrl(webUrl, "/") },
     { label: "Nosotros", href: joinUrl(webUrl, "/nosotros") },
+    { label: "Tabuladores", href: joinUrl(webUrl, "/tabuladores") },
     { label: "Competencias", href: joinUrl(webUrl, "/competencias") },
     { label: "Blog", href: blogUrl },
     { label: "Cursos", href: coursesUrl },

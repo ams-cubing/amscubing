@@ -1,5 +1,6 @@
 import { Geist_Mono, Saira, Unbounded } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
 
 import "@workspace/ui/globals.css";
 import "./web.css";
@@ -72,6 +73,7 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontCopy.variable} ${fontMono.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>

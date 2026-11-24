@@ -27,6 +27,17 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
+import {
+  APPROVED_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  isListTitle,
+} from "@workspace/db/board-readiness-labels";
+import {
+  BUDGET_FALLBACK_TUTORIAL,
+  CATEGORIES_FALLBACK_SHEET,
+  SCHEDULE_FALLBACK_SHEET,
+} from "@workspace/db/data/ams-board-template";
+
 import { runBoardAction } from "@/lib/run-board-action";
 
 import {
@@ -70,10 +81,30 @@ import {
   isEquipmentCard,
 } from "./card-dialog/card-equipment-section";
 import {
+  CardFinalEmailSection,
+  isFinalEmailCard,
+} from "./card-dialog/card-final-email-section";
+import {
+  CardInformativeEmailSection,
+  isInformativeEmailCard,
+} from "./card-dialog/card-informative-email-section";
+import {
   CardMembersSection,
   type TeamPerson,
 } from "./card-dialog/card-members-section";
+import { CardCategoriesSection } from "./card-dialog/card-categories-schedule-section";
+import { CardCompetitionDetailsSection } from "./card-dialog/card-competition-details-section";
+import { CardScheduleSection } from "./card-dialog/card-schedule-section";
+import { CardBudgetSection } from "./card-dialog/card-budget-section";
+import { CardSponsorsSection } from "./card-dialog/card-sponsors-section";
 import { CardStaffRosterSection } from "./card-dialog/card-staff-roster-section";
+import { CardSpecialSectionBoundary } from "./card-dialog/card-special-section-boundary";
+import { budgetCardMode } from "../_lib/budget-cards";
+import {
+  isCategoriesCard,
+  isScheduleCard,
+} from "../_lib/categories-schedule-card";
+import { isCompetitionDetailsCard } from "../_lib/competition-details-card";
 import { staffCardMode } from "../_lib/staff-cards";
 import { getCompetitionTeam } from "../_lib/team";
 
@@ -83,14 +114,19 @@ export function CardDialog({
   open,
   onOpenChange,
   readOnly = false,
+  canApproveCards = false,
   canManageSocialPublish = false,
+  boardsToolsEnabled = false,
 }: {
   board: BoardDetail;
   card: BoardCard | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
+  canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
+  /** In-app budget/categorías/detalles/staff/emails (beta grant). */
+  boardsToolsEnabled?: boolean;
 }) {
   const [title, setTitle] = React.useState(card?.title ?? "");
   const [description, setDescription] = React.useState(card?.description ?? "");
@@ -134,7 +170,7 @@ export function CardDialog({
     setLabelsOpen(false);
     setEditLabelId(null);
     setShowChecklistForm(false);
-    setShowMembers(false);
+    setShowMembers((card?.members.length ?? 0) > 0);
     setShowAttachmentForm(false);
   }, [card]);
 
@@ -143,7 +179,13 @@ export function CardDialog({
   const labelIds = new Set(card.cardLabels.map((cl) => cl.labelId));
   const memberIds = new Set(card.members.map((m) => m.userId));
   const staffMode = staffCardMode(card.title);
+  const budgetMode = budgetCardMode(card.title);
   const currentList = board.lists.find((list) => list.id === card.listId);
+  const isResourcesCard = isListTitle(
+    currentList?.title ?? "",
+    RESOURCES_LIST_TITLE,
+  );
+  const canMoveCard = !readOnly && !isResourcesCard;
   const team = getCompetitionTeam(board);
   const descriptionLong = (description || card.description || "").length > 280;
   const displayDescription = description || card.description || "";
@@ -216,10 +258,16 @@ export function CardDialog({
   }
 
   function moveToList(toListId: number) {
-    if (readOnly) return;
+    if (!canMoveCard) return;
     if (toListId === card!.listId) return;
     const targetList = board.lists.find((list) => list.id === toListId);
     if (!targetList) return;
+    if (
+      isListTitle(targetList.title, APPROVED_LIST_TITLE) &&
+      !canApproveCards
+    ) {
+      return;
+    }
     const ordered = [...targetList.cards.map((c) => c.id), card!.id];
     run("No se pudo mover la tarjeta", () =>
       moveCardAction({
@@ -255,7 +303,7 @@ export function CardDialog({
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
-            {readOnly ? (
+            {!canMoveCard ? (
               <Badge
                 variant="secondary"
                 className="max-w-[min(100%,14rem)] min-w-0 truncate"
@@ -280,20 +328,37 @@ export function CardDialog({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {board.lists.map((list) => (
-                    <DropdownMenuItem
-                      key={list.id}
-                      onClick={() => moveToList(list.id)}
-                      disabled={list.id === card.listId || pending}
-                    >
-                      <span
-                        className="block max-w-64 truncate"
-                        title={list.title}
+                  {board.lists.map((list) => {
+                    const isApprovedTarget = isListTitle(
+                      list.title,
+                      APPROVED_LIST_TITLE,
+                    );
+                    const blockedForOrganizer =
+                      isApprovedTarget && !canApproveCards;
+                    return (
+                      <DropdownMenuItem
+                        key={list.id}
+                        onClick={() => moveToList(list.id)}
+                        disabled={
+                          list.id === card.listId ||
+                          pending ||
+                          blockedForOrganizer
+                        }
+                        title={
+                          blockedForOrganizer
+                            ? "Solo un delegado puede mover tarjetas a Aprobado"
+                            : undefined
+                        }
                       >
-                        {list.title}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                        <span
+                          className="block max-w-64 truncate"
+                          title={list.title}
+                        >
+                          {list.title}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -316,56 +381,63 @@ export function CardDialog({
                 readOnly={readOnly}
               />
 
-              {!readOnly && (
+              {(team.length > 0 || !readOnly) && (
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setShowDates(true)}
-                  >
-                    <CalendarClock className="size-4" />
-                    Fechas
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowChecklistForm(true);
-                      requestAnimationFrame(() =>
-                        checklistInputRef.current?.focus(),
-                      );
-                    }}
-                  >
-                    <CheckSquare className="size-4" />
-                    Checklist
-                  </Button>
+                  {!readOnly ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowDates(true)}
+                      >
+                        <CalendarClock className="size-4" />
+                        Fechas
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setShowChecklistForm(true);
+                          requestAnimationFrame(() =>
+                            checklistInputRef.current?.focus(),
+                          );
+                        }}
+                      >
+                        <CheckSquare className="size-4" />
+                        Checklist
+                      </Button>
+                    </>
+                  ) : null}
                   {team.length > 0 && (
                     <Button
                       type="button"
                       size="sm"
-                      variant="secondary"
+                      variant={showMembers ? "default" : "secondary"}
+                      aria-pressed={showMembers}
                       onClick={() => setShowMembers((v) => !v)}
                     >
                       <UserPlus className="size-4" />
                       Miembros
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowAttachmentForm(true);
-                      requestAnimationFrame(() =>
-                        attachmentUrlRef.current?.focus(),
-                      );
-                    }}
-                  >
-                    <Paperclip className="size-4" />
-                    Adjunto
-                  </Button>
+                  {!readOnly ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setShowAttachmentForm(true);
+                        requestAnimationFrame(() =>
+                          attachmentUrlRef.current?.focus(),
+                        );
+                      }}
+                    >
+                      <Paperclip className="size-4" />
+                      Adjunto
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -452,11 +524,12 @@ export function CardDialog({
               </div>
             )}
 
-            {(showMembers || card.members.length > 0) && team.length > 0 && (
+            {showMembers && team.length > 0 && (
               <CardMembersSection
                 card={card}
                 team={team}
                 memberIds={memberIds}
+                readOnly={readOnly}
                 onToggle={(userId, checked) =>
                   run("No se pudo actualizar el miembro", () =>
                     toggleCardMemberAction({
@@ -541,37 +614,131 @@ export function CardDialog({
             />
 
             {isWcaWebsiteCard(card.title) ? (
-              <CardWcaUrlSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+              <CardSpecialSectionBoundary title="URL WCA">
+                <CardWcaUrlSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             {isSocialPublishCard(card.title) ? (
-              <CardSocialPublishSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-                canManageSocialPublish={canManageSocialPublish}
-              />
+              <CardSpecialSectionBoundary title="Publicación redes">
+                <CardSocialPublishSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                  canManageSocialPublish={canManageSocialPublish}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             {isEquipmentCard(card.title) ? (
-              <CardEquipmentSection
-                board={board}
-                cardId={card.id}
-                readOnly={readOnly}
-              />
+              <CardSpecialSectionBoundary title="Equipo">
+                <CardEquipmentSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                  isDelegate={canApproveCards}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
-            {staffMode ? (
-              <CardStaffRosterSection
-                board={board}
-                cardId={card.id}
-                mode={staffMode}
-                readOnly={readOnly}
-              />
+            {boardsToolsEnabled && isInformativeEmailCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Correo informativo">
+                <CardInformativeEmailSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && isFinalEmailCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Correo de agradecimiento">
+                <CardFinalEmailSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && isCategoriesCard(card.title) ? (
+              <CardSpecialSectionBoundary
+                title="Categorías"
+                fallbackLinks={
+                  card.title.trim() === "Categorías y Horario"
+                    ? [CATEGORIES_FALLBACK_SHEET, SCHEDULE_FALLBACK_SHEET]
+                    : [CATEGORIES_FALLBACK_SHEET]
+                }
+              >
+                <CardCategoriesSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && isScheduleCard(card.title) ? (
+              <CardSpecialSectionBoundary
+                title="Horario"
+                fallbackLinks={[SCHEDULE_FALLBACK_SHEET]}
+              >
+                <CardScheduleSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && isCompetitionDetailsCard(card.title) ? (
+              <CardSpecialSectionBoundary title="Detalles">
+                <CardCompetitionDetailsSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && staffMode ? (
+              <CardSpecialSectionBoundary title="Staff">
+                <CardStaffRosterSection
+                  board={board}
+                  cardId={card.id}
+                  mode={staffMode}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && budgetMode && budgetMode !== "sponsors" ? (
+              <CardSpecialSectionBoundary
+                title="Presupuesto"
+                fallbackLinks={[BUDGET_FALLBACK_TUTORIAL]}
+              >
+                <CardBudgetSection
+                  board={board}
+                  cardId={card.id}
+                  mode={budgetMode}
+                  readOnly={readOnly}
+                  isDelegate={canApproveCards}
+                />
+              </CardSpecialSectionBoundary>
+            ) : null}
+
+            {boardsToolsEnabled && budgetMode === "sponsors" ? (
+              <CardSpecialSectionBoundary title="Patrocinios">
+                <CardSponsorsSection
+                  board={board}
+                  cardId={card.id}
+                  readOnly={readOnly}
+                />
+              </CardSpecialSectionBoundary>
             ) : null}
 
             <CardAttachmentsSection

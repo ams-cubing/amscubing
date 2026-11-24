@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { sendEmail, renderEmailLayout } from "@workspace/email";
+import { isLiveExternalSideEffectsEnabled } from "@workspace/server/external-side-effects";
+
 function directory() {
   return resolve(
     /*turbopackIgnore: true*/ process.env.AUTH_DEV_MAIL_DIR ??
@@ -11,6 +13,20 @@ function directory() {
 function filename(userId: string, kind: string) {
   return `${createHash("sha256").update(`${userId}:${kind}`).digest("hex")}.json`;
 }
+
+async function writeDevMail(input: {
+  userId: string;
+  kind: "verify" | "reset";
+  url: string;
+}) {
+  const dir = directory();
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    resolve(dir, filename(input.userId, input.kind)),
+    JSON.stringify({ url: input.url, createdAt: Date.now() }),
+  );
+}
+
 export async function sendAuthEmail(input: {
   userId: string;
   email: string;
@@ -21,13 +37,12 @@ export async function sendAuthEmail(input: {
     input.kind === "verify"
       ? "Verifica tu cuenta AMS"
       : "Recupera tu cuenta AMS";
-  if (process.env.NODE_ENV !== "production" && !process.env.RESEND_API_KEY) {
-    const dir = directory();
-    await mkdir(dir, { recursive: true });
-    await writeFile(
-      resolve(dir, filename(input.userId, input.kind)),
-      JSON.stringify({ url: input.url, createdAt: Date.now() }),
-    );
+  if (!isLiveExternalSideEffectsEnabled()) {
+    await writeDevMail({
+      userId: input.userId,
+      kind: input.kind,
+      url: input.url,
+    });
     return;
   }
   const result = await sendEmail({
@@ -51,8 +66,7 @@ export async function sendAuthEmail(input: {
     throw new Error("No se pudo entregar el correo de autenticación");
 }
 export async function readDevVerification(userId: string) {
-  if (process.env.NODE_ENV === "production" || process.env.RESEND_API_KEY)
-    return null;
+  if (isLiveExternalSideEffectsEnabled()) return null;
   try {
     const mail = JSON.parse(
       await readFile(resolve(directory(), filename(userId, "verify")), "utf8"),

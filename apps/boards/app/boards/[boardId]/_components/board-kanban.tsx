@@ -3,12 +3,18 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import {
+  APPROVED_LIST_TITLE,
+  RESOURCES_LIST_TITLE,
+  isListTitle,
+} from "@workspace/db/board-readiness-labels";
 import { Badge } from "@workspace/ui/components/badge";
 import {
   Kanban,
   KanbanBoard,
   KanbanOverlay,
 } from "@workspace/ui/components/kanban";
+import { toast } from "sonner";
 
 import { markCardNotificationsReadAction } from "@/app/_actions/notifications";
 import { runBoardAction } from "@/lib/run-board-action";
@@ -26,6 +32,7 @@ import {
   type ColumnsState,
 } from "../_lib/types";
 import { CardDialog } from "./card-dialog";
+import { CardSpecialSectionBoundary } from "./card-dialog/card-special-section-boundary";
 import { KanbanCardFace } from "./kanban-card-face";
 import { AddListForm, BoardKanbanColumn } from "./kanban-column";
 
@@ -54,13 +61,17 @@ export function BoardKanban({
   board,
   readOnly = false,
   initialCardId = null,
+  canApproveCards = false,
   canManageSocialPublish = false,
+  boardsToolsEnabled = false,
   unreadByCard = {},
 }: {
   board: BoardDetail;
   readOnly?: boolean;
   initialCardId?: number | null;
+  canApproveCards?: boolean;
   canManageSocialPublish?: boolean;
+  boardsToolsEnabled?: boolean;
   unreadByCard?: Record<number, number>;
 }) {
   const router = useRouter();
@@ -156,6 +167,11 @@ export function BoardKanban({
     });
   }
 
+  function revertColumns(previous: ColumnsState) {
+    columnsRef.current = previous;
+    setColumns(previous);
+  }
+
   function commitDrag() {
     const previous = dragSnapshotRef.current;
     const activeId = activeDragIdRef.current;
@@ -170,11 +186,31 @@ export function BoardKanban({
     if (activeId in next) return;
     if (!cardPlacementChanged(previous, next, activeId)) return;
 
+    const fromListId = findCardColumn(previous, activeId);
+    const toListId = findCardColumn(next, activeId);
+    const fromList = fromListId ? listsById.get(fromListId) : null;
+    const toList = toListId ? listsById.get(toListId) : null;
+
+    if (fromList && isListTitle(fromList.title, RESOURCES_LIST_TITLE)) {
+      revertColumns(previous);
+      toast.error("Las tarjetas de Recursos no se pueden mover");
+      return;
+    }
+
+    if (
+      toList &&
+      isListTitle(toList.title, APPROVED_LIST_TITLE) &&
+      !canApproveCards
+    ) {
+      revertColumns(previous);
+      toast.error("Solo un delegado puede mover tarjetas a Aprobado");
+      return;
+    }
+
     void runBoardAction(() => persistMove(next, activeId), {
       errorMessage: "No se pudo mover la tarjeta",
       onError: () => {
-        columnsRef.current = previous;
-        setColumns(previous);
+        revertColumns(previous);
       },
     });
   }
@@ -225,6 +261,7 @@ export function BoardKanban({
                 cardsById={cardsById}
                 board={board}
                 readOnly={readOnly}
+                lockCards={isListTitle(list.title, RESOURCES_LIST_TITLE)}
                 unreadByCard={unreadByCard}
                 onOpenCard={selectCard}
               />
@@ -295,16 +332,23 @@ export function BoardKanban({
         </KanbanOverlay>
       </Kanban>
 
-      <CardDialog
-        board={board}
-        card={selectedCard}
-        open={Boolean(selectedCard)}
-        onOpenChange={(open) => {
-          if (!open) selectCard(null);
-        }}
-        readOnly={readOnly}
-        canManageSocialPublish={canManageSocialPublish}
-      />
+      <CardSpecialSectionBoundary
+        title="Tarjeta"
+        fallbackMessage="No se pudo abrir esta tarjeta. El tablero sigue usable; cierra e inténtalo de nuevo, o usa los adjuntos/Excel de la tarjeta cuando vuelva a cargar."
+      >
+        <CardDialog
+          board={board}
+          card={selectedCard}
+          open={Boolean(selectedCard)}
+          onOpenChange={(open) => {
+            if (!open) selectCard(null);
+          }}
+          readOnly={readOnly}
+          canApproveCards={canApproveCards}
+          canManageSocialPublish={canManageSocialPublish}
+          boardsToolsEnabled={boardsToolsEnabled}
+        />
+      </CardSpecialSectionBoundary>
     </div>
   );
 }

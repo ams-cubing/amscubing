@@ -12,6 +12,7 @@
   },
   "exports": {
     "./env": "./src/env.ts",
+    "./external-side-effects": "./src/external-side-effects.ts",
     "./log": "./src/log.ts",
     "./security-headers": {
       "types": "./src/security-headers.d.mts",
@@ -20,7 +21,8 @@
     "./action": "./src/action.ts",
     "./robots": "./src/robots.ts",
     "./pdf/letterhead": "./src/pdf/letterhead.ts",
-    "./pdf/equipment-sheet": "./src/pdf/equipment-sheet.ts"
+    "./pdf/equipment-sheet": "./src/pdf/equipment-sheet.ts",
+    "./pdf/budget-summary": "./src/pdf/budget-summary.ts"
   },
   "peerDependencies": {
     "next": "catalog:"

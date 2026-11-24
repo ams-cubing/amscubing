@@ -2,6 +2,8 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
+import { WCA_EVENTS } from "@workspace/db/competition-format-rules";
+
 export type RankingType = "single" | "average";
 
 export type RankingEvent = {
@@ -50,25 +52,11 @@ const RANKINGS_REVALIDATE_SECONDS = 60 * 60 * 12;
 // Without `size` the API returns every ranked Mexican competitor (~870 KB for 3x3x3).
 const RANKING_SIZE = 5;
 
-export const rankingEvents: RankingEvent[] = [
-  { id: "333", name: "Cubo 3x3x3", supportsAverage: true },
-  { id: "222", name: "Cubo 2x2x2", supportsAverage: true },
-  { id: "444", name: "Cubo 4x4x4", supportsAverage: true },
-  { id: "555", name: "Cubo 5x5x5", supportsAverage: true },
-  { id: "666", name: "Cubo 6x6x6", supportsAverage: true },
-  { id: "777", name: "Cubo 7x7x7", supportsAverage: true },
-  { id: "333bf", name: "3x3x3 Blindfolded", supportsAverage: true },
-  { id: "333fm", name: "3x3x3 Fewest Moves", supportsAverage: true },
-  { id: "333oh", name: "3x3x3 One-Handed", supportsAverage: true },
-  { id: "clock", name: "Clock", supportsAverage: true },
-  { id: "minx", name: "Megaminx", supportsAverage: true },
-  { id: "pyram", name: "Pyraminx", supportsAverage: true },
-  { id: "skewb", name: "Skewb", supportsAverage: true },
-  { id: "sq1", name: "Square-1", supportsAverage: true },
-  { id: "444bf", name: "4x4x4 Blindfolded", supportsAverage: true },
-  { id: "555bf", name: "5x5x5 Blindfolded", supportsAverage: true },
-  { id: "333mbf", name: "3x3x3 Multi-Blind", supportsAverage: false },
-];
+export const rankingEvents: RankingEvent[] = WCA_EVENTS.map((event) => ({
+  id: event.id,
+  name: event.name,
+  supportsAverage: event.supportsAverage,
+}));
 
 export async function getNationalRankings(): Promise<EventRanking[]> {
   "use cache";

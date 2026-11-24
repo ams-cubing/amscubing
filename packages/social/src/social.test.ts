@@ -157,7 +157,9 @@ describe("buildAnnouncementCaption", () => {
     expect(caption).toContain("📅:");
     expect(caption).toContain("📍: Comité Directivo Estatal del PRI de Puebla");
     expect(caption).toContain("🏙️: Puebla, Puebla");
-    expect(caption).toContain("🔻: 3x3, 2x2, 7x7, 3BLD, Megaminx, Square-1");
+    expect(caption).toContain(
+      "🔻: Cubo 3x3x3, Cubo 2x2x2, Cubo 7x7x7, 3x3x3 Blindfolded, Megaminx, Square-1",
+    );
     expect(caption).toContain("🎟️: 70 competidores");
     expect(caption).toContain("ℹ️: @rubik_teampuebla Puebla Rubik's Team");
     expect(caption).toContain(
@@ -239,7 +241,9 @@ describe("buildUpcomingCompetitionsCaption", () => {
       "📍: Auditorio Plutarco Elias Calles. Cen del PRI.",
     );
     expect(caption).toContain("🏙️: Ciudad de México, CdMx");
-    expect(caption).toContain("🔻: 3x3, 2x2, Pyraminx, Skewb, 3OH, Megaminx");
+    expect(caption).toContain(
+      "🔻: Cubo 3x3x3, Cubo 2x2x2, Pyraminx, Skewb, 3x3x3 One-Handed, Megaminx",
+    );
     expect(caption).toContain("🎟️: 80 competidores");
     expect(caption).toContain("Baja Warm Up I 2025");
     expect(caption).toContain("📅: 6 de septiembre 2025");
@@ -290,7 +294,7 @@ describe("buildUpcomingCompetitionsCaption", () => {
 
 describe("formatEventLabels", () => {
   it("maps known event ids", () => {
-    expect(formatEventLabels(["333", "minx"])).toBe("3x3, Megaminx");
+    expect(formatEventLabels(["333", "minx"])).toBe("Cubo 3x3x3, Megaminx");
   });
 });
 
@@ -429,6 +433,10 @@ describe("generateCoverPngFromInputs", () => {
 describe("facebookPostUrl", () => {
   it("builds a facebook.com URL from a post id", () => {
     expect(facebookPostUrl("123_456")).toBe("https://www.facebook.com/123_456");
+  });
+
+  it("returns null for simulated staging ids", () => {
+    expect(facebookPostUrl("sim:fb:abc")).toBeNull();
   });
 });
 

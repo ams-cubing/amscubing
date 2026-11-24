@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { WCA_OAUTH_SCOPES } from "@workspace/auth/wca-scopes";
 import { authClient } from "@/lib/auth-client";
-import { unlinkWca } from "@/app/cuenta/actions";
+import { resetWcaLinkForReconnect, unlinkWca } from "@/app/cuenta/actions";
 export function ProfileSecurity({
   credential,
   linked,
@@ -16,6 +17,32 @@ export function ProfileSecurity({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [confirmUnlink, setConfirmUnlink] = useState(false);
+
+  async function reconnectWca() {
+    setBusy(true);
+    setMessage("");
+    try {
+      // Drop local WCA tokens/links (incl. duplicates) so WCA must re-authorize.
+      const reset = await resetWcaLinkForReconnect();
+      if (!reset.ok) {
+        setMessage(reset.message);
+        return;
+      }
+      const result = await authClient.signIn.social({
+        provider: "wca",
+        callbackURL: `${window.location.origin}/cuenta`,
+        errorCallbackURL: `${window.location.origin}/iniciar-sesion?returnTo=${encodeURIComponent("/cuenta")}`,
+        scopes: [...WCA_OAUTH_SCOPES],
+      });
+      if (result.error) {
+        setMessage("No se pudo reconectar WCA. Inténtalo de nuevo.");
+      }
+    } catch {
+      setMessage("No se pudo reconectar WCA. Inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function revoke() {
     setBusy(true);
     try {
@@ -124,7 +151,21 @@ export function ProfileSecurity({
         </form>
       )}
       {linked && (
-        <div className="mt-6 border-t border-black/10 pt-5">
+        <div className="mt-6 space-y-4 border-t border-black/10 pt-5">
+          <div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void reconnectWca()}
+              className={button}
+            >
+              Volver a conectar WCA
+            </button>
+            <p className="mt-2 text-xs leading-5 text-black/60">
+              Borra el enlace WCA local y te manda a autorizar de nuevo (hace
+              falta para permisos nuevos, p. ej. correos a competidores).
+            </p>
+          </div>
           {credential && verified ? (
             <>
               {confirmUnlink ? (

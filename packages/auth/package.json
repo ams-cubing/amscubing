@@ -18,7 +18,8 @@
     "./session": "./src/session.ts",
     "./types": "./src/types.ts",
     "./permissions": "./src/permissions.ts",
-    "./notifications": "./src/notifications.ts"
+    "./notifications": "./src/notifications.ts",
+    "./wca-scopes": "./src/wca-scopes.ts"
   },
   "peerDependencies": {
     "next": "catalog:"
@@ -26,6 +27,7 @@
   "dependencies": {
     "@workspace/email": "workspace:*",
     "@workspace/db": "workspace:*",
+    "@workspace/server": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:"
   },

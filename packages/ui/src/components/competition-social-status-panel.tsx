@@ -163,8 +163,25 @@ export function CompetitionSocialStatusPanel({
         </div>
       </div>
 
+      {showCompleteIg ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          Facebook ya está publicado. Completa Instagram cuando haya flyer o
+          logo WCA disponible.
+        </p>
+      ) : null}
+
       {actions || showRetry || showCompleteIg || showMarkManual ? (
         <div className="flex flex-wrap gap-2">
+          {showCompleteIg ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={pending}
+              onClick={() => runAction("ig")}
+            >
+              {pending ? "Publicando…" : "Completar Instagram"}
+            </Button>
+          ) : null}
           {actions}
           {showRetry ? (
             <Button
@@ -174,16 +191,6 @@ export function CompetitionSocialStatusPanel({
               onClick={() => runAction("retry")}
             >
               {pending ? "Publicando…" : "Reintentar publicación"}
-            </Button>
-          ) : null}
-          {showCompleteIg ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={pending}
-              onClick={() => runAction("ig")}
-            >
-              {pending ? "Publicando…" : "Completar Instagram"}
             </Button>
           ) : null}
           {showMarkManual ? (

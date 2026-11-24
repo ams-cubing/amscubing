@@ -149,6 +149,21 @@ export function formatNotificationTitle(
       return `Solicitud de equipo para ${city}`;
     case "equipment_confirmed":
       return `El delegado confirmó el equipo para ${city}`;
+    case "budget_plan_submitted":
+      return `Presupuesto enviado para ${city}`;
+    case "budget_expense_proposed":
+      // Legacy notification type; per-line spend approval was removed.
+      return `Actualización de costos en ${city}`;
+    case "budget_mid_submitted":
+      return `Primer avance de costos enviado — ${city}`;
+    case "budget_final_submitted":
+      return `Informe final de costos enviado — ${city}`;
+    case "budget_stage_approved":
+      return `Costos actualizados: ${ctx.statusLabel ?? "aprobado"} — ${city}`;
+    case "beta_feature_changed":
+      return ctx.roleLabel
+        ? `Acceso beta: ${ctx.roleLabel}`
+        : "Se revocó un acceso beta de tu cuenta";
   }
 }
 
@@ -191,6 +206,10 @@ export function hrefForNotification(
     return boardPath;
   }
 
+  if (type === "beta_feature_changed") {
+    return boards;
+  }
+
   if (type === "date_requested" && opts.dateRequestId != null) {
     return `${calendar}/panel/solicitudes-fecha/${opts.dateRequestId}`;
   }
@@ -213,6 +232,27 @@ export function hrefForNotification(
   ) {
     if (opts.recipientRole === "delegate" && opts.competitionId != null) {
       return `${calendar}/panel/competencias/${opts.competitionId}`;
+    }
+  }
+
+  if (
+    type === "budget_plan_submitted" ||
+    type === "budget_expense_proposed" || // legacy href
+    type === "budget_mid_submitted" ||
+    type === "budget_final_submitted"
+  ) {
+    if (opts.competitionId != null) {
+      return `${calendar}/panel/competencias/${opts.competitionId}/costos`;
+    }
+  }
+
+  if (type === "budget_stage_approved") {
+    if (opts.boardId != null) {
+      const boardPath = `${boards}/boards/${opts.boardId}`;
+      return opts.cardId != null ? `${boardPath}?card=${opts.cardId}` : boardPath;
+    }
+    if (opts.competitionId != null) {
+      return `${calendar}/panel/competencias/${opts.competitionId}/costos`;
     }
   }
 
@@ -290,7 +330,7 @@ export function dateRequestNotificationRow(opts: {
   };
 }
 
-/** Delegates land on the panel; borrowers without the role see their loans in mis-competencias. */
+/** Delegates land on web admin inventory; borrowers without the role see loans in mis-competencias. */
 export function equipmentNotificationRow(opts: {
   recipient: NotificationUser;
   actorId: string;
@@ -299,19 +339,21 @@ export function equipmentNotificationRow(opts: {
     "equipment_loaned" | "equipment_returned" | "equipment_transferred"
   >;
   calendarUrl: string;
+  webUrl: string;
   equipmentLabel: string;
   loanId?: number;
   sku?: string;
 }): NewNotificationRow {
   const calendar = opts.calendarUrl.replace(/\/$/, "");
+  const web = opts.webUrl.replace(/\/$/, "");
   let href = `${calendar}/mis-competencias`;
   if (opts.recipient.role === "delegate") {
     if (opts.loanId != null) {
-      href = `${calendar}/panel/equipo/prestamos/${opts.loanId}`;
+      href = `${web}/admin/equipo/prestamos/${opts.loanId}`;
     } else if (opts.sku) {
-      href = `${calendar}/panel/equipo/${encodeURIComponent(opts.sku)}`;
+      href = `${web}/admin/equipo/${encodeURIComponent(opts.sku)}`;
     } else {
-      href = `${calendar}/panel/equipo`;
+      href = `${web}/admin/equipo`;
     }
   }
   return {
@@ -378,6 +420,73 @@ export function equipmentConfirmedNotificationRow(opts: {
       competitionId: opts.competitionId,
       requestId: opts.requestId,
       city: opts.city,
+      boardId: opts.boardId,
+      cardId: opts.cardId,
+    },
+  };
+}
+
+export function budgetSubmittedNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  calendarUrl: string;
+  competitionId: number;
+  budgetId: number;
+  city: string;
+  type:
+    | "budget_plan_submitted"
+    | "budget_mid_submitted"
+    | "budget_final_submitted";
+}): NewNotificationRow {
+  const calendar = opts.calendarUrl.replace(/\/$/, "");
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: opts.type,
+    title: formatNotificationTitle(opts.type, { city: opts.city }),
+    href: `${calendar}/panel/competencias/${opts.competitionId}/costos`,
+    payload: {
+      competitionId: opts.competitionId,
+      budgetId: opts.budgetId,
+      city: opts.city,
+    },
+  };
+}
+
+export function budgetStageApprovedNotificationRow(opts: {
+  recipient: NotificationUser;
+  actorId: string;
+  urls: AppUrls;
+  competitionId: number;
+  budgetId: number;
+  city: string;
+  statusLabel: string;
+  budgetStage: string;
+  boardId?: number;
+  cardId?: number;
+}): NewNotificationRow {
+  const boards = opts.urls.boardsUrl.replace(/\/$/, "");
+  const calendar = opts.urls.calendarUrl.replace(/\/$/, "");
+  let href = `${calendar}/mis-competencias`;
+  if (opts.boardId != null) {
+    href = `${boards}/boards/${opts.boardId}`;
+    if (opts.cardId != null) href += `?card=${opts.cardId}`;
+  }
+  return {
+    recipientId: opts.recipient.id,
+    actorId: opts.actorId,
+    type: "budget_stage_approved",
+    title: formatNotificationTitle("budget_stage_approved", {
+      city: opts.city,
+      statusLabel: opts.statusLabel,
+    }),
+    href,
+    payload: {
+      competitionId: opts.competitionId,
+      budgetId: opts.budgetId,
+      city: opts.city,
+      budgetStage: opts.budgetStage,
+      statusLabel: opts.statusLabel,
       boardId: opts.boardId,
       cardId: opts.cardId,
     },

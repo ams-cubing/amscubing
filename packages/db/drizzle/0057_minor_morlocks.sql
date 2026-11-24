@@ -1,0 +1,3 @@
+ALTER TABLE "competition_budget_line" ADD COLUMN "sponsor_id" integer;--> statement-breakpoint
+ALTER TABLE "competition_budget_line" ADD CONSTRAINT "competition_budget_line_sponsor_id_competition_sponsor_id_fk" FOREIGN KEY ("sponsor_id") REFERENCES "public"."competition_sponsor"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "competition_budget_line" ADD CONSTRAINT "competition_budget_line_sponsor_unique" UNIQUE("sponsor_id");

@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@workspace/server": "workspace:*",
+    "marked": "^18.2.1",
     "resend": "^6.8.0"
   },
   "devDependencies": {
+    "@types/marked": "^6.0.0",
     "@types/node": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",

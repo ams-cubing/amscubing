@@ -3,7 +3,6 @@ import {
   CalendarCheck,
   CalendarDays,
   Inbox,
-  Package,
   PlusCircle,
   Trophy,
   type LucideIcon,
@@ -25,6 +24,7 @@ export type DelegatePanelLink = {
   badgeKey: DelegatePanelBadgeKey | null;
 };
 
+/** Primary panel sections shown in the subnav. */
 export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
   {
     name: "Competencias",
@@ -39,12 +39,6 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     badgeKey: "dateRequests",
   },
   {
-    name: "Nueva competencia",
-    href: "/panel/competencias/nueva",
-    icon: PlusCircle,
-    badgeKey: null,
-  },
-  {
     name: "Disponibilidad",
     href: "/panel/disponibilidad",
     icon: CalendarCheck,
@@ -57,18 +51,20 @@ export const DELEGATE_PANEL_LINKS: readonly DelegatePanelLink[] = [
     badgeKey: null,
   },
   {
-    name: "Equipo",
-    href: "/panel/equipo",
-    icon: Package,
-    badgeKey: null,
-  },
-  {
     name: "Actividad",
     href: "/panel/actividad",
     icon: Activity,
     badgeKey: null,
   },
 ] as const;
+
+/** Create action for the panel hub tile (not in the always-on subnav). */
+export const CREATE_COMPETITION_LINK: DelegatePanelLink = {
+  name: "Nueva competencia",
+  href: "/panel/competencias/nueva",
+  icon: PlusCircle,
+  badgeKey: null,
+};
 
 export function isDelegatePanelPath(pathname: string) {
   return pathname === "/panel" || pathname.startsWith("/panel/");

@@ -15,6 +15,7 @@
     "src/seed-template.ts",
     "src/sync-template.ts",
     "src/seed-board-template.ts",
+    "src/analyze-horario.ts",
     "src/migrate.ts"
   ]
 }

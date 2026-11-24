@@ -1,0 +1,101 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { fetchAndCreateWCAUser } from "../_actions/wca-users";
+import { toast } from "sonner";
+import type { OrganizerOption } from "./organizer-combobox";
+
+type AddWCAUserDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUserAdded: (user: OrganizerOption) => void;
+  noun?: string;
+};
+
+export function AddWCAUserDialog({
+  open,
+  onOpenChange,
+  onUserAdded,
+  noun = "organizador",
+}: AddWCAUserDialogProps) {
+  const [wcaId, setWcaId] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    startTransition(async () => {
+      try {
+        const result = await fetchAndCreateWCAUser(wcaId.trim().toUpperCase());
+
+        if (result.success && result.user) {
+          toast.success(result.message);
+          onUserAdded({
+            id: result.user.id,
+            wcaId: result.user.wcaId,
+            name: result.user.name,
+            email: result.user.email,
+            image: result.user.image,
+          });
+          setWcaId("");
+          onOpenChange(false);
+        } else {
+          toast.error(result.message);
+        }
+      } catch {
+        toast.error("Error al agregar usuario");
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Agregar {noun} desde la WCA</DialogTitle>
+            <DialogDescription>
+              Ingresa su WCA ID. Si todavía no tiene cuenta, se crea una que
+              queda vinculada la primera vez que inicie sesión con la WCA.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="wcaId">WCA ID</Label>
+            <Input
+              id="wcaId"
+              placeholder="Ej: 2016TORO03"
+              value={wcaId}
+              onChange={(e) => setWcaId(e.target.value)}
+              className="mt-2"
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={pending || !wcaId.trim()}>
+              {pending ? "Agregando..." : "Agregar"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

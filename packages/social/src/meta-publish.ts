@@ -1,3 +1,8 @@
+import {
+  isLiveExternalSideEffectsEnabled,
+  isSimulatedExternalId,
+  simulatedExternalId,
+} from "@workspace/server/external-side-effects";
 import { log } from "@workspace/server/log";
 
 import {
@@ -41,7 +46,10 @@ export type PublishAnnouncementResult =
     }
   | { ok: false; message: string };
 
-export function facebookPostUrl(facebookPostId: string): string {
+export function facebookPostUrl(
+  facebookPostId: string,
+): string | null {
+  if (isSimulatedExternalId(facebookPostId)) return null;
   return `https://www.facebook.com/${facebookPostId}`;
 }
 
@@ -198,13 +206,25 @@ async function waitForIgContainer(
 export async function publishToTorneoDeRubik(
   input: PublishAnnouncementInput,
 ): Promise<PublishAnnouncementResult> {
+  const imageUrl = input.imageUrl?.trim() || null;
+
+  if (!isLiveExternalSideEffectsEnabled()) {
+    const facebookPostId = simulatedExternalId("fb");
+    const instagramMediaId = imageUrl ? simulatedExternalId("ig") : null;
+    log.info("meta.publish_simulated", {
+      facebookPostId,
+      instagramMediaId,
+      hasImage: Boolean(imageUrl),
+    });
+    return { ok: true, facebookPostId, instagramMediaId };
+  }
+
   const meta = getMetaConfig();
   if (!meta.ok) {
     return { ok: false, message: meta.message };
   }
 
   const { config } = meta;
-  const imageUrl = input.imageUrl?.trim() || null;
 
   const facebook = imageUrl
     ? await publishFacebookPhoto(config, input.caption, imageUrl)
@@ -256,11 +276,6 @@ export async function publishInstagramOnly(input: {
   caption: string;
   imageUrl: string;
 }): Promise<{ ok: true; mediaId: string } | { ok: false; message: string }> {
-  const meta = getMetaConfig();
-  if (!meta.ok) {
-    return { ok: false, message: meta.message };
-  }
-
   const imageUrl = input.imageUrl.trim();
   if (!imageUrl) {
     return {
@@ -268,6 +283,17 @@ export async function publishInstagramOnly(input: {
       message:
         "Se necesita un logo de la competencia para publicar en Instagram.",
     };
+  }
+
+  if (!isLiveExternalSideEffectsEnabled()) {
+    const mediaId = simulatedExternalId("ig");
+    log.info("meta.instagram_only_simulated", { mediaId });
+    return { ok: true, mediaId };
+  }
+
+  const meta = getMetaConfig();
+  if (!meta.ok) {
+    return { ok: false, message: meta.message };
   }
 
   try {
@@ -288,6 +314,8 @@ export async function publishInstagramOnly(input: {
 export async function fetchInstagramPermalink(
   instagramMediaId: string,
 ): Promise<string | null> {
+  if (isSimulatedExternalId(instagramMediaId)) return null;
+
   const token = process.env.META_PAGE_ACCESS_TOKEN?.trim();
   if (!token || !instagramMediaId.trim()) return null;
 
@@ -319,6 +347,16 @@ export async function updateFacebookPageCover(
   imagePng: Buffer,
   caption: string,
 ): Promise<{ ok: true; photoId: string } | { ok: false; message: string }> {
+  if (!isLiveExternalSideEffectsEnabled()) {
+    const photoId = simulatedExternalId("photo");
+    log.info("meta.cover_update_simulated", {
+      photoId,
+      bytes: imagePng.byteLength,
+      captionLength: caption.length,
+    });
+    return { ok: true, photoId };
+  }
+
   const meta = getMetaPageConfig();
   if (!meta.ok) {
     return { ok: false, message: meta.message };

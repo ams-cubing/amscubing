@@ -109,6 +109,11 @@ describe("previewAnnouncement", () => {
         wcaUrl: "https://www.worldcubeassociation.org/competitions/Chi2026",
         imageUrl: "https://example.com/logo.png",
         caption: "Caption",
+        sources: {
+          bodyText: "wca_intro",
+          hasTags: false,
+          imageSource: "logo",
+        },
       },
     });
   });

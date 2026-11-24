@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileDown } from "lucide-react";
+import { ExternalLink, FileDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { EQUIPMENT_CARD_TITLE } from "@workspace/db/data/ams-board-template";
@@ -16,6 +16,8 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
+
+import { getWebUrl } from "@/lib/urls";
 
 import {
   loadEquipmentCard,
@@ -40,10 +42,12 @@ export function CardEquipmentSection({
   board,
   cardId,
   readOnly,
+  isDelegate = false,
 }: {
   board: BoardDetail;
   cardId: number;
   readOnly?: boolean;
+  isDelegate?: boolean;
 }) {
   const [data, setData] = React.useState<EquipmentCardData | null>();
   const [quantities, setQuantities] = React.useState<Record<number, string>>(
@@ -193,6 +197,24 @@ export function CardEquipmentSection({
           La competencia ya terminó, así que ya no se puede solicitar ni
           confirmar equipo.
         </p>
+      ) : null}
+
+      {request?.status === "submitted" && !data.ended ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <p>Enviado al delegado.</p>
+          {isDelegate ? (
+            <Button asChild size="sm" variant="outline">
+              <a
+                href={`${getWebUrl()}/admin/equipo/solicitudes/${request.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Confirmar equipo
+                <ExternalLink className="size-3.5" />
+              </a>
+            </Button>
+          ) : null}
+        </div>
       ) : null}
 
       {editable ? (
