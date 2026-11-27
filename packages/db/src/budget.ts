@@ -5,14 +5,22 @@ import {
   ACTUALS_EDITABLE_STATUSES,
   BUDGET_LINE_CATEGORY_LABELS,
   DEFAULT_EXPENSE_CATEGORIES,
+  FEE_FLOOR_CENTS_PER_COMPETITOR,
   FEE_RATE_BPS,
+  PAYING_COUNT_SYNC_STATUSES,
   PLAN_EDITABLE_STATUSES,
+  resolveLineTotalCents,
+  STRIPE_FIXED_CENTS,
+  STRIPE_RATE_BPS,
+  SYSTEM_FEE_CATEGORIES,
   type BudgetLineCategory,
   type BudgetReceiptStatus,
   type BudgetSpendStatus,
   type BudgetStatus,
   type SponsorType,
 } from "./budget-labels";
+
+export { resolveLineTotalCents };
 import {
   competitionBudgetLines,
   competitionBudgets,
@@ -37,6 +45,10 @@ export type BudgetLineInput = {
   label: string;
   expectedCents: number;
   actualCents?: number | null;
+  expectedQuantity?: number | null;
+  expectedUnitCents?: number | null;
+  actualQuantity?: number | null;
+  actualUnitCents?: number | null;
   notes?: string | null;
 };
 
@@ -69,8 +81,183 @@ function assertNonNegativeCents(value: number, label: string) {
   }
 }
 
-function feeCents(baseCents: number) {
-  return Math.round((baseCents * FEE_RATE_BPS) / 10_000);
+const WCA_API = "https://www.worldcubeassociation.org/api/v0/competitions";
+
+/** Per-competitor WCA/AMS dues: max(5% of fee, $10 MXN), times count. */
+export function duesCents(feePerCompetitorCents: number, count: number) {
+  if (count <= 0) return 0;
+  const percentPer = Math.round(
+    (Math.max(0, feePerCompetitorCents) * FEE_RATE_BPS) / 10_000,
+  );
+  return count * Math.max(percentPer, FEE_FLOOR_CENTS_PER_COMPETITOR);
+}
+
+/** Stripe MX domestic estimate: 3.6% of gross + $3 MXN per successful charge. */
+export function stripeFeeCents(grossCents: number, chargeCount: number) {
+  const percent = Math.round(
+    (Math.max(0, grossCents) * STRIPE_RATE_BPS) / 10_000,
+  );
+  const fixed = Math.max(0, chargeCount) * STRIPE_FIXED_CENTS;
+  return percent + fixed;
+}
+
+function normalizeOptionalQuantity(
+  value: number | null | undefined,
+  label: string,
+): number | null {
+  if (value == null) return null;
+  if (!Number.isInteger(value) || value < 0) {
+    throw new BudgetError(`${label} inválida`);
+  }
+  return value;
+}
+
+function normalizeOptionalUnitCents(
+  value: number | null | undefined,
+  label: string,
+): number | null {
+  if (value == null) return null;
+  assertNonNegativeCents(value, label);
+  return value;
+}
+
+/** WCIF roles that usually do not pay the entry fee. */
+export const FREE_ENTRY_WCIF_ROLES = new Set([
+  "delegate",
+  "trainee-delegate",
+  "organizer",
+]);
+
+export function countPayingCompetitors(
+  persons: ReadonlyArray<{
+    roles?: string[] | null;
+    registration?: {
+      status?: string | null;
+      isCompeting?: boolean | null;
+    } | null;
+    [key: string]: unknown;
+  }>,
+) {
+  let acceptedCompeting = 0;
+  let excludedStaff = 0;
+  let payingCompetitors = 0;
+
+  for (const person of persons) {
+    const registration = person.registration;
+    if (!registration || registration.status !== "accepted") continue;
+    if (registration.isCompeting === false) continue;
+
+    acceptedCompeting += 1;
+    const roles = person.roles ?? [];
+    if (roles.some((role) => FREE_ENTRY_WCIF_ROLES.has(role))) {
+      excludedStaff += 1;
+      continue;
+    }
+    payingCompetitors += 1;
+  }
+
+  return { acceptedCompeting, excludedStaff, payingCompetitors };
+}
+
+function extractWcaCompetitionId(wcaCompetitionUrl: string): string | null {
+  const match = wcaCompetitionUrl.match(/competitions\/([^/?#]+)/);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Soft-fetch WCA payment flag (and paying count when past plan approval).
+ * Leaves previous values on network/API failure.
+ */
+export async function refreshBudgetUsesStripeFromWca(
+  dbx: DbOrTx,
+  competitionId: number,
+  opts?: { syncPayingCount?: boolean },
+): Promise<{ usesStripe: boolean; payingCompetitorCount?: number } | null> {
+  const competition = await dbx.query.competitions.findFirst({
+    where: eq(competitions.id, competitionId),
+    columns: { wcaCompetitionUrl: true },
+  });
+  const wcaUrl = competition?.wcaCompetitionUrl?.trim();
+  if (!wcaUrl) return null;
+
+  const wcaId = extractWcaCompetitionId(wcaUrl);
+  if (!wcaId) return null;
+
+  try {
+    const syncPaying = opts?.syncPayingCount === true;
+    const [compRes, wcifRes] = await Promise.all([
+      fetch(`${WCA_API}/${encodeURIComponent(wcaId)}`, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      }),
+      syncPaying
+        ? fetch(`${WCA_API}/${encodeURIComponent(wcaId)}/wcif/public`, {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          })
+        : Promise.resolve(null),
+    ]);
+    if (!compRes.ok) return null;
+    const data = (await compRes.json()) as {
+      "using_payment_integrations?"?: boolean | null;
+    };
+    const usesStripe = data["using_payment_integrations?"] === true;
+
+    let payingCompetitorCount: number | undefined;
+    if (syncPaying && wcifRes?.ok) {
+      const wcif = (await wcifRes.json()) as {
+        persons?: Parameters<typeof countPayingCompetitors>[0] | null;
+      };
+      payingCompetitorCount = countPayingCompetitors(wcif.persons ?? [])
+        .payingCompetitors;
+    }
+
+    await dbx
+      .update(competitionBudgets)
+      .set({
+        usesStripe,
+        ...(payingCompetitorCount != null ? { payingCompetitorCount } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(competitionBudgets.competitionId, competitionId));
+
+    return {
+      usesStripe,
+      ...(payingCompetitorCount != null ? { payingCompetitorCount } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Set Stripe flag without fetching (e.g. after a boards WCA prefill). */
+export async function setBudgetUsesStripe(
+  dbx: DbOrTx,
+  competitionId: number,
+  usesStripe: boolean,
+) {
+  await dbx
+    .update(competitionBudgets)
+    .set({ usesStripe, updatedAt: new Date() })
+    .where(eq(competitionBudgets.competitionId, competitionId));
+}
+
+/** Persist WCIF paying count (e.g. after Prefijar). */
+export async function setBudgetPayingCompetitorCount(
+  dbx: DbOrTx,
+  competitionId: number,
+  payingCompetitorCount: number,
+) {
+  if (
+    !Number.isInteger(payingCompetitorCount) ||
+    payingCompetitorCount < 0
+  ) {
+    throw new BudgetError("Número de inscritos que pagan inválido");
+  }
+  await dbx
+    .update(competitionBudgets)
+    .set({ payingCompetitorCount, updatedAt: new Date() })
+    .where(eq(competitionBudgets.competitionId, competitionId));
 }
 
 export function summarizeBudgetLines(
@@ -152,7 +339,7 @@ function seedLineRows(budgetId: number) {
       sortOrder: sortOrder++,
     });
   }
-  for (const category of ["cuota_wca", "cuota_ams"] as const) {
+  for (const category of SYSTEM_FEE_CATEGORIES) {
     rows.push({
       budgetId,
       kind: "expense",
@@ -175,43 +362,99 @@ function seedLineRows(budgetId: number) {
   return rows;
 }
 
+/** Insert any missing system fee / inscription lines (e.g. comision_stripe backfill). */
+async function ensureMissingSystemLines(
+  dbx: DbOrTx,
+  budgetId: number,
+  lines: CompetitionBudgetLine[],
+) {
+  const present = new Set(
+    lines.filter((line) => line.isSystem).map((line) => line.category),
+  );
+  const maxSort = Math.max(0, ...lines.map((line) => line.sortOrder));
+  const toInsert: (typeof competitionBudgetLines.$inferInsert)[] = [];
+  let sortOrder = maxSort + 1;
+
+  for (const category of SYSTEM_FEE_CATEGORIES) {
+    if (present.has(category)) continue;
+    toInsert.push({
+      budgetId,
+      kind: "expense",
+      category,
+      label: BUDGET_LINE_CATEGORY_LABELS[category],
+      expectedCents: 0,
+      isSystem: true,
+      sortOrder: sortOrder++,
+    });
+  }
+  if (!present.has("inscripciones")) {
+    toInsert.push({
+      budgetId,
+      kind: "income",
+      category: "inscripciones",
+      label: BUDGET_LINE_CATEGORY_LABELS.inscripciones,
+      expectedCents: 0,
+      isSystem: true,
+      sortOrder: sortOrder++,
+    });
+  }
+  if (toInsert.length === 0) return lines;
+  await dbx.insert(competitionBudgetLines).values(toInsert);
+  return loadLines(dbx, budgetId);
+}
+
 async function syncSystemLines(
   dbx: DbOrTx,
   budget: CompetitionBudget,
   lines: CompetitionBudgetLine[],
 ) {
-  const registrationExpected =
-    budget.proposedRegistrationFeeCents * budget.expectedCompetitorCount;
+  const planCount = budget.expectedCompetitorCount;
+  const fee = budget.proposedRegistrationFeeCents;
+  const registrationExpected = fee * planCount;
+  const hasActualRevenue = budget.registrationRevenueCents != null;
   const registrationActual =
     budget.registrationRevenueCents ?? registrationExpected;
-  const wcaExpected = feeCents(registrationExpected);
-  const amsExpected = feeCents(registrationExpected);
-  const wcaActual = feeCents(registrationActual);
-  const amsActual = feeCents(registrationActual);
+
+  const actualPaying =
+    budget.payingCompetitorCount ?? budget.expectedCompetitorCount;
+  const refundedCharges = Math.max(0, budget.refundedStripeChargeCount);
+  const stripeChargeCount = actualPaying + refundedCharges;
+  const stripeGrossActual =
+    registrationActual + refundedCharges * fee;
+
+  const duesExpected = duesCents(fee, planCount);
+  // Per-competitor dues from fee × paying (not % of revenue — donations stay out).
+  const duesActual = duesCents(fee, actualPaying);
+  const stripeExpected = budget.usesStripe
+    ? stripeFeeCents(registrationExpected, planCount)
+    : 0;
+  const stripeActual = budget.usesStripe
+    ? stripeFeeCents(stripeGrossActual, stripeChargeCount)
+    : 0;
 
   const updates: Promise<unknown>[] = [];
   for (const line of lines) {
     if (!line.isSystem) continue;
-    if (line.category === "cuota_wca") {
+    if (line.category === "cuota_wca" || line.category === "cuota_ams") {
       updates.push(
         dbx
           .update(competitionBudgetLines)
           .set({
-            expectedCents: wcaExpected,
-            actualCents:
-              budget.registrationRevenueCents != null ? wcaActual : null,
+            label: BUDGET_LINE_CATEGORY_LABELS[line.category],
+            expectedCents: duesExpected,
+            actualCents: hasActualRevenue ? duesActual : null,
             updatedAt: new Date(),
           })
           .where(eq(competitionBudgetLines.id, line.id)),
       );
-    } else if (line.category === "cuota_ams") {
+    } else if (line.category === "comision_stripe") {
       updates.push(
         dbx
           .update(competitionBudgetLines)
           .set({
-            expectedCents: amsExpected,
-            actualCents:
-              budget.registrationRevenueCents != null ? amsActual : null,
+            label: BUDGET_LINE_CATEGORY_LABELS.comision_stripe,
+            expectedCents: stripeExpected,
+            actualCents: hasActualRevenue ? stripeActual : null,
             updatedAt: new Date(),
           })
           .where(eq(competitionBudgetLines.id, line.id)),
@@ -259,7 +502,22 @@ export async function ensureCompetitionBudget(
     await dbx.insert(competitionBudgetLines).values(seedLineRows(budget.id));
   }
 
+  const syncPayingCount = PAYING_COUNT_SYNC_STATUSES.includes(budget.status);
+  const refreshed = await refreshBudgetUsesStripeFromWca(dbx, competitionId, {
+    syncPayingCount,
+  });
+  if (refreshed != null) {
+    budget = {
+      ...budget,
+      usesStripe: refreshed.usesStripe,
+      ...(refreshed.payingCompetitorCount != null
+        ? { payingCompetitorCount: refreshed.payingCompetitorCount }
+        : {}),
+    };
+  }
+
   let lines = await loadLines(dbx, budget.id);
+  lines = await ensureMissingSystemLines(dbx, budget.id, lines);
   await syncSystemLines(dbx, budget, lines);
   lines = await loadLines(dbx, budget.id);
   const sponsors = await loadSponsors(dbx, competitionId);
@@ -327,6 +585,20 @@ export async function updateBudgetPlan(
 
   for (const line of input.lines) {
     assertNonNegativeCents(line.expectedCents, "Monto esperado");
+    const expectedQuantity = normalizeOptionalQuantity(
+      line.expectedQuantity,
+      "Cantidad esperada",
+    );
+    const expectedUnitCents = normalizeOptionalUnitCents(
+      line.expectedUnitCents,
+      "Precio unitario esperado",
+    );
+    const expectedCents = resolveLineTotalCents({
+      quantity: expectedQuantity,
+      unitCents: expectedUnitCents,
+      fallbackCents: line.expectedCents,
+    });
+    assertNonNegativeCents(expectedCents, "Monto esperado");
     const label = line.label.trim() || BUDGET_LINE_CATEGORY_LABELS[line.category];
     if (line.id) {
       const existing = existingById.get(line.id);
@@ -342,7 +614,9 @@ export async function updateBudgetPlan(
           kind: line.kind,
           category: line.category,
           label,
-          expectedCents: line.expectedCents,
+          expectedCents,
+          expectedQuantity,
+          expectedUnitCents,
           notes: line.notes?.trim() || null,
           updatedAt: new Date(),
         })
@@ -356,7 +630,9 @@ export async function updateBudgetPlan(
           kind: line.kind,
           category: line.category,
           label,
-          expectedCents: line.expectedCents,
+          expectedCents,
+          expectedQuantity,
+          expectedUnitCents,
           notes: line.notes?.trim() || null,
           spendStatus: "none",
           sortOrder: maxSort + 1 + keptIds.size,
@@ -397,10 +673,13 @@ export async function updateBudgetActuals(
   input: {
     competitionId: number;
     registrationRevenueCents: number;
+    refundedStripeChargeCount?: number;
     remanenteNote?: string | null;
     lines: {
       id: number;
       actualCents: number;
+      actualQuantity?: number | null;
+      actualUnitCents?: number | null;
       receiptStatus: BudgetReceiptStatus;
       receiptMissingReason?: string | null;
       notes?: string | null;
@@ -411,12 +690,36 @@ export async function updateBudgetActuals(
   const sheet = await ensureCompetitionBudget(dbx, input.competitionId);
   requireActualsEditable(sheet.budget.status);
 
+  const refundedStripeChargeCount =
+    input.refundedStripeChargeCount !== undefined
+      ? input.refundedStripeChargeCount
+      : sheet.budget.refundedStripeChargeCount;
+  if (
+    !Number.isInteger(refundedStripeChargeCount) ||
+    refundedStripeChargeCount < 0
+  ) {
+    throw new BudgetError("Cargos Stripe reembolsados inválidos");
+  }
+
   const byId = new Map(sheet.lines.map((line) => [line.id, line]));
   for (const line of input.lines) {
     const existing = byId.get(line.id);
     if (!existing) throw new BudgetError("Renglón no encontrado");
     if (existing.isSystem) continue;
-    assertNonNegativeCents(line.actualCents, "Monto real");
+    const actualQuantity = normalizeOptionalQuantity(
+      line.actualQuantity,
+      "Cantidad real",
+    );
+    const actualUnitCents = normalizeOptionalUnitCents(
+      line.actualUnitCents,
+      "Precio unitario real",
+    );
+    const actualCents = resolveLineTotalCents({
+      quantity: actualQuantity,
+      unitCents: actualUnitCents,
+      fallbackCents: line.actualCents,
+    });
+    assertNonNegativeCents(actualCents, "Monto real");
     if (
       line.receiptStatus === "missing_reason" &&
       !line.receiptMissingReason?.trim()
@@ -428,7 +731,9 @@ export async function updateBudgetActuals(
     await dbx
       .update(competitionBudgetLines)
       .set({
-        actualCents: line.actualCents,
+        actualCents,
+        actualQuantity,
+        actualUnitCents,
         receiptStatus: line.receiptStatus,
         receiptMissingReason:
           line.receiptStatus === "missing_reason"
@@ -444,6 +749,7 @@ export async function updateBudgetActuals(
     .update(competitionBudgets)
     .set({
       registrationRevenueCents: input.registrationRevenueCents,
+      refundedStripeChargeCount,
       remanenteNote:
         input.remanenteNote !== undefined
           ? input.remanenteNote?.trim() || null

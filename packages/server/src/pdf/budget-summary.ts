@@ -14,6 +14,7 @@ export type BudgetSummaryPdfInput = {
     status: string;
     proposedRegistrationFeeCents: number;
     expectedCompetitorCount: number;
+    payingCompetitorCount?: number | null;
     registrationRevenueCents: number | null;
     receiptsDriveUrl: string | null;
     spreadsheetUrl: string | null;
@@ -25,6 +26,11 @@ export type BudgetSummaryPdfInput = {
     label: string;
     expectedCents: number;
     actualCents: number | null;
+    expectedQuantity?: number | null;
+    expectedUnitCents?: number | null;
+    actualQuantity?: number | null;
+    actualUnitCents?: number | null;
+    notes?: string | null;
     receiptStatus: string;
     receiptMissingReason: string | null;
   }[];
@@ -118,6 +124,12 @@ export async function createBudgetSummaryPdf(
     `Cuota propuesta: ${mxn(input.budget.proposedRegistrationFeeCents)} · Competidores esperados: ${input.budget.expectedCompetitorCount}`,
     { size: 9 },
   );
+  if (input.budget.payingCompetitorCount != null) {
+    doc.paragraph(
+      `Inscritos que pagan (WCA): ${input.budget.payingCompetitorCount}`,
+      { size: 9 },
+    );
+  }
   doc.paragraph(
     `Ingresos de inscripción: ${
       input.budget.registrationRevenueCents != null
@@ -152,13 +164,39 @@ export async function createBudgetSummaryPdf(
   doc.moveDown(8);
   doc.paragraph("Renglones", { size: 11, font: doc.fonts.bold });
   for (const line of input.lines) {
-    doc.ensureSpace(28);
+    doc.ensureSpace(36);
     const actual =
       line.actualCents != null ? mxn(line.actualCents) : "—";
     doc.paragraph(
       `${line.kind === "expense" ? "Gasto" : "Ingreso"} · ${line.label}: esperado ${mxn(line.expectedCents)} / real ${actual}`,
       { size: 8.5 },
     );
+    if (
+      line.expectedQuantity != null &&
+      line.expectedUnitCents != null &&
+      line.expectedQuantity > 0
+    ) {
+      doc.paragraph(
+        `Esperado: ${line.expectedQuantity} × ${mxn(line.expectedUnitCents)}`,
+        { size: 7.5, color: PDF_COLORS.muted },
+      );
+    }
+    if (
+      line.actualQuantity != null &&
+      line.actualUnitCents != null &&
+      line.actualQuantity > 0
+    ) {
+      doc.paragraph(
+        `Real: ${line.actualQuantity} × ${mxn(line.actualUnitCents)}`,
+        { size: 7.5, color: PDF_COLORS.muted },
+      );
+    }
+    if (line.notes?.trim()) {
+      doc.paragraph(line.notes.trim(), {
+        size: 7.5,
+        color: PDF_COLORS.muted,
+      });
+    }
     if (line.receiptStatus === "missing_reason" && line.receiptMissingReason) {
       doc.paragraph(`Sin comprobante: ${line.receiptMissingReason}`, {
         size: 7.5,

@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ExternalLink, FileDown, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  FileDown,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,6 +18,7 @@ import {
   formatMxnCents,
   formatMxnInput,
   parseMxnToCents,
+  resolveLineTotalCents,
   type BudgetLineCategory,
   type BudgetReceiptStatus,
 } from "@workspace/db/budget-labels";
@@ -20,6 +28,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { cn } from "@workspace/ui/lib/utils";
 
 import { getCalendarUrl } from "@/lib/urls";
 
@@ -41,7 +50,10 @@ type PlanLineDraft = {
   category: BudgetLineCategory;
   label: string;
   expected: string;
+  quantity: string;
+  unit: string;
   notes: string;
+  detailsOpen: boolean;
   isSystem: boolean;
   fromSponsor: boolean;
 };
@@ -53,10 +65,41 @@ type ActualLineDraft = {
   isSystem: boolean;
   expectedCents: number;
   actual: string;
+  quantity: string;
+  unit: string;
   receiptStatus: BudgetReceiptStatus;
   receiptMissingReason: string;
   notes: string;
+  detailsOpen: boolean;
 };
+
+function parseOptionalQuantity(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const value = Number(trimmed);
+  if (!Number.isInteger(value) || value < 0) return null;
+  return value;
+}
+
+function totalFromQtyUnit(
+  quantityRaw: string,
+  unitRaw: string,
+  fallbackRaw: string,
+): { cents: number | null; drivenByQty: boolean } {
+  const quantity = parseOptionalQuantity(quantityRaw);
+  const unitCents = unitRaw.trim() ? parseMxnToCents(unitRaw) : null;
+  if (quantity != null && quantity > 0 && unitCents != null) {
+    return {
+      cents: resolveLineTotalCents({
+        quantity,
+        unitCents,
+        fallbackCents: 0,
+      }),
+      drivenByQty: true,
+    };
+  }
+  return { cents: parseMxnToCents(fallbackRaw || "0"), drivenByQty: false };
+}
 
 export function CardBudgetSection({
   board,
@@ -77,6 +120,7 @@ export function CardBudgetSection({
   const [planLines, setPlanLines] = React.useState<PlanLineDraft[]>([]);
   const [actualLines, setActualLines] = React.useState<ActualLineDraft[]>([]);
   const [revenue, setRevenue] = React.useState("");
+  const [refundedCharges, setRefundedCharges] = React.useState("0");
   const [remanenteNote, setRemanenteNote] = React.useState("");
   const [wcaHint, setWcaHint] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
@@ -92,6 +136,7 @@ export function CardBudgetSection({
         ? formatMxnInput(next.budget.registrationRevenueCents)
         : "",
     );
+    setRefundedCharges(String(next.budget.refundedStripeChargeCount ?? 0));
     setRemanenteNote(next.budget.remanenteNote ?? "");
     setPlanLines(
       next.lines.map((line) => ({
@@ -100,7 +145,18 @@ export function CardBudgetSection({
         category: line.category,
         label: line.label,
         expected: formatMxnInput(line.expectedCents),
+        quantity:
+          line.expectedQuantity != null ? String(line.expectedQuantity) : "",
+        unit:
+          line.expectedUnitCents != null
+            ? formatMxnInput(line.expectedUnitCents)
+            : "",
         notes: line.notes ?? "",
+        detailsOpen: Boolean(
+          line.notes ||
+            line.expectedQuantity != null ||
+            line.expectedUnitCents != null,
+        ),
         isSystem: line.isSystem,
         fromSponsor: line.sponsorId != null,
       })),
@@ -114,9 +170,20 @@ export function CardBudgetSection({
         expectedCents: line.expectedCents,
         actual:
           line.actualCents != null ? formatMxnInput(line.actualCents) : "",
+        quantity:
+          line.actualQuantity != null ? String(line.actualQuantity) : "",
+        unit:
+          line.actualUnitCents != null
+            ? formatMxnInput(line.actualUnitCents)
+            : "",
         receiptStatus: line.receiptStatus,
         receiptMissingReason: line.receiptMissingReason ?? "",
         notes: line.notes ?? "",
+        detailsOpen: Boolean(
+          line.notes ||
+            line.actualQuantity != null ||
+            line.actualUnitCents != null,
+        ),
       })),
     );
   }, []);
@@ -194,12 +261,18 @@ export function CardBudgetSection({
       planLines.some((line, index) => {
         const saved = data.lines[index];
         if (!saved) return true;
+        const qty = parseOptionalQuantity(line.quantity);
+        const unit = line.unit.trim()
+          ? parseMxnToCents(line.unit)
+          : null;
         return (
           line.id !== saved.id ||
           line.kind !== saved.kind ||
           line.category !== saved.category ||
           line.label !== saved.label ||
           parseMxnToCents(line.expected) !== saved.expectedCents ||
+          qty !== (saved.expectedQuantity ?? null) ||
+          unit !== (saved.expectedUnitCents ?? null) ||
           line.notes !== (saved.notes ?? "")
         );
       }));
@@ -217,10 +290,30 @@ export function CardBudgetSection({
       category: BudgetLineCategory;
       label: string;
       expectedCents: number;
+      expectedQuantity?: number | null;
+      expectedUnitCents?: number | null;
       notes?: string;
     }[] = [];
     for (const line of planLines) {
-      const expectedCents = parseMxnToCents(line.expected);
+      const quantity = line.quantity.trim()
+        ? parseOptionalQuantity(line.quantity)
+        : null;
+      if (line.quantity.trim() && quantity == null) {
+        toast.error(`Cantidad inválida en «${line.label}»`);
+        return;
+      }
+      const unitCents = line.unit.trim()
+        ? parseMxnToCents(line.unit)
+        : null;
+      if (line.unit.trim() && unitCents == null) {
+        toast.error(`Precio unitario inválido en «${line.label}»`);
+        return;
+      }
+      const { cents: expectedCents } = totalFromQtyUnit(
+        line.quantity,
+        line.unit,
+        line.expected,
+      );
       if (expectedCents == null) {
         toast.error(`Monto inválido en «${line.label}»`);
         return;
@@ -231,6 +324,8 @@ export function CardBudgetSection({
         category: line.category,
         label: line.label,
         expectedCents,
+        expectedQuantity: quantity,
+        expectedUnitCents: unitCents,
         notes: line.notes || undefined,
       });
     }
@@ -258,16 +353,44 @@ export function CardBudgetSection({
       toast.error("Revisa los ingresos de inscripción");
       return;
     }
+    const refundedStripeChargeCount = Number(refundedCharges);
+    if (
+      !Number.isInteger(refundedStripeChargeCount) ||
+      refundedStripeChargeCount < 0
+    ) {
+      toast.error("Revisa los cargos Stripe reembolsados");
+      return;
+    }
     const lines: {
       id: number;
       actualCents: number;
+      actualQuantity?: number | null;
+      actualUnitCents?: number | null;
       receiptStatus: BudgetReceiptStatus;
       receiptMissingReason?: string;
       notes?: string;
     }[] = [];
     for (const line of actualLines) {
       if (line.isSystem) continue;
-      const actualCents = parseMxnToCents(line.actual || "0");
+      const quantity = line.quantity.trim()
+        ? parseOptionalQuantity(line.quantity)
+        : null;
+      if (line.quantity.trim() && quantity == null) {
+        toast.error(`Cantidad inválida en «${line.label}»`);
+        return;
+      }
+      const unitCents = line.unit.trim()
+        ? parseMxnToCents(line.unit)
+        : null;
+      if (line.unit.trim() && unitCents == null) {
+        toast.error(`Precio unitario inválido en «${line.label}»`);
+        return;
+      }
+      const { cents: actualCents } = totalFromQtyUnit(
+        line.quantity,
+        line.unit,
+        line.actual || "0",
+      );
       if (actualCents == null) {
         toast.error(`Monto inválido en «${line.label}»`);
         return;
@@ -275,6 +398,8 @@ export function CardBudgetSection({
       lines.push({
         id: line.id,
         actualCents,
+        actualQuantity: quantity,
+        actualUnitCents: unitCents,
         receiptStatus: line.receiptStatus,
         receiptMissingReason: line.receiptMissingReason || undefined,
         notes: line.notes || undefined,
@@ -285,6 +410,7 @@ export function CardBudgetSection({
         boardId: board.id,
         cardId,
         registrationRevenueCents: revenueCents,
+        refundedStripeChargeCount,
         remanenteNote: mode === "final" ? remanenteNote : undefined,
         lines,
         stage: mode === "final" ? "final" : "mid",
@@ -427,7 +553,14 @@ export function CardBudgetSection({
           </div>
 
           <ul className="space-y-2">
-            {planLines.map((line, index) => (
+            {planLines.map((line, index) => {
+              const qtyDriven = totalFromQtyUnit(
+                line.quantity,
+                line.unit,
+                line.expected,
+              ).drivenByQty;
+              const editable = canEditPlan && !line.isSystem && !line.fromSponsor;
+              return (
               <li
                 key={line.id ?? `new-${index}`}
                 className="bg-muted/40 space-y-2 rounded-md border p-3"
@@ -462,19 +595,28 @@ export function CardBudgetSection({
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <MoneyInput
-                    value={line.expected}
+                    value={
+                      qtyDriven
+                        ? formatMxnInput(
+                            totalFromQtyUnit(
+                              line.quantity,
+                              line.unit,
+                              line.expected,
+                            ).cents ?? 0,
+                          )
+                        : line.expected
+                    }
                     onChange={(expected) =>
                       setPlanLines((rows) =>
                         rows.map((row, i) =>
-                          i === index ? { ...row, expected } : row,
+                          i === index
+                            ? { ...row, expected, quantity: "", unit: "" }
+                            : row,
                         ),
                       )
                     }
                     disabled={
-                      !canEditPlan ||
-                      pending ||
-                      line.isSystem ||
-                      line.fromSponsor
+                      !editable || pending || qtyDriven
                     }
                     aria-label="Monto esperado"
                   />
@@ -501,8 +643,93 @@ export function CardBudgetSection({
                     </p>
                   )}
                 </div>
+                {editable ? (
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      disabled={pending}
+                      onClick={() =>
+                        setPlanLines((rows) =>
+                          rows.map((row, i) =>
+                            i === index
+                              ? { ...row, detailsOpen: !row.detailsOpen }
+                              : row,
+                          ),
+                        )
+                      }
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 transition-transform",
+                          line.detailsOpen && "rotate-180",
+                        )}
+                      />
+                      Detalles
+                    </Button>
+                    {line.detailsOpen ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Comentario</Label>
+                          <Textarea
+                            value={line.notes}
+                            onChange={(e) =>
+                              setPlanLines((rows) =>
+                                rows.map((row, i) =>
+                                  i === index
+                                    ? { ...row, notes: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Cantidad</Label>
+                          <Input
+                            value={line.quantity}
+                            onChange={(e) =>
+                              setPlanLines((rows) =>
+                                rows.map((row, i) =>
+                                  i === index
+                                    ? { ...row, quantity: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            inputMode="numeric"
+                            placeholder="ej. 3"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Precio unitario</Label>
+                          <MoneyInput
+                            value={line.unit}
+                            onChange={(unit) =>
+                              setPlanLines((rows) =>
+                                rows.map((row, i) =>
+                                  i === index ? { ...row, unit } : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            aria-label="Precio unitario esperado"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : line.notes ? (
+                  <p className="text-muted-foreground text-xs">{line.notes}</p>
+                ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
 
           {canEditPlan ? (
@@ -520,7 +747,10 @@ export function CardBudgetSection({
                       category: "otros",
                       label: "Otro gasto",
                       expected: "0",
+                      quantity: "",
+                      unit: "",
                       notes: "",
+                      detailsOpen: false,
                       isSystem: false,
                       fromSponsor: false,
                     },
@@ -543,7 +773,10 @@ export function CardBudgetSection({
                       category: "otros",
                       label: "Otro ingreso",
                       expected: "0",
+                      quantity: "",
+                      unit: "",
                       notes: "",
+                      detailsOpen: false,
                       isSystem: false,
                       fromSponsor: false,
                     },
@@ -578,6 +811,14 @@ export function CardBudgetSection({
       ) : (
         <div className="space-y-3">
           <div className="space-y-2">
+            {data.budget.payingCompetitorCount != null ? (
+              <p className="text-muted-foreground text-xs">
+                Inscritos que pagan (WCA):{" "}
+                <span className="text-foreground font-medium">
+                  {data.budget.payingCompetitorCount}
+                </span>
+              </p>
+            ) : null}
             <div className="space-y-1">
               <Label htmlFor="budget-revenue">
                 Ingresos de inscripción recaudados
@@ -622,8 +863,20 @@ export function CardBudgetSection({
                           ? ` · excluye ${estimate.excludedStaff} delegado(s)/organizador(es)`
                           : "";
                       setWcaHint(
-                        `${estimate.payingCompetitors} de ${estimate.acceptedCompeting} inscritos aceptados × ${feeNote}${staffNote}`,
+                        `${estimate.payingCompetitors} de ${estimate.acceptedCompeting} inscritos aceptados × ${feeNote}${staffNote}. Suma a mano donaciones si las hubo.`,
                       );
+                      // Reload sheet so paying count / Stripe lines refresh.
+                      const sheet = await loadBudgetCard({
+                        boardId: board.id,
+                        cardId,
+                      });
+                      if (sheet.ok && sheet.data) {
+                        apply(sheet.data);
+                        setRevenue(formatMxnInput(estimate.revenueCents));
+                        setWcaHint(
+                          `${estimate.payingCompetitors} de ${estimate.acceptedCompeting} inscritos aceptados × ${feeNote}${staffNote}. Suma a mano donaciones si las hubo.`,
+                        );
+                      }
                       toast.success("Ingresos prefijados desde la WCA");
                     });
                   }}
@@ -637,14 +890,39 @@ export function CardBudgetSection({
               <p className="text-muted-foreground text-xs">{wcaHint}</p>
             ) : canEditActuals ? (
               <p className="text-muted-foreground text-xs">
-                Consulta inscritos aceptados en la WCA. Suele excluir
-                delegados y organizadores; puedes editar el monto.
+                Prefija cuota × inscritos que pagan (excl. delegados/organizadores).
+                Suma donaciones a mano si hubo. Luego puedes editar el monto.
               </p>
+            ) : null}
+            {data.budget.usesStripe ? (
+              <div className="space-y-1">
+                <Label htmlFor="budget-refunded">
+                  Cargos Stripe reembolsados
+                </Label>
+                <Input
+                  id="budget-refunded"
+                  value={refundedCharges}
+                  onChange={(e) => setRefundedCharges(e.target.value)}
+                  disabled={!canEditActuals || pending}
+                  inputMode="numeric"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Stripe no cobra reembolso extra; conserva 3.6% + $3 del cargo
+                  original (incluye donación de ese cargo si aplicaba).
+                </p>
+              </div>
             ) : null}
           </div>
 
           <ul className="space-y-2">
-            {actualLines.map((line) => (
+            {actualLines.map((line) => {
+              const qtyDriven = totalFromQtyUnit(
+                line.quantity,
+                line.unit,
+                line.actual || "0",
+              ).drivenByQty;
+              const editable = canEditActuals && !line.isSystem;
+              return (
               <li
                 key={line.id}
                 className="bg-muted/40 space-y-2 rounded-md border p-3"
@@ -657,15 +935,27 @@ export function CardBudgetSection({
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <MoneyInput
-                    value={line.actual}
+                    value={
+                      qtyDriven
+                        ? formatMxnInput(
+                            totalFromQtyUnit(
+                              line.quantity,
+                              line.unit,
+                              line.actual || "0",
+                            ).cents ?? 0,
+                          )
+                        : line.actual
+                    }
                     onChange={(actual) =>
                       setActualLines((rows) =>
                         rows.map((row) =>
-                          row.id === line.id ? { ...row, actual } : row,
+                          row.id === line.id
+                            ? { ...row, actual, quantity: "", unit: "" }
+                            : row,
                         ),
                       )
                     }
-                    disabled={!canEditActuals || pending || line.isSystem}
+                    disabled={!editable || pending || qtyDriven}
                     aria-label="Monto real"
                   />
                   {line.kind === "expense" && !line.isSystem ? (
@@ -722,8 +1012,95 @@ export function CardBudgetSection({
                     placeholder="Motivo sin comprobante"
                   />
                 ) : null}
+                {editable ? (
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      disabled={pending}
+                      onClick={() =>
+                        setActualLines((rows) =>
+                          rows.map((row) =>
+                            row.id === line.id
+                              ? { ...row, detailsOpen: !row.detailsOpen }
+                              : row,
+                          ),
+                        )
+                      }
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 transition-transform",
+                          line.detailsOpen && "rotate-180",
+                        )}
+                      />
+                      Detalles
+                    </Button>
+                    {line.detailsOpen ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Comentario</Label>
+                          <Textarea
+                            value={line.notes}
+                            onChange={(e) =>
+                              setActualLines((rows) =>
+                                rows.map((row) =>
+                                  row.id === line.id
+                                    ? { ...row, notes: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Cantidad</Label>
+                          <Input
+                            value={line.quantity}
+                            onChange={(e) =>
+                              setActualLines((rows) =>
+                                rows.map((row) =>
+                                  row.id === line.id
+                                    ? { ...row, quantity: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            inputMode="numeric"
+                            placeholder="ej. 3"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Precio unitario</Label>
+                          <MoneyInput
+                            value={line.unit}
+                            onChange={(unit) =>
+                              setActualLines((rows) =>
+                                rows.map((row) =>
+                                  row.id === line.id
+                                    ? { ...row, unit }
+                                    : row,
+                                ),
+                              )
+                            }
+                            disabled={pending}
+                            aria-label="Precio unitario real"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : line.notes ? (
+                  <p className="text-muted-foreground text-xs">{line.notes}</p>
+                ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
 
           {mode === "final" ? (

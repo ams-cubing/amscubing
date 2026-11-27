@@ -1,25 +1,22 @@
+import {
+  countPayingCompetitors,
+  FREE_ENTRY_WCIF_ROLES,
+} from "@workspace/db/budget";
 import { extractWcaCompetitionId } from "@workspace/social";
 import { log } from "@workspace/server/log";
 
+export { countPayingCompetitors, FREE_ENTRY_WCIF_ROLES };
+
 const WCA_API = "https://www.worldcubeassociation.org/api/v0/competitions";
-
-/** WCIF roles that usually do not pay the entry fee. */
-export const FREE_ENTRY_WCIF_ROLES = new Set([
-  "delegate",
-  "trainee-delegate",
-  "organizer",
-]);
-
-type WcifRegistration = {
-  status?: string | null;
-  isCompeting?: boolean | null;
-};
 
 type WcifPerson = {
   name?: string;
   wcaId?: string | null;
   roles?: string[] | null;
-  registration?: WcifRegistration | null;
+  registration?: {
+    status?: string | null;
+    isCompeting?: boolean | null;
+  } | null;
 };
 
 export type WcaRegistrationRevenueEstimate = {
@@ -34,36 +31,9 @@ export type WcaRegistrationRevenueEstimate = {
   excludedStaff: number;
   payingCompetitors: number;
   revenueCents: number;
+  /** WCA `using_payment_integrations?` (treated as Stripe for MX budgets). */
+  usesPaymentIntegrations: boolean;
 };
-
-function hasFreeEntryRole(roles: string[] | null | undefined) {
-  for (const role of roles ?? []) {
-    if (FREE_ENTRY_WCIF_ROLES.has(role)) return true;
-  }
-  return false;
-}
-
-/** Count accepted competing people who are not delegates/organizers. */
-export function countPayingCompetitors(persons: WcifPerson[]) {
-  let acceptedCompeting = 0;
-  let excludedStaff = 0;
-  let payingCompetitors = 0;
-
-  for (const person of persons) {
-    const registration = person.registration;
-    if (!registration || registration.status !== "accepted") continue;
-    if (registration.isCompeting === false) continue;
-
-    acceptedCompeting += 1;
-    if (hasFreeEntryRole(person.roles)) {
-      excludedStaff += 1;
-      continue;
-    }
-    payingCompetitors += 1;
-  }
-
-  return { acceptedCompeting, excludedStaff, payingCompetitors };
-}
 
 export async function fetchWcaRegistrationRevenueEstimate(opts: {
   wcaCompetitionUrl: string;
@@ -112,6 +82,7 @@ export async function fetchWcaRegistrationRevenueEstimate(opts: {
       id?: string;
       currency_code?: string | null;
       base_entry_fee_lowest_denomination?: number | null;
+      "using_payment_integrations?"?: boolean | null;
     };
     const wcif = (await wcifRes.json()) as { persons?: WcifPerson[] | null };
     const counts = countPayingCompetitors(wcif.persons ?? []);
@@ -125,6 +96,8 @@ export async function fetchWcaRegistrationRevenueEstimate(opts: {
       rawFee >= 0
         ? Math.round(rawFee)
         : null;
+    const usesPaymentIntegrations =
+      competition["using_payment_integrations?"] === true;
 
     const feeSource: "wca" | "budget" =
       wcaFeeCents != null ? "wca" : "budget";
@@ -151,6 +124,7 @@ export async function fetchWcaRegistrationRevenueEstimate(opts: {
         excludedStaff: counts.excludedStaff,
         payingCompetitors: counts.payingCompetitors,
         revenueCents: feeCents * counts.payingCompetitors,
+        usesPaymentIntegrations,
       },
     };
   } catch (error) {

@@ -374,18 +374,6 @@ export function CardDialog({
             <DialogDescription className="sr-only">
               Detalle de la tarjeta
             </DialogDescription>
-            {canApproveCards && !readOnly ? (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="ml-auto"
-                disabled={pending}
-                onClick={() => setDeleteOpen(true)}
-              >
-                Eliminar
-              </Button>
-            ) : null}
           </div>
         </DialogHeader>
 
@@ -456,6 +444,17 @@ export function CardDialog({
                     >
                       <Paperclip className="size-4" />
                       Adjunto
+                    </Button>
+                  ) : null}
+                  {canApproveCards && !readOnly ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={pending}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      Eliminar
                     </Button>
                   ) : null}
                 </div>
