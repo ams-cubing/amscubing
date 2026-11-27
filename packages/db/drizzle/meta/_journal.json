@@ -435,6 +435,20 @@
       "when": 1795560000000,
       "tag": "0061_board_boards_tools_beta",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1795561000000,
+      "tag": "0062_budget_stripe_and_fee_floors",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1795562000000,
+      "tag": "0063_budget_paying_refunds_line_detail",
+      "breakpoints": true
     }
   ]
 }

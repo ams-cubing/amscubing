@@ -8,6 +8,8 @@ import {
   BudgetError,
   ensureCompetitionBudget,
   removeCompetitionSponsor,
+  setBudgetPayingCompetitorCount,
+  setBudgetUsesStripe,
   submitBudgetStage,
   updateBudgetActuals,
   updateBudgetPlan,
@@ -115,6 +117,7 @@ const lineCategory = z.enum([
   "papeleria",
   "cuota_wca",
   "cuota_ams",
+  "comision_stripe",
   "inscripciones",
   "patrocinio_efectivo",
   "otros",
@@ -131,6 +134,14 @@ const savePlanSchema = cardSchema.extend({
         category: lineCategory,
         label: z.string().max(160),
         expectedCents: z.number().int().min(0).max(50_000_000_00),
+        expectedQuantity: z.number().int().min(0).max(100_000).nullable().optional(),
+        expectedUnitCents: z
+          .number()
+          .int()
+          .min(0)
+          .max(50_000_000_00)
+          .nullable()
+          .optional(),
         notes: z.string().max(1000).optional(),
       }),
     )
@@ -228,12 +239,21 @@ export async function saveBudgetPlanFromCard(
 
 const saveActualsSchema = cardSchema.extend({
   registrationRevenueCents: z.number().int().min(0).max(50_000_000_00),
+  refundedStripeChargeCount: z.number().int().min(0).max(5000).optional(),
   remanenteNote: z.string().max(2000).optional(),
   lines: z
     .array(
       z.object({
         id: z.number().int().positive(),
         actualCents: z.number().int().min(0).max(50_000_000_00),
+        actualQuantity: z.number().int().min(0).max(100_000).nullable().optional(),
+        actualUnitCents: z
+          .number()
+          .int()
+          .min(0)
+          .max(50_000_000_00)
+          .nullable()
+          .optional(),
         receiptStatus: z.enum(["pending", "in_drive", "missing_reason"]),
         receiptMissingReason: z.string().max(500).optional(),
         notes: z.string().max(1000).optional(),
@@ -280,6 +300,7 @@ export async function saveBudgetActualsFromCard(
       let sheet = await updateBudgetActuals(tx, {
         competitionId,
         registrationRevenueCents: input.registrationRevenueCents,
+        refundedStripeChargeCount: input.refundedStripeChargeCount,
         remanenteNote: input.remanenteNote,
         lines: input.lines,
       });
@@ -380,10 +401,25 @@ export async function estimateRegistrationRevenueFromWca(input: {
     };
   }
 
-  return fetchWcaRegistrationRevenueEstimate({
+  const result = await fetchWcaRegistrationRevenueEstimate({
     wcaCompetitionUrl: wcaUrl,
     budgetFeeCents: sheet.budget.proposedRegistrationFeeCents,
   });
+  if (result.ok) {
+    await setBudgetUsesStripe(
+      db,
+      competitionId,
+      result.estimate.usesPaymentIntegrations,
+    );
+    await setBudgetPayingCompetitorCount(
+      db,
+      competitionId,
+      result.estimate.payingCompetitors,
+    );
+    // Refresh sheet so fee lines match Stripe flag + paying count.
+    await ensureCompetitionBudget(db, competitionId);
+  }
+  return result;
 }
 
 const sponsorSchema = cardSchema.extend({

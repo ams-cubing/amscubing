@@ -42,6 +42,7 @@ export const budgetLineCategoryEnum = pgEnum(
     "papeleria",
     "cuota_wca",
     "cuota_ams",
+    "comision_stripe",
     "inscripciones",
     "patrocinio_efectivo",
     "otros",
@@ -77,6 +78,20 @@ export const competitionBudgets = pgTable("competition_budget", {
     .notNull()
     .default(0),
   registrationRevenueCents: integer("registration_revenue_cents"),
+  /**
+   * From WCA `using_payment_integrations?` (treated as Stripe for MX budgets).
+   * Drives the Comisión Stripe system line.
+   */
+  usesStripe: boolean("uses_stripe").notNull().default(false),
+  /** Accepted competing registrations excluding free staff (from public WCIF). */
+  payingCompetitorCount: integer("paying_competitor_count"),
+  /**
+   * Successful Stripe charges later refunded (manual). Stripe keeps the original
+   * 3.6% + $3 on those charges.
+   */
+  refundedStripeChargeCount: integer("refunded_stripe_charge_count")
+    .notNull()
+    .default(0),
   receiptsDriveUrl: text("receipts_drive_url"),
   spreadsheetUrl: text("spreadsheet_url"),
   remanenteNote: text("remanente_note"),
@@ -159,6 +174,12 @@ export const competitionBudgetLines = pgTable(
     label: text("label").notNull(),
     expectedCents: integer("expected_cents").notNull().default(0),
     actualCents: integer("actual_cents"),
+    /** When set with expectedUnitCents, expectedCents = quantity × unit. */
+    expectedQuantity: integer("expected_quantity"),
+    expectedUnitCents: integer("expected_unit_cents"),
+    /** When set with actualUnitCents, actualCents = quantity × unit. */
+    actualQuantity: integer("actual_quantity"),
+    actualUnitCents: integer("actual_unit_cents"),
     spendStatus: budgetSpendStatusEnum("spend_status")
       .notNull()
       .default("none"),

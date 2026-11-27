@@ -39,8 +39,9 @@ export const BUDGET_LINE_CATEGORY_LABELS: Record<BudgetLineCategory, string> = {
   comida_staff: "Comida de staff",
   premios: "Premios",
   papeleria: "Papelería",
-  cuota_wca: "Cuota WCA (5%)",
-  cuota_ams: "Cuota AMS (5%)",
+  cuota_wca: "Cuota WCA (máx. 5% / $10)",
+  cuota_ams: "Cuota AMS (máx. 5% / $10)",
+  comision_stripe: "Comisión Stripe (3.6% + $3)",
   inscripciones: "Inscripciones",
   patrocinio_efectivo: "Patrocinio en efectivo",
   otros: "Otros",
@@ -82,9 +83,15 @@ export const DEFAULT_EXPENSE_CATEGORIES: readonly BudgetLineCategory[] = [
 export const SYSTEM_FEE_CATEGORIES: readonly BudgetLineCategory[] = [
   "cuota_wca",
   "cuota_ams",
+  "comision_stripe",
 ];
 
 export const FEE_RATE_BPS = 500; // 5%
+/** MXN floor per competitor for WCA (Band 2 ≈ $0.50 USD) and AMS. */
+export const FEE_FLOOR_CENTS_PER_COMPETITOR = 1000; // $10 MXN
+/** Stripe Mexico domestic card rate. */
+export const STRIPE_RATE_BPS = 360; // 3.6%
+export const STRIPE_FIXED_CENTS = 300; // $3 MXN
 
 export const PLAN_EDITABLE_STATUSES: readonly BudgetStatus[] = [
   "draft",
@@ -95,6 +102,15 @@ export const PLAN_EDITABLE_STATUSES: readonly BudgetStatus[] = [
 export const ACTUALS_EDITABLE_STATUSES: readonly BudgetStatus[] = [
   "plan_approved",
   "mid_approved",
+];
+
+/** After plan approval we can sync paying counts from public WCIF. */
+export const PAYING_COUNT_SYNC_STATUSES: readonly BudgetStatus[] = [
+  "plan_approved",
+  "mid_submitted",
+  "mid_approved",
+  "final_submitted",
+  "closed",
 ];
 
 export function formatMxnCents(cents: number) {
@@ -122,4 +138,28 @@ export function parseMxnToCents(raw: string): number | null {
   const value = Number(cleaned);
   if (!Number.isFinite(value) || value < 0) return null;
   return Math.round(value * 100);
+}
+
+/**
+ * When quantity and unit are both set and positive, total = qty × unit.
+ * Otherwise use the explicit total (simple mode).
+ */
+export function resolveLineTotalCents(opts: {
+  quantity: number | null | undefined;
+  unitCents: number | null | undefined;
+  fallbackCents: number;
+}): number {
+  const qty = opts.quantity;
+  const unit = opts.unitCents;
+  if (
+    qty != null &&
+    unit != null &&
+    Number.isInteger(qty) &&
+    qty > 0 &&
+    Number.isInteger(unit) &&
+    unit >= 0
+  ) {
+    return qty * unit;
+  }
+  return opts.fallbackCents;
 }
